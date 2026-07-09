@@ -20,7 +20,6 @@ import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPl
 import { TRANSFORMERS } from '@lexical/markdown';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 
-import "./Editor.css"
 import {
   $isTextNode,
   DOMConversionMap,
@@ -48,12 +47,12 @@ import UpdateContentPlugin from './plugins/UpdateContentPlugin';
 import { parseAllowedColor, parseAllowedFontSize } from './styleConfig';
 import { SidebarCustom } from '@/components/sidebar-custom';
 import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { FolderPlus } from 'lucide-react';
 import { Path, Idea } from './types';
 import { useState, useCallback } from 'react';
 
 const placeholder = 'Enter some rich text...';
 
-import { MOCK_PATHS } from './mockData';
 
 const removeStylesExportDOM = (
   editor: LexicalEditor,
@@ -176,8 +175,8 @@ const editorConfig = {
 };
 
 export default function DashboardPage() {
-  const [paths, setPaths] = useState<Path[]>(MOCK_PATHS);
-  const [selectedIdeaId, setSelectedIdeaId] = useState<string | undefined>(MOCK_PATHS[0]?.ideas[0]?.id);
+  const [paths, setPaths] = useState<Path[]>([]);
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string | undefined>(undefined);
 
   // Helper to find the currently selected idea object
   const selectedIdea = paths
@@ -186,6 +185,61 @@ export default function DashboardPage() {
 
   const handleSelectIdea = (idea: Idea) => {
     setSelectedIdeaId(idea.id);
+  };
+
+  const handleCreatePath = (title: string) => {
+    const newPath: Path = {
+      id: `path-${crypto.randomUUID()}`,
+      title,
+      ideas: [],
+    };
+    setPaths(prevPaths => [...prevPaths, newPath]);
+  };
+
+  const handleCreateIdea = (pathId: string, title: string) => {
+    const newIdea: Idea = {
+      id: `idea-${crypto.randomUUID()}`,
+      title,
+      content: '',
+    };
+    setPaths(prevPaths => prevPaths.map(path =>
+      path.id === pathId
+        ? { ...path, ideas: [...path.ideas, newIdea] }
+        : path
+    ));
+    setSelectedIdeaId(newIdea.id);
+  };
+
+  const handleRenamePath = (pathId: string, title: string) => {
+    setPaths(prevPaths => prevPaths.map(path =>
+      path.id === pathId ? { ...path, title } : path
+    ));
+  };
+
+  const handleRenameIdea = (pathId: string, ideaId: string, title: string) => {
+    setPaths(prevPaths => prevPaths.map(path =>
+      path.id === pathId
+        ? { ...path, ideas: path.ideas.map(idea => idea.id === ideaId ? { ...idea, title } : idea) }
+        : path
+    ));
+  };
+
+  const handleDeletePath = (pathId: string) => {
+    setPaths(prevPaths => prevPaths.filter(path => path.id !== pathId));
+    setSelectedIdeaId(prev => {
+      const deletedPath = paths.find(p => p.id === pathId);
+      const hadSelected = deletedPath?.ideas.some(i => i.id === prev);
+      return hadSelected ? undefined : prev;
+    });
+  };
+
+  const handleDeleteIdea = (pathId: string, ideaId: string) => {
+    setPaths(prevPaths => prevPaths.map(path =>
+      path.id === pathId
+        ? { ...path, ideas: path.ideas.filter(idea => idea.id !== ideaId) }
+        : path
+    ));
+    setSelectedIdeaId(prev => (prev === ideaId ? undefined : prev));
   };
 
   const onChange = useCallback((editorState: EditorState) => {
@@ -211,43 +265,61 @@ export default function DashboardPage() {
         paths={paths}
         selectedIdeaId={selectedIdeaId}
         onSelectIdea={handleSelectIdea}
+        onCreatePath={handleCreatePath}
+        onCreateIdea={handleCreateIdea}
+        onRenamePath={handleRenamePath}
+        onRenameIdea={handleRenameIdea}
+        onDeletePath={handleDeletePath}
+        onDeleteIdea={handleDeleteIdea}
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger />
         </header>
         <div className="flex-1 overflow-auto p-4">
-          <LexicalComposer initialConfig={editorConfig}>
-            <div className="editor-container">
-              <ToolbarPlugin />
-              <div className="editor-inner">
-                <RichTextPlugin
-                  contentEditable={
-                    <ContentEditable
-                      className="editor-input"
-                      aria-placeholder={placeholder}
-                      placeholder={
-                        <div className="editor-placeholder">{placeholder}</div>
-                      }
-                    />
-                  }
-                  ErrorBoundary={LexicalErrorBoundary}
-                />
-                <HistoryPlugin />
-                <AutoFocusPlugin />
-                <TreeViewPlugin />
-                <ListPlugin />
-                <CheckListPlugin />
-                <LinkPlugin />
-                <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+          {selectedIdea ? (
+            <LexicalComposer initialConfig={editorConfig}>
+              <div className="editor-container">
+                <ToolbarPlugin />
+                <div className="editor-inner">
+                  <RichTextPlugin
+                    contentEditable={
+                      <ContentEditable
+                        className="editor-input"
+                        aria-placeholder={placeholder}
+                        placeholder={
+                          <div className="editor-placeholder">{placeholder}</div>
+                        }
+                      />
+                    }
+                    ErrorBoundary={LexicalErrorBoundary}
+                  />
+                  <HistoryPlugin />
+                  <AutoFocusPlugin />
+                  <TreeViewPlugin />
+                  <ListPlugin />
+                  <CheckListPlugin />
+                  <LinkPlugin />
+                  <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
 
-                {selectedIdea && (
-                  <UpdateContentPlugin content={selectedIdea.content} />
-                )}
-                <OnChangePlugin onChange={onChange} />
+                  <UpdateContentPlugin content={selectedIdea.content} ideaId={selectedIdea.id} />
+                  <OnChangePlugin onChange={onChange} />
+                </div>
               </div>
+            </LexicalComposer>
+          ) : (
+            <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+              <FolderPlus className="h-12 w-12 opacity-40" />
+              <p className="text-lg font-medium">
+                {paths.length === 0 ? "No paths yet" : "No idea selected"}
+              </p>
+              <p className="max-w-sm text-sm">
+                {paths.length === 0
+                  ? 'Create a path from the sidebar (the "+" next to "My Paths") to get started.'
+                  : "Select an idea from the sidebar, or create a new one inside a path."}
+              </p>
             </div>
-          </LexicalComposer>
+          )}
         </div>
       </SidebarInset>
     </>
