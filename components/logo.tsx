@@ -1,3 +1,14 @@
+import { cn } from "@/lib/utils"
+
+export function Wordmark({ className }: { className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1", className)}>
+      <span className="font-extrabold text-xl tracking-tight">MyPath</span>
+      <span className="w-1.5 h-1.5 rounded-full bg-accent mb-1 ml-0.5 animate-pulse" />
+    </span>
+  )
+}
+
 export const Logo = () => (
   <svg
     id="logo-7"

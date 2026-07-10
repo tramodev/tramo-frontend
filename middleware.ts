@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  if (path.startsWith('/dashboard')) {
+  if (path.startsWith('/dashboard') || path.startsWith('/projects')) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
 
   if (path === '/login' || path === '/signup') {
     if (isLoggedIn) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/projects', request.url));
     }
   }
 
@@ -27,6 +27,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/projects/:path*',
     '/login',
     '/signup',
   ],

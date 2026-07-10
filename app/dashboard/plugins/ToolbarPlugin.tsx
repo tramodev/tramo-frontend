@@ -47,9 +47,11 @@ import {
 } from '@lexical/link';
 import {
   $setBlocksType,
+  $patchStyleText,
+  $getSelectionStyleValueForProperty,
 } from '@lexical/selection';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Bold,
   Italic,
@@ -70,7 +72,11 @@ import {
   Code,
   Quote,
   Link as LinkIcon,
+  Image as ImageIcon,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
+import { INSERT_IMAGE_COMMAND } from './ImagesPlugin';
 
 const blockTypeToBlockName = {
   bullet: 'Bulleted List',
@@ -87,6 +93,18 @@ const blockTypeToBlockName = {
   quote: 'Quote',
 };
 
+const FONT_FAMILY_OPTIONS: Array<[string, string]> = [
+  ['Arial', 'Arial'],
+  ['Courier New', 'Courier New'],
+  ['Georgia', 'Georgia'],
+  ['Times New Roman', 'Times New Roman'],
+  ['Trebuchet MS', 'Trebuchet MS'],
+  ['Verdana', 'Verdana'],
+];
+
+const MIN_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 72;
+
 function Divider() {
   return <div className="divider" />;
 }
@@ -94,6 +112,7 @@ function Divider() {
 export default function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
   const toolbarRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [blockType, setBlockType] = useState('paragraph');
@@ -105,6 +124,8 @@ export default function ToolbarPlugin() {
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
   const [isCode, setIsCode] = useState(false);
+  const [fontFamily, setFontFamily] = useState('Arial');
+  const [fontSize, setFontSize] = useState('15');
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -151,8 +172,52 @@ export default function ToolbarPlugin() {
       } else {
         setIsLink(false);
       }
+
+      // Update font family & size
+      setFontFamily($getSelectionStyleValueForProperty(selection, 'font-family', 'Arial'));
+      setFontSize(
+        $getSelectionStyleValueForProperty(selection, 'font-size', `${MIN_FONT_SIZE + 7}px`).replace('px', ''),
+      );
     }
   }, [editor]);
+
+  const applyStyleText = useCallback(
+    (styles: Record<string, string>) => {
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          $patchStyleText(selection, styles);
+        }
+      });
+    },
+    [editor],
+  );
+
+  const onFontFamilySelect = useCallback(
+    (value: string) => {
+      setFontFamily(value);
+      applyStyleText({ 'font-family': value });
+    },
+    [applyStyleText],
+  );
+
+  const onFontSizeCommit = useCallback(
+    (value: string) => {
+      const clamped = Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Number(value) || MIN_FONT_SIZE));
+      setFontSize(String(clamped));
+      applyStyleText({ 'font-size': `${clamped}px` });
+    },
+    [applyStyleText],
+  );
+
+  const updateFontSizeByStep = useCallback(
+    (step: number) => {
+      const next = Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, (Number(fontSize) || MIN_FONT_SIZE) + step));
+      setFontSize(String(next));
+      applyStyleText({ 'font-size': `${next}px` });
+    },
+    [applyStyleText, fontSize],
+  );
 
   useEffect(() => {
     return mergeRegister(
@@ -268,6 +333,20 @@ export default function ToolbarPlugin() {
     }
   }, [editor, isLink]);
 
+  const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
+        altText: file.name,
+        src: reader.result as string,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="toolbar" ref={toolbarRef}>
       <button
@@ -288,6 +367,52 @@ export default function ToolbarPlugin() {
         aria-label="Redo">
         <Redo size={18} />
       </button>
+      <Divider />
+      {/* Font family & size */}
+      <select
+        className="toolbar-item font-family-select"
+        value={fontFamily}
+        onChange={(e) => onFontFamilySelect(e.target.value)}
+        aria-label="Font Family"
+        style={{ fontFamily }}
+      >
+        {FONT_FAMILY_OPTIONS.map(([value, label]) => (
+          <option key={value} value={value} style={{ fontFamily: value }}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <div className="font-size-control">
+        <button
+          onClick={() => updateFontSizeByStep(-1)}
+          className="toolbar-item"
+          aria-label="Decrease font size">
+          <ChevronDown size={14} />
+        </button>
+        <input
+          type="number"
+          className="font-size-input"
+          value={fontSize}
+          min={MIN_FONT_SIZE}
+          max={MAX_FONT_SIZE}
+          onChange={(e) => setFontSize(e.target.value)}
+          onBlur={(e) => onFontSizeCommit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              onFontSizeCommit((e.target as HTMLInputElement).value);
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          aria-label="Font Size"
+        />
+        <button
+          onClick={() => updateFontSizeByStep(1)}
+          className="toolbar-item"
+          aria-label="Increase font size">
+          <ChevronUp size={14} />
+        </button>
+      </div>
+
       <Divider />
       {/* Headings */}
       <button
@@ -357,6 +482,19 @@ export default function ToolbarPlugin() {
         aria-label="Insert Link">
         <LinkIcon size={18} />
       </button>
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="toolbar-item spaced"
+        aria-label="Insert Image">
+        <ImageIcon size={18} />
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageFileChange}
+        style={{ display: 'none' }}
+      />
 
       <Divider />
       {/* Lists & Quotes */}

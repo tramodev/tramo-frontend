@@ -1,5 +1,6 @@
 import { ChevronRight, FileText, Folder, Link2, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
+import Link from "next/link"
 
 import {
   Sidebar,
@@ -7,6 +8,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -18,6 +20,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Wordmark } from "@/components/logo"
 import { Path, Idea } from "@/app/dashboard/types"
 
 interface SidebarCustomProps {
@@ -142,6 +145,11 @@ export function SidebarCustom({
 
   return (
     <Sidebar>
+      <SidebarHeader>
+        <Link href="/projects" className="flex items-center px-2 py-1" title="Back to projects">
+          <Wordmark />
+        </Link>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">

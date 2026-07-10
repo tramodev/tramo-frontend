@@ -81,6 +81,37 @@
   text-decoration: none;
 }
 
+.editor-image {
+  display: inline-block;
+}
+
+.editor-image-wrapper {
+  display: inline-block;
+  position: relative;
+  max-width: 100%;
+}
+
+.editor-image-wrapper img {
+  max-width: 100%;
+  display: block;
+}
+
+.editor-image-wrapper.selected img {
+  outline: 2px solid var(--primary);
+}
+
+.editor-image-resizer {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 12px;
+  height: 12px;
+  background: var(--primary);
+  border: 1px solid var(--background);
+  border-radius: 2px;
+  cursor: nwse-resize;
+}
+
 .tree-view-output {
   display: block;
   background: var(--foreground);
@@ -351,6 +382,53 @@ pre::-webkit-scrollbar-thumb {
   width: 1px;
   background-color: var(--border);
   margin: 0 4px;
+}
+
+.toolbar .font-family-select {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  font-size: 14px;
+  padding: 4px 6px;
+  margin-right: 4px;
+  max-width: 140px;
+  cursor: pointer;
+}
+
+.toolbar .font-family-select option {
+  color: var(--foreground);
+  background: var(--card);
+}
+
+.toolbar .font-size-control {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-right: 4px;
+  overflow: hidden;
+}
+
+.toolbar .font-size-control button.toolbar-item {
+  padding: 4px;
+  border-radius: 0;
+}
+
+.toolbar .font-size-input {
+  width: 32px;
+  border: 0;
+  background: none;
+  color: var(--foreground);
+  font-size: 14px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.toolbar .font-size-input::-webkit-outer-spin-button,
+.toolbar .font-size-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .toolbar .toolbar-item .text {
