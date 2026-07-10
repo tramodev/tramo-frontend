@@ -27,7 +27,7 @@ export function SignupForm({
           </p>
         </div>
         {state?.error && (
-          <div className="text-red-500 text-sm text-center">
+          <div className="text-destructive text-sm text-center">
             {state.error}
           </div>
         )}

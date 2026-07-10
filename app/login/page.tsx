@@ -3,9 +3,7 @@ import { LoginForm } from "@/components/login-form"
 export default function LoginPage() {
 
   return (
-    <div className="grid min-h-svh bg-[#E57373] lg:grid-cols-2">
-      <div className="bg-noise "></div>
-      
+    <div className="grid min-h-svh bg-background lg:grid-cols-2">
       <div className="bg-muted relative hidden lg:block">
         <img
           src="/placeholder.svg"
