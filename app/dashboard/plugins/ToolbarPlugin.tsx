@@ -327,7 +327,10 @@ export default function ToolbarPlugin() {
 
   const insertLink = useCallback(() => {
     if (!isLink) {
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, 'https://');
+      const url = window.prompt('Enter URL');
+      if (!url) return;
+      const normalizedUrl = /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`;
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, normalizedUrl);
     } else {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }

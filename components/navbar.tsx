@@ -1,5 +1,4 @@
 import { Button } from './ui/button';
-import { ThemeToggle } from './theme-toggle';
 import { Wordmark } from './logo';
 import { AvatarMenu } from './avatar-menu';
 import { cookies } from 'next/headers';
@@ -28,7 +27,6 @@ export async function Navbar() {
       </div>
 
       <div className="flex items-center gap-2">
-        <ThemeToggle className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" />
         {isLoggedIn ? (
           <AvatarMenu username={username} />
         ) : (

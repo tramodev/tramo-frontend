@@ -16,6 +16,7 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
+import { ClickableLinkPlugin } from '@lexical/react/LexicalClickableLinkPlugin';
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import { TRANSFORMERS } from '@lexical/markdown';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
@@ -58,7 +59,8 @@ import { FolderPlus, Network, Pencil } from 'lucide-react';
 import { Path, Idea } from '../types';
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getProject, renameProject, saveProjectContent } from '@/lib/projects-store';
+import { getProject, renameProject, saveProjectContent, type ProjectVisibility } from '@/lib/projects-store';
+import { ShareDialog } from '@/components/share-dialog';
 
 const placeholder = 'Enter some rich text...';
 
@@ -190,6 +192,7 @@ export default function DashboardPage() {
 
   const [loaded, setLoaded] = useState(false);
   const [projectTitle, setProjectTitle] = useState('');
+  const [visibility, setVisibility] = useState<ProjectVisibility>('private');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
 
@@ -207,6 +210,7 @@ export default function DashboardPage() {
         return;
       }
       setProjectTitle(project.title);
+      setVisibility(project.visibility);
       setPaths(project.paths);
       setIdeas(project.ideas);
       setLoaded(true);
@@ -437,6 +441,11 @@ export default function DashboardPage() {
                 </>
               )}
             </Button>
+            <ShareDialog
+              projectId={projectId}
+              visibility={visibility}
+              onVisibilityChange={setVisibility}
+            />
             <UserMenu />
           </div>
         </header>
@@ -477,6 +486,7 @@ export default function DashboardPage() {
                     <ListPlugin />
                     <CheckListPlugin />
                     <LinkPlugin />
+                    <ClickableLinkPlugin newTab />
                     <ImagesPlugin />
                     <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
 

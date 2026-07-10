@@ -1,5 +1,7 @@
 "use client"
 
+import * as React from 'react';
+import { useTheme } from 'next-themes';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import {
   DropdownMenu,
@@ -9,11 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { FolderKanban, LogOut } from 'lucide-react';
+import { FolderKanban, LogOut, Moon, Sun } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
 
 export function AvatarMenu({ username }: { username: string }) {
   const initials = username.slice(0, 2).toUpperCase();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && resolvedTheme === 'dark';
 
   return (
     <DropdownMenu>
@@ -32,6 +42,15 @@ export function AvatarMenu({ username }: { username: string }) {
             <FolderKanban />
             Projects
           </a>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            setTheme(isDark ? 'light' : 'dark');
+          }}
+        >
+          {isDark ? <Sun /> : <Moon />}
+          {isDark ? 'Light mode' : 'Dark mode'}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild variant="destructive">

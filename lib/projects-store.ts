@@ -1,10 +1,13 @@
 import { Idea, Path } from "@/app/dashboard/types";
 
+export type ProjectVisibility = "private" | "public";
+
 export interface Project {
   id: string;
   title: string;
   paths: Path[];
   ideas: Record<string, Idea>;
+  visibility: ProjectVisibility;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,7 +23,13 @@ function readAll(): Project[] {
   const raw = window.localStorage.getItem(STORAGE_KEY);
   if (!raw) return [];
   try {
-    return JSON.parse(raw) as Project[];
+    const projects = JSON.parse(raw) as Array<
+      Omit<Project, "visibility"> & { visibility?: ProjectVisibility }
+    >;
+    return projects.map((project) => ({
+      ...project,
+      visibility: project.visibility ?? "private",
+    }));
   } catch {
     return [];
   }
@@ -45,6 +54,7 @@ export async function createProject(title: string): Promise<Project> {
     title,
     paths: [],
     ideas: {},
+    visibility: "private",
     createdAt: now,
     updatedAt: now,
   };
@@ -65,6 +75,18 @@ export async function renameProject(id: string, title: string): Promise<void> {
 
 export async function deleteProject(id: string): Promise<void> {
   writeAll(readAll().filter((project) => project.id !== id));
+}
+
+export async function setProjectVisibility(
+  id: string,
+  visibility: ProjectVisibility,
+): Promise<void> {
+  const projects = readAll();
+  const project = projects.find((p) => p.id === id);
+  if (!project) return;
+  project.visibility = visibility;
+  project.updatedAt = new Date().toISOString();
+  writeAll(projects);
 }
 
 export async function saveProjectContent(

@@ -79,6 +79,11 @@
 .editor-link {
   color: var(--primary);
   text-decoration: none;
+  cursor: pointer;
+}
+
+.editor-link:hover {
+  text-decoration: underline;
 }
 
 .editor-image {
