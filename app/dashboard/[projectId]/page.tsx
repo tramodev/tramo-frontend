@@ -59,7 +59,20 @@ import { FolderPlus, Network, Pencil } from 'lucide-react';
 import { Path, Idea } from '../types';
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getProject, renameProject, saveProjectContent, type ProjectVisibility } from '@/lib/projects-store';
+import {
+  getProject,
+  renameProject,
+  createPath,
+  renamePath,
+  deletePath as deletePathRequest,
+  createIdea,
+  renameIdea,
+  attachIdeaToPath,
+  detachIdeaFromPath,
+  linkIdeas as linkIdeasRequest,
+  unlinkIdeas as unlinkIdeasRequest,
+  type ProjectVisibility,
+} from '@/lib/projects-store';
 import { ShareDialog } from '@/components/share-dialog';
 
 const placeholder = 'Enter some rich text...';
@@ -220,11 +233,6 @@ export default function DashboardPage() {
     };
   }, [projectId, router]);
 
-  useEffect(() => {
-    if (!loaded) return;
-    saveProjectContent(projectId, { paths, ideas });
-  }, [loaded, projectId, paths, ideas]);
-
   const selectedIdea = selectedIdeaId ? ideas[selectedIdeaId] : undefined;
 
   const handleSelectIdea = (idea: Idea) => {
@@ -232,22 +240,13 @@ export default function DashboardPage() {
     setView('editor');
   };
 
-  const handleCreatePath = (title: string) => {
-    const newPath: Path = {
-      id: `path-${crypto.randomUUID()}`,
-      title,
-      ideaIds: [],
-    };
+  const handleCreatePath = async (title: string) => {
+    const newPath = await createPath(projectId, title);
     setPaths(prevPaths => [...prevPaths, newPath]);
   };
 
-  const handleCreateIdea = (pathId: string, title: string) => {
-    const newIdea: Idea = {
-      id: `idea-${crypto.randomUUID()}`,
-      title,
-      content: '',
-      linkedIdeaIds: [],
-    };
+  const handleCreateIdea = async (pathId: string, title: string) => {
+    const newIdea = await createIdea(pathId, title);
     setIdeas(prevIdeas => ({ ...prevIdeas, [newIdea.id]: newIdea }));
     setPaths(prevPaths => prevPaths.map(path =>
       path.id === pathId
@@ -258,7 +257,8 @@ export default function DashboardPage() {
   };
 
   // Attaches an idea that already exists (possibly in another path) to another path too.
-  const handleLinkIdeaToPath = (pathId: string, ideaId: string) => {
+  const handleLinkIdeaToPath = async (pathId: string, ideaId: string) => {
+    await attachIdeaToPath(pathId, ideaId);
     setPaths(prevPaths => prevPaths.map(path =>
       path.id === pathId && !path.ideaIds.includes(ideaId)
         ? { ...path, ideaIds: [...path.ideaIds, ideaId] }
@@ -266,8 +266,9 @@ export default function DashboardPage() {
     ));
   };
 
-  // Removes an idea from one path. If that was the idea's last path, the idea is deleted entirely.
-  const handleUnlinkIdeaFromPath = (pathId: string, ideaId: string) => {
+  // Removes an idea from one path. If that was the idea's last path, the backend deletes it entirely.
+  const handleUnlinkIdeaFromPath = async (pathId: string, ideaId: string) => {
+    await detachIdeaFromPath(pathId, ideaId);
     const nextPaths = paths.map(path =>
       path.id === pathId
         ? { ...path, ideaIds: path.ideaIds.filter(id => id !== ideaId) }
@@ -288,13 +289,15 @@ export default function DashboardPage() {
     }
   };
 
-  const handleRenamePath = (pathId: string, title: string) => {
+  const handleRenamePath = async (pathId: string, title: string) => {
+    await renamePath(pathId, title);
     setPaths(prevPaths => prevPaths.map(path =>
       path.id === pathId ? { ...path, title } : path
     ));
   };
 
-  const handleRenameIdea = (ideaId: string, title: string) => {
+  const handleRenameIdea = async (ideaId: string, title: string) => {
+    await renameIdea(ideaId, title);
     setIdeas(prevIdeas => {
       const idea = prevIdeas[ideaId];
       if (!idea) return prevIdeas;
@@ -302,9 +305,11 @@ export default function DashboardPage() {
     });
   };
 
-  const handleDeletePath = (pathId: string) => {
+  const handleDeletePath = async (pathId: string) => {
     const target = paths.find(path => path.id === pathId);
     if (!target) return;
+
+    await deletePathRequest(pathId);
 
     const remainingPaths = paths.filter(path => path.id !== pathId);
     const orphanIds = target.ideaIds.filter(
@@ -325,8 +330,9 @@ export default function DashboardPage() {
   };
 
   // Symmetric idea-to-idea link: linking A to B also links B to A.
-  const handleLinkIdeas = (ideaId: string, otherIdeaId: string) => {
+  const handleLinkIdeas = async (ideaId: string, otherIdeaId: string) => {
     if (ideaId === otherIdeaId) return;
+    await linkIdeasRequest(ideaId, otherIdeaId);
     setIdeas(prevIdeas => {
       const a = prevIdeas[ideaId];
       const b = prevIdeas[otherIdeaId];
@@ -342,7 +348,8 @@ export default function DashboardPage() {
     });
   };
 
-  const handleUnlinkIdeas = (ideaId: string, otherIdeaId: string) => {
+  const handleUnlinkIdeas = async (ideaId: string, otherIdeaId: string) => {
+    await unlinkIdeasRequest(ideaId, otherIdeaId);
     setIdeas(prevIdeas => {
       const a = prevIdeas[ideaId];
       const b = prevIdeas[otherIdeaId];
@@ -355,6 +362,7 @@ export default function DashboardPage() {
     });
   };
 
+  // Content editing is local-only for now; the backend doesn't persist idea content yet.
   const onChange = useCallback((editorState: EditorState) => {
     editorState.read(() => {
       if (!selectedIdeaId) return;
