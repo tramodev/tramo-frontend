@@ -1,4 +1,5 @@
 import { AvatarMenu } from './avatar-menu';
+import { Wordmark } from './logo';
 import { cookies } from 'next/headers';
 
 export async function Navbar() {
@@ -11,8 +12,8 @@ export async function Navbar() {
   return (
     <nav className="border-b-2" style={{ borderColor: 'var(--color-divider)' }}>
       <div className="max-w-[1216px] mx-auto px-[72px] py-3 flex items-center gap-8">
-        <a href="/" className="font-extrabold text-lg mr-auto">
-          MyPath
+        <a href="/" className="mr-auto">
+          <Wordmark />
         </a>
         <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
           Product

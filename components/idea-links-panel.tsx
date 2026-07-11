@@ -59,18 +59,23 @@ export function IdeaLinksPanel({
   };
 
   return (
-    <Card className="gap-3 py-4">
-      <CardContent className="flex flex-col gap-3 px-4">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">Paths</span>
+    <Card className="gap-0 border-b-0 py-5 px-6">
+      <CardContent className="flex flex-col gap-3.5 p-0">
+        <div className="flex flex-wrap items-center gap-3">
+          <span
+            className="w-24 shrink-0 text-[11px] font-bold uppercase"
+            style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+          >
+            Paths
+          </span>
           {memberPaths.map((path) => (
-            <Badge key={path.id} variant="secondary" className="gap-1 pr-1">
+            <Badge key={path.id} variant="secondary" className="tag tag-neutral gap-1 pr-1">
               {path.title}
               {memberPaths.length > 1 && (
                 <button
                   type="button"
                   aria-label={`Remove ${idea.title} from ${path.title}`}
-                  className="rounded-full hover:bg-secondary-foreground/10 cursor-pointer"
+                  className="hover:opacity-70 cursor-pointer"
                   onClick={() => onUnlinkPath(path.id, idea.id)}
                 >
                   <X className="h-3 w-3" />
@@ -107,7 +112,7 @@ export function IdeaLinksPanel({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 gap-1 rounded-full px-2 text-xs"
+                className="tag tag-outline h-6 gap-1 px-2 text-xs"
                 onClick={() => setIsAddingPath(true)}
               >
                 <Plus className="h-3 w-3" />
@@ -117,25 +122,32 @@ export function IdeaLinksPanel({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground w-20 shrink-0">Linked ideas</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span
+            className="w-24 shrink-0 text-[11px] font-bold uppercase"
+            style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+          >
+            Linked ideas
+          </span>
           {linkedIdeas.length === 0 && !isAddingIdea && (
-            <span className="text-xs text-muted-foreground italic">None yet</span>
+            <span className="text-xs italic" style={{ color: "var(--color-neutral-600)" }}>
+              None yet
+            </span>
           )}
           {linkedIdeas.map((linked) => (
-            <Badge key={linked.id} variant="outline" className="gap-1 pr-1">
+            <Badge key={linked.id} variant="outline" className="tag tag-accent gap-1 pr-1">
               <button
                 type="button"
                 className="flex items-center gap-1 cursor-pointer"
                 onClick={() => onSelectIdea(linked)}
               >
-                <Link2 className="h-3 w-3 text-accent" />
+                <Link2 className="h-3 w-3" />
                 {linked.title}
               </button>
               <button
                 type="button"
                 aria-label={`Unlink ${linked.title}`}
-                className="rounded-full hover:bg-accent/20 cursor-pointer"
+                className="hover:opacity-70 cursor-pointer"
                 onClick={() => onUnlinkIdea(idea.id, linked.id)}
               >
                 <X className="h-3 w-3" />
@@ -171,7 +183,7 @@ export function IdeaLinksPanel({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 gap-1 rounded-full px-2 text-xs"
+                className="tag tag-outline h-6 gap-1 px-2 text-xs"
                 onClick={() => setIsAddingIdea(true)}
               >
                 <Plus className="h-3 w-3" />

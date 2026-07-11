@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useTheme } from 'next-themes';
-import { Avatar, AvatarFallback } from './ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,10 +27,8 @@ export function AvatarMenu({ username }: { username: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring">
-          <Avatar>
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+        <button className="avatar-chip outline-none" aria-label="Account menu">
+          {initials}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

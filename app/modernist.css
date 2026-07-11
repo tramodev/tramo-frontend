@@ -1,0 +1,304 @@
+/* Modernist design system — scoped to .modernist so it never leaks outside the
+   routes that opt in. Shared by the landing page (app/landing.css) and the
+   app screens (projects, dashboard, login, signup). */
+.modernist {
+  --color-bg: #f3f2f2;
+  --color-text: #201e1d;
+  --color-accent: #4338ca;
+  --color-accent-600: color-mix(in oklch, #4338ca 82%, black);
+  --color-accent-700: color-mix(in oklch, #4338ca 62%, black);
+  --color-accent-100: color-mix(in oklch, #4338ca 12%, white);
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
+
+  --font-heading: "Archivo", system-ui, sans-serif;
+
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Dark ramp — invented for these views (the handoff only specifies light).
+   Ground/ink inverted, same ramp-generation logic as light. next-themes puts
+   .dark on <html>, an ancestor of any .modernist wrapper, so this cascades. */
+.dark .modernist {
+  --color-bg: #201e1d;
+  --color-text: #f3f2f2;
+  --color-accent: #6d64e6;
+  --color-accent-600: color-mix(in oklch, #6d64e6 88%, white);
+  --color-accent-700: color-mix(in oklch, #6d64e6 75%, white);
+  --color-accent-100: color-mix(in oklch, #6d64e6 18%, #201e1d);
+  --color-divider: color-mix(in srgb, #f3f2f2 25%, transparent);
+
+  --color-neutral-100: #2d2b2b;
+  --color-neutral-200: #383535;
+  --color-neutral-300: #444141;
+  --color-neutral-400: #605d5d;
+  --color-neutral-500: #7d7979;
+  --color-neutral-600: #9b9797;
+  --color-neutral-700: #bab6b6;
+  --color-neutral-800: #d7d3d3;
+  --color-neutral-900: #eae7e7;
+}
+
+.modernist a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.modernist :focus {
+  outline: none;
+}
+
+.modernist :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.modernist .hr {
+  height: 2px;
+  border: 0;
+  background: var(--color-divider);
+}
+
+.modernist .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.2;
+  padding: 10px 20px;
+  border-radius: 0;
+  border: 2px solid transparent;
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+}
+
+.modernist .btn-primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+.modernist .btn-primary:hover {
+  background: var(--color-accent-600);
+}
+
+.modernist .btn-ghost {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+.modernist .btn-ghost:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.modernist .btn-ghost-plain {
+  background: transparent;
+  color: var(--color-accent);
+  border-color: transparent;
+  padding-inline: 4px;
+}
+.modernist .btn-ghost-plain:hover {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.modernist .btn-secondary {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-divider);
+}
+.modernist .btn-secondary:hover {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   shadcn/ui bridge — app screens (projects, dashboard, login, signup)
+   reuse shadcn primitives (Button, Input, Card, Badge, Dialog, Switch,
+   DropdownMenu, Sidebar, Tooltip). Those primitives read color/radius
+   through globals.css's `@theme inline` var indirection, the same
+   mechanism the app's existing .dark theme already relies on — so
+   remapping the underlying tokens here restyles every primitive without
+   touching their component code. A few primitives hardcode radius/shadow
+   utility classes instead of reading --radius, so those get a matching
+   data-slot override below. Unlayered rules like these always win over
+   Tailwind's @layer utilities regardless of source order, so none of
+   this needs !important.
+   ══════════════════════════════════════════════════════════════════════ */
+.modernist {
+  --radius: 0px;
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-bg);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-bg);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-accent);
+  --primary-foreground: var(--color-bg);
+  --secondary: var(--color-neutral-300);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-neutral-200);
+  --muted-foreground: var(--color-neutral-700);
+  --accent: var(--color-accent-100);
+  --accent-foreground: var(--color-accent-700);
+  --destructive: var(--color-accent-700);
+  --destructive-foreground: var(--color-bg);
+  --border: var(--color-divider);
+  --input: var(--color-divider);
+  --ring: var(--color-accent);
+
+  --sidebar: var(--color-bg);
+  --sidebar-foreground: var(--color-text);
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: var(--color-bg);
+  --sidebar-accent: var(--color-accent-100);
+  --sidebar-accent-foreground: var(--color-accent-700);
+  --sidebar-border: var(--color-divider);
+  --sidebar-ring: var(--color-accent);
+}
+
+.modernist [data-slot="button"] {
+  border-radius: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+}
+.modernist [data-slot="button"][data-variant="outline"] {
+  border-width: 2px;
+  box-shadow: none;
+  background: transparent;
+}
+.modernist [data-slot="button"][data-variant="secondary"] {
+  box-shadow: none;
+}
+.modernist [data-slot="button"][data-variant="ghost"]:hover {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.modernist [data-slot="input"] {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: none;
+}
+
+.modernist [data-slot="card"] {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: none;
+}
+
+.modernist [data-slot="badge"] {
+  border-radius: 0;
+}
+
+.modernist [data-slot="dialog-content"] {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: none;
+}
+
+.modernist [data-slot="switch"] {
+  border-radius: 0;
+}
+.modernist [data-slot="switch-thumb"] {
+  border-radius: 0;
+}
+
+.modernist [data-slot="dropdown-menu-content"] {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: none;
+}
+.modernist [data-slot="dropdown-menu-separator"] {
+  background: var(--color-divider);
+}
+.modernist [data-slot="dropdown-menu-item"] {
+  border-radius: 0;
+}
+
+.modernist [data-slot="tooltip-content"] {
+  border-radius: 0;
+}
+
+.modernist [data-slot="separator"] {
+  background: var(--color-divider);
+  height: 2px;
+}
+
+.modernist [data-slot="field-label"] {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.modernist [data-slot="sidebar-container"] {
+  border-width: 2px;
+}
+.modernist [data-slot="sidebar-menu-button"],
+.modernist [data-slot="sidebar-menu-sub-button"] {
+  border-radius: 0;
+}
+.modernist [data-slot="sidebar-menu-sub-button"][data-active="true"] {
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Component classes for the app screens (projects, dashboard, login)
+   ══════════════════════════════════════════════════════════════════════ */
+.modernist .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 0;
+}
+.modernist .tag-neutral {
+  background: var(--color-neutral-300);
+  color: var(--color-text);
+}
+.modernist .tag-accent {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+}
+.modernist .tag-outline {
+  background: transparent;
+  border: 2px solid var(--color-neutral-400);
+  color: var(--color-text);
+}
+.modernist .tag-outline:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-700);
+}
+
+.modernist .avatar-chip {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 13px;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.modernist .kicker {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent-700);
+}

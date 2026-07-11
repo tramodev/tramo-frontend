@@ -45,7 +45,7 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange }: Share
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="secondary" size="sm" className="rounded-none">
           <Share2 className="h-4 w-4" />
           Share
         </Button>
@@ -58,7 +58,7 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange }: Share
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center justify-between rounded-lg border border-border p-3">
+        <div className="flex items-center justify-between rounded-lg border-2 border-border p-3">
           <div className="flex items-center gap-3">
             {isPublic ? (
               <Globe className="h-4 w-4 text-muted-foreground" />

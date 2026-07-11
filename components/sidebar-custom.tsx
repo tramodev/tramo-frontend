@@ -1,4 +1,4 @@
-import { ChevronRight, FileText, Folder, Link2, Plus, Trash2 } from "lucide-react"
+import { ChevronRight, Link2, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
 
@@ -145,7 +145,7 @@ export function SidebarCustom({
 
   return (
     <Sidebar>
-      <SidebarHeader>
+      <SidebarHeader style={{ borderBottom: "2px solid var(--color-divider)" }}>
         <Link href="/projects" className="flex items-center px-2 py-1" title="Back to projects">
           <Wordmark />
         </Link>
@@ -153,7 +153,12 @@ export function SidebarCustom({
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
-            <span>My Paths</span>
+            <span
+              className="text-[11px] font-bold uppercase"
+              style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+            >
+              My Paths
+            </span>
             <Button
               variant="ghost"
               size="icon"
@@ -213,10 +218,9 @@ export function SidebarCustom({
                         ) : (
                           <>
                             <CollapsibleTrigger asChild>
-                              <SidebarMenuButton onDoubleClick={() => startEditPath(path)}>
-                                <Folder />
+                              <SidebarMenuButton onDoubleClick={() => startEditPath(path)} className="font-semibold">
+                                <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
                                 <span>{path.title}</span>
-                                <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
                               </SidebarMenuButton>
                             </CollapsibleTrigger>
                             <Button
@@ -315,12 +319,22 @@ export function SidebarCustom({
                                       onClick={() => onSelectIdea(idea)}
                                       onDoubleClick={() => startEditIdea(idea)}
                                     >
-                                      <FileText className="mr-2" />
+                                      <span
+                                        className="h-2 w-2 shrink-0"
+                                        style={
+                                          selectedIdeaId === idea.id
+                                            ? { background: "var(--color-accent)" }
+                                            : { border: "1.5px solid var(--color-neutral-600)", boxSizing: "border-box" }
+                                        }
+                                      />
                                       <span className="truncate">{idea.title}</span>
                                       {isShared && (
                                         <Tooltip>
                                           <TooltipTrigger asChild>
-                                            <Link2 className="ml-1 h-3 w-3 shrink-0 text-accent" />
+                                            <Link2
+                                              className="ml-1 h-3 w-3 shrink-0"
+                                              style={{ color: "var(--color-accent)" }}
+                                            />
                                           </TooltipTrigger>
                                           <TooltipContent>
                                             Also in: {memberPaths

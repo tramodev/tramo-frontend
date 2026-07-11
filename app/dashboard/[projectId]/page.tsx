@@ -400,7 +400,10 @@ export default function DashboardPage() {
         onUnlinkIdeaFromPath={handleUnlinkIdeaFromPath}
       />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <header
+          className="flex h-16 shrink-0 items-center gap-4 px-8"
+          style={{ borderBottom: "2px solid var(--color-divider)" }}
+        >
           <SidebarTrigger />
           {isEditingTitle ? (
             <Input
@@ -416,14 +419,14 @@ export default function DashboardPage() {
             />
           ) : (
             <span
-              className="text-sm font-medium"
+              className="text-[15px] font-bold"
               onDoubleClick={startEditTitle}
               title="Double-click to rename"
             >
               {projectTitle}
             </span>
           )}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
             <Button
               variant={view === 'graph' ? 'secondary' : 'outline'}
               size="sm"
@@ -449,11 +452,16 @@ export default function DashboardPage() {
             <UserMenu />
           </div>
         </header>
-        <div className={view === 'graph' ? 'flex-1 overflow-hidden p-4' : 'flex-1 overflow-auto p-4'}>
+        <div className={view === 'graph' ? 'flex-1 overflow-hidden p-4' : 'flex-1 overflow-auto px-2 py-2'}>
           {view === 'graph' ? (
-            <KnowledgeGraph paths={paths} ideas={ideas} onSelectIdea={handleSelectIdea} />
+            <KnowledgeGraph
+              paths={paths}
+              ideas={ideas}
+              selectedIdeaId={selectedIdeaId}
+              onSelectIdea={handleSelectIdea}
+            />
           ) : selectedIdea ? (
-            <div className="mx-auto max-w-[1225px] space-y-4">
+            <div className="mx-auto flex min-h-full flex-col" >
               <IdeaLinksPanel
                 idea={selectedIdea}
                 ideas={ideas}
@@ -465,7 +473,7 @@ export default function DashboardPage() {
                 onUnlinkPath={handleUnlinkIdeaFromPath}
               />
               <LexicalComposer initialConfig={editorConfig}>
-                <div className="editor-container">
+                <div className="editor-container flex flex-1 flex-col">
                   <ToolbarPlugin />
                   <div className="editor-inner">
                     <RichTextPlugin

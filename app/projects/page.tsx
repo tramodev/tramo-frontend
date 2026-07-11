@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { FilePlus2, FolderKanban, Trash2 } from "lucide-react"
+import { Plus, FolderKanban, Trash2 } from "lucide-react"
 
+import { archivo } from "@/lib/fonts"
+import "../modernist.css"
 import { Wordmark } from "@/components/logo"
 import { UserMenu } from "@/components/user-menu"
 import { Button } from "@/components/ui/button"
@@ -70,50 +72,74 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header className="flex items-center gap-3 border-b border-border px-6 py-4">
+    <div className={`modernist min-h-svh ${archivo.className}`}>
+      <header
+        className="flex items-center gap-4"
+        style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
+      >
         <Wordmark />
-        <span className="text-sm text-muted-foreground">Projects</span>
+        <span
+          className="text-[13px] uppercase"
+          style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
+        >
+          Projects
+        </span>
         <div className="ml-auto">
           <UserMenu />
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl font-medium">Start a new project</h1>
-        </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <main className="mx-auto" style={{ maxWidth: 1216, padding: "56px 72px 84px" }}>
+        <h1 className="text-[32px]" style={{ marginBottom: 28 }}>
+          Start a new project
+        </h1>
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           <button
             onClick={handleCreateProject}
-            className="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            className="group flex aspect-[3/4] flex-col items-start justify-end gap-2 p-5 transition-colors"
+            style={{
+              background: "var(--color-bg)",
+              border: "2px dashed var(--color-neutral-500)",
+              color: "var(--color-neutral-700)",
+            }}
           >
-            <FilePlus2 className="h-8 w-8" />
-            <span className="text-sm font-medium">Blank project</span>
+            <Plus
+              className="h-7 w-7 transition-colors group-hover:text-[var(--color-accent-700)]"
+              style={{ strokeWidth: 2 }}
+            />
+            <span className="text-sm font-semibold transition-colors group-hover:text-[var(--color-accent-700)]">
+              Blank project
+            </span>
           </button>
         </div>
 
-        <div className="mt-10">
-          <h2 className="mb-4 text-sm font-medium text-muted-foreground">
-            Recent projects
-          </h2>
+        <div className="mt-[70px]">
+          <span className="kicker mb-5">Recent projects</span>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
+            <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>
+              Loading...
+            </p>
           ) : projects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>
               No projects yet. Create a blank project to get started.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {projects.map((project) => (
                 <Card
                   key={project.id}
-                  className="group/card cursor-pointer gap-3 py-4 transition-colors hover:border-primary"
+                  className="group/card cursor-pointer gap-0 p-0 transition-colors hover:border-[var(--color-accent)]"
                   onClick={() => router.push(`/dashboard/${project.id}`)}
                 >
-                  <CardContent className="flex aspect-[4/3] items-center justify-center px-4">
-                    <FolderKanban className="h-10 w-10 text-muted-foreground" />
+                  <CardContent
+                    className="flex aspect-[4/3] items-center justify-center p-0"
+                    style={{ borderBottom: "2px solid var(--color-divider)" }}
+                  >
+                    <FolderKanban
+                      className="h-9 w-9"
+                      style={{ color: "var(--color-neutral-600)", strokeWidth: 1.5 }}
+                    />
                   </CardContent>
-                  <CardHeader className="gap-1 px-4">
+                  <CardHeader className="gap-0 p-0" style={{ padding: "14px 16px" }}>
                     <div className="flex items-center justify-between gap-2">
                       {editingId === project.id ? (
                         <Input
@@ -130,7 +156,7 @@ export default function ProjectsPage() {
                         />
                       ) : (
                         <CardTitle
-                          className="truncate text-sm font-medium"
+                          className="truncate text-sm font-bold"
                           onDoubleClick={(e) => {
                             e.stopPropagation()
                             startRename(project)
@@ -142,16 +168,19 @@ export default function ProjectsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 shrink-0 opacity-0 group-hover/card:opacity-100"
+                        className="h-8 w-8 shrink-0 opacity-0 group-hover/card:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation()
                           handleDelete(project)
                         }}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p
+                      className="text-xs tabular-nums"
+                      style={{ marginTop: 6, color: "var(--color-neutral-700)" }}
+                    >
                       Edited {formatUpdatedAt(project.updatedAt)}
                     </p>
                   </CardHeader>

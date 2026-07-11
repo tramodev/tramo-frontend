@@ -6,136 +6,141 @@
  *
  */
 
-.editor-container {
-  margin: 0 auto;
-  border-radius: 2px;
-  max-width: 1225px;
-  color: var(--foreground);
+.modernist .editor-container {
+  margin: 0;
+  max-width: none;
+  color: var(--color-text);
   position: relative;
   line-height: 20px;
   font-weight: 400;
   text-align: left;
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
 }
 
-.editor-inner {
-  background: var(--card);
+.modernist .editor-inner {
+  background: var(--color-bg);
   position: relative;
+  border: 2px solid var(--color-divider);
+  border-top: 0;
+  padding: 10px 10px;
+  min-height: 420px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-.editor-input {
-  min-height: 500px;
+.modernist .editor-input {
+  flex: 1;
   resize: none;
-  font-size: 15px;
+  font-size: 15.5px;
+  line-height: 28px;
   position: relative;
   tab-size: 1;
   outline: 0;
-  padding: 15px 10px;
-  caret-color: var(--foreground);
+  padding: 0;
+  caret-color: var(--color-accent);
 }
 
-.editor-placeholder {
-  color: var(--muted-foreground);
+.modernist .editor-placeholder {
+  color: var(--color-neutral-600);
   overflow: hidden;
   position: absolute;
   text-overflow: ellipsis;
-  top: 15px;
-  left: 10px;
-  font-size: 15px;
+  top: 0;
+  left: 0;
+  font-size: 15.5px;
+  line-height: 28px;
   user-select: none;
+  padding: 10px 10px;
   display: inline-block;
   pointer-events: none;
 }
 
-.editor-text-bold {
+.modernist .editor-text-bold {
   font-weight: bold;
 }
 
-.editor-text-italic {
+.modernist .editor-text-italic {
   font-style: italic;
 }
 
-.editor-text-underline {
+.modernist .editor-text-underline {
   text-decoration: underline;
 }
 
-.editor-text-strikethrough {
+.modernist .editor-text-strikethrough {
   text-decoration: line-through;
 }
 
-.editor-text-underlineStrikethrough {
+.modernist .editor-text-underlineStrikethrough {
   text-decoration: underline line-through;
 }
 
-.editor-text-code {
-  background-color: var(--muted);
-  color: var(--foreground);
+.modernist .editor-text-code {
+  background-color: var(--color-neutral-200);
+  color: var(--color-text);
   padding: 1px 0.25rem;
   font-family: Menlo, Consolas, Monaco, monospace;
   font-size: 94%;
 }
 
-.editor-link {
-  color: var(--primary);
+.modernist .editor-link {
+  color: var(--color-accent-700);
   text-decoration: none;
   cursor: pointer;
 }
 
-.editor-link:hover {
+.modernist .editor-link:hover {
   text-decoration: underline;
 }
 
-.editor-image {
+.modernist .editor-image {
   display: inline-block;
 }
 
-.editor-image-wrapper {
+.modernist .editor-image-wrapper {
   display: inline-block;
   position: relative;
   max-width: 100%;
 }
 
-.editor-image-wrapper img {
+.modernist .editor-image-wrapper img {
   max-width: 100%;
   display: block;
 }
 
-.editor-image-wrapper.selected img {
-  outline: 2px solid var(--primary);
+.modernist .editor-image-wrapper.selected img {
+  outline: 2px solid var(--color-accent);
 }
 
-.editor-image-resizer {
+.modernist .editor-image-resizer {
   position: absolute;
   right: -4px;
   bottom: -4px;
   width: 12px;
   height: 12px;
-  background: var(--primary);
-  border: 1px solid var(--background);
-  border-radius: 2px;
+  background: var(--color-accent);
+  border: 1px solid var(--color-bg);
+  border-radius: 0;
   cursor: nwse-resize;
 }
 
-.tree-view-output {
+.modernist .tree-view-output {
   display: block;
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--color-text);
+  color: var(--color-bg);
   padding: 5px;
   font-size: 12px;
   white-space: pre-wrap;
-  margin: 1px auto 10px auto;
+  margin: 1px 0 10px;
   max-height: 250px;
   position: relative;
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
   overflow: auto;
   line-height: 14px;
 }
 
-.editor-code {
-  background-color: var(--muted);
-  color: var(--foreground);
+.modernist .editor-code {
+  background-color: var(--color-neutral-200);
+  color: var(--color-text);
   font-family: Menlo, Consolas, Monaco, monospace;
   display: block;
   padding: 8px 8px 8px 52px;
@@ -149,21 +154,21 @@
   position: relative;
 }
 
-.editor-code:before {
+.modernist .editor-code:before {
   content: attr(data-gutter);
   position: absolute;
-  background-color: var(--muted);
+  background-color: var(--color-neutral-200);
   left: 0;
   top: 0;
-  border-right: 1px solid var(--border);
+  border-right: 2px solid var(--color-divider);
   padding: 8px;
-  color: var(--muted-foreground);
+  color: var(--color-neutral-600);
   white-space: pre-wrap;
   text-align: right;
   min-width: 25px;
 }
 
-.editor-code:after {
+.modernist .editor-code:after {
   content: attr(data-highlight-language);
   top: 0;
   right: 3px;
@@ -171,136 +176,124 @@
   font-size: 10px;
   text-transform: uppercase;
   position: absolute;
-  color: var(--muted-foreground);
+  color: var(--color-neutral-600);
 }
 
-.editor-tokenComment {
-  color: var(--muted-foreground);
+.modernist .editor-tokenComment {
+  color: var(--color-neutral-600);
 }
 
-.editor-tokenPunctuation {
-  color: var(--muted-foreground);
+.modernist .editor-tokenPunctuation {
+  color: var(--color-neutral-600);
 }
 
-.editor-tokenProperty {
-  color: var(--chart-5);
+.modernist .editor-tokenProperty,
+.modernist .editor-tokenSelector,
+.modernist .editor-tokenOperator,
+.modernist .editor-tokenAttr,
+.modernist .editor-tokenVariable,
+.modernist .editor-tokenFunction {
+  color: var(--color-accent-700);
 }
 
-.editor-tokenSelector {
-  color: var(--chart-3);
-}
-
-.editor-tokenOperator {
-  color: var(--chart-4);
-}
-
-.editor-tokenAttr {
-  color: var(--chart-1);
-}
-
-.editor-tokenVariable {
-  color: var(--chart-4);
-}
-
-.editor-tokenFunction {
-  color: var(--chart-2);
-}
-
-.editor-paragraph {
+.modernist .editor-paragraph {
   margin: 0;
-  margin-bottom: 8px;
   position: relative;
 }
 
-.editor-paragraph:last-child {
+.modernist .editor-paragraph:last-child {
   margin-bottom: 0;
 }
 
-.editor-heading-h1 {
-  font-size: 24px;
-  color: var(--foreground);
-  font-weight: 400;
+.modernist .editor-heading-h1 {
+  font-family: var(--font-heading);
+  font-size: 34px;
+  letter-spacing: -0.015em;
+  color: var(--color-text);
+  font-weight: 800;
   margin: 0;
   margin-bottom: 12px;
   padding: 0;
 }
 
-.editor-heading-h2 {
+.modernist .editor-heading-h2 {
+  font-family: var(--font-heading);
   font-size: 15px;
-  color: var(--muted-foreground);
+  color: var(--color-neutral-700);
   font-weight: 700;
   margin: 0;
   margin-top: 10px;
   padding: 0;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-.editor-quote {
+.modernist .editor-quote {
   margin: 0;
   margin-left: 20px;
-  font-size: 15px;
-  color: var(--muted-foreground);
-  border-left-color: var(--border);
-  border-left-width: 4px;
+  font-size: 15.5px;
+  color: var(--color-neutral-700);
+  border-left-color: var(--color-divider);
+  border-left-width: 2px;
   border-left-style: solid;
   padding-left: 16px;
 }
 
-.editor-list-ol {
+.modernist .editor-list-ol {
   padding: 0;
   margin: 0;
   margin-left: 16px;
 }
 
-.editor-list-ul {
+.modernist .editor-list-ul {
   padding: 0;
   margin: 0;
   margin-left: 16px;
 }
 
-.editor-listitem {
+.modernist .editor-listitem {
   margin: 8px 32px 8px 32px;
 }
 
-.editor-nested-listitem {
+.modernist .editor-nested-listitem {
   list-style-type: none;
 }
 
-pre::-webkit-scrollbar {
+.modernist pre::-webkit-scrollbar {
   background: transparent;
   width: 10px;
 }
 
-pre::-webkit-scrollbar-thumb {
-  background: var(--muted-foreground);
+.modernist pre::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-600);
 }
 
-.debug-timetravel-panel {
+.modernist .debug-timetravel-panel {
   overflow: hidden;
   padding: 0 0 10px 0;
   margin: auto;
   display: flex;
 }
 
-.debug-timetravel-panel-slider {
+.modernist .debug-timetravel-panel-slider {
   padding: 0;
   flex: 8;
 }
 
-.debug-timetravel-panel-button {
+.modernist .debug-timetravel-panel-button {
   padding: 0;
   border: 0;
   background: none;
   flex: 1;
-  color: var(--foreground);
+  color: var(--color-text);
   font-size: 12px;
 }
 
-.debug-timetravel-panel-button:hover {
+.modernist .debug-timetravel-panel-button:hover {
   text-decoration: underline;
 }
 
-.debug-timetravel-button {
+.modernist .debug-timetravel-button {
   border: 0;
   padding: 0;
   font-size: 12px;
@@ -308,141 +301,122 @@ pre::-webkit-scrollbar-thumb {
   right: 15px;
   position: absolute;
   background: none;
-  color: var(--foreground);
+  color: var(--color-text);
 }
 
-.debug-timetravel-button:hover {
+.modernist .debug-timetravel-button:hover {
   text-decoration: underline;
 }
 
-.toolbar {
+/* — toolbar — */
+.modernist .toolbar {
   display: flex;
+  align-items: center;
   gap: 4px;
-  margin-bottom: 1px;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  padding: 8px;
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-  vertical-align: middle;
+  margin-bottom: 0;
+  background: var(--color-bg);
+  border: 2px solid var(--color-divider);
+  border-top: 0;
+  padding: 8px 12px;
   flex-wrap: wrap;
 }
 
-.toolbar button.toolbar-item {
+.modernist .toolbar button.toolbar-item {
   border: 0;
   display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
-  border-radius: 10px;
-  padding: 8px;
+  border-radius: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   cursor: pointer;
-  vertical-align: middle;
-  color: var(--foreground);
+  color: var(--color-text);
 }
 
-.toolbar button.toolbar-item:disabled {
+.modernist .toolbar button.toolbar-item:disabled {
   cursor: not-allowed;
+  opacity: 0.4;
 }
 
-.toolbar button.toolbar-item.spaced {
+.modernist .toolbar button.toolbar-item.spaced {
   margin-right: 2px;
 }
 
-.toolbar button.toolbar-item i.format {
-  background-size: contain;
-  display: inline-block;
-  height: 18px;
-  width: 18px;
-  margin-top: 2px;
-  vertical-align: -0.25em;
-  display: flex;
-  opacity: 0.7;
+.modernist .toolbar button.toolbar-item.active {
+  background-color: var(--color-neutral-300);
+  color: var(--color-text);
 }
 
-.dark .toolbar button.toolbar-item i.format {
-  filter: invert(1);
+.modernist .toolbar .toolbar-item:hover:not([disabled]) {
+  background-color: var(--color-neutral-200);
 }
 
-.dark .toolbar button.toolbar-item.active i.format {
-  filter: none;
+.modernist .toolbar .divider {
+  width: 2px;
+  height: 20px;
+  background-color: var(--color-divider);
+  margin: 0 6px;
 }
 
-.toolbar button.toolbar-item:disabled i.format {
-  opacity: 0.2;
-}
-
-.toolbar button.toolbar-item.active {
-  background-color: var(--accent);
-  color: var(--accent-foreground);
-}
-
-.toolbar button.toolbar-item.active i {
-  opacity: 1;
-}
-
-.toolbar .toolbar-item:hover:not([disabled]) {
-  background-color: var(--muted);
-}
-
-.toolbar .divider {
-  width: 1px;
-  background-color: var(--border);
-  margin: 0 4px;
-}
-
-.toolbar .font-family-select {
+.modernist .toolbar .font-family-select {
   background: none;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--foreground);
-  font-size: 14px;
+  border: 2px solid var(--color-divider);
+  border-radius: 0;
+  color: var(--color-text);
+  font-size: 13px;
   padding: 4px 6px;
   margin-right: 4px;
   max-width: 140px;
+  height: 32px;
   cursor: pointer;
 }
 
-.toolbar .font-family-select option {
-  color: var(--foreground);
-  background: var(--card);
+.modernist .toolbar .font-family-select option {
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 
-.toolbar .font-size-control {
+.modernist .toolbar .font-size-control {
   display: flex;
   align-items: center;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 2px solid var(--color-divider);
+  border-radius: 0;
+  height: 32px;
   margin-right: 4px;
   overflow: hidden;
 }
 
-.toolbar .font-size-control button.toolbar-item {
+.modernist .toolbar .font-size-control button.toolbar-item {
+  width: 20px;
+  height: 100%;
   padding: 4px;
   border-radius: 0;
 }
 
-.toolbar .font-size-input {
+.modernist .toolbar .font-size-input {
   width: 32px;
   border: 0;
   background: none;
-  color: var(--foreground);
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: 13px;
   text-align: center;
   -moz-appearance: textfield;
 }
 
-.toolbar .font-size-input::-webkit-outer-spin-button,
-.toolbar .font-size-input::-webkit-inner-spin-button {
+.modernist .toolbar .font-size-input::-webkit-outer-spin-button,
+.modernist .toolbar .font-size-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.toolbar .toolbar-item .text {
+.modernist .toolbar .toolbar-item .text {
   display: flex;
   line-height: 20px;
-  width: 200px;
   vertical-align: middle;
-  font-size: 14px;
-  color: var(--muted-foreground);
+  font-size: 13px;
+  color: var(--color-neutral-700);
   text-overflow: ellipsis;
   width: 70px;
   overflow: hidden;
@@ -450,7 +424,7 @@ pre::-webkit-scrollbar-thumb {
   text-align: left;
 }
 
-.toolbar .toolbar-item .icon {
+.modernist .toolbar .toolbar-item .icon {
   display: flex;
   width: 20px;
   height: 20px;
@@ -458,44 +432,4 @@ pre::-webkit-scrollbar-thumb {
   margin-right: 8px;
   line-height: 16px;
   background-size: contain;
-}
-
-i.undo {
-  background-image: url(/icons/arrow-counterclockwise.svg);
-}
-
-i.redo {
-  background-image: url(/icons/arrow-clockwise.svg);
-}
-
-i.bold {
-  background-image: url(/icons/type-bold.svg);
-}
-
-i.italic {
-  background-image: url(/icons/type-italic.svg);
-}
-
-i.underline {
-  background-image: url(/icons/type-underline.svg);
-}
-
-i.strikethrough {
-  background-image: url(/icons/type-strikethrough.svg);
-}
-
-i.left-align {
-  background-image: url(/icons/text-left.svg);
-}
-
-i.center-align {
-  background-image: url(/icons/text-center.svg);
-}
-
-i.right-align {
-  background-image: url(/icons/text-right.svg);
-}
-
-i.justify-align {
-  background-image: url(/icons/justify.svg);
 }
