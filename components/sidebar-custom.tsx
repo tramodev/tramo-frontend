@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Wordmark } from "@/components/logo"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Path, Idea } from "@/app/dashboard/types"
 
 interface SidebarCustomProps {
@@ -61,6 +62,12 @@ export function SidebarCustom({
   const [editingPathTitle, setEditingPathTitle] = useState("");
   const [editingIdeaId, setEditingIdeaId] = useState<string | null>(null);
   const [editingIdeaTitle, setEditingIdeaTitle] = useState("");
+
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const pathsForIdea = (ideaId: string) => paths.filter(path => path.ideaIds.includes(ideaId));
 
@@ -127,20 +134,25 @@ export function SidebarCustom({
   };
 
   const confirmDeletePath = (path: Path) => {
-    if (window.confirm(`Delete path "${path.title}" and any ideas that only belong to it? This can't be undone.`)) {
-      onDeletePath(path.id);
-    }
+    setPendingConfirm({
+      title: `Delete path "${path.title}"?`,
+      description: "Any ideas that only belong to it will be deleted too. This can't be undone.",
+      onConfirm: () => onDeletePath(path.id),
+    });
   };
 
   const confirmUnlinkIdea = (path: Path, idea: Idea) => {
     const memberPaths = pathsForIdea(idea.id);
     const isLastPath = memberPaths.length <= 1;
-    const message = isLastPath
-      ? `Delete idea "${idea.title}"? This can't be undone.`
-      : `Remove idea "${idea.title}" from path "${path.title}"? It will remain in ${memberPaths.length - 1} other path(s).`;
-    if (window.confirm(message)) {
-      onUnlinkIdeaFromPath(path.id, idea.id);
-    }
+    setPendingConfirm({
+      title: isLastPath
+        ? `Delete idea "${idea.title}"?`
+        : `Remove idea "${idea.title}" from path "${path.title}"?`,
+      description: isLastPath
+        ? "This can't be undone."
+        : `It will remain in ${memberPaths.length - 1} other path(s).`,
+      onConfirm: () => onUnlinkIdeaFromPath(path.id, idea.id),
+    });
   };
 
   return (
@@ -387,6 +399,18 @@ export function SidebarCustom({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <ConfirmDialog
+        open={pendingConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingConfirm(null);
+        }}
+        title={pendingConfirm?.title ?? ""}
+        description={pendingConfirm?.description ?? ""}
+        onConfirm={() => {
+          pendingConfirm?.onConfirm();
+          setPendingConfirm(null);
+        }}
+      />
     </Sidebar>
   );
 }

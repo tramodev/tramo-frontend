@@ -141,7 +141,7 @@ export default function ToolbarPlugin() {
         setSelectedElementKey(elementKey);
         if ($isListNode(element)) {
           const parentList = $getNearestNodeOfType<ListNode>(anchorNode, ListNode);
-          const type = parentList ? parentList.getTag() : element.getTag();
+          const type = parentList ? parentList.getListType() : element.getListType();
           setBlockType(type);
         } else {
           const type = $isHeadingNode(element)
@@ -266,19 +266,21 @@ export default function ToolbarPlugin() {
   };
 
   const formatHeading = (headingSize: HeadingTagType) => {
-    if (blockType !== headingSize) {
-      editor.update(() => {
-        const selection = $getSelection();
+    editor.update(() => {
+      const selection = $getSelection();
 
-        if ($isRangeSelection(selection)) {
+      if ($isRangeSelection(selection)) {
+        if (blockType === headingSize) {
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
           $setBlocksType(selection, () => $createHeadingNode(headingSize));
         }
-      });
-    }
+      }
+    });
   };
 
   const formatBulletList = () => {
-    if (blockType !== 'ul') {
+    if (blockType !== 'bullet') {
       editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
     } else {
       formatParagraph();
@@ -286,7 +288,7 @@ export default function ToolbarPlugin() {
   };
 
   const formatNumberedList = () => {
-    if (blockType !== 'ol') {
+    if (blockType !== 'number') {
       editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
     } else {
       formatParagraph();
@@ -503,13 +505,13 @@ export default function ToolbarPlugin() {
       {/* Lists & Quotes */}
       <button
         onClick={formatBulletList}
-        className={'toolbar-item spaced ' + (blockType === 'ul' ? 'active' : '')}
+        className={'toolbar-item spaced ' + (blockType === 'bullet' ? 'active' : '')}
         aria-label="Bullet List">
         <ListIcon size={18} />
       </button>
       <button
         onClick={formatNumberedList}
-        className={'toolbar-item spaced ' + (blockType === 'ol' ? 'active' : '')}
+        className={'toolbar-item spaced ' + (blockType === 'number' ? 'active' : '')}
         aria-label="Numbered List">
         <ListOrdered size={18} />
       </button>

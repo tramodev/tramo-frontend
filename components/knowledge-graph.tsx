@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { useTheme } from "next-themes"
 import { Minus, Plus } from "lucide-react"
@@ -10,16 +10,25 @@ import { Idea, Path } from "@/app/dashboard/types"
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
 
+// Distinct hues assigned to paths (by index) so each path's node, hull, and
+// border share one identifying color across the graph.
+const PATH_HUES = [222, 280, 20, 155, 340, 45, 190];
+
+function pathColor(index: number, alpha = 1): string {
+  const hue = PATH_HUES[index % PATH_HUES.length];
+  return `hsla(${hue}, 62%, 45%, ${alpha})`;
+}
+
+type Point = [number, number];
+
 interface GraphNode extends NodeObject {
   id: string;
   name: string;
-  kind: "path" | "idea";
 }
 
 interface GraphLink extends LinkObject {
   source: string;
   target: string;
-  kind: "membership" | "connection";
 }
 
 interface KnowledgeGraphProps {
@@ -64,23 +73,14 @@ function readColors(el: HTMLElement | null): GraphColors {
   };
 }
 
-function buildGraphData(paths: Path[], ideas: Record<string, Idea>) {
+// Paths are not graph nodes — they're drawn as a labeled region (hull) around
+// their member ideas, so only ideas and idea-to-idea links form the graph itself.
+function buildGraphData(ideas: Record<string, Idea>) {
   const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
 
-  for (const path of paths) {
-    nodes.push({ id: path.id, name: path.title, kind: "path" });
-  }
   for (const idea of Object.values(ideas)) {
-    nodes.push({ id: idea.id, name: idea.title, kind: "idea" });
-  }
-
-  for (const path of paths) {
-    for (const ideaId of path.ideaIds) {
-      if (ideas[ideaId]) {
-        links.push({ source: path.id, target: ideaId, kind: "membership" });
-      }
-    }
+    nodes.push({ id: idea.id, name: idea.title });
   }
 
   const seenPairs = new Set<string>();
@@ -90,7 +90,7 @@ function buildGraphData(paths: Path[], ideas: Record<string, Idea>) {
       const key = [idea.id, otherId].sort().join("::");
       if (seenPairs.has(key)) continue;
       seenPairs.add(key);
-      links.push({ source: idea.id, target: otherId, kind: "connection" });
+      links.push({ source: idea.id, target: otherId });
     }
   }
 
@@ -99,13 +99,78 @@ function buildGraphData(paths: Path[], ideas: Record<string, Idea>) {
 
 export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: KnowledgeGraphProps) {
   const { resolvedTheme } = useTheme();
-  const graphData = useMemo(() => buildGraphData(paths, ideas), [paths, ideas]);
+  const graphData = useMemo(() => buildGraphData(ideas), [ideas]);
+
+  const nodeById = useMemo(() => {
+    const map = new Map<string, GraphNode>();
+    graphData.nodes.forEach((node) => map.set(node.id, node));
+    return map;
+  }, [graphData]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [colors, setColors] = useState<GraphColors>(FALLBACK_COLORS);
+
+  // Draws each path as a circle around its member ideas, before nodes/links render.
+  // Circles never self-intersect, so an idea shared by several paths just shows up
+  // as overlapping circles — a Venn-diagram-style intersection — instead of broken geometry.
+  const drawPathHulls = useCallback(
+    (ctx: CanvasRenderingContext2D, globalScale: number) => {
+      paths.forEach((path, index) => {
+        const memberPoints: Point[] = [];
+        path.ideaIds.forEach((ideaId) => {
+          const ideaNode = nodeById.get(ideaId);
+          if (ideaNode && typeof ideaNode.x === "number" && typeof ideaNode.y === "number") {
+            memberPoints.push([ideaNode.x, ideaNode.y]);
+          }
+        });
+        if (memberPoints.length === 0) return;
+
+        const strokeColor = pathColor(index);
+        const fillColor = pathColor(index, 0.16);
+
+        const cx = memberPoints.reduce((sum, p) => sum + p[0], 0) / memberPoints.length;
+        const cy = memberPoints.reduce((sum, p) => sum + p[1], 0) / memberPoints.length;
+        const radius =
+          Math.max(...memberPoints.map((p) => Math.hypot(p[0] - cx, p[1] - cy)), 0) + 26;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        const labelX = cx;
+        const labelTopY = cy - radius;
+
+        const fontSize = 11 / globalScale;
+        ctx.font = `700 ${fontSize}px Archivo, system-ui, sans-serif`;
+        const textWidth = ctx.measureText(path.title).width;
+        const padX = 6 / globalScale;
+        const padY = 3 / globalScale;
+        const boxY = labelTopY - fontSize - padY * 2 - 4 / globalScale;
+        const boxX = labelX - textWidth / 2 - padX;
+        const boxW = textWidth + padX * 2;
+        const boxH = fontSize + padY * 2;
+
+        ctx.fillStyle = colors.bg;
+        ctx.fillRect(boxX, boxY, boxW, boxH);
+        ctx.lineWidth = 1.5 / globalScale;
+        ctx.strokeStyle = strokeColor;
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = strokeColor;
+        ctx.fillText(path.title, labelX, boxY + padY);
+      });
+    },
+    [paths, nodeById, colors.bg]
+  );
 
   useEffect(() => {
     setColors(readColors(containerRef.current));
@@ -148,46 +213,38 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
           graphData={graphData}
           nodeLabel="name"
           nodeRelSize={5}
-          nodeVal={(node) => ((node as GraphNode).kind === "path" ? 4 : 2)}
-          linkWidth={(link) => ((link as GraphLink).kind === "connection" ? 2 : 1)}
-          linkColor={(link) =>
-            (link as GraphLink).kind === "connection" ? colors.ink : colors.neutral500
-          }
-          linkLineDash={(link) => ((link as GraphLink).kind === "membership" ? [4, 4] : null)}
+          nodeVal={2}
+          linkWidth={2}
+          linkColor={() => colors.ink}
           linkDirectionalArrowLength={0}
+          onRenderFramePre={drawPathHulls}
           onNodeClick={(node) => {
             const graphNode = node as GraphNode;
-            if (graphNode.kind === "idea") {
-              const idea = ideas[graphNode.id];
-              if (idea) onSelectIdea(idea);
-            } else if (typeof graphNode.x === "number" && typeof graphNode.y === "number") {
-              graphRef.current?.centerAt(graphNode.x, graphNode.y, 400);
-              graphRef.current?.zoom(3, 400);
-            }
+            const idea = ideas[graphNode.id];
+            if (idea) onSelectIdea(idea);
           }}
           nodeCanvasObject={(node, ctx, globalScale) => {
             const graphNode = node as GraphNode;
-            const isPath = graphNode.kind === "path";
-            const isSelected = !isPath && graphNode.id === selectedIdeaId;
-            const size = isSelected ? 15 : isPath ? 9 : 6;
+            const isSelected = graphNode.id === selectedIdeaId;
+            const size = isSelected ? 15 : 6;
             const x = graphNode.x ?? 0;
             const y = graphNode.y ?? 0;
 
             ctx.beginPath();
-            ctx.rect(x - size / 2, y - size / 2, size, size);
+            ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
             if (isSelected) {
               ctx.fillStyle = colors.accent;
               ctx.fill();
             } else {
               ctx.fillStyle = colors.bg;
               ctx.fill();
-              ctx.lineWidth = (isPath ? 2 : 1.5) / Math.max(globalScale, 1);
-              ctx.strokeStyle = isPath ? colors.ink : colors.neutral600;
+              ctx.lineWidth = 1.5 / Math.max(globalScale, 1);
+              ctx.strokeStyle = colors.neutral600;
               ctx.stroke();
             }
 
-            const fontSize = (isSelected ? 12 : isPath ? 11 : 10) / globalScale;
-            ctx.font = `${isSelected || isPath ? "700" : "400"} ${fontSize}px Archivo, system-ui, sans-serif`;
+            const fontSize = (isSelected ? 12 : 10) / globalScale;
+            ctx.font = `${isSelected ? "700" : "400"} ${fontSize}px Archivo, system-ui, sans-serif`;
             const label = graphNode.name;
             const textWidth = ctx.measureText(label).width;
             const padX = 5 / globalScale;
@@ -250,7 +307,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
           className="flex items-center gap-1.5 text-[11px] uppercase"
           style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
         >
-          <span className="h-2.5 w-2.5" style={{ background: "var(--color-accent)" }} />
+          <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-accent)" }} />
           Selected
         </span>
         <span
@@ -258,10 +315,20 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
           style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
         >
           <span
-            className="h-2.5 w-2.5"
-            style={{ border: "2px solid var(--color-text)", boxSizing: "border-box" }}
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ border: "2px solid var(--color-neutral-600)", boxSizing: "border-box" }}
           />
-          Linked
+          Idea
+        </span>
+        <span
+          className="flex items-center gap-1.5 text-[11px] uppercase"
+          style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
+        >
+          <span
+            className="h-2.5 w-2.5"
+            style={{ background: "hsla(222, 62%, 45%, 0.3)", border: "1.5px solid hsl(222, 62%, 45%)" }}
+          />
+          Path (region contains its ideas)
         </span>
       </div>
     </div>

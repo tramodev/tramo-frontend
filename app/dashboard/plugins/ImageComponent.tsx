@@ -82,7 +82,10 @@ export default function ImageComponent({
     );
   }, [clearSelected, editor, isSelected, onDelete, setSelected]);
 
-  const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleResizeStart = (
+    corner: 'nw' | 'ne' | 'sw' | 'se',
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
     event.preventDefault();
     event.stopPropagation();
     const image = imageRef.current;
@@ -90,9 +93,13 @@ export default function ImageComponent({
     const startX = event.clientX;
     const startWidth = image.getBoundingClientRect().width;
     const aspectRatio = image.naturalWidth / image.naturalHeight || 1;
+    // Left-side handles grow the image when dragged left, right-side handles grow it
+    // when dragged right — both corners on a side move the same way horizontally
+    // since only width/height are stored (the image isn't independently positioned).
+    const sign = corner === 'nw' || corner === 'sw' ? -1 : 1;
 
     const onPointerMove = (moveEvent: PointerEvent) => {
-      const delta = moveEvent.clientX - startX;
+      const delta = (moveEvent.clientX - startX) * sign;
       const newWidth = Math.max(50, startWidth + delta);
       const newHeight = newWidth / aspectRatio;
       editor.update(() => {
@@ -128,7 +135,24 @@ export default function ImageComponent({
         }}
       />
       {resizable && isSelected && (
-        <div className="editor-image-resizer" onPointerDown={handleResizeStart} />
+        <>
+          <div
+            className="editor-image-resizer editor-image-resizer-nw"
+            onPointerDown={(event) => handleResizeStart('nw', event)}
+          />
+          <div
+            className="editor-image-resizer editor-image-resizer-ne"
+            onPointerDown={(event) => handleResizeStart('ne', event)}
+          />
+          <div
+            className="editor-image-resizer editor-image-resizer-sw"
+            onPointerDown={(event) => handleResizeStart('sw', event)}
+          />
+          <div
+            className="editor-image-resizer editor-image-resizer-se"
+            onPointerDown={(event) => handleResizeStart('se', event)}
+          />
+        </>
       )}
     </span>
   );

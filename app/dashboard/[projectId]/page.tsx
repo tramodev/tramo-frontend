@@ -43,7 +43,6 @@ import { AutoLinkNode, LinkNode } from '@lexical/link';
 
 import ExampleTheme from '../ExampleTheme';
 import ToolbarPlugin from '../plugins/ToolbarPlugin';
-import TreeViewPlugin from '../plugins/TreeViewPlugin';
 import UpdateContentPlugin from '../plugins/UpdateContentPlugin';
 import ImagesPlugin from '../plugins/ImagesPlugin';
 import { ImageNode } from '../nodes/ImageNode';
@@ -55,9 +54,9 @@ import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { UserMenu } from '@/components/user-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FolderPlus, Network, Pencil } from 'lucide-react';
+import { AlertCircle, Check, FolderPlus, Loader2, Network, Pencil } from 'lucide-react';
 import { Path, Idea } from '../types';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   getProject,
@@ -73,6 +72,7 @@ import {
   unlinkIdeas as unlinkIdeasRequest,
   type ProjectVisibility,
 } from '@/lib/projects-store';
+import { getIdeaContent, saveIdeaContent } from '@/lib/idea-content-client';
 import { ShareDialog } from '@/components/share-dialog';
 
 const placeholder = 'Enter some rich text...';
@@ -213,6 +213,7 @@ export default function DashboardPage() {
   const [ideas, setIdeas] = useState<Record<string, Idea>>({});
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState<'editor' | 'graph'>('editor');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   useEffect(() => {
     let cancelled = false;
@@ -235,9 +236,22 @@ export default function DashboardPage() {
 
   const selectedIdea = selectedIdeaId ? ideas[selectedIdeaId] : undefined;
 
-  const handleSelectIdea = (idea: Idea) => {
-    setSelectedIdeaId(idea.id);
+  // Fetches content before switching so UpdateContentPlugin (keyed on ideaId, to
+  // avoid clobbering in-progress edits) sees the right content on the same render
+  // that selectedIdeaId changes, instead of racing a late content update.
+  const handleSelectIdea = async (idea: Idea) => {
     setView('editor');
+    try {
+      const content = await getIdeaContent(idea.id);
+      setIdeas(prevIdeas => {
+        const existing = prevIdeas[idea.id];
+        if (!existing) return prevIdeas;
+        return { ...prevIdeas, [idea.id]: { ...existing, content } };
+      });
+    } catch (err) {
+      console.error(err);
+    }
+    setSelectedIdeaId(idea.id);
   };
 
   const handleCreatePath = async (title: string) => {
@@ -362,7 +376,32 @@ export default function DashboardPage() {
     });
   };
 
-  // Content editing is local-only for now; the backend doesn't persist idea content yet.
+  // Debounces content saves so we don't hit the backend on every keystroke; flushed
+  // immediately when switching ideas or leaving the page so nothing pending is lost.
+  const pendingContentRef = useRef<{ ideaId: string; content: string } | null>(null);
+  const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPendingContent = useCallback(() => {
+    if (saveContentTimeoutRef.current) {
+      clearTimeout(saveContentTimeoutRef.current);
+      saveContentTimeoutRef.current = null;
+    }
+    const pending = pendingContentRef.current;
+    if (!pending) return;
+    pendingContentRef.current = null;
+    setSaveStatus('saving');
+    saveIdeaContent(pending.ideaId, pending.content)
+      .then(() => setSaveStatus('saved'))
+      .catch((err) => {
+        console.error(err);
+        setSaveStatus('error');
+      });
+  }, []);
+
+  useEffect(() => {
+    return () => flushPendingContent();
+  }, [selectedIdeaId, flushPendingContent]);
+
   const onChange = useCallback((editorState: EditorState) => {
     editorState.read(() => {
       if (!selectedIdeaId) return;
@@ -372,8 +411,13 @@ export default function DashboardPage() {
         if (!idea) return prevIdeas;
         return { ...prevIdeas, [selectedIdeaId]: { ...idea, content: json } };
       });
+
+      pendingContentRef.current = { ideaId: selectedIdeaId, content: json };
+      setSaveStatus('saving');
+      if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
+      saveContentTimeoutRef.current = setTimeout(flushPendingContent, 600);
     });
-  }, [selectedIdeaId]);
+  }, [selectedIdeaId, flushPendingContent]);
 
   const startEditTitle = () => {
     setEditingTitleValue(projectTitle);
@@ -457,6 +501,29 @@ export default function DashboardPage() {
               visibility={visibility}
               onVisibilityChange={setVisibility}
             />
+            <span
+              className="flex items-center gap-1.5 text-xs"
+              style={{ color: 'var(--color-neutral-700)', width: 60 }}
+            >
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Saving
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="h-3.5 w-3.5" style={{ color: 'var(--color-accent)' }} />
+                  Saved
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <>
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                  Save failed
+                </>
+              )}
+            </span>
             <UserMenu />
           </div>
         </header>
@@ -498,7 +565,6 @@ export default function DashboardPage() {
                     />
                     <HistoryPlugin />
                     <AutoFocusPlugin />
-                    <TreeViewPlugin />
                     <ListPlugin />
                     <CheckListPlugin />
                     <LinkPlugin />

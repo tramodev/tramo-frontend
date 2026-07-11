@@ -17,8 +17,6 @@ export interface Project {
 }
 
 // Data-access layer for projects. Backed by the mypath-backend REST API.
-// Idea `content` (the Lexical editor state) has no backend persistence yet,
-// so it always round-trips as an empty string.
 
 interface ProjectDTO {
   id: number;
@@ -38,6 +36,9 @@ interface PathDTO {
   projectId: number;
 }
 
+// List/create/update responses carry metadata only — content is fetched
+// separately (getIdeaContent) so opening a project doesn't pull every
+// idea's full body (images included) up front.
 interface IdeaDTO {
   id: number;
   title: string;

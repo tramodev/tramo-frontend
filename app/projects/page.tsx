@@ -11,6 +11,7 @@ import { UserMenu } from "@/components/user-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import {
   createProject,
   deleteProject,
@@ -34,6 +35,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState("")
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
 
   useEffect(() => {
     listProjects().then((loaded) => {
@@ -63,10 +65,10 @@ export default function ProjectsPage() {
     )
   }
 
-  const handleDelete = async (project: Project) => {
-    if (!window.confirm(`Delete project "${project.title}"? This can't be undone.`)) {
-      return
-    }
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    const project = deleteTarget
+    setDeleteTarget(null)
     await deleteProject(project.id)
     setProjects((prev) => prev.filter((p) => p.id !== project.id))
   }
@@ -171,7 +173,7 @@ export default function ProjectsPage() {
                         className="h-8 w-8 shrink-0 opacity-0 group-hover/card:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleDelete(project)
+                          setDeleteTarget(project)
                         }}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -190,6 +192,16 @@ export default function ProjectsPage() {
           )}
         </div>
       </main>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+        title={`Delete project "${deleteTarget?.title ?? ""}"?`}
+        description="This can't be undone."
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

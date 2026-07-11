@@ -114,13 +114,34 @@
 
 .modernist .editor-image-resizer {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
   width: 12px;
   height: 12px;
   background: var(--color-accent);
   border: 1px solid var(--color-bg);
   border-radius: 0;
+}
+
+.modernist .editor-image-resizer-nw {
+  top: -4px;
+  left: -4px;
+  cursor: nwse-resize;
+}
+
+.modernist .editor-image-resizer-ne {
+  top: -4px;
+  right: -4px;
+  cursor: nesw-resize;
+}
+
+.modernist .editor-image-resizer-sw {
+  bottom: -4px;
+  left: -4px;
+  cursor: nesw-resize;
+}
+
+.modernist .editor-image-resizer-se {
+  bottom: -4px;
+  right: -4px;
   cursor: nwse-resize;
 }
 
@@ -243,12 +264,14 @@
   padding: 0;
   margin: 0;
   margin-left: 16px;
+  list-style-type: decimal;
 }
 
 .modernist .editor-list-ul {
   padding: 0;
   margin: 0;
   margin-left: 16px;
+  list-style-type: disc;
 }
 
 .modernist .editor-listitem {
@@ -257,6 +280,59 @@
 
 .modernist .editor-nested-listitem {
   list-style-type: none;
+}
+
+.modernist .editor-checklist {
+  list-style-type: none;
+}
+
+.modernist .editor-listitem-unchecked,
+.modernist .editor-listitem-checked {
+  position: relative;
+  margin-left: 8px;
+  margin-right: 8px;
+  padding-left: 24px;
+  padding-right: 24px;
+  list-style-type: none;
+  outline: none;
+}
+
+.modernist .editor-listitem-checked {
+  text-decoration: line-through;
+}
+
+.modernist .editor-listitem-unchecked:before,
+.modernist .editor-listitem-checked:before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  top: 2px;
+  left: 0;
+  cursor: pointer;
+  display: block;
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--color-neutral-600);
+}
+
+.modernist .editor-listitem-checked:before {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.modernist .editor-listitem-checked:after {
+  content: '';
+  cursor: pointer;
+  position: absolute;
+  display: block;
+  top: 6px;
+  left: 6px;
+  width: 4px;
+  height: 8px;
+  border-style: solid;
+  border-color: var(--color-bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .modernist pre::-webkit-scrollbar {
