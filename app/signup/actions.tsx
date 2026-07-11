@@ -1,19 +1,42 @@
 'use server';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+// Mirrors the backend's RegisterRequestDTO @Pattern constraint so obviously
+// non-compliant passwords fail fast without a network round trip.
+const PASSWORD_COMPLEXITY_PATTERN = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/;
+
+export type RegisterErrors = {
+  username?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  general?: string;
+};
+
 export type RegisterResult = {
-  error?: string;
+  errors?: RegisterErrors;
 };
 
 export async function registerHandler(
   prevState: RegisterResult | null,
   formData: FormData
 ): Promise<RegisterResult | null> {
-    console.log(formData)
   const username = formData.get('username');
   const email = formData.get('email');
   const password = formData.get('password');
+  const confirmPassword = formData.get('confirm-password');
+
+  if (typeof password === 'string' && !PASSWORD_COMPLEXITY_PATTERN.test(password)) {
+    return {
+      errors: {
+        password: 'Password must contain at least one uppercase letter, one number, and one symbol',
+      },
+    };
+  }
+
+  if (password !== confirmPassword) {
+    return { errors: { confirmPassword: 'Passwords do not match' } };
+  }
 
   const response = await fetch('http://localhost:8080/api/auth/register', {
     method: 'POST',
@@ -24,42 +47,30 @@ export async function registerHandler(
   });
 
   if (!response.ok) {
-    return { error: 'Invalid credentials' };
+    return { errors: await extractFieldErrors(response) };
   }
 
-  const data = await response.json();
-  
-  if (!data.accessToken || !data.refreshToken) {
-    return { error: 'Authentication failed - no tokens received' };
+  // Account exists but isn't usable yet — no tokens are issued until the
+  // verification link is clicked, so there's nothing to log in with here.
+  redirect(`/signup/check-email?email=${encodeURIComponent(typeof email === 'string' ? email : '')}`);
+}
+
+// Backend errors come as either { message } (auth errors) or
+// { message: "Validation failed", errors: { field: message } } (bean validation
+// and, since UserAlreadyExistsException now carries a field, username/email
+// conflicts too). Map field errors straight through so the form can show them
+// next to the right input instead of one generic banner.
+async function extractFieldErrors(response: Response): Promise<RegisterErrors> {
+  try {
+    const data = await response.json();
+    if (data?.errors && typeof data.errors === 'object') {
+      return data.errors as RegisterErrors;
+    }
+    if (typeof data?.message === 'string') {
+      return { general: data.message };
+    }
+  } catch {
+    // Response wasn't JSON — fall through to the generic message below.
   }
-  
-  const cookieStore = await cookies();
-  
-  cookieStore.set('accessToken', data.accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 15,
-    path: '/',
-  });
-
-  cookieStore.set('refreshToken', data.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7,
-    path: '/',
-  });
-
-  if (typeof username === 'string' && username) {
-    cookieStore.set('username', username, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
-  }
-
-  redirect('/');
+  return { general: 'Something went wrong. Please try again.' };
 }

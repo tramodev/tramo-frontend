@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 export type AuthResult = {
   error?: string;
+  needsVerification?: boolean;
 };
 
 export async function authenticateHandler(
@@ -22,17 +23,22 @@ export async function authenticateHandler(
   });
 
   if (!response.ok) {
-    return { error: 'Invalid credentials' };
+    // 403 from this endpoint only ever means "account exists but isn't
+    // verified yet" — everything else (bad password, unknown user) is 401/404.
+    return {
+      error: await extractErrorMessage(response),
+      needsVerification: response.status === 403,
+    };
   }
 
   const data = await response.json();
-  
+
   if (!data.accessToken || !data.refreshToken) {
     return { error: 'Authentication failed - no tokens received' };
   }
-  
+
   const cookieStore = await cookies();
-  
+
   cookieStore.set('accessToken', data.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -60,4 +66,14 @@ export async function authenticateHandler(
   }
 
   redirect('/');
+}
+
+async function extractErrorMessage(response: Response): Promise<string> {
+  try {
+    const data = await response.json();
+    if (typeof data?.message === 'string') return data.message;
+  } catch {
+    // Response wasn't JSON — fall through to the generic message below.
+  }
+  return 'Invalid credentials';
 }

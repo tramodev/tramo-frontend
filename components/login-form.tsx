@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { authenticateHandler } from "@/app/login/actions"
-import { useActionState } from 'react';
+import { ResendVerificationButton } from "@/components/resend-verification-button"
+import { useActionState, useState } from 'react';
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
   return (
@@ -25,6 +26,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"form">) {
   const [state, formAction, isPending] = useActionState(authenticateHandler, null);
+  const [username, setUsername] = useState("");
 
   return (
     <form
@@ -42,13 +44,23 @@ export function LoginForm({
       </div>
       <FieldGroup className="mt-2 gap-6">
         {state?.error && (
-          <div className="text-sm text-center" style={{ color: "var(--color-accent-700)" }}>
+          <div className="flex flex-col items-center gap-2 text-sm text-center" style={{ color: "var(--color-accent-700)" }}>
             {state.error}
+            {state.needsVerification && (
+              <ResendVerificationButton username={username} />
+            )}
           </div>
         )}
         <Field>
           <FieldLabel htmlFor="username">Username</FieldLabel>
-          <Input id="username" name="username" placeholder="pepito123" required />
+          <Input
+            id="username"
+            name="username"
+            placeholder="pepito123"
+            required
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
         </Field>
         <Field>
           <div className="flex items-baseline justify-between">
