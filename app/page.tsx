@@ -1,20 +1,38 @@
+import { archivo } from "@/lib/fonts";
+import "./landing.css";
 import { BrowserMockup } from "@/components/browser-mockup";
 import { Hero } from "@/components/hero";
 import { Navbar } from "@/components/navbar";
+import { FeaturesSection } from "@/components/features-section";
+import { PosterCta } from "@/components/poster-cta";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-accent selection:text-accent-foreground overflow-x-hidden relative">
+    <div className={`modernist min-h-screen ${archivo.className}`}>
       <Navbar />
-      <main className="relative z-10 flex flex-col items-center justify-start pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+
+      <div className="max-w-[1216px] mx-auto px-[72px]">
         <Hero />
-        <div className="relative w-full mt-16 max-w-6xl">
+
+        <div className="pt-16 pb-[84px]">
           <BrowserMockup />
         </div>
-      </main>
-      <footer className="relative z-10 w-full py-12 border-t border-border text-center text-muted-foreground text-sm bg-foreground/5 backdrop-blur-sm">
-        <p>&copy; {new Date().getFullYear()} MyPath Inc. All rights reserved.</p>
-        <p className="mt-2">Mockup created with React & Tailwind.</p>
+
+        <hr className="hr" />
+
+        <FeaturesSection />
+      </div>
+
+      <PosterCta />
+
+      <footer>
+        <div
+          className="max-w-[1216px] mx-auto px-[72px] py-10 text-[13px] flex justify-between gap-4"
+          style={{ color: 'var(--color-neutral-700)' }}
+        >
+          <span>&copy; {new Date().getFullYear()} MyPath Inc. All rights reserved.</span>
+          <span className="tabular-nums">mypath.app</span>
+        </div>
       </footer>
     </div>
   );

@@ -1,5 +1,3 @@
-import { Button } from './ui/button';
-import { Wordmark } from './logo';
 import { AvatarMenu } from './avatar-menu';
 import { cookies } from 'next/headers';
 
@@ -11,34 +9,37 @@ export async function Navbar() {
   const username = cookieStore.get('username')?.value ?? '';
 
   return (
-    <nav
-      className="fixed top-0 left-0 right-0 z-50 flex bg-primary items-center justify-between px-6 py-4 transition-all duration-300 ease-in-out border-b border-border"
-    >
-      <div className="flex items-center gap-8">
-        <a href="/" className="group">
-          <Wordmark className="text-primary-foreground" />
+    <nav className="border-b-2" style={{ borderColor: 'var(--color-divider)' }}>
+      <div className="max-w-[1216px] mx-auto px-[72px] py-3 flex items-center gap-8">
+        <a href="/" className="font-extrabold text-lg mr-auto">
+          MyPath
         </a>
-        <div className="hidden md:flex items-center text-sm font-medium text-primary-foreground/90">
-          <Button variant={"link"} className="text-primary-foreground underline-none">Product</Button>
-          <Button variant={"link"} className="text-primary-foreground underline-none">Pricing</Button>
-          <Button variant={"link"} className="text-primary-foreground underline-none">Community</Button>
-          <Button variant={"link"} className="text-primary-foreground underline-none">Blog</Button>
+        <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
+          Product
+        </a>
+        <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
+          Pricing
+        </a>
+        <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
+          Community
+        </a>
+        <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
+          Blog
+        </a>
+        <div className="flex items-center gap-2">
+          {isLoggedIn ? (
+            <AvatarMenu username={username} />
+          ) : (
+            <>
+              <a href="/login" className="btn btn-ghost-plain">
+                Log in
+              </a>
+              <a href="/signup" className="btn btn-primary">
+                Sign up
+              </a>
+            </>
+          )}
         </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {isLoggedIn ? (
-          <AvatarMenu username={username} />
-        ) : (
-          <>
-            <Button variant={"link"} className="text-primary-foreground underline-none">
-              <a href="/login">Log In</a>
-            </Button>
-            <Button variant="secondary">
-              <a href="/signup">Sign Up</a>
-            </Button>
-          </>
-        )}
       </div>
     </nav>
   );

@@ -1,0 +1,93 @@
+/* Modernist landing page theme — scoped to .modernist so it never leaks into the app (dashboard, auth, etc). */
+.modernist {
+  --color-bg: #f3f2f2;
+  --color-text: #201e1d;
+  --color-accent: #4338ca;
+  --color-accent-600: color-mix(in oklch, #4338ca 82%, black);
+  --color-accent-700: color-mix(in oklch, #4338ca 62%, black);
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
+
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.modernist a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.modernist :focus {
+  outline: none;
+}
+
+.modernist :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.modernist .hr {
+  height: 2px;
+  border: 0;
+  background: var(--color-divider);
+}
+
+.modernist .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.2;
+  padding: 10px 20px;
+  border-radius: 0;
+  border: 2px solid transparent;
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+}
+
+.modernist .btn-primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+.modernist .btn-primary:hover {
+  background: var(--color-accent-600);
+}
+
+.modernist .btn-ghost {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+.modernist .btn-ghost:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.modernist .btn-ghost-plain {
+  background: transparent;
+  color: var(--color-accent);
+  border-color: transparent;
+  padding-inline: 4px;
+}
+.modernist .btn-ghost-plain:hover {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.modernist .btn-secondary {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-divider);
+}
+.modernist .btn-secondary:hover {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
