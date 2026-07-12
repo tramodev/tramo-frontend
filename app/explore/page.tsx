@@ -61,7 +61,7 @@ export default async function ExplorePage({
           </div>
         </form>
 
-        <div className="mb-6 flex gap-2 text-sm font-bold">
+        <div className="mb-6 flex gap-6" style={{ borderBottom: "2px solid var(--color-divider)" }}>
           {(
             [
               ["recent", "Recent"],
@@ -71,10 +71,10 @@ export default async function ExplorePage({
             <Link
               key={value}
               href={`/explore?${new URLSearchParams({ ...(q ? { q } : {}), sort: value }).toString()}`}
-              className="rounded-full px-3 py-1 transition-colors"
+              className="-mb-[2px] pb-2 text-sm font-bold transition-colors"
               style={{
-                background: sort === value ? "var(--color-neutral-900)" : "var(--color-neutral-200)",
-                color: sort === value ? "var(--color-bg)" : "var(--color-neutral-800)",
+                color: sort === value ? "var(--color-text)" : "var(--color-neutral-600)",
+                borderBottom: sort === value ? "2px solid var(--color-accent)" : "2px solid transparent",
               }}
             >
               {label}

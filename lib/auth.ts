@@ -11,6 +11,11 @@ export async function isLoggedIn(): Promise<boolean> {
   return !!(cookieStore.get('accessToken') || cookieStore.get('refreshToken'));
 }
 
+export async function getUsername(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get('username')?.value || null;
+}
+
 export async function refreshAccessToken(): Promise<boolean> {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get('refreshToken')?.value;

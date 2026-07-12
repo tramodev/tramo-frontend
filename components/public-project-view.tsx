@@ -7,19 +7,27 @@ import { PublicSidebar } from "@/components/public-sidebar"
 import { LexicalReadOnly } from "@/components/lexical-read-only"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { VoteButton } from "@/components/vote-button"
+import { ForkButton } from "@/components/fork-button"
 import type { PublicIdea, PublicProject } from "@/lib/public-project"
 
 export function PublicProjectView({
   project,
   homeHref,
   isLoggedIn,
+  isOwnProject,
 }: {
   project: PublicProject
   homeHref: string
   isLoggedIn: boolean
+  isOwnProject: boolean
 }) {
-  const firstIdea = project.paths.flatMap((path) => path.ideas)[0]
-  const [selectedIdea, setSelectedIdea] = useState<PublicIdea | undefined>(firstIdea)
+  const allIdeas = project.paths.flatMap((path) => path.ideas)
+  const [selectedIdea, setSelectedIdea] = useState<PublicIdea | undefined>(allIdeas[0])
+
+  const handleIdeaLinkClick = (ideaId: string) => {
+    const idea = allIdeas.find((candidate) => candidate.id === ideaId)
+    if (idea) setSelectedIdea(idea)
+  }
 
   return (
     <>
@@ -41,7 +49,8 @@ export function PublicProjectView({
               by {project.ownerUsername}
             </span>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            {!isOwnProject && <ForkButton projectId={project.id} isLoggedIn={isLoggedIn} />}
             <VoteButton
               projectId={project.id}
               initialVoted={project.votedByRequester}
@@ -56,7 +65,7 @@ export function PublicProjectView({
               <h1 className="text-[28px] font-bold" style={{ letterSpacing: "-0.01em" }}>
                 {selectedIdea.title}
               </h1>
-              <LexicalReadOnly content={selectedIdea.content} />
+              <LexicalReadOnly content={selectedIdea.content} onIdeaClick={handleIdeaLinkClick} />
             </div>
           ) : (
             <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-muted-foreground">

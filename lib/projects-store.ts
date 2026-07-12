@@ -220,6 +220,13 @@ export async function toggleProjectVote(id: string): Promise<VoteResult> {
   return parseResponse<VoteResponseDTO>(response);
 }
 
+export async function forkProject(id: string): Promise<Project> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/fork`, {
+    method: "POST",
+  });
+  return toProjectSummary(await parseResponse<ProjectDTO>(response));
+}
+
 export async function createPath(projectId: string, title: string): Promise<Path> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${projectId}/path`, {
     method: "POST",

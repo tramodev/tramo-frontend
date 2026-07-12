@@ -1,6 +1,5 @@
 import { ChevronRight, Link2, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
-import Link from "next/link"
 
 import {
   Sidebar,
@@ -8,7 +7,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,7 +18,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { Wordmark } from "@/components/logo"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Path, Idea } from "@/app/dashboard/types"
 
@@ -156,12 +153,7 @@ export function SidebarCustom({
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader style={{ borderBottom: "2px solid var(--color-divider)" }}>
-        <Link href="/projects" className="flex items-center px-2 py-1" title="Back to projects">
-          <Wordmark />
-        </Link>
-      </SidebarHeader>
+    <Sidebar style={{ top: "64px", height: "calc(100svh - 64px)", borderTop: "none" }}>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
@@ -232,7 +224,13 @@ export function SidebarCustom({
                             <CollapsibleTrigger asChild>
                               <SidebarMenuButton onDoubleClick={() => startEditPath(path)} className="font-semibold">
                                 <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                                <span>{path.title}</span>
+                                <span className="flex-1 truncate">{path.title}</span>
+                                <span
+                                  className="text-[11px] font-normal"
+                                  style={{ color: "var(--color-neutral-600)" }}
+                                >
+                                  {pathIdeas.length}
+                                </span>
                               </SidebarMenuButton>
                             </CollapsibleTrigger>
                             <Button

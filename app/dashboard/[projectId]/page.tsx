@@ -45,16 +45,19 @@ import ExampleTheme from '../ExampleTheme';
 import ToolbarPlugin from '../plugins/ToolbarPlugin';
 import UpdateContentPlugin from '../plugins/UpdateContentPlugin';
 import ImagesPlugin from '../plugins/ImagesPlugin';
+import IdeaMentionPlugin from '../plugins/IdeaMentionPlugin';
+import IdeaLinkClickPlugin from '../plugins/IdeaLinkClickPlugin';
 import { ImageNode } from '../nodes/ImageNode';
 import { parseAllowedColor, parseAllowedFontSize } from '../styleConfig';
+import Link from 'next/link';
+import { Wordmark } from '@/components/logo';
 import { SidebarCustom } from '@/components/sidebar-custom';
-import { IdeaLinksPanel } from '@/components/idea-links-panel';
+import { ConnectionsPanel } from '@/components/connections-panel';
 import { KnowledgeGraph } from '@/components/knowledge-graph';
-import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { UserMenu } from '@/components/user-menu';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Check, FolderPlus, Loader2, Network, Pencil } from 'lucide-react';
+import { AlertCircle, Check, FolderPlus, Loader2, X } from 'lucide-react';
 import { Path, Idea } from '../types';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -515,99 +518,100 @@ export default function DashboardPage() {
   }
 
   return (
-    <>
-      <SidebarCustom
-        paths={paths}
-        ideas={ideas}
-        selectedIdeaId={selectedIdeaId}
-        onSelectIdea={handleSelectIdea}
-        onCreatePath={handleCreatePath}
-        onCreateIdea={handleCreateIdea}
-        onLinkIdeaToPath={handleLinkIdeaToPath}
-        onRenamePath={handleRenamePath}
-        onRenameIdea={handleRenameIdea}
-        onDeletePath={handleDeletePath}
-        onUnlinkIdeaFromPath={handleUnlinkIdeaFromPath}
-      />
-      <SidebarInset>
-        <header
-          className="flex h-16 shrink-0 items-center gap-4 px-8"
-          style={{ borderBottom: "2px solid var(--color-divider)" }}
-        >
-          <SidebarTrigger />
-          {isEditingTitle ? (
-            <Input
-              autoFocus
-              value={editingTitleValue}
-              className="h-8 max-w-xs"
-              onChange={(e) => setEditingTitleValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submitEditTitle();
-                if (e.key === 'Escape') setIsEditingTitle(false);
-              }}
-              onBlur={submitEditTitle}
-            />
-          ) : (
-            <span
-              className="text-[15px] font-bold"
-              onDoubleClick={startEditTitle}
-              title="Double-click to rename"
+    <SidebarProvider
+      style={{ "--sidebar-width": "240px" } as React.CSSProperties}
+      className="h-screen min-h-0 flex-col"
+    >
+      <header
+        className="flex h-16 shrink-0 items-center gap-4 px-8"
+        style={{ borderBottom: "2px solid var(--color-divider)" }}
+      >
+        <Link href="/projects" title="Back to projects">
+          <Wordmark />
+        </Link>
+        <span className="h-[18px] w-[2px]" style={{ background: "var(--color-divider)" }} />
+        {isEditingTitle ? (
+          <Input
+            autoFocus
+            value={editingTitleValue}
+            className="h-8 max-w-xs"
+            onChange={(e) => setEditingTitleValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitEditTitle();
+              if (e.key === 'Escape') setIsEditingTitle(false);
+            }}
+            onBlur={submitEditTitle}
+          />
+        ) : (
+          <span
+            className="text-[15px] font-bold"
+            onDoubleClick={startEditTitle}
+            title="Double-click to rename"
+          >
+            {projectTitle}
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-3">
+          {view === 'graph' && (
+            <button
+              type="button"
+              onClick={() => setView('editor')}
+              title="Close graph view"
+              className="flex h-8 w-8 items-center justify-center"
+              style={{ color: "var(--color-neutral-600)" }}
             >
-              {projectTitle}
-            </span>
+              <X className="h-4 w-4" />
+            </button>
           )}
-          <div className="ml-auto flex items-center gap-3">
-            <Button
-              variant={view === 'graph' ? 'secondary' : 'outline'}
-              size="sm"
-              onClick={() => setView(view === 'graph' ? 'editor' : 'graph')}
-            >
-              {view === 'graph' ? (
-                <>
-                  <Pencil className="h-4 w-4" />
-                  Editor
-                </>
-              ) : (
-                <>
-                  <Network className="h-4 w-4" />
-                  Graph view
-                </>
-              )}
-            </Button>
-            <ShareDialog
-              projectId={projectId}
-              visibility={visibility}
-              onVisibilityChange={handleVisibilityChange}
-              tags={tags}
-              onTagsChange={setTags}
-            />
-            <span
-              className="flex items-center gap-1.5 text-xs"
-              style={{ color: 'var(--color-neutral-700)', width: 60 }}
-            >
-              {saveStatus === 'saving' && (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Saving
-                </>
-              )}
-              {(saveStatus === 'saved' || saveStatus === 'idle') && (
-                <>
-                  <Check className="h-3.5 w-3.5" style={{ color: 'var(--color-accent)' }} />
-                  Saved
-                </>
-              )}
-              {saveStatus === 'error' && (
-                <>
-                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-                  Save failed
-                </>
-              )}
-            </span>
-            <UserMenu />
-          </div>
-        </header>
-        <div className={view === 'graph' ? 'flex-1 overflow-hidden p-4' : 'flex-1 overflow-auto px-2 py-2'}>
+          <ShareDialog
+            projectId={projectId}
+            visibility={visibility}
+            onVisibilityChange={handleVisibilityChange}
+            tags={tags}
+            onTagsChange={setTags}
+          />
+          <span
+            className="flex items-center gap-1.5 text-xs"
+            style={{ color: 'var(--color-neutral-700)', width: 60 }}
+          >
+            {saveStatus === 'saving' && (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Saving
+              </>
+            )}
+            {(saveStatus === 'saved' || saveStatus === 'idle') && (
+              <>
+                <Check className="h-3.5 w-3.5" style={{ color: 'var(--color-accent)' }} />
+                Saved
+              </>
+            )}
+            {saveStatus === 'error' && (
+              <>
+                <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                Save failed
+              </>
+            )}
+          </span>
+          <UserMenu />
+        </div>
+      </header>
+      <div className="flex flex-1 min-h-0">
+        <SidebarCustom
+          paths={paths}
+          ideas={ideas}
+          selectedIdeaId={selectedIdeaId}
+          onSelectIdea={handleSelectIdea}
+          onCreatePath={handleCreatePath}
+          onCreateIdea={handleCreateIdea}
+          onLinkIdeaToPath={handleLinkIdeaToPath}
+          onRenamePath={handleRenamePath}
+          onRenameIdea={handleRenameIdea}
+          onDeletePath={handleDeletePath}
+          onUnlinkIdeaFromPath={handleUnlinkIdeaFromPath}
+        />
+        <SidebarInset>
+          <div className={view === 'graph' ? 'flex-1 overflow-hidden p-4' : 'flex flex-1 min-h-0'}>
           {view === 'graph' ? (
             <KnowledgeGraph
               paths={paths}
@@ -616,8 +620,51 @@ export default function DashboardPage() {
               onSelectIdea={handleSelectIdea}
             />
           ) : selectedIdea ? (
-            <div className="mx-auto flex min-h-full flex-col" >
-              <IdeaLinksPanel
+            <>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <LexicalComposer initialConfig={editorConfig}>
+                  <div className="editor-container flex flex-1 min-h-0 flex-col">
+                    <ToolbarPlugin />
+                    <div className="editor-inner">
+                      <div className="editor-content-column">
+                        <RichTextPlugin
+                          contentEditable={
+                            <ContentEditable
+                              className="editor-input"
+                              aria-placeholder={placeholder}
+                              placeholder={
+                                <div className="editor-placeholder">{placeholder}</div>
+                              }
+                            />
+                          }
+                          ErrorBoundary={LexicalErrorBoundary}
+                        />
+                        <HistoryPlugin />
+                        <AutoFocusPlugin />
+                        <ListPlugin />
+                        <CheckListPlugin />
+                        <LinkPlugin />
+                        <IdeaLinkClickPlugin onNavigate={(ideaId) => {
+                          const idea = ideas[ideaId];
+                          if (idea) handleSelectIdea(idea);
+                        }} />
+                        <ClickableLinkPlugin newTab />
+                        <ImagesPlugin />
+                        <IdeaMentionPlugin
+                          ideas={ideas}
+                          currentIdeaId={selectedIdea.id}
+                          onLinkIdea={handleLinkIdeas}
+                        />
+                        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+
+                        <UpdateContentPlugin content={selectedIdea.content} ideaId={selectedIdea.id} />
+                        <OnChangePlugin onChange={onChange} />
+                      </div>
+                    </div>
+                  </div>
+                </LexicalComposer>
+              </div>
+              <ConnectionsPanel
                 idea={selectedIdea}
                 ideas={ideas}
                 paths={paths}
@@ -625,41 +672,11 @@ export default function DashboardPage() {
                 onLinkIdea={handleLinkIdeas}
                 onUnlinkIdea={handleUnlinkIdeas}
                 onLinkPath={handleLinkIdeaToPath}
-                onUnlinkPath={handleUnlinkIdeaFromPath}
+                onOpenGraph={() => setView('graph')}
               />
-              <LexicalComposer initialConfig={editorConfig}>
-                <div className="editor-container flex flex-1 flex-col">
-                  <ToolbarPlugin />
-                  <div className="editor-inner">
-                    <RichTextPlugin
-                      contentEditable={
-                        <ContentEditable
-                          className="editor-input"
-                          aria-placeholder={placeholder}
-                          placeholder={
-                            <div className="editor-placeholder">{placeholder}</div>
-                          }
-                        />
-                      }
-                      ErrorBoundary={LexicalErrorBoundary}
-                    />
-                    <HistoryPlugin />
-                    <AutoFocusPlugin />
-                    <ListPlugin />
-                    <CheckListPlugin />
-                    <LinkPlugin />
-                    <ClickableLinkPlugin newTab />
-                    <ImagesPlugin />
-                    <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-
-                    <UpdateContentPlugin content={selectedIdea.content} ideaId={selectedIdea.id} />
-                    <OnChangePlugin onChange={onChange} />
-                  </div>
-                </div>
-              </LexicalComposer>
-            </div>
+            </>
           ) : (
-            <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+            <div className="flex h-full w-full min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
               <FolderPlus className="h-12 w-12 opacity-40" />
               <p className="text-lg font-medium">
                 {paths.length === 0 ? "No paths yet" : "No idea selected"}
@@ -672,10 +689,11 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-      </SidebarInset>
+        </SidebarInset>
+      </div>
       {thumbnailCaptureContent && (
         <ThumbnailCapture content={thumbnailCaptureContent} onCapture={handleThumbnailCaptured} />
       )}
-    </>
+    </SidebarProvider>
   )
 }

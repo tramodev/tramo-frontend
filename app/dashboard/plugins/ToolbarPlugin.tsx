@@ -10,6 +10,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { mergeRegister, $getNearestNodeOfType } from '@lexical/utils';
 import {
   $getSelection,
+  $isElementNode,
   $isRangeSelection,
   CAN_REDO_COMMAND,
   CAN_UNDO_COMMAND,
@@ -66,6 +67,7 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  Type,
   List as ListIcon,
   ListOrdered,
   CheckSquare,
@@ -76,7 +78,31 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { INSERT_IMAGE_COMMAND } from './ImagesPlugin';
+
+type ElementFormat = 'left' | 'center' | 'right' | 'justify';
+
+const ALIGN_OPTIONS: { value: ElementFormat; label: string; Icon: typeof AlignLeft }[] = [
+  { value: 'left', label: 'Align left', Icon: AlignLeft },
+  { value: 'center', label: 'Align center', Icon: AlignCenter },
+  { value: 'right', label: 'Align right', Icon: AlignRight },
+  { value: 'justify', label: 'Justify', Icon: AlignJustify },
+];
+
+type HeadingOption = 'paragraph' | 'h1' | 'h2' | 'h3';
+
+const HEADING_OPTIONS: { value: HeadingOption; label: string; Icon: typeof Type }[] = [
+  { value: 'paragraph', label: 'Normal', Icon: Type },
+  { value: 'h1', label: 'Heading 1', Icon: Heading1 },
+  { value: 'h2', label: 'Heading 2', Icon: Heading2 },
+  { value: 'h3', label: 'Heading 3', Icon: Heading3 },
+];
 
 const blockTypeToBlockName = {
   bullet: 'Bulleted List',
@@ -126,6 +152,7 @@ export default function ToolbarPlugin() {
   const [isCode, setIsCode] = useState(false);
   const [fontFamily, setFontFamily] = useState('Arial');
   const [fontSize, setFontSize] = useState('15');
+  const [elementFormat, setElementFormat] = useState<ElementFormat>('left');
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -154,6 +181,10 @@ export default function ToolbarPlugin() {
           } else {
             setIsCode(false);
           }
+        }
+        if ($isElementNode(element)) {
+          const format = element.getFormatType();
+          setElementFormat(format === 'center' || format === 'right' || format === 'justify' ? format : 'left');
         }
       }
 
@@ -420,24 +451,29 @@ export default function ToolbarPlugin() {
 
       <Divider />
       {/* Headings */}
-      <button
-        onClick={() => formatHeading('h1')}
-        className={'toolbar-item spaced ' + (blockType === 'h1' ? 'active' : '')}
-        aria-label="Heading 1">
-        <Heading1 size={18} />
-      </button>
-      <button
-        onClick={() => formatHeading('h2')}
-        className={'toolbar-item spaced ' + (blockType === 'h2' ? 'active' : '')}
-        aria-label="Heading 2">
-        <Heading2 size={18} />
-      </button>
-      <button
-        onClick={() => formatHeading('h3')}
-        className={'toolbar-item spaced ' + (blockType === 'h3' ? 'active' : '')}
-        aria-label="Heading 3">
-        <Heading3 size={18} />
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="toolbar-item align-dropdown-trigger spaced" aria-label="Text style">
+            {(() => {
+              const Active =
+                HEADING_OPTIONS.find((option) => option.value === blockType)?.Icon ?? Type;
+              return <Active size={18} />;
+            })()}
+            <ChevronDown size={12} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {HEADING_OPTIONS.map(({ value, label, Icon }) => (
+            <DropdownMenuItem
+              key={value}
+              onSelect={() => (value === 'paragraph' ? formatParagraph() : formatHeading(value))}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Divider />
       {/* Functionality */}
@@ -530,40 +566,29 @@ export default function ToolbarPlugin() {
 
       <Divider />
       {/* Alignment */}
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left');
-        }}
-        className="toolbar-item spaced"
-        aria-label="Left Align">
-        <AlignLeft size={18} />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center');
-        }}
-        className="toolbar-item spaced"
-        aria-label="Center Align">
-        <AlignCenter size={18} />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right');
-        }}
-        className="toolbar-item spaced"
-        aria-label="Right Align">
-        <AlignRight size={18} />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'justify');
-        }}
-        className="toolbar-item"
-        aria-label="Justify Align">
-        <AlignJustify size={18} />
-      </button>{' '}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="toolbar-item align-dropdown-trigger" aria-label="Align text">
+            {(() => {
+              const Active = ALIGN_OPTIONS.find((option) => option.value === elementFormat)?.Icon ?? AlignLeft;
+              return <Active size={18} />;
+            })()}
+            <ChevronDown size={12} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {ALIGN_OPTIONS.map(({ value, label, Icon }) => (
+            <DropdownMenuItem
+              key={value}
+              onSelect={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value)}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
-
 

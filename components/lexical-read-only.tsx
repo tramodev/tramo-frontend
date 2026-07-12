@@ -15,6 +15,7 @@ import { AutoLinkNode, LinkNode } from "@lexical/link"
 
 import ExampleTheme from "@/app/dashboard/ExampleTheme"
 import { ImageNode } from "@/app/dashboard/nodes/ImageNode"
+import IdeaLinkClickPlugin from "@/app/dashboard/plugins/IdeaLinkClickPlugin"
 import "@/app/dashboard/Editor.css"
 
 // Mirrors the editable editor's node set (app/dashboard/[projectId]/page.tsx)
@@ -37,7 +38,13 @@ const nodes = [
   ImageNode,
 ]
 
-export function LexicalReadOnly({ content }: { content: string }) {
+export function LexicalReadOnly({
+  content,
+  onIdeaClick,
+}: {
+  content: string
+  onIdeaClick?: (ideaId: string) => void
+}) {
   if (!content) return null
 
   return (
@@ -58,6 +65,7 @@ export function LexicalReadOnly({ content }: { content: string }) {
         placeholder={null}
         ErrorBoundary={LexicalErrorBoundary}
       />
+      {onIdeaClick && <IdeaLinkClickPlugin onNavigate={onIdeaClick} />}
       <ClickableLinkPlugin newTab />
     </LexicalComposer>
   )

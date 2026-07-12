@@ -19,25 +19,38 @@
 .modernist .editor-inner {
   background: var(--color-bg);
   position: relative;
-  border: 2px solid var(--color-divider);
-  border-top: 0;
-  padding: 10px 10px;
-  min-height: 420px;
+  padding: 0 48px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.modernist .editor-content-column {
+  width: 95%;
+  margin: 0 auto;
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 .modernist .editor-input {
-  flex: 1;
   resize: none;
-  font-size: 15.5px;
-  line-height: 28px;
+  font-size: 15px;
+  line-height: 1.15;
   position: relative;
+  flex: 1;
+  padding: 36px 0 24px;
   tab-size: 1;
   outline: 0;
-  padding: 0;
   caret-color: var(--color-accent);
+}
+
+.modernist .editor-input:focus,
+.modernist .editor-input:focus-visible {
+  outline: 0;
 }
 
 .modernist .editor-placeholder {
@@ -45,12 +58,11 @@
   overflow: hidden;
   position: absolute;
   text-overflow: ellipsis;
-  top: 0;
+  top: 36px;
   left: 0;
-  font-size: 15.5px;
-  line-height: 28px;
+  font-size: 15px;
+  line-height: 1.15;
   user-select: none;
-  padding: 10px 10px;
   display: inline-block;
   pointer-events: none;
 }
@@ -91,6 +103,35 @@
 
 .modernist .editor-link:hover {
   text-decoration: underline;
+}
+
+.modernist a[rel^="mypath-idea:"] {
+  color: var(--color-accent-600);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.modernist .idea-mention-menu {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-width: 200px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--color-bg);
+  border: 2px solid var(--color-divider);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.modernist .idea-mention-menu-item {
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.modernist .idea-mention-menu-item.selected {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
 }
 
 .modernist .editor-image {
@@ -228,12 +269,12 @@
 
 .modernist .editor-heading-h1 {
   font-family: var(--font-heading);
-  font-size: 34px;
-  letter-spacing: -0.015em;
+  font-size: 32px;
+  letter-spacing: -0.02em;
   color: var(--color-text);
   font-weight: 800;
   margin: 0;
-  margin-bottom: 12px;
+  margin-bottom: 18px;
   padding: 0;
 }
 
@@ -250,11 +291,12 @@
 }
 
 .modernist .editor-quote {
-  margin: 0;
-  margin-left: 20px;
-  font-size: 15.5px;
+  margin: 18px 0;
+  font-style: italic;
+  font-size: 14.5px;
+  line-height: 1.7;
   color: var(--color-neutral-700);
-  border-left-color: var(--color-divider);
+  border-left-color: var(--color-accent);
   border-left-width: 2px;
   border-left-style: solid;
   padding-left: 16px;
@@ -389,11 +431,10 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-bottom: 0;
+  flex: none;
   background: var(--color-bg);
-  border: 2px solid var(--color-divider);
-  border-top: 0;
-  padding: 8px 12px;
+  border-bottom: 2px solid var(--color-divider);
+  padding: 8px 24px;
   flex-wrap: wrap;
 }
 
@@ -426,7 +467,7 @@
 }
 
 .modernist .toolbar .toolbar-item:hover:not([disabled]) {
-  background-color: var(--color-neutral-200);
+  background-color: color-mix(in srgb, var(--color-text) 8%, transparent);
 }
 
 .modernist .toolbar .divider {
@@ -434,6 +475,12 @@
   height: 20px;
   background-color: var(--color-divider);
   margin: 0 6px;
+}
+
+.modernist .toolbar button.toolbar-item.align-dropdown-trigger {
+  width: auto;
+  gap: 2px;
+  padding: 0 6px;
 }
 
 .modernist .toolbar .font-family-select {

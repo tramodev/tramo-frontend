@@ -56,7 +56,7 @@ export function VoteButton({
       aria-pressed={voted}
       className="flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 transition-colors hover:bg-muted"
       style={{
-        color: voted ? "#2563eb" : "var(--color-neutral-600)",
+        color: voted ? "var(--color-accent)" : "var(--color-neutral-600)",
         border: "2px solid var(--color-divider)",
       }}
     >
