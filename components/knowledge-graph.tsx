@@ -200,7 +200,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
       className="relative h-full w-full overflow-hidden"
       style={{
         border: "2px solid var(--color-divider)",
-        background: colors.bg,
+        backgroundColor: colors.bg,
         backgroundImage: `radial-gradient(${colors.neutral400} 1px, transparent 1px)`,
         backgroundSize: "24px 24px",
       }}

@@ -59,7 +59,7 @@ import { UserMenu } from '@/components/user-menu';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Check, FolderPlus, Loader2, X } from 'lucide-react';
 import { Path, Idea } from '../types';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   getProject,
@@ -206,6 +206,31 @@ const editorConfig = {
 
 const lastIdeaStorageKey = (projectId: string) => `mypath:lastIdea:${projectId}`;
 
+// Walks the serialized Lexical editor-state JSON, collecting every text run's
+// raw string. Characters are an exact sum of those runs; words are a
+// space-joined heuristic (good enough for a live counter, not meant to be
+// perfectly precise across paragraph/format-run boundaries).
+function countTextStats(content: string): { words: number; characters: number } {
+  if (!content) return { words: 0, characters: 0 };
+  try {
+    const parsed = JSON.parse(content);
+    const texts: string[] = [];
+    const walk = (node: unknown) => {
+      if (!node || typeof node !== 'object') return;
+      const record = node as { text?: unknown; children?: unknown };
+      if (typeof record.text === 'string') texts.push(record.text);
+      if (Array.isArray(record.children)) record.children.forEach(walk);
+    };
+    walk((parsed as { root?: unknown }).root);
+    const characters = texts.reduce((sum, text) => sum + text.length, 0);
+    const joined = texts.join(' ').trim();
+    const words = joined ? joined.split(/\s+/).length : 0;
+    return { words, characters };
+  } catch {
+    return { words: 0, characters: 0 };
+  }
+}
+
 export default function DashboardPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const router = useRouter();
@@ -274,6 +299,7 @@ export default function DashboardPage() {
   }, [projectId, selectedIdeaId, loaded]);
 
   const selectedIdea = selectedIdeaId ? ideas[selectedIdeaId] : undefined;
+  const textStats = useMemo(() => countTextStats(selectedIdea?.content ?? ''), [selectedIdea?.content]);
 
   // Fetches content before switching so UpdateContentPlugin (keyed on ideaId, to
   // avoid clobbering in-progress edits) sees the right content on the same render
@@ -552,16 +578,10 @@ export default function DashboardPage() {
           </span>
         )}
         <div className="ml-auto flex items-center gap-3">
-          {view === 'graph' && (
-            <button
-              type="button"
-              onClick={() => setView('editor')}
-              title="Close graph view"
-              className="flex h-8 w-8 items-center justify-center"
-              style={{ color: "var(--color-neutral-600)" }}
-            >
-              <X className="h-4 w-4" />
-            </button>
+          {view === 'editor' && selectedIdea && (
+            <span className="text-xs" style={{ color: 'var(--color-neutral-600)' }}>
+              {textStats.words} words · {textStats.characters} characters
+            </span>
           )}
           <ShareDialog
             projectId={projectId}
@@ -611,14 +631,25 @@ export default function DashboardPage() {
           onUnlinkIdeaFromPath={handleUnlinkIdeaFromPath}
         />
         <SidebarInset>
-          <div className={view === 'graph' ? 'flex-1 overflow-hidden p-4' : 'flex flex-1 min-h-0'}>
+          <div className={view === 'graph' ? 'relative flex-1 overflow-hidden p-4' : 'flex flex-1 min-h-0'}>
           {view === 'graph' ? (
-            <KnowledgeGraph
-              paths={paths}
-              ideas={ideas}
-              selectedIdeaId={selectedIdeaId}
-              onSelectIdea={handleSelectIdea}
-            />
+            <>
+              <button
+                type="button"
+                onClick={() => setView('editor')}
+                title="Close graph view"
+                className="absolute top-6 right-6 z-10 flex h-8 w-8 items-center justify-center"
+                style={{ color: "var(--color-neutral-600)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <KnowledgeGraph
+                paths={paths}
+                ideas={ideas}
+                selectedIdeaId={selectedIdeaId}
+                onSelectIdea={handleSelectIdea}
+              />
+            </>
           ) : selectedIdea ? (
             <>
               <div className="flex min-w-0 flex-1 flex-col">

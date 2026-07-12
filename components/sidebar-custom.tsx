@@ -328,6 +328,14 @@ export function SidebarCustom({
                                       isActive={selectedIdeaId === idea.id}
                                       onClick={() => onSelectIdea(idea)}
                                       onDoubleClick={() => startEditIdea(idea)}
+                                      style={
+                                        selectedIdeaId === idea.id
+                                          ? {
+                                              background: "color-mix(in srgb, var(--color-accent) 18%, transparent)",
+                                              color: "var(--color-accent-600)",
+                                            }
+                                          : undefined
+                                      }
                                     >
                                       <span
                                         className="h-2 w-2 shrink-0"
