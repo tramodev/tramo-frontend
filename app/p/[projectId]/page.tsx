@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { PublicProjectView } from "@/components/public-project-view"
 import { getPublicProject } from "@/lib/public-project"
 import { getHomeHref } from "@/lib/nav"
+import { isLoggedIn } from "@/lib/auth"
 
 export default async function PublicProjectPage({
   params,
@@ -9,11 +10,15 @@ export default async function PublicProjectPage({
   params: Promise<{ projectId: string }>
 }) {
   const { projectId } = await params
-  const [project, homeHref] = await Promise.all([getPublicProject(projectId), getHomeHref()])
+  const [project, homeHref, loggedIn] = await Promise.all([
+    getPublicProject(projectId),
+    getHomeHref(),
+    isLoggedIn(),
+  ])
 
   if (!project) {
     notFound()
   }
 
-  return <PublicProjectView project={project} homeHref={homeHref} />
+  return <PublicProjectView project={project} homeHref={homeHref} isLoggedIn={loggedIn} />
 }

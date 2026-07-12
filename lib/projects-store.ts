@@ -203,6 +203,23 @@ export async function setProjectTags(id: string, tags: string): Promise<void> {
   await expectOk(response);
 }
 
+export interface VoteResult {
+  voted: boolean;
+  count: number;
+}
+
+interface VoteResponseDTO {
+  voted: boolean;
+  count: number;
+}
+
+export async function toggleProjectVote(id: string): Promise<VoteResult> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/vote`, {
+    method: "POST",
+  });
+  return parseResponse<VoteResponseDTO>(response);
+}
+
 export async function createPath(projectId: string, title: string): Promise<Path> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${projectId}/path`, {
     method: "POST",

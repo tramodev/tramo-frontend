@@ -1,6 +1,12 @@
 'use server';
 
 import { API_BASE_URL } from "./config";
+import { getAccessToken } from "./auth";
+
+async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
+  const token = await getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : undefined;
+}
 
 export interface PublicIdea {
   id: string;
@@ -22,6 +28,8 @@ export interface PublicProject {
   ownerUsername: string;
   modifiedDate: string;
   paths: PublicPath[];
+  voteCount: number;
+  votedByRequester: boolean;
 }
 
 interface PublicIdeaDTO {
@@ -44,6 +52,8 @@ interface PublicProjectDTO {
   ownerUsername: string;
   modifiedDate: string;
   paths: PublicPathDTO[];
+  voteCount: number;
+  votedByRequester: boolean;
 }
 
 export interface ProjectFeedItem {
@@ -54,6 +64,8 @@ export interface ProjectFeedItem {
   thumbnail: string | null;
   tags: string[];
   modifiedDate: string;
+  voteCount: number;
+  votedByRequester: boolean;
 }
 
 interface ProjectFeedItemDTO {
@@ -64,18 +76,23 @@ interface ProjectFeedItemDTO {
   thumbnail: string | null;
   tags: string | null;
   modifiedDate: string;
+  voteCount: number;
+  votedByRequester: boolean;
 }
+
+export type FeedSort = "recent" | "hot";
 
 function parseTags(tags: string | null): string[] {
   if (!tags) return [];
   return tags.split(",").map((tag) => tag.trim()).filter(Boolean);
 }
 
-export async function getPublishedFeed(query?: string): Promise<ProjectFeedItem[]> {
+export async function getPublishedFeed(query?: string, sort: FeedSort = "recent"): Promise<ProjectFeedItem[]> {
   const url = new URL(`${API_BASE_URL}/api/public/projects`);
   if (query) url.searchParams.set("q", query);
+  url.searchParams.set("sort", sort);
 
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetch(url, { cache: "no-store", headers: await optionalAuthHeaders() });
 
   if (!response.ok) return [];
 
@@ -88,6 +105,8 @@ export async function getPublishedFeed(query?: string): Promise<ProjectFeedItem[
     thumbnail: item.thumbnail,
     tags: parseTags(item.tags),
     modifiedDate: item.modifiedDate,
+    voteCount: item.voteCount,
+    votedByRequester: item.votedByRequester,
   }));
 }
 
@@ -110,6 +129,7 @@ export async function getHotTopics(): Promise<TagCount[]> {
 export async function getPublicProject(projectId: string): Promise<PublicProject | null> {
   const response = await fetch(`${API_BASE_URL}/api/public/project/${projectId}`, {
     cache: "no-store",
+    headers: await optionalAuthHeaders(),
   });
 
   if (!response.ok) return null;
@@ -122,6 +142,8 @@ export async function getPublicProject(projectId: string): Promise<PublicProject
     description: data.description,
     ownerUsername: data.ownerUsername,
     modifiedDate: data.modifiedDate,
+    voteCount: data.voteCount,
+    votedByRequester: data.votedByRequester,
     paths: data.paths.map((path) => ({
       id: String(path.id),
       title: path.title,

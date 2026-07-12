@@ -6,9 +6,18 @@ import { FolderPlus } from "lucide-react"
 import { PublicSidebar } from "@/components/public-sidebar"
 import { LexicalReadOnly } from "@/components/lexical-read-only"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { VoteButton } from "@/components/vote-button"
 import type { PublicIdea, PublicProject } from "@/lib/public-project"
 
-export function PublicProjectView({ project, homeHref }: { project: PublicProject; homeHref: string }) {
+export function PublicProjectView({
+  project,
+  homeHref,
+  isLoggedIn,
+}: {
+  project: PublicProject
+  homeHref: string
+  isLoggedIn: boolean
+}) {
   const firstIdea = project.paths.flatMap((path) => path.ideas)[0]
   const [selectedIdea, setSelectedIdea] = useState<PublicIdea | undefined>(firstIdea)
 
@@ -31,6 +40,14 @@ export function PublicProjectView({ project, homeHref }: { project: PublicProjec
             <span className="ml-2 text-xs" style={{ color: "var(--color-neutral-600)" }}>
               by {project.ownerUsername}
             </span>
+          </div>
+          <div className="ml-auto">
+            <VoteButton
+              projectId={project.id}
+              initialVoted={project.votedByRequester}
+              initialCount={project.voteCount}
+              isLoggedIn={isLoggedIn}
+            />
           </div>
         </header>
         <div className="flex-1 overflow-auto px-2 py-2">

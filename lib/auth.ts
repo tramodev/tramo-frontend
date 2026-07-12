@@ -6,6 +6,11 @@ export async function getAccessToken(): Promise<string | null> {
   return cookieStore.get('accessToken')?.value || null;
 }
 
+export async function isLoggedIn(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return !!(cookieStore.get('accessToken') || cookieStore.get('refreshToken'));
+}
+
 export async function refreshAccessToken(): Promise<boolean> {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get('refreshToken')?.value;

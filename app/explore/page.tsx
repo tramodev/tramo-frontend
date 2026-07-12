@@ -4,20 +4,24 @@ import { archivo } from "@/lib/fonts"
 import "../modernist.css"
 import { Wordmark } from "@/components/logo"
 import { UserMenu } from "@/components/user-menu"
-import { getPublishedFeed, getHotTopics } from "@/lib/public-project"
+import { VoteButton } from "@/components/vote-button"
+import { getPublishedFeed, getHotTopics, type FeedSort } from "@/lib/public-project"
 import { getHomeHref } from "@/lib/nav"
+import { isLoggedIn } from "@/lib/auth"
 import { Footer } from "@/components/footer"
 
 export default async function ExplorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; sort?: string }>
 }) {
-  const { q } = await searchParams
-  const [projects, hotTopics, homeHref] = await Promise.all([
-    getPublishedFeed(q),
+  const { q, sort: sortParam } = await searchParams
+  const sort: FeedSort = sortParam === "hot" ? "hot" : "recent"
+  const [projects, hotTopics, homeHref, loggedIn] = await Promise.all([
+    getPublishedFeed(q, sort),
     getHotTopics(),
     getHomeHref(),
+    isLoggedIn(),
   ])
 
   return (
@@ -56,6 +60,27 @@ export default async function ExplorePage({
             />
           </div>
         </form>
+
+        <div className="mb-6 flex gap-2 text-sm font-bold">
+          {(
+            [
+              ["recent", "Recent"],
+              ["hot", "Hot"],
+            ] as const
+          ).map(([value, label]) => (
+            <Link
+              key={value}
+              href={`/explore?${new URLSearchParams({ ...(q ? { q } : {}), sort: value }).toString()}`}
+              className="rounded-full px-3 py-1 transition-colors"
+              style={{
+                background: sort === value ? "var(--color-neutral-900)" : "var(--color-neutral-200)",
+                color: sort === value ? "var(--color-bg)" : "var(--color-neutral-800)",
+              }}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
 
         <div className="flex gap-12">
           <div className="min-w-0 flex-1">
@@ -99,15 +124,23 @@ export default async function ExplorePage({
                       </div>
                     )}
                   </div>
-                  {project.thumbnail && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={project.thumbnail}
-                      alt=""
-                      className="h-20 w-28 shrink-0 rounded-md object-cover object-top"
-                      style={{ border: "2px solid var(--color-divider)" }}
+                  <div className="flex shrink-0 items-center gap-4">
+                    {project.thumbnail && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={project.thumbnail}
+                        alt=""
+                        className="h-20 w-28 shrink-0 rounded-md object-cover object-top"
+                        style={{ border: "2px solid var(--color-divider)" }}
+                      />
+                    )}
+                    <VoteButton
+                      projectId={project.id}
+                      initialVoted={project.votedByRequester}
+                      initialCount={project.voteCount}
+                      isLoggedIn={loggedIn}
                     />
-                  )}
+                  </div>
                 </a>
               ))}
             </div>
