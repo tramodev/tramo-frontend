@@ -18,15 +18,6 @@ export async function Navbar() {
         <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
           Product
         </a>
-        <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
-          Pricing
-        </a>
-        <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
-          Community
-        </a>
-        <a href="#product" className="text-sm hover:text-[var(--color-accent-600)] transition-colors">
-          Blog
-        </a>
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
             <AvatarMenu username={username} />
