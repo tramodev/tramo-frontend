@@ -227,6 +227,17 @@ export async function forkProject(id: string): Promise<Project> {
   return toProjectSummary(await parseResponse<ProjectDTO>(response));
 }
 
+interface BookmarkResponseDTO {
+  bookmarked: boolean;
+}
+
+export async function toggleProjectBookmark(id: string): Promise<boolean> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/bookmark`, {
+    method: "POST",
+  });
+  return (await parseResponse<BookmarkResponseDTO>(response)).bookmarked;
+}
+
 export async function createPath(projectId: string, title: string): Promise<Path> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${projectId}/path`, {
     method: "POST",

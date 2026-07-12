@@ -1,10 +1,12 @@
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { Eye, Search } from "lucide-react"
 import { archivo } from "@/lib/fonts"
 import "../modernist.css"
 import { Wordmark } from "@/components/logo"
+import { PrimaryNav } from "@/components/primary-nav"
 import { UserMenu } from "@/components/user-menu"
 import { VoteButton } from "@/components/vote-button"
+import { BookmarkButton } from "@/components/bookmark-button"
 import { getPublishedFeed, getHotTopics, type FeedSort } from "@/lib/public-project"
 import { getHomeHref } from "@/lib/nav"
 import { isLoggedIn } from "@/lib/auth"
@@ -27,18 +29,13 @@ export default async function ExplorePage({
   return (
     <div className={`modernist flex min-h-svh flex-col ${archivo.className}`}>
       <header
-        className="flex items-center gap-4"
+        className="flex items-center gap-6"
         style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
       >
         <Link href={homeHref}>
           <Wordmark />
         </Link>
-        <span
-          className="text-[13px] uppercase"
-          style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
-        >
-          Explore
-        </span>
+        <PrimaryNav active="explore" loggedIn={loggedIn} />
         <div className="ml-auto">
           <UserMenu />
         </div>
@@ -99,8 +96,15 @@ export default async function ExplorePage({
                 >
                   <div className="flex min-w-0 flex-col gap-1.5">
                     <h2 className="text-[20px] font-bold">{project.title}</h2>
-                    <p className="text-xs" style={{ color: "var(--color-neutral-600)" }}>
+                    <p
+                      className="flex items-center gap-1.5 text-xs"
+                      style={{ color: "var(--color-neutral-600)" }}
+                    >
                       by {project.ownerUsername}
+                      <span className="inline-flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        {project.viewCount}
+                      </span>
                     </p>
                     {project.description && (
                       <p
@@ -134,6 +138,11 @@ export default async function ExplorePage({
                         style={{ border: "2px solid var(--color-divider)" }}
                       />
                     )}
+                    <BookmarkButton
+                      projectId={project.id}
+                      initialBookmarked={project.bookmarkedByRequester}
+                      isLoggedIn={loggedIn}
+                    />
                     <VoteButton
                       projectId={project.id}
                       initialVoted={project.votedByRequester}

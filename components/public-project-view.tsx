@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { FolderPlus } from "lucide-react"
+import { Eye, FolderPlus } from "lucide-react"
 
 import { PublicSidebar } from "@/components/public-sidebar"
 import { LexicalReadOnly } from "@/components/lexical-read-only"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { VoteButton } from "@/components/vote-button"
 import { ForkButton } from "@/components/fork-button"
+import { BookmarkButton } from "@/components/bookmark-button"
 import type { PublicIdea, PublicProject } from "@/lib/public-project"
 
 export function PublicProjectView({
@@ -48,9 +49,21 @@ export function PublicProjectView({
             <span className="ml-2 text-xs" style={{ color: "var(--color-neutral-600)" }}>
               by {project.ownerUsername}
             </span>
+            <span
+              className="ml-3 inline-flex items-center gap-1 text-xs"
+              style={{ color: "var(--color-neutral-600)" }}
+            >
+              <Eye className="h-3.5 w-3.5" />
+              {project.viewCount} views
+            </span>
           </div>
           <div className="ml-auto flex items-center gap-3">
             {!isOwnProject && <ForkButton projectId={project.id} isLoggedIn={isLoggedIn} />}
+            <BookmarkButton
+              projectId={project.id}
+              initialBookmarked={project.bookmarkedByRequester}
+              isLoggedIn={isLoggedIn}
+            />
             <VoteButton
               projectId={project.id}
               initialVoted={project.votedByRequester}

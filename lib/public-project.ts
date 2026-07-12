@@ -1,11 +1,19 @@
 'use server';
 
+import { cookies } from "next/headers";
 import { API_BASE_URL } from "./config";
 import { getAccessToken } from "./auth";
 
 async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
   const token = await getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : undefined;
+}
+
+// Minted by middleware.ts on first visit to a /p/* page — lets the backend
+// dedup the view counter per anonymous visitor instead of per page load.
+async function anonIdHeader(): Promise<HeadersInit | undefined> {
+  const anonId = (await cookies()).get("mypath_anon_id")?.value;
+  return anonId ? { "X-Anon-Id": anonId } : undefined;
 }
 
 export interface PublicIdea {
@@ -30,6 +38,8 @@ export interface PublicProject {
   paths: PublicPath[];
   voteCount: number;
   votedByRequester: boolean;
+  bookmarkedByRequester: boolean;
+  viewCount: number;
 }
 
 interface PublicIdeaDTO {
@@ -54,6 +64,8 @@ interface PublicProjectDTO {
   paths: PublicPathDTO[];
   voteCount: number;
   votedByRequester: boolean;
+  bookmarkedByRequester: boolean;
+  viewCount: number;
 }
 
 export interface ProjectFeedItem {
@@ -66,6 +78,8 @@ export interface ProjectFeedItem {
   modifiedDate: string;
   voteCount: number;
   votedByRequester: boolean;
+  bookmarkedByRequester: boolean;
+  viewCount: number;
 }
 
 interface ProjectFeedItemDTO {
@@ -78,6 +92,8 @@ interface ProjectFeedItemDTO {
   modifiedDate: string;
   voteCount: number;
   votedByRequester: boolean;
+  bookmarkedByRequester: boolean;
+  viewCount: number;
 }
 
 export type FeedSort = "recent" | "hot";
@@ -107,6 +123,8 @@ export async function getPublishedFeed(query?: string, sort: FeedSort = "recent"
     modifiedDate: item.modifiedDate,
     voteCount: item.voteCount,
     votedByRequester: item.votedByRequester,
+    bookmarkedByRequester: item.bookmarkedByRequester,
+    viewCount: item.viewCount,
   }));
 }
 
@@ -129,7 +147,7 @@ export async function getHotTopics(): Promise<TagCount[]> {
 export async function getPublicProject(projectId: string): Promise<PublicProject | null> {
   const response = await fetch(`${API_BASE_URL}/api/public/project/${projectId}`, {
     cache: "no-store",
-    headers: await optionalAuthHeaders(),
+    headers: { ...(await optionalAuthHeaders()), ...(await anonIdHeader()) },
   });
 
   if (!response.ok) return null;
@@ -144,6 +162,8 @@ export async function getPublicProject(projectId: string): Promise<PublicProject
     modifiedDate: data.modifiedDate,
     voteCount: data.voteCount,
     votedByRequester: data.votedByRequester,
+    bookmarkedByRequester: data.bookmarkedByRequester,
+    viewCount: data.viewCount,
     paths: data.paths.map((path) => ({
       id: String(path.id),
       title: path.title,

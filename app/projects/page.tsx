@@ -8,6 +8,7 @@ import { Plus, FolderKanban, Trash2 } from "lucide-react"
 import { archivo } from "@/lib/fonts"
 import "../modernist.css"
 import { Wordmark } from "@/components/logo"
+import { PrimaryNav } from "@/components/primary-nav"
 import { UserMenu } from "@/components/user-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -78,18 +79,13 @@ export default function ProjectsPage() {
   return (
     <div className={`modernist flex min-h-svh flex-col ${archivo.className}`}>
       <header
-        className="flex items-center gap-4"
+        className="flex items-center gap-6"
         style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
       >
         <Link href="/projects">
           <Wordmark />
         </Link>
-        <span
-          className="text-[13px] uppercase"
-          style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
-        >
-          Projects
-        </span>
+        <PrimaryNav active="projects" />
         <div className="ml-auto">
           <UserMenu />
         </div>

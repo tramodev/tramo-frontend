@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { archivo } from "@/lib/fonts";
 import "./landing.css";
 import { BrowserMockup } from "@/components/browser-mockup";
@@ -6,8 +7,13 @@ import { Navbar } from "@/components/navbar";
 import { FeaturesSection } from "@/components/features-section";
 import { PosterCta } from "@/components/poster-cta";
 import { Footer } from "@/components/footer";
+import { isLoggedIn } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home() {
+  if (await isLoggedIn()) {
+    redirect("/projects");
+  }
+
   return (
     <div className={`modernist min-h-screen ${archivo.className}`}>
       <Navbar />
