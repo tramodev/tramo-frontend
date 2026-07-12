@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { FolderKanban, LogOut, Moon, Sun } from 'lucide-react';
+import { Compass, FolderKanban, LogOut, Moon, Sun } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
 
 export function AvatarMenu({ username }: { username: string }) {
@@ -38,6 +38,12 @@ export function AvatarMenu({ username }: { username: string }) {
           <a href="/projects" className="cursor-pointer">
             <FolderKanban />
             Projects
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a href="/explore" className="cursor-pointer">
+            <Compass />
+            Explore
           </a>
         </DropdownMenuItem>
         <DropdownMenuItem

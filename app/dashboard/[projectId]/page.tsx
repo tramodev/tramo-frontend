@@ -70,10 +70,12 @@ import {
   detachIdeaFromPath,
   linkIdeas as linkIdeasRequest,
   unlinkIdeas as unlinkIdeasRequest,
+  setProjectThumbnail,
   type ProjectVisibility,
 } from '@/lib/projects-store';
 import { getIdeaContent, saveIdeaContent } from '@/lib/idea-content-client';
 import { ShareDialog } from '@/components/share-dialog';
+import { ThumbnailCapture } from '@/components/thumbnail-capture';
 
 const placeholder = 'Enter some rich text...';
 
@@ -199,6 +201,8 @@ const editorConfig = {
   theme: ExampleTheme,
 };
 
+const lastIdeaStorageKey = (projectId: string) => `mypath:lastIdea:${projectId}`;
+
 export default function DashboardPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const router = useRouter();
@@ -206,6 +210,7 @@ export default function DashboardPage() {
   const [loaded, setLoaded] = useState(false);
   const [projectTitle, setProjectTitle] = useState('');
   const [visibility, setVisibility] = useState<ProjectVisibility>('private');
+  const [tags, setTags] = useState('');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
 
@@ -214,10 +219,11 @@ export default function DashboardPage() {
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState<'editor' | 'graph'>('editor');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [thumbnailCaptureContent, setThumbnailCaptureContent] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    getProject(projectId).then((project) => {
+    getProject(projectId).then(async (project) => {
       if (cancelled) return;
       if (!project) {
         router.replace('/projects');
@@ -225,14 +231,44 @@ export default function DashboardPage() {
       }
       setProjectTitle(project.title);
       setVisibility(project.visibility);
+      setTags(project.tags);
       setPaths(project.paths);
       setIdeas(project.ideas);
       setLoaded(true);
+
+      // Restores whichever idea was open before a reload, so navigating away
+      // and back (or refreshing) doesn't dump you back at the empty state.
+      const savedIdeaId = localStorage.getItem(lastIdeaStorageKey(projectId));
+      const savedIdea = savedIdeaId ? project.ideas[savedIdeaId] : undefined;
+      if (!savedIdea) return;
+
+      try {
+        const content = await getIdeaContent(savedIdea.id);
+        if (cancelled) return;
+        setIdeas(prevIdeas => {
+          const existing = prevIdeas[savedIdea.id];
+          if (!existing) return prevIdeas;
+          return { ...prevIdeas, [savedIdea.id]: { ...existing, content } };
+        });
+      } catch (err) {
+        console.error(err);
+      }
+      if (!cancelled) setSelectedIdeaId(savedIdea.id);
     });
     return () => {
       cancelled = true;
     };
   }, [projectId, router]);
+
+  // Keeps the last-selected idea per project so it can be restored on reload.
+  useEffect(() => {
+    if (!loaded) return;
+    if (selectedIdeaId) {
+      localStorage.setItem(lastIdeaStorageKey(projectId), selectedIdeaId);
+    } else {
+      localStorage.removeItem(lastIdeaStorageKey(projectId));
+    }
+  }, [projectId, selectedIdeaId, loaded]);
 
   const selectedIdea = selectedIdeaId ? ideas[selectedIdeaId] : undefined;
 
@@ -376,6 +412,41 @@ export default function DashboardPage() {
     });
   };
 
+  // Tracks the current first idea (across saves/reorders) without making the
+  // debounced save callback below depend on `paths`, which would otherwise
+  // change identity — and re-trigger its cleanup effect — on every edit.
+  const firstIdeaIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    firstIdeaIdRef.current = paths.flatMap(path => path.ideaIds)[0];
+  }, [paths]);
+
+  const handleVisibilityChange = async (next: ProjectVisibility) => {
+    setVisibility(next);
+    // Fallback for projects published without ever re-editing the first idea
+    // in this session — the save-triggered capture below won't have fired yet.
+    if (next !== 'published') return;
+
+    const firstIdeaId = firstIdeaIdRef.current;
+    if (!firstIdeaId) return;
+
+    try {
+      const content = await getIdeaContent(firstIdeaId);
+      if (content) setThumbnailCaptureContent(content);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleThumbnailCaptured = useCallback(async (dataUrl: string | null) => {
+    setThumbnailCaptureContent(null);
+    if (!dataUrl) return;
+    try {
+      await setProjectThumbnail(projectId, dataUrl);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [projectId]);
+
   // Debounces content saves so we don't hit the backend on every keystroke; flushed
   // immediately when switching ideas or leaving the page so nothing pending is lost.
   const pendingContentRef = useRef<{ ideaId: string; content: string } | null>(null);
@@ -391,7 +462,14 @@ export default function DashboardPage() {
     pendingContentRef.current = null;
     setSaveStatus('saving');
     saveIdeaContent(pending.ideaId, pending.content)
-      .then(() => setSaveStatus('saved'))
+      .then(() => {
+        setSaveStatus('saved');
+        // Keeps the project card's preview fresh as the first idea changes —
+        // covers private/unlisted projects too, not just published ones.
+        if (pending.ideaId === firstIdeaIdRef.current) {
+          setThumbnailCaptureContent(pending.content);
+        }
+      })
       .catch((err) => {
         console.error(err);
         setSaveStatus('error');
@@ -499,7 +577,9 @@ export default function DashboardPage() {
             <ShareDialog
               projectId={projectId}
               visibility={visibility}
-              onVisibilityChange={setVisibility}
+              onVisibilityChange={handleVisibilityChange}
+              tags={tags}
+              onTagsChange={setTags}
             />
             <span
               className="flex items-center gap-1.5 text-xs"
@@ -511,7 +591,7 @@ export default function DashboardPage() {
                   Saving
                 </>
               )}
-              {saveStatus === 'saved' && (
+              {(saveStatus === 'saved' || saveStatus === 'idle') && (
                 <>
                   <Check className="h-3.5 w-3.5" style={{ color: 'var(--color-accent)' }} />
                   Saved
@@ -593,6 +673,9 @@ export default function DashboardPage() {
           )}
         </div>
       </SidebarInset>
+      {thumbnailCaptureContent && (
+        <ThumbnailCapture content={thumbnailCaptureContent} onCapture={handleThumbnailCaptured} />
+      )}
     </>
   )
 }

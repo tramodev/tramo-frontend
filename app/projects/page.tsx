@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Plus, FolderKanban, Trash2 } from "lucide-react"
 
 import { archivo } from "@/lib/fonts"
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { Footer } from "@/components/footer"
 import {
   createProject,
   deleteProject,
@@ -74,12 +76,14 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className={`modernist min-h-svh ${archivo.className}`}>
+    <div className={`modernist flex min-h-svh flex-col ${archivo.className}`}>
       <header
         className="flex items-center gap-4"
         style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
       >
-        <Wordmark />
+        <Link href="/projects">
+          <Wordmark />
+        </Link>
         <span
           className="text-[13px] uppercase"
           style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
@@ -90,7 +94,7 @@ export default function ProjectsPage() {
           <UserMenu />
         </div>
       </header>
-      <main className="mx-auto" style={{ maxWidth: 1216, padding: "56px 72px 84px" }}>
+      <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216, padding: "56px 72px 84px" }}>
         <h1 className="text-[32px]" style={{ marginBottom: 28 }}>
           Start a new project
         </h1>
@@ -133,13 +137,22 @@ export default function ProjectsPage() {
                   onClick={() => router.push(`/dashboard/${project.id}`)}
                 >
                   <CardContent
-                    className="flex aspect-[4/3] items-center justify-center p-0"
+                    className="flex aspect-[4/3] items-center justify-center overflow-hidden p-0"
                     style={{ borderBottom: "2px solid var(--color-divider)" }}
                   >
-                    <FolderKanban
-                      className="h-9 w-9"
-                      style={{ color: "var(--color-neutral-600)", strokeWidth: 1.5 }}
-                    />
+                    {project.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={project.thumbnail}
+                        alt=""
+                        className="h-full w-full object-cover object-top"
+                      />
+                    ) : (
+                      <FolderKanban
+                        className="h-9 w-9"
+                        style={{ color: "var(--color-neutral-600)", strokeWidth: 1.5 }}
+                      />
+                    )}
                   </CardContent>
                   <CardHeader className="gap-0 p-0" style={{ padding: "14px 16px" }}>
                     <div className="flex items-center justify-between gap-2">
@@ -192,6 +205,7 @@ export default function ProjectsPage() {
           )}
         </div>
       </main>
+      <Footer />
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {

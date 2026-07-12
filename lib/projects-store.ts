@@ -4,7 +4,7 @@ import { Idea, Path } from "@/app/dashboard/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 
-export type ProjectVisibility = "private" | "public";
+export type ProjectVisibility = "private" | "unlisted" | "published";
 
 export interface Project {
   id: string;
@@ -12,6 +12,8 @@ export interface Project {
   paths: Path[];
   ideas: Record<string, Idea>;
   visibility: ProjectVisibility;
+  thumbnail: string | null;
+  tags: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +25,8 @@ interface ProjectDTO {
   title: string;
   description: string | null;
   visibility: ProjectVisibility | null;
+  thumbnail: string | null;
+  tags: string | null;
   creationDate: string;
   modifiedDate: string;
 }
@@ -69,6 +73,8 @@ function toProjectSummary(dto: ProjectDTO): Project {
     paths: [],
     ideas: {},
     visibility: dto.visibility ?? "private",
+    thumbnail: dto.thumbnail,
+    tags: dto.tags ?? "",
     createdAt: dto.creationDate,
     updatedAt: dto.modifiedDate,
   };
@@ -135,6 +141,8 @@ export async function getProject(id: string): Promise<Project | null> {
     paths,
     ideas,
     visibility: projectDto.visibility ?? "private",
+    thumbnail: projectDto.thumbnail,
+    tags: projectDto.tags ?? "",
     createdAt: projectDto.creationDate,
     updatedAt: projectDto.modifiedDate,
   };
@@ -173,6 +181,24 @@ export async function setProjectVisibility(
     method: "PUT",
     headers: jsonHeaders,
     body: JSON.stringify({ visibility }),
+  });
+  await expectOk(response);
+}
+
+export async function setProjectThumbnail(id: string, thumbnail: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}`, {
+    method: "PUT",
+    headers: jsonHeaders,
+    body: JSON.stringify({ thumbnail }),
+  });
+  await expectOk(response);
+}
+
+export async function setProjectTags(id: string, tags: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}`, {
+    method: "PUT",
+    headers: jsonHeaders,
+    body: JSON.stringify({ tags }),
   });
   await expectOk(response);
 }
