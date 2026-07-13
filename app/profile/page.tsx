@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowBigUp, ArrowUpRight, Eye, GitFork, Pencil } from "lucide-react"
+import { ArrowBigUp, ArrowUpRight, Bookmark, Calendar, Eye, GitFork, Rocket, Users } from "lucide-react"
 import { archivo } from "@/lib/fonts"
 import "../modernist.css"
 import { Wordmark } from "@/components/logo"
@@ -9,16 +9,18 @@ import { NotificationButton } from "@/components/notification-button"
 import { VoteButton } from "@/components/vote-button"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { ForkButton } from "@/components/fork-button"
+import { BadgesPanel } from "@/components/badges-panel"
+import { AvatarUpload } from "@/components/avatar-upload"
+import { BioEditor } from "@/components/bio-editor"
+import { PublishedGrid } from "@/components/published-grid"
 import { Footer } from "@/components/footer"
 import { getHomeHref } from "@/lib/nav"
 import { getUsername, isLoggedIn } from "@/lib/auth"
 import {
   getMyProfile,
-  getMyStats,
-  getMyBookmarks,
-  getMyUpvoted,
-  getMyForks,
+  getMyProfileBundle,
   type ForkFeedItem,
+  type ActivityItem,
 } from "@/lib/profile"
 import type { ProjectFeedItem } from "@/lib/public-project"
 
@@ -26,7 +28,9 @@ function initial(username: string) {
   return username.charAt(0).toUpperCase()
 }
 
-type Tab = "bookmarks" | "forks" | "upvoted"
+type Tab = "activity" | "published" | "bookmarks" | "forks" | "upvoted"
+
+const TAB_KEYS: Tab[] = ["activity", "published", "bookmarks", "forks", "upvoted"]
 
 export default async function ProfilePage({
   searchParams,
@@ -34,25 +38,25 @@ export default async function ProfilePage({
   searchParams: Promise<{ tab?: string }>
 }) {
   const { tab: tabParam } = await searchParams
-  const tab: Tab = tabParam === "forks" ? "forks" : tabParam === "upvoted" ? "upvoted" : "bookmarks"
+  const tab: Tab = TAB_KEYS.includes(tabParam as Tab) ? (tabParam as Tab) : "activity"
 
-  const [fetchedProfile, stats, bookmarks, upvoted, forks, homeHref, loggedIn, cookieUsername] = await Promise.all([
+  const [fetchedProfile, bundle, homeHref, loggedIn, cookieUsername] = await Promise.all([
     getMyProfile(),
-    getMyStats(),
-    getMyBookmarks(),
-    getMyUpvoted(),
-    getMyForks(),
+    getMyProfileBundle(),
     getHomeHref(),
     isLoggedIn(),
     getUsername(),
   ])
+  const { stats, bookmarks, upvoted, forks, badges, published, activity } = bundle
 
   // Falls back to the username cookie (always present here — middleware
   // gates /profile on it) so a stale/unreachable backend degrades to a
   // sparse page instead of blanking out entirely.
-  const profile = fetchedProfile ?? { username: cookieUsername ?? "", bio: null, imageUrl: null }
+  const profile = fetchedProfile ?? { username: cookieUsername ?? "", bio: null, imageUrl: null, createdAt: null }
 
   const tabs: { key: Tab; label: string; count: number }[] = [
+    { key: "activity", label: "Activity", count: activity.length },
+    { key: "published", label: "Published", count: published.length },
     { key: "bookmarks", label: "Bookmarks", count: bookmarks.length },
     { key: "forks", label: "Forks", count: forks.length },
     { key: "upvoted", label: "Upvoted", count: upvoted.length },
@@ -78,12 +82,7 @@ export default async function ProfilePage({
         {/* masthead */}
         <div style={{ padding: "44px 72px 0" }}>
           <div className="flex items-start gap-7">
-            <span
-              className="flex shrink-0 items-center justify-center text-[32px] font-extrabold"
-              style={{ width: 88, height: 88, background: "var(--color-text)", color: "var(--color-bg)" }}
-            >
-              {initial(profile.username)}
-            </span>
+            <AvatarUpload username={profile.username} imageUrl={profile.imageUrl} />
             <div className="min-w-0 flex-1">
               <span
                 className="block text-[11px] font-bold uppercase"
@@ -97,25 +96,23 @@ export default async function ProfilePage({
               >
                 {profile.username}
               </h1>
-              {profile.bio && (
-                <p className="text-sm" style={{ lineHeight: 1.6, color: "var(--color-neutral-700)", maxWidth: "56ch" }}>
-                  {profile.bio}
-                </p>
-              )}
-            </div>
-            <div className="flex shrink-0 gap-2" style={{ paddingTop: 6 }}>
-              <Link
-                href="/settings"
-                className="inline-flex items-center gap-2 rounded-md text-[13px] font-bold transition-colors hover:bg-muted hover:text-[var(--color-text)]"
-                style={{
-                  padding: "8px 14px",
-                  border: "2px solid var(--color-divider)",
-                  color: "var(--color-neutral-600)",
-                }}
-              >
-                <Pencil className="h-[15px] w-[15px]" />
-                Edit profile
-              </Link>
+              <div className="flex items-center gap-4 text-xs" style={{ marginBottom: 12, color: "var(--color-neutral-600)" }}>
+                {profile.createdAt && (
+                  <span className="inline-flex items-center gap-1.5 font-semibold">
+                    <Calendar className="h-[13px] w-[13px]" />
+                    Joined{" "}
+                    {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 font-semibold">
+                  <Users className="h-[13px] w-[13px]" />
+                  {(stats?.followersCount ?? 0).toLocaleString()} followers
+                </span>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <BioEditor initialBio={profile.bio} />
+              </div>
+              <BadgesPanel badges={badges} />
             </div>
           </div>
 
@@ -167,6 +164,37 @@ export default async function ProfilePage({
             </div>
           </div>
 
+          {/* published paths */}
+          <div style={{ marginTop: 32 }}>
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-[11px] font-bold uppercase" style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}>
+                Published paths
+              </div>
+              {published.length > 2 && (
+                <Link
+                  href="/profile?tab=published"
+                  className="inline-flex items-center gap-1 text-xs font-bold transition-colors hover:text-[var(--color-accent)]"
+                  style={{ color: "var(--color-neutral-700)" }}
+                >
+                  See all
+                  <ArrowUpRight className="h-[11px] w-[11px]" />
+                </Link>
+              )}
+            </div>
+            <PublishedGrid
+              items={published.slice(0, 2)}
+              hrefFor={(id) => `/dashboard/${id}`}
+              emptyMessage={
+                <>
+                  Nothing published yet — publish a path from{" "}
+                  <Link href="/projects" className="font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-neutral-700)" }}>
+                    Projects.
+                  </Link>
+                </>
+              }
+            />
+          </div>
+
           {/* tabs */}
           <div className="flex gap-6" style={{ borderBottom: "2px solid var(--color-divider)", marginTop: 32 }}>
             {tabs.map(({ key, label, count }) => (
@@ -191,6 +219,21 @@ export default async function ProfilePage({
 
         {/* active panel */}
         <div style={{ padding: "8px 72px 56px" }}>
+          {tab === "activity" && <ActivityPanel items={activity} />}
+          {tab === "published" && (
+            <PublishedGrid
+              items={published}
+              hrefFor={(id) => `/dashboard/${id}`}
+              emptyMessage={
+                <>
+                  Nothing published yet — publish a path from{" "}
+                  <Link href="/projects" className="font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-neutral-700)" }}>
+                    Projects.
+                  </Link>
+                </>
+              }
+            />
+          )}
           {tab === "bookmarks" && <BookmarksPanel items={bookmarks} loggedIn={loggedIn} />}
           {tab === "forks" && <ForksPanel items={forks} />}
           {tab === "upvoted" && <UpvotedPanel items={upvoted} loggedIn={loggedIn} />}
@@ -241,6 +284,78 @@ function EmptyState({ message, linkHref, linkLabel }: { message: string; linkHre
   )
 }
 
+
+const ACTIVITY_ICONS: Record<ActivityItem["type"], React.ComponentType<{ className?: string }>> = {
+  published: Rocket,
+  forked: GitFork,
+  voted: ArrowBigUp,
+  bookmarked: Bookmark,
+  received_vote: ArrowBigUp,
+  received_fork: GitFork,
+  received_bookmark: Bookmark,
+}
+
+const OWN_PROJECT_TYPES = new Set<ActivityItem["type"]>(["published", "forked", "received_vote", "received_fork", "received_bookmark"])
+
+function activityHref(item: ActivityItem) {
+  return OWN_PROJECT_TYPES.has(item.type) ? `/dashboard/${item.projectId}` : `/p/${item.projectId}`
+}
+
+function activityText(item: ActivityItem) {
+  switch (item.type) {
+    case "published":
+      return <>You published <strong>{item.projectTitle}</strong></>
+    case "forked":
+      return item.otherUsername ? (
+        <>You forked <strong>{item.projectTitle}</strong> from {item.otherUsername}</>
+      ) : (
+        <>You forked <strong>{item.projectTitle}</strong></>
+      )
+    case "voted":
+      return <>You upvoted <strong>{item.projectTitle}</strong></>
+    case "bookmarked":
+      return <>You bookmarked <strong>{item.projectTitle}</strong></>
+    case "received_vote":
+      return <>{item.otherUsername} upvoted <strong>{item.projectTitle}</strong></>
+    case "received_fork":
+      return <>{item.otherUsername} forked <strong>{item.projectTitle}</strong></>
+    case "received_bookmark":
+      return <>{item.otherUsername} bookmarked <strong>{item.projectTitle}</strong></>
+  }
+}
+
+function formatActivityDate(timestamp: string) {
+  return new Date(timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+}
+
+function ActivityPanel({ items }: { items: ActivityItem[] }) {
+  if (items.length === 0) {
+    return <EmptyState message="No activity yet — publish, fork, or upvote paths on" linkHref="/explore" linkLabel="Explore." />
+  }
+  return (
+    <div className="flex flex-col">
+      {items.map((item, index) => {
+        const Icon = ACTIVITY_ICONS[item.type]
+        return (
+          <Row key={`${item.type}-${item.projectId}-${index}`}>
+            <Link href={activityHref(item)} className="absolute inset-0 z-0" aria-label={item.projectTitle} />
+            <span
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+              style={{ background: "var(--color-neutral-200)", color: "var(--color-neutral-700)" }}
+            >
+              <Icon className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1 text-sm">{activityText(item)}</div>
+            <div className="shrink-0 text-xs" style={{ color: "var(--color-neutral-600)" }}>
+              {formatActivityDate(item.timestamp)}
+            </div>
+          </Row>
+        )
+      })}
+    </div>
+  )
+}
+
 function BookmarksPanel({ items, loggedIn }: { items: ProjectFeedItem[]; loggedIn: boolean }) {
   if (items.length === 0) {
     return <EmptyState message="Nothing saved yet — bookmark paths from" linkHref="/explore" linkLabel="Explore." />
@@ -255,7 +370,7 @@ function BookmarksPanel({ items, loggedIn }: { items: ProjectFeedItem[]; loggedI
             <div className="mb-1 text-[20px] font-bold">{item.title}</div>
             <div className="flex items-center gap-2.5 text-xs" style={{ color: "var(--color-neutral-600)" }}>
               <a
-                href={`/explore?q=${encodeURIComponent(item.ownerUsername)}`}
+                href={`/u/${encodeURIComponent(item.ownerUsername)}`}
                 className="relative z-10 font-semibold hover:text-[var(--color-accent)]"
                 style={{ color: "var(--color-neutral-700)" }}
               >
@@ -299,7 +414,7 @@ function ForksPanel({ items }: { items: ForkFeedItem[] }) {
                 <span>
                   forked from{" "}
                   <a
-                    href={`/explore?q=${encodeURIComponent(item.forkedFromOwnerUsername)}`}
+                    href={`/u/${encodeURIComponent(item.forkedFromOwnerUsername)}`}
                     className="relative z-10 font-semibold hover:text-[var(--color-accent)]"
                     style={{ color: "var(--color-neutral-700)" }}
                   >
@@ -339,7 +454,7 @@ function UpvotedPanel({ items, loggedIn }: { items: ProjectFeedItem[]; loggedIn:
             <div className="text-xs" style={{ color: "var(--color-neutral-600)" }}>
               by{" "}
               <a
-                href={`/explore?q=${encodeURIComponent(item.ownerUsername)}`}
+                href={`/u/${encodeURIComponent(item.ownerUsername)}`}
                 className="relative z-10 font-semibold hover:text-[var(--color-accent)]"
                 style={{ color: "var(--color-neutral-700)" }}
               >

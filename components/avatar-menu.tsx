@@ -10,10 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { LogOut, Moon, Settings, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
 
-export function AvatarMenu({ username }: { username: string }) {
+export function AvatarMenu({ username, imageUrl }: { username: string; imageUrl?: string | null }) {
   const initials = username.slice(0, 2).toUpperCase();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
@@ -27,8 +27,13 @@ export function AvatarMenu({ username }: { username: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="avatar-chip outline-none" aria-label="Account menu">
-          {initials}
+        <button className="avatar-chip overflow-hidden outline-none" aria-label="Account menu">
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            initials
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -37,10 +42,15 @@ export function AvatarMenu({ username }: { username: string }) {
             <Link href="/profile">
               <div className="flex items-center gap-2">
                 <span
-                  className="inline-flex shrink-0 items-center justify-center text-[11px] font-extrabold"
+                  className="inline-flex shrink-0 items-center justify-center overflow-hidden text-[11px] font-extrabold"
                   style={{ width: 24, height: 24, background: 'var(--color-text)', color: 'var(--color-bg)' }}
                 >
-                  {initials}
+                  {imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    initials
+                  )}
                 </span>
                 <span className="truncate font-semibold">{username}</span>
               </div>
@@ -49,12 +59,6 @@ export function AvatarMenu({ username }: { username: string }) {
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/settings">
-            <Settings />
-            Settings
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();

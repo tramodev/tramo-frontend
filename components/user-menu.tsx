@@ -6,6 +6,7 @@ import { AvatarMenu } from './avatar-menu';
 interface Session {
   isLoggedIn: boolean;
   username: string;
+  imageUrl: string | null;
 }
 
 export function UserMenu() {
@@ -19,7 +20,7 @@ export function UserMenu() {
         if (!cancelled) setSession(data);
       })
       .catch(() => {
-        if (!cancelled) setSession({ isLoggedIn: false, username: '' });
+        if (!cancelled) setSession({ isLoggedIn: false, username: '', imageUrl: null });
       });
     return () => {
       cancelled = true;
@@ -28,5 +29,5 @@ export function UserMenu() {
 
   if (!session?.isLoggedIn) return null;
 
-  return <AvatarMenu username={session.username} />;
+  return <AvatarMenu username={session.username} imageUrl={session.imageUrl} />;
 }

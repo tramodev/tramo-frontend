@@ -157,7 +157,7 @@ export default async function ExplorePage({
                   >
                     {initial(featured.ownerUsername)}
                   </span>
-                  <a href={`/explore?q=${encodeURIComponent(featured.ownerUsername)}`} className="relative z-10 font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-text)" }}>
+                  <a href={`/u/${encodeURIComponent(featured.ownerUsername)}`} className="relative z-10 font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-text)" }}>
                     {featured.ownerUsername}
                   </a>
                   <span className="inline-flex items-center gap-1">
@@ -261,7 +261,7 @@ export default async function ExplorePage({
                     </div>
                     <div className="flex items-center gap-2.5 text-xs" style={{ color: "var(--color-neutral-600)" }}>
                       <a
-                        href={`/explore?q=${encodeURIComponent(project.ownerUsername)}`}
+                        href={`/u/${encodeURIComponent(project.ownerUsername)}`}
                         className="relative z-10 font-semibold hover:text-[var(--color-accent)]"
                         style={{ color: "var(--color-neutral-700)" }}
                       >
@@ -353,7 +353,7 @@ export default async function ExplorePage({
                     {activeAuthors.map(({ username, count }) => (
                       <a
                         key={username}
-                        href={`/explore?q=${encodeURIComponent(username)}`}
+                        href={`/u/${encodeURIComponent(username)}`}
                         className="flex items-center gap-2.5 px-2 py-2 text-sm transition-colors hover:bg-muted"
                         style={{ borderBottom: "2px solid var(--color-divider)" }}
                       >

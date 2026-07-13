@@ -80,6 +80,7 @@ export interface ProjectFeedItem {
   votedByRequester: boolean;
   bookmarkedByRequester: boolean;
   viewCount: number;
+  forkCount: number;
 }
 
 interface ProjectFeedItemDTO {
@@ -94,6 +95,7 @@ interface ProjectFeedItemDTO {
   votedByRequester: boolean;
   bookmarkedByRequester: boolean;
   viewCount: number;
+  forkCount: number;
 }
 
 export type FeedSort = "recent" | "hot";
@@ -125,6 +127,7 @@ export async function getPublishedFeed(query?: string, sort: FeedSort = "recent"
     votedByRequester: item.votedByRequester,
     bookmarkedByRequester: item.bookmarkedByRequester,
     viewCount: item.viewCount,
+    forkCount: item.forkCount,
   }));
 }
 

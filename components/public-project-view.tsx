@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Eye, FolderPlus } from "lucide-react"
 
 import { PublicSidebar } from "@/components/public-sidebar"
@@ -47,7 +48,10 @@ export function PublicProjectView({
           <div>
             <span className="text-[15px] font-bold">{project.title}</span>
             <span className="ml-2 text-xs" style={{ color: "var(--color-neutral-600)" }}>
-              by {project.ownerUsername}
+              by{" "}
+              <Link href={`/u/${encodeURIComponent(project.ownerUsername)}`} className="font-semibold hover:text-[var(--color-accent)]">
+                {project.ownerUsername}
+              </Link>
             </span>
             <span
               className="ml-3 inline-flex items-center gap-1 text-xs"

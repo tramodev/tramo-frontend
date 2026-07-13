@@ -1,6 +1,7 @@
 import { AvatarMenu } from './avatar-menu';
 import { Wordmark } from './logo';
 import { cookies } from 'next/headers';
+import { getMyProfile } from '@/lib/profile';
 
 export async function Navbar() {
   const cookieStore = await cookies();
@@ -8,6 +9,7 @@ export async function Navbar() {
   const refreshToken = cookieStore.get('refreshToken');
   const isLoggedIn = !!(accessToken || refreshToken);
   const username = cookieStore.get('username')?.value ?? '';
+  const imageUrl = isLoggedIn ? (await getMyProfile())?.imageUrl ?? null : null;
   const homeHref = isLoggedIn ? '/projects' : '/';
 
   return (
@@ -24,7 +26,7 @@ export async function Navbar() {
         </a>
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
-            <AvatarMenu username={username} />
+            <AvatarMenu username={username} imageUrl={imageUrl} />
           ) : (
             <>
               <a href="/login" className="btn btn-ghost-plain">

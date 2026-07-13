@@ -2,6 +2,7 @@
 
 import { API_BASE_URL } from "./config";
 import { getAccessToken } from "./auth";
+import { authenticatedFetch } from "./api";
 import type { ProjectFeedItem } from "./public-project";
 
 // Server Components can't refresh the access token mid-render (cookies() is
@@ -27,6 +28,7 @@ interface ProjectFeedItemDTO {
   votedByRequester: boolean;
   bookmarkedByRequester: boolean;
   viewCount: number;
+  forkCount: number;
 }
 
 interface ForkFeedItemDTO extends ProjectFeedItemDTO {
@@ -45,6 +47,7 @@ export interface UserProfile {
   username: string;
   bio: string | null;
   imageUrl: string | null;
+  createdAt: string | null;
 }
 
 export interface ProfileStats {
@@ -52,6 +55,41 @@ export interface ProfileStats {
   upvotesReceived: number;
   totalViews: number;
   forksCount: number;
+  followersCount: number;
+}
+
+export interface Badge {
+  code: string;
+  name: string;
+  description: string;
+  earned: boolean;
+  progress: number;
+  target: number;
+}
+
+export type ActivityType =
+  | "published"
+  | "forked"
+  | "voted"
+  | "bookmarked"
+  | "received_vote"
+  | "received_fork"
+  | "received_bookmark";
+
+interface ActivityItemDTO {
+  type: ActivityType;
+  timestamp: string;
+  projectId: number;
+  projectTitle: string;
+  otherUsername: string | null;
+}
+
+export interface ActivityItem {
+  type: ActivityType;
+  timestamp: string;
+  projectId: string;
+  projectTitle: string;
+  otherUsername: string | null;
 }
 
 function parseTags(tags: string | null): string[] {
@@ -72,6 +110,7 @@ function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
     votedByRequester: item.votedByRequester,
     bookmarkedByRequester: item.bookmarkedByRequester,
     viewCount: item.viewCount,
+    forkCount: item.forkCount,
   };
 }
 
@@ -81,34 +120,57 @@ export async function getMyProfile(): Promise<UserProfile | null> {
   return response.json();
 }
 
-export async function getMyStats(): Promise<ProfileStats | null> {
-  const response = await fetch(`${API_BASE_URL}/api/profile/stats`, { cache: "no-store", headers: await authHeaders() });
-  if (!response.ok) return null;
+export async function updateMyProfile(fields: { bio?: string; imageUrl?: string }): Promise<UserProfile> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/profile/me`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields),
+  });
+  if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
   return response.json();
 }
 
-export async function getMyBookmarks(): Promise<ProjectFeedItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/profile/bookmarks`, { cache: "no-store", headers: await authHeaders() });
-  if (!response.ok) return [];
-  const data: ProjectFeedItemDTO[] = await response.json();
-  return data.map(toFeedItem);
+interface ProfileBundleDTO {
+  stats: ProfileStats;
+  badges: Badge[];
+  bookmarks: ProjectFeedItemDTO[];
+  upvoted: ProjectFeedItemDTO[];
+  forks: ForkFeedItemDTO[];
+  published: ProjectFeedItemDTO[];
+  activity: ActivityItemDTO[];
 }
 
-export async function getMyUpvoted(): Promise<ProjectFeedItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/profile/upvoted`, { cache: "no-store", headers: await authHeaders() });
-  if (!response.ok) return [];
-  const data: ProjectFeedItemDTO[] = await response.json();
-  return data.map(toFeedItem);
+export interface ProfileBundle {
+  stats: ProfileStats | null;
+  badges: Badge[];
+  bookmarks: ProjectFeedItem[];
+  upvoted: ProjectFeedItem[];
+  forks: ForkFeedItem[];
+  published: ProjectFeedItem[];
+  activity: ActivityItem[];
 }
 
-export async function getMyForks(): Promise<ForkFeedItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/profile/forks`, { cache: "no-store", headers: await authHeaders() });
-  if (!response.ok) return [];
-  const data: ForkFeedItemDTO[] = await response.json();
-  return data.map((item) => ({
-    ...toFeedItem(item),
-    forkedFromProjectId: item.forkedFromProjectId != null ? String(item.forkedFromProjectId) : null,
-    forkedFromTitle: item.forkedFromTitle,
-    forkedFromOwnerUsername: item.forkedFromOwnerUsername,
-  }));
+const EMPTY_BUNDLE: ProfileBundle = { stats: null, badges: [], bookmarks: [], upvoted: [], forks: [], published: [], activity: [] };
+
+// Single round trip instead of 7 separate endpoint calls (profile/stats/
+// badges/bookmarks/upvoted/forks/activity), each of which paid its own
+// JWT-auth user lookup on the backend.
+export async function getMyProfileBundle(): Promise<ProfileBundle> {
+  const response = await fetch(`${API_BASE_URL}/api/profile/bundle`, { cache: "no-store", headers: await authHeaders() });
+  if (!response.ok) return EMPTY_BUNDLE;
+  const data: ProfileBundleDTO = await response.json();
+  return {
+    stats: data.stats,
+    badges: data.badges,
+    bookmarks: data.bookmarks.map(toFeedItem),
+    upvoted: data.upvoted.map(toFeedItem),
+    forks: data.forks.map((item) => ({
+      ...toFeedItem(item),
+      forkedFromProjectId: item.forkedFromProjectId != null ? String(item.forkedFromProjectId) : null,
+      forkedFromTitle: item.forkedFromTitle,
+      forkedFromOwnerUsername: item.forkedFromOwnerUsername,
+    })),
+    published: data.published.map(toFeedItem),
+    activity: data.activity.map((item) => ({ ...item, projectId: String(item.projectId) })),
+  };
 }
