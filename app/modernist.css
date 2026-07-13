@@ -35,7 +35,11 @@
   --color-accent: #6d64e6;
   --color-accent-600: color-mix(in oklch, #6d64e6 88%, white);
   --color-accent-700: color-mix(in oklch, #6d64e6 75%, white);
-  --color-accent-100: color-mix(in oklch, #6d64e6 18%, #201e1d);
+  /* oklch here (unlike the other color-mix lines in this file) went
+     unstable: interpolating hue toward this near-black, not-quite-achromatic
+     bg produced a red-orange tint instead of a dark indigo one. oklab mixes
+     the a/b axes directly with no hue-angle involved, so it can't drift hue. */
+  --color-accent-100: color-mix(in oklab, #6d64e6 18%, #201e1d);
   --color-divider: color-mix(in srgb, #f3f2f2 25%, transparent);
 
   --color-neutral-100: #2d2b2b;

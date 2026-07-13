@@ -24,6 +24,7 @@ interface ProjectFeedItemDTO {
   bookmarkedByRequester: boolean;
   viewCount: number;
   forkCount: number;
+  featured: boolean;
 }
 
 interface PublicProfileDTO {
@@ -69,6 +70,7 @@ function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
     bookmarkedByRequester: item.bookmarkedByRequester,
     viewCount: item.viewCount,
     forkCount: item.forkCount,
+    featured: item.featured,
   };
 }
 

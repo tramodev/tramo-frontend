@@ -1,14 +1,184 @@
-import { Bell } from "lucide-react"
+"use client"
+
+import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ArrowBigUp, Award, Bell, GitFork, Rocket, UserPlus, X } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  getNotifications,
+  getUnreadCount,
+  markAllNotificationsRead,
+  deleteNotification,
+  type AppNotification,
+} from "@/lib/notifications"
+
+const POLL_INTERVAL_MS = 30_000
+
+const ICONS: Record<AppNotification["type"], React.ComponentType<{ className?: string }>> = {
+  UPVOTE: ArrowBigUp,
+  FORK: GitFork,
+  FOLLOW: UserPlus,
+  BADGE: Award,
+  FEATURED: Rocket,
+}
+
+function others(count: number) {
+  const rest = count - 1
+  return rest > 0 ? ` and ${rest} other${rest === 1 ? "" : "s"}` : ""
+}
+
+function notificationText(n: AppNotification) {
+  switch (n.type) {
+    case "UPVOTE":
+      return <>{n.latestActorUsername}{others(n.count)} upvoted <strong>{n.projectTitle}</strong></>
+    case "FORK":
+      return <>{n.latestActorUsername}{others(n.count)} forked <strong>{n.projectTitle}</strong></>
+    case "FOLLOW":
+      return <>{n.latestActorUsername}{others(n.count)} followed you</>
+    case "BADGE":
+      return <>You earned the <strong>{n.badgeName}</strong> badge</>
+    case "FEATURED":
+      return <><strong>{n.projectTitle}</strong> was featured on Explore</>
+  }
+}
+
+function notificationHref(n: AppNotification): string {
+  if (n.type === "FOLLOW") return n.latestActorUsername ? `/u/${encodeURIComponent(n.latestActorUsername)}` : "/explore"
+  if (n.type === "BADGE") return "/profile"
+  return n.projectId ? `/dashboard/${n.projectId}` : "/profile"
+}
 
 export function NotificationButton() {
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifications, setNotifications] = useState<AppNotification[] | null>(null)
+  const [loggedIn, setLoggedIn] = useState(false)
+  const router = useRouter()
+  const loggedInRef = useRef(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/session")
+      .then((res) => res.json())
+      .then((data: { isLoggedIn: boolean }) => {
+        if (cancelled) return
+        setLoggedIn(data.isLoggedIn)
+        loggedInRef.current = data.isLoggedIn
+        if (data.isLoggedIn) {
+          getUnreadCount().then((count) => {
+            if (!cancelled) setUnreadCount(count)
+          })
+        }
+      })
+      .catch(() => {})
+
+    // No push/observer channel exists on the backend (no WebSocket/SSE) — this
+    // is a plain poll so the badge count doesn't go stale for a page left
+    // open, not real-time delivery.
+    const interval = setInterval(() => {
+      if (!cancelled && loggedInRef.current) {
+        getUnreadCount().then((count) => {
+          if (!cancelled) setUnreadCount(count)
+        })
+      }
+    }, POLL_INTERVAL_MS)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [])
+
+  function handleOpenChange(open: boolean) {
+    if (!open || notifications !== null) return
+    getNotifications().then((items) => {
+      setNotifications(items)
+      markAllNotificationsRead()
+      setUnreadCount(0)
+    })
+  }
+
+  function handleSelect(n: AppNotification) {
+    router.push(notificationHref(n))
+  }
+
+  function handleDelete(event: React.MouseEvent, id: string) {
+    event.preventDefault()
+    event.stopPropagation()
+    setNotifications((current) => current?.filter((n) => n.id !== id) ?? current)
+    deleteNotification(id)
+  }
+
+  if (!loggedIn) return null
+
   return (
-    <button
-      type="button"
-      aria-label="Notifications"
-      className="flex shrink-0 items-center justify-center transition-colors hover:bg-muted"
-      style={{ color: "var(--color-neutral-600)" }}
-    >
-      <Bell className="h-5 w-5" />
-    </button>
+    <DropdownMenu onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="relative flex shrink-0 items-center justify-center transition-colors hover:bg-muted"
+          style={{ color: "var(--color-neutral-600)" }}
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span
+              className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold"
+              style={{ background: "var(--color-accent)", color: "#fff" }}
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80">
+        {notifications === null ? (
+          <div className="px-2 py-3 text-sm" style={{ color: "var(--color-neutral-600)" }}>
+            Loading...
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="px-2 py-3 text-sm" style={{ color: "var(--color-neutral-600)" }}>
+            No notifications yet.
+          </div>
+        ) : (
+          notifications.map((n) => {
+            const Icon = ICONS[n.type]
+            return (
+              <DropdownMenuItem
+                key={n.id}
+                onSelect={() => handleSelect(n)}
+                className="group relative items-start gap-2 py-2 pr-7"
+              >
+                <span
+                  className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full"
+                  style={{
+                    background: n.read ? "var(--color-neutral-200)" : "var(--color-accent)",
+                    color: n.read ? "var(--color-neutral-600)" : "#fff",
+                  }}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0 text-sm" style={{ fontWeight: n.read ? 400 : 700 }}>
+                  {notificationText(n)}
+                </span>
+                <button
+                  type="button"
+                  onClick={(event) => handleDelete(event, n.id)}
+                  aria-label="Dismiss notification"
+                  className="absolute right-1 top-1.5 shrink-0 rounded-md p-1 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                  style={{ color: "var(--color-neutral-600)" }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuItem>
+            )
+          })
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

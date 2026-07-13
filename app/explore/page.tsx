@@ -32,7 +32,7 @@ export default async function ExplorePage({
     isLoggedIn(),
   ])
 
-  const featured = allProjects[0] ?? null
+  const featured = allProjects.find((project) => project.featured) ?? null
   const projects = feed.filter((project) => project.id !== featured?.id)
 
   const authorCounts = new Map<string, number>()
@@ -126,7 +126,7 @@ export default async function ExplorePage({
         </div>
         <div style={{ margin: "28px 72px 0", height: 2, background: "var(--color-divider)" }} />
 
-        {/* featured this week */}
+        {/* featured today */}
         {featured && (
           <>
             <div
@@ -139,7 +139,7 @@ export default async function ExplorePage({
                   className="block text-[11px] font-bold uppercase"
                   style={{ letterSpacing: "0.12em", color: "var(--color-accent)", marginBottom: "10px" }}
                 >
-                  Featured this week
+                  Featured today
                 </span>
                 <h2
                   className="text-[32px] font-extrabold"
