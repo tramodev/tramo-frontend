@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  if (path.startsWith('/dashboard') || path.startsWith('/projects')) {
+  if (path.startsWith('/dashboard') || path.startsWith('/projects') || path.startsWith('/profile')) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
@@ -48,6 +48,7 @@ export const config = {
   matcher: [
     '/dashboard/:path*',
     '/projects/:path*',
+    '/profile/:path*',
     '/login',
     '/signup',
     '/p/:path*',

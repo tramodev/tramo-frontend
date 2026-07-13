@@ -5,6 +5,7 @@ import "../modernist.css"
 import { Wordmark } from "@/components/logo"
 import { PrimaryNav } from "@/components/primary-nav"
 import { UserMenu } from "@/components/user-menu"
+import { NotificationButton } from "@/components/notification-button"
 import { VoteButton } from "@/components/vote-button"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { getPublishedFeed, getHotTopics, type FeedSort } from "@/lib/public-project"
@@ -52,8 +53,11 @@ export default async function ExplorePage({
         <Link href={homeHref} className="mr-auto">
           <Wordmark />
         </Link>
-        <PrimaryNav active="explore" loggedIn={loggedIn} />
-        <UserMenu />
+        <div className="flex items-center gap-4">
+          <PrimaryNav active="explore" loggedIn={loggedIn} />
+          <NotificationButton />
+          <UserMenu />
+        </div>
       </header>
 
       <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>

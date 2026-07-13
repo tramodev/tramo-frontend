@@ -1,16 +1,16 @@
 "use client"
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Settings, Sun } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
 
 export function AvatarMenu({ username }: { username: string }) {
@@ -31,9 +31,30 @@ export function AvatarMenu({ username }: { username: string }) {
           {initials}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {username && <DropdownMenuLabel>{username}</DropdownMenuLabel>}
-        {username && <DropdownMenuSeparator />}
+      <DropdownMenuContent align="end" className="w-56">
+        {username && (
+          <DropdownMenuItem asChild className="flex-col items-stretch gap-1 py-2">
+            <Link href="/profile">
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-flex shrink-0 items-center justify-center text-[11px] font-extrabold"
+                  style={{ width: 24, height: 24, background: 'var(--color-text)', color: 'var(--color-bg)' }}
+                >
+                  {initials}
+                </span>
+                <span className="truncate font-semibold">{username}</span>
+              </div>
+              <span className="text-xs text-muted-foreground">My profile</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/settings">
+            <Settings />
+            Settings
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();

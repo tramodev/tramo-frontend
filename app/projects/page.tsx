@@ -10,6 +10,7 @@ import "../modernist.css"
 import { Wordmark } from "@/components/logo"
 import { PrimaryNav } from "@/components/primary-nav"
 import { UserMenu } from "@/components/user-menu"
+import { NotificationButton } from "@/components/notification-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -85,8 +86,11 @@ export default function ProjectsPage() {
         <Link href="/projects" className="mr-auto">
           <Wordmark />
         </Link>
-        <PrimaryNav active="projects" />
-        <UserMenu />
+        <div className="flex items-center gap-4">
+          <PrimaryNav active="projects" />
+          <NotificationButton />
+          <UserMenu />
+        </div>
       </header>
       <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216, padding: "56px 72px 84px" }}>
         <h1 className="text-[32px]" style={{ marginBottom: 28 }}>

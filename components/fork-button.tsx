@@ -8,9 +8,11 @@ import { forkProject } from "@/lib/projects-store"
 export function ForkButton({
   projectId,
   isLoggedIn,
+  variant = "outline",
 }: {
   projectId: string
   isLoggedIn: boolean
+  variant?: "outline" | "filled"
 }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState(false)
@@ -32,6 +34,22 @@ export function ForkButton({
         setError(true)
       }
     })
+  }
+
+  if (variant === "filled") {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isPending}
+        className="relative z-10 flex shrink-0 items-center gap-2 rounded-md text-xs font-bold transition-colors hover:bg-[var(--color-accent-600)]"
+        style={{ padding: "7px 12px", background: "var(--color-accent)", color: "var(--color-text)" }}
+        title={error ? "Fork failed, try again" : "Fork this project into your account"}
+      >
+        <GitFork className="h-[13px] w-[13px]" />
+        {isPending ? "Forking..." : "Fork"}
+      </button>
+    )
   }
 
   return (
