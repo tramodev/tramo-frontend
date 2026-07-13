@@ -47,10 +47,9 @@ export function BookmarkButton({
       disabled={isPending}
       aria-pressed={bookmarked}
       title={bookmarked ? "Remove bookmark" : "Bookmark this project"}
-      className="flex h-9 w-9 shrink-0 items-center justify-center transition-colors hover:bg-muted"
+      className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center transition-colors hover:bg-muted"
       style={{
         color: bookmarked ? "var(--color-accent)" : "var(--color-neutral-600)",
-        border: "2px solid var(--color-divider)",
       }}
     >
       <Bookmark className="h-4 w-4" fill={bookmarked ? "currentColor" : "none"} />

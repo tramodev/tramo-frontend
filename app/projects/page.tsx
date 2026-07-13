@@ -82,13 +82,11 @@ export default function ProjectsPage() {
         className="flex items-center gap-6"
         style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
       >
-        <Link href="/projects">
+        <Link href="/projects" className="mr-auto">
           <Wordmark />
         </Link>
         <PrimaryNav active="projects" />
-        <div className="ml-auto">
-          <UserMenu />
-        </div>
+        <UserMenu />
       </header>
       <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216, padding: "56px 72px 84px" }}>
         <h1 className="text-[32px]" style={{ marginBottom: 28 }}>

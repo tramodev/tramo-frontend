@@ -25,6 +25,8 @@ export function PrimaryNav({
             letterSpacing: "0.08em",
             fontWeight: item.key === active ? 700 : 400,
             color: item.key === active ? "var(--color-text)" : "var(--color-neutral-600)",
+            borderBottom: item.key === active ? "2px solid var(--color-accent)" : "2px solid transparent",
+            paddingBottom: "2px",
           }}
         >
           {item.label}
