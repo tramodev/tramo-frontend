@@ -28,8 +28,6 @@ export function VerifyEmailClient() {
     return () => clearTimeout(timeout)
   }, [result, router])
 
-  // No stored "missing token" state — it's derived straight from the URL so
-  // the effect above never needs to setState synchronously for that case.
   const status: 'verifying' | 'success' | 'error' = !token
     ? 'error'
     : result === null

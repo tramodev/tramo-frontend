@@ -7,7 +7,6 @@ export const BrowserMockup: React.FC = () => {
       className="w-full aspect-[16/10] flex overflow-hidden"
       style={{ border: '2px solid var(--color-text)', background: 'var(--color-bg)' }}
     >
-      {/* Sidebar */}
       <div
         className="w-[264px] hidden md:flex flex-col shrink-0"
         style={{ borderRight: '2px solid var(--color-divider)' }}
@@ -89,7 +88,6 @@ export const BrowserMockup: React.FC = () => {
         </div>
       </div>
 
-      {/* Main pane */}
       <div className="flex-1 flex flex-col">
         <div
           className="h-14 flex items-center px-5 gap-4"

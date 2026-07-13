@@ -1,10 +1,3 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
 "use client"
 
 import * as React from 'react';
@@ -93,9 +86,6 @@ export default function ImageComponent({
     const startX = event.clientX;
     const startWidth = image.getBoundingClientRect().width;
     const aspectRatio = image.naturalWidth / image.naturalHeight || 1;
-    // Left-side handles grow the image when dragged left, right-side handles grow it
-    // when dragged right — both corners on a side move the same way horizontally
-    // since only width/height are stored (the image isn't independently positioned).
     const sign = corner === 'nw' || corner === 'sw' ? -1 : 1;
 
     const onPointerMove = (moveEvent: PointerEvent) => {

@@ -5,12 +5,6 @@ import { getAccessToken } from "./auth";
 import { authenticatedFetch } from "./api";
 import type { ProjectFeedItem } from "./public-project";
 
-// Server Components can't refresh the access token mid-render (cookies() is
-// read-only outside a Server Action / Route Handler — see authenticatedFetch
-// in lib/api.ts, which does refresh and is only safe to call from a Server
-// Action or a Client Component's useEffect). These profile reads run during
-// this page's render, so they use the current token as-is and degrade to an
-// empty/null result on a 401 rather than trying to refresh it.
 async function authHeaders(): Promise<HeadersInit | undefined> {
   const token = await getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : undefined;
@@ -154,9 +148,6 @@ export interface ProfileBundle {
 
 const EMPTY_BUNDLE: ProfileBundle = { stats: null, badges: [], bookmarks: [], upvoted: [], forks: [], published: [], activity: [] };
 
-// Single round trip instead of 7 separate endpoint calls (profile/stats/
-// badges/bookmarks/upvoted/forks/activity), each of which paid its own
-// JWT-auth user lookup on the backend.
 export async function getMyProfileBundle(): Promise<ProfileBundle> {
   const response = await fetch(`${API_BASE_URL}/api/profile/bundle`, { cache: "no-store", headers: await authHeaders() });
   if (!response.ok) return EMPTY_BUNDLE;

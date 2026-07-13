@@ -1,10 +1,3 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
 
 "use client"
 import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
@@ -89,9 +82,6 @@ const removeStylesExportDOM = (
 ): DOMExportOutput => {
   const output = target.exportDOM(editor);
   if (output && isHTMLElement(output.element)) {
-    // Remove all inline styles and classes if the element is an HTMLElement
-    // Children are checked as well since TextNode can be nested
-    // in i, b, and strong tags.
     for (const el of [
       output.element,
       ...output.element.querySelectorAll('[style],[class]'),
@@ -112,8 +102,6 @@ const exportMap: DOMExportOutputMap = new Map<
 ]);
 
 const getExtraStyles = (element: HTMLElement): string => {
-  // Parse styles from pasted input, but only if they match exactly the
-  // sort of styles that would be produced by exportDOM
   let extraStyles = '';
   const fontSize = parseAllowedFontSize(element.style.fontSize);
   const backgroundColor = parseAllowedColor(element.style.backgroundColor);
@@ -133,8 +121,6 @@ const getExtraStyles = (element: HTMLElement): string => {
 const constructImportMap = (): DOMConversionMap => {
   const importMap: DOMConversionMap = {};
 
-  // Wrap all TextNode importers with a function that also imports
-  // the custom styles implemented by the playground
   for (const [tag, fn] of Object.entries(TextNode.importDOM() || {})) {
     importMap[tag] = (importNode) => {
       const importer = fn(importNode);
@@ -206,10 +192,6 @@ const editorConfig = {
 
 const lastIdeaStorageKey = (projectId: string) => `mypath:lastIdea:${projectId}`;
 
-// Walks the serialized Lexical editor-state JSON, collecting every text run's
-// raw string. Characters are an exact sum of those runs; words are a
-// space-joined heuristic (good enough for a live counter, not meant to be
-// perfectly precise across paragraph/format-run boundaries).
 function countTextStats(content: string): { words: number; characters: number } {
   if (!content) return { words: 0, characters: 0 };
   try {
@@ -264,8 +246,6 @@ export default function DashboardPage() {
       setIdeas(project.ideas);
       setLoaded(true);
 
-      // Restores whichever idea was open before a reload, so navigating away
-      // and back (or refreshing) doesn't dump you back at the empty state.
       const savedIdeaId = localStorage.getItem(lastIdeaStorageKey(projectId));
       const savedIdea = savedIdeaId ? project.ideas[savedIdeaId] : undefined;
       if (!savedIdea) return;
@@ -288,7 +268,6 @@ export default function DashboardPage() {
     };
   }, [projectId, router]);
 
-  // Keeps the last-selected idea per project so it can be restored on reload.
   useEffect(() => {
     if (!loaded) return;
     if (selectedIdeaId) {
@@ -301,9 +280,6 @@ export default function DashboardPage() {
   const selectedIdea = selectedIdeaId ? ideas[selectedIdeaId] : undefined;
   const textStats = useMemo(() => countTextStats(selectedIdea?.content ?? ''), [selectedIdea?.content]);
 
-  // Fetches content before switching so UpdateContentPlugin (keyed on ideaId, to
-  // avoid clobbering in-progress edits) sees the right content on the same render
-  // that selectedIdeaId changes, instead of racing a late content update.
   const handleSelectIdea = async (idea: Idea) => {
     setView('editor');
     try {
@@ -335,7 +311,6 @@ export default function DashboardPage() {
     setSelectedIdeaId(newIdea.id);
   };
 
-  // Attaches an idea that already exists (possibly in another path) to another path too.
   const handleLinkIdeaToPath = async (pathId: string, ideaId: string) => {
     await attachIdeaToPath(pathId, ideaId);
     setPaths(prevPaths => prevPaths.map(path =>
@@ -345,7 +320,6 @@ export default function DashboardPage() {
     ));
   };
 
-  // Removes an idea from one path. If that was the idea's last path, the backend deletes it entirely.
   const handleUnlinkIdeaFromPath = async (pathId: string, ideaId: string) => {
     await detachIdeaFromPath(pathId, ideaId);
     const nextPaths = paths.map(path =>
@@ -408,7 +382,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Symmetric idea-to-idea link: linking A to B also links B to A.
   const handleLinkIdeas = async (ideaId: string, otherIdeaId: string) => {
     if (ideaId === otherIdeaId) return;
     await linkIdeasRequest(ideaId, otherIdeaId);
@@ -441,9 +414,6 @@ export default function DashboardPage() {
     });
   };
 
-  // Tracks the current first idea (across saves/reorders) without making the
-  // debounced save callback below depend on `paths`, which would otherwise
-  // change identity — and re-trigger its cleanup effect — on every edit.
   const firstIdeaIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     firstIdeaIdRef.current = paths.flatMap(path => path.ideaIds)[0];
@@ -451,8 +421,6 @@ export default function DashboardPage() {
 
   const handleVisibilityChange = async (next: ProjectVisibility) => {
     setVisibility(next);
-    // Fallback for projects published without ever re-editing the first idea
-    // in this session — the save-triggered capture below won't have fired yet.
     if (next !== 'published') return;
 
     const firstIdeaId = firstIdeaIdRef.current;
@@ -476,8 +444,6 @@ export default function DashboardPage() {
     }
   }, [projectId]);
 
-  // Debounces content saves so we don't hit the backend on every keystroke; flushed
-  // immediately when switching ideas or leaving the page so nothing pending is lost.
   const pendingContentRef = useRef<{ ideaId: string; content: string } | null>(null);
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -493,8 +459,6 @@ export default function DashboardPage() {
     saveIdeaContent(pending.ideaId, pending.content)
       .then(() => {
         setSaveStatus('saved');
-        // Keeps the project card's preview fresh as the first idea changes —
-        // covers private/unlisted projects too, not just published ones.
         if (pending.ideaId === firstIdeaIdRef.current) {
           setThumbnailCaptureContent(pending.content);
         }

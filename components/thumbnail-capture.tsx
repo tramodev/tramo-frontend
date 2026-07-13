@@ -3,20 +3,11 @@
 import { useEffect, useRef } from "react"
 import { LexicalReadOnly } from "./lexical-read-only"
 
-// Wide enough that headings/paragraphs render at their normal reading size
-// (matches the public reading view's content column) instead of looking
-// artificially zoomed-in inside a narrow box.
 const CAPTURE_WIDTH = 820;
 const CAPTURE_HEIGHT = 620;
-// Final thumbnail is downscaled from the capture above, same "render full
-// page, then shrink" approach Google Drive uses for its doc previews.
 const THUMBNAIL_WIDTH = 480;
 const THUMBNAIL_HEIGHT = Math.round((CAPTURE_HEIGHT / CAPTURE_WIDTH) * THUMBNAIL_WIDTH);
 
-// Mounts the first idea's content off-screen, waits a beat for Lexical (and any
-// images in it) to paint, then rasterizes it with html2canvas — same trick
-// Google Drive uses for doc thumbnails, just done client-side since there's no
-// headless-browser infra on this (Java) backend to render it server-side.
 export function ThumbnailCapture({
   content,
   onCapture,
@@ -71,11 +62,6 @@ export function ThumbnailCapture({
         height: CAPTURE_HEIGHT,
         overflow: "hidden",
         padding: 32,
-        // Pins every themed color to its light-mode value regardless of the
-        // viewer's current theme — Editor.css reads these as CSS custom
-        // properties, and inheriting dark-mode text-on-white was exactly
-        // what made the previous capture unreadable (light text, forced
-        // white background).
         ["--color-bg" as string]: "#f3f2f2",
         ["--color-text" as string]: "#201e1d",
         ["--color-accent" as string]: "#4338ca",

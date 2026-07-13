@@ -57,7 +57,6 @@ export default async function PublicProfilePage({
       </header>
 
       <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
-        {/* masthead */}
         <div style={{ padding: "44px 72px 0" }}>
           <div className="flex items-start gap-7">
             <span
@@ -100,7 +99,6 @@ export default async function PublicProfilePage({
             </div>
           </div>
 
-          {/* stats strip */}
           <div
             className="grid rounded-lg"
             style={{ marginTop: 28, gridTemplateColumns: "repeat(4, 1fr)", border: "2px solid var(--color-divider)" }}
@@ -144,7 +142,6 @@ export default async function PublicProfilePage({
             </div>
           </div>
 
-          {/* published paths */}
           <div style={{ marginTop: 32 }}>
             <div className="mb-3 text-[11px] font-bold uppercase" style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}>
               Published projects

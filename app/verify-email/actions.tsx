@@ -20,7 +20,6 @@ export async function verifyEmailHandler(token: string): Promise<VerifyEmailResu
       const data = await response.json();
       if (typeof data?.message === 'string') message = data.message;
     } catch {
-      // Response wasn't JSON — keep the fallback message.
     }
     return { success: false, error: message };
   }

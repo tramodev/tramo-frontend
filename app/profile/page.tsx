@@ -49,9 +49,6 @@ export default async function ProfilePage({
   ])
   const { stats, bookmarks, upvoted, forks, badges, published, activity } = bundle
 
-  // Falls back to the username cookie (always present here — middleware
-  // gates /profile on it) so a stale/unreachable backend degrades to a
-  // sparse page instead of blanking out entirely.
   const profile = fetchedProfile ?? { username: cookieUsername ?? "", bio: null, imageUrl: null, createdAt: null }
 
   const tabs: { key: Tab; label: string; count: number }[] = [
@@ -79,7 +76,6 @@ export default async function ProfilePage({
       </header>
 
       <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
-        {/* masthead */}
         <div style={{ padding: "44px 72px 0" }}>
           <div className="flex items-start gap-7">
             <AvatarUpload username={profile.username} imageUrl={profile.imageUrl} />
@@ -116,7 +112,6 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {/* stats strip */}
           <div
             className="grid rounded-lg"
             style={{ marginTop: 28, gridTemplateColumns: "repeat(4, 1fr)", border: "2px solid var(--color-divider)" }}
@@ -164,7 +159,6 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {/* tabs */}
           <div className="flex gap-6" style={{ borderBottom: "2px solid var(--color-divider)", marginTop: 32 }}>
             {tabs.map(({ key, label, count }) => (
               <Link
@@ -186,7 +180,6 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        {/* active panel */}
         <div style={{ padding: "8px 72px 56px" }}>
           {tab === "activity" && <ActivityPanel items={activity} />}
           {tab === "published" && (

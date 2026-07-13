@@ -1,10 +1,3 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
 "use client"
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { mergeRegister, $getNearestNodeOfType } from '@lexical/utils';
@@ -188,14 +181,12 @@ export default function ToolbarPlugin() {
         }
       }
 
-      // Update text format
       setIsBold(selection.hasFormat('bold'));
       setIsItalic(selection.hasFormat('italic'));
       setIsUnderline(selection.hasFormat('underline'));
       setIsStrikethrough(selection.hasFormat('strikethrough'));
       setIsCode(selection.hasFormat('code'));
 
-      // Update links
       const node = selection.anchor.getNode();
       const parent = node.getParent();
       if ($isLinkNode(parent) || $isLinkNode(node)) {
@@ -204,7 +195,6 @@ export default function ToolbarPlugin() {
         setIsLink(false);
       }
 
-      // Update font family & size
       setFontFamily($getSelectionStyleValueForProperty(selection, 'font-family', 'Arial'));
       setFontSize(
         $getSelectionStyleValueForProperty(selection, 'font-size', `${MIN_FONT_SIZE + 7}px`).replace('px', ''),
@@ -404,7 +394,6 @@ export default function ToolbarPlugin() {
         <Redo size={18} />
       </button>
       <Divider />
-      {/* Font family & size */}
       <select
         className="toolbar-item font-family-select"
         value={fontFamily}
@@ -450,7 +439,6 @@ export default function ToolbarPlugin() {
       </div>
 
       <Divider />
-      {/* Headings */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="toolbar-item align-dropdown-trigger spaced" aria-label="Text style">
@@ -476,7 +464,6 @@ export default function ToolbarPlugin() {
       </DropdownMenu>
 
       <Divider />
-      {/* Functionality */}
       <button
         onClick={() => {
           editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
@@ -538,7 +525,6 @@ export default function ToolbarPlugin() {
       />
 
       <Divider />
-      {/* Lists & Quotes */}
       <button
         onClick={formatBulletList}
         className={'toolbar-item spaced ' + (blockType === 'bullet' ? 'active' : '')}
@@ -565,7 +551,6 @@ export default function ToolbarPlugin() {
       </button>
 
       <Divider />
-      {/* Alignment */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="toolbar-item align-dropdown-trigger" aria-label="Align text">

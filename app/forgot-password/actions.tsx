@@ -21,7 +21,5 @@ export async function forgotPasswordHandler(
     body: JSON.stringify({ email }),
   });
 
-  // Always redirects regardless of whether the account exists — matches the
-  // backend's anti-enumeration behavior on this endpoint.
   redirect(`/forgot-password/check-email?email=${encodeURIComponent(email)}`);
 }

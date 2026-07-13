@@ -9,8 +9,6 @@ async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
   return token ? { Authorization: `Bearer ${token}` } : undefined;
 }
 
-// Minted by middleware.ts on first visit to a /p/* page — lets the backend
-// dedup the view counter per anonymous visitor instead of per page load.
 async function anonIdHeader(): Promise<HeadersInit | undefined> {
   const anonId = (await cookies()).get("mypath_anon_id")?.value;
   return anonId ? { "X-Anon-Id": anonId } : undefined;
@@ -148,8 +146,6 @@ export async function getHotTopics(): Promise<TagCount[]> {
   return response.json();
 }
 
-// Returns null for both "not found" and "not public" — the backend 404s either
-// way so a private project's existence can't be probed via this page.
 export async function getPublicProject(projectId: string): Promise<PublicProject | null> {
   const response = await fetch(`${API_BASE_URL}/api/public/project/${projectId}`, {
     cache: "no-store",

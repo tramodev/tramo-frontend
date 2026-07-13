@@ -10,8 +10,6 @@ import { Idea, Path } from "@/app/dashboard/types"
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
 
-// Distinct hues assigned to paths (by index) so each path's node, hull, and
-// border share one identifying color across the graph.
 const PATH_HUES = [222, 280, 20, 155, 340, 45, 190];
 
 function pathColor(index: number, alpha = 1): string {
@@ -73,8 +71,6 @@ function readColors(el: HTMLElement | null): GraphColors {
   };
 }
 
-// Paths are not graph nodes — they're drawn as a labeled region (hull) around
-// their member ideas, so only ideas and idea-to-idea links form the graph itself.
 function buildGraphData(ideas: Record<string, Idea>) {
   const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
@@ -113,9 +109,6 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [colors, setColors] = useState<GraphColors>(FALLBACK_COLORS);
 
-  // Draws each path as a circle around its member ideas, before nodes/links render.
-  // Circles never self-intersect, so an idea shared by several paths just shows up
-  // as overlapping circles — a Venn-diagram-style intersection — instead of broken geometry.
   const drawPathHulls = useCallback(
     (ctx: CanvasRenderingContext2D, globalScale: number) => {
       paths.forEach((path, index) => {

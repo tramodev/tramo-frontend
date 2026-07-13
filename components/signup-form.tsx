@@ -18,14 +18,9 @@ import { GoogleAuthButton } from "@/components/google-auth-button"
 
 type Availability = "idle" | "checking" | "available" | "taken"
 
-// Matches the backend's own constraints (RegisterRequestDTO) so we only fire
-// a check once the value could plausibly be valid, not on every keystroke.
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// "checking" is derived (no resolved result yet for the current value) rather than
-// stored, so the effect never calls setState synchronously — only inside the
-// fetch's then/catch, once the debounced check actually resolves.
 function useAvailabilityCheck(
   value: string,
   pattern: RegExp,

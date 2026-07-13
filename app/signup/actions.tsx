@@ -1,8 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
 
-// Mirrors the backend's RegisterRequestDTO @Pattern constraint so obviously
-// non-compliant passwords fail fast without a network round trip.
 const PASSWORD_COMPLEXITY_PATTERN = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/;
 
 export type RegisterErrors = {
@@ -50,16 +48,9 @@ export async function registerHandler(
     return { errors: await extractFieldErrors(response) };
   }
 
-  // Account exists but isn't usable yet — no tokens are issued until the
-  // verification link is clicked, so there's nothing to log in with here.
   redirect(`/signup/check-email?email=${encodeURIComponent(typeof email === 'string' ? email : '')}`);
 }
 
-// Backend errors come as either { message } (auth errors) or
-// { message: "Validation failed", errors: { field: message } } (bean validation
-// and, since UserAlreadyExistsException now carries a field, username/email
-// conflicts too). Map field errors straight through so the form can show them
-// next to the right input instead of one generic banner.
 async function extractFieldErrors(response: Response): Promise<RegisterErrors> {
   try {
     const data = await response.json();
@@ -70,7 +61,6 @@ async function extractFieldErrors(response: Response): Promise<RegisterErrors> {
       return { general: data.message };
     }
   } catch {
-    // Response wasn't JSON — fall through to the generic message below.
   }
   return { general: 'Something went wrong. Please try again.' };
 }

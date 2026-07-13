@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/config';
 
-// Public endpoint (no auth), proxied so the browser doesn't need CORS
-// configured on the backend for a plain client-side fetch.
 export async function GET(request: NextRequest) {
   const username = request.nextUrl.searchParams.get('username');
   if (!username) {

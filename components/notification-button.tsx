@@ -76,9 +76,6 @@ export function NotificationButton() {
       })
       .catch(() => {})
 
-    // No push/observer channel exists on the backend (no WebSocket/SSE) — this
-    // is a plain poll so the badge count doesn't go stale for a page left
-    // open, not real-time delivery.
     const interval = setInterval(() => {
       if (!cancelled && loggedInRef.current) {
         getUnreadCount().then((count) => {

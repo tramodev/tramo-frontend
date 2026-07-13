@@ -61,7 +61,6 @@ export default async function ExplorePage({
       </header>
 
       <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
-        {/* masthead */}
         <div
           className="flex items-end justify-between gap-8"
           style={{ padding: "44px 72px 0" }}
@@ -126,7 +125,6 @@ export default async function ExplorePage({
         </div>
         <div style={{ margin: "28px 72px 0", height: 2, background: "var(--color-divider)" }} />
 
-        {/* featured today */}
         {featured && (
           <>
             <div
@@ -224,7 +222,6 @@ export default async function ExplorePage({
           </>
         )}
 
-        {/* index + rail */}
         <div className="flex gap-14" style={{ padding: "36px 72px 56px" }}>
           <div className="min-w-0 flex-1">
             <div

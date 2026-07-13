@@ -18,9 +18,6 @@ import { ImageNode } from "@/app/dashboard/nodes/ImageNode"
 import IdeaLinkClickPlugin from "@/app/dashboard/plugins/IdeaLinkClickPlugin"
 import "@/app/dashboard/Editor.css"
 
-// Mirrors the editable editor's node set (app/dashboard/[projectId]/page.tsx)
-// exactly — Lexical drops any node type not registered here when it parses
-// stored editor-state JSON, so a mismatch would silently eat content.
 const nodes = [
   ParagraphNode,
   TextNode,

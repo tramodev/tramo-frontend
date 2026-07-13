@@ -10,8 +10,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { resetPasswordHandler } from "./actions"
 import { getPasswordStrength } from "@/lib/password-strength"
 
-// Mirrors the backend's ResetPasswordRequestDTO @Pattern constraint so obviously
-// non-compliant passwords fail fast without a network round trip.
 const PASSWORD_COMPLEXITY_PATTERN = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
 export function ResetPasswordClient() {

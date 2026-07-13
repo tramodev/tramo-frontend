@@ -1,7 +1,3 @@
-// Plain client-side fetch calls (no 'use server') hitting the /api/idea/[id]/content
-// Route Handler, which proxies to the backend. Kept out of projects-store.ts because
-// that module is a Server Action file, and content payloads (images included) can
-// exceed the 1MB Server Action argument limit.
 
 export async function getIdeaContent(ideaId: string): Promise<string> {
   const response = await fetch(`/api/idea/${ideaId}/content`);

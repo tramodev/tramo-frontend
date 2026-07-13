@@ -92,8 +92,14 @@ export default function ProjectsPage() {
           <UserMenu />
         </div>
       </header>
-      <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216, padding: "56px 72px 84px" }}>
-        <h1 className="text-[32px]" style={{ marginBottom: 28 }}>
+      <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216, padding: "44px 72px 84px" }}>
+        <span
+          className="block text-[11px] font-bold uppercase"
+          style={{ letterSpacing: "0.12em", color: "var(--color-accent)", marginBottom: "8px" }}
+        >
+          Your workspace
+        </span>
+        <h1 className="text-[48px] font-extrabold" style={{ letterSpacing: "-0.025em", lineHeight: 1.05, marginBottom: 28 }}>
           Start a new project
         </h1>
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -117,7 +123,7 @@ export default function ProjectsPage() {
         </div>
 
         <div className="mt-[70px]">
-          <span className="kicker mb-5">Recent projects</span>
+          <span className="kicker mb-5">My projects</span>
           {loading ? (
             <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>
               Loading...

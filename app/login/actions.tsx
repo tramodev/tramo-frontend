@@ -23,8 +23,6 @@ export async function authenticateHandler(
   });
 
   if (!response.ok) {
-    // 403 from this endpoint only ever means "account exists but isn't
-    // verified yet" — everything else (bad password, unknown user) is 401/404.
     return {
       error: await extractErrorMessage(response),
       needsVerification: response.status === 403,
@@ -73,7 +71,6 @@ async function extractErrorMessage(response: Response): Promise<string> {
     const data = await response.json();
     if (typeof data?.message === 'string') return data.message;
   } catch {
-    // Response wasn't JSON — fall through to the generic message below.
   }
   return 'Invalid credentials';
 }

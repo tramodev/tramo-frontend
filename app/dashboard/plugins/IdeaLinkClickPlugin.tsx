@@ -4,9 +4,6 @@ import { useEffect, useRef } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { IDEA_LINK_REL_PREFIX, ideaIdFromRel } from './ideaLink';
 
-// Runs in the capture phase so it sees the click before ClickableLinkPlugin's
-// bubble-phase listener (registerClickableLink), which would otherwise try to
-// window.open() the non-navigable mypath-idea:// href.
 export default function IdeaLinkClickPlugin({ onNavigate }: { onNavigate: (ideaId: string) => void }) {
   const [editor] = useLexicalComposerContext();
   const onNavigateRef = useRef(onNavigate);
