@@ -3,18 +3,18 @@ import React from 'react';
 const features = [
   {
     n: '01',
-    title: 'A graph, not a folder',
-    body: "Every note is a node. Link them as you learn and the structure of a subject draws itself — the graph view shows what you know and what you're missing.",
+    title: 'Ideas, linked as you write',
+    body: "Every idea lives inside a path. Type @ to link it to any other idea in your project — the connections stay live wherever you're reading, no manual outlining required.",
   },
   {
     n: '02',
-    title: 'Daily notes, connected',
-    body: "Write today's note; reference yesterday's idea. Links carry context forward so nothing you learn sits isolated in a dated file.",
+    title: "Private until you're ready",
+    body: 'Write and edit freely in private. When a path is ready, publish it with one click — it gets its own shareable link and shows up on Explore for others to find.',
   },
   {
     n: '03',
-    title: 'Share when it matters',
-    body: 'Publish any node — or your whole graph — at mypath.app/u/you. Readers get the ideas and the connections, not a flat export.',
+    title: 'Built to be found and built on',
+    body: "Published paths can be upvoted, bookmarked, or forked into someone else's account. Earn badges as your work gets attention, and follow the authors whose paths you keep coming back to.",
   },
 ];
 
