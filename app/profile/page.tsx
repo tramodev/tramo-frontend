@@ -164,37 +164,6 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {/* published paths */}
-          <div style={{ marginTop: 32 }}>
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-[11px] font-bold uppercase" style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}>
-                Published projects
-              </div>
-              {published.length > 2 && (
-                <Link
-                  href="/profile?tab=published"
-                  className="inline-flex items-center gap-1 text-xs font-bold transition-colors hover:text-[var(--color-accent)]"
-                  style={{ color: "var(--color-neutral-700)" }}
-                >
-                  See all
-                  <ArrowUpRight className="h-[11px] w-[11px]" />
-                </Link>
-              )}
-            </div>
-            <PublishedGrid
-              items={published.slice(0, 2)}
-              hrefFor={(id) => `/dashboard/${id}`}
-              emptyMessage={
-                <>
-                  Nothing published yet — publish a project from{" "}
-                  <Link href="/projects" className="font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-neutral-700)" }}>
-                    Projects.
-                  </Link>
-                </>
-              }
-            />
-          </div>
-
           {/* tabs */}
           <div className="flex gap-6" style={{ borderBottom: "2px solid var(--color-divider)", marginTop: 32 }}>
             {tabs.map(({ key, label, count }) => (
