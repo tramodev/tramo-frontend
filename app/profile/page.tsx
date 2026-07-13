@@ -131,7 +131,7 @@ export default async function ProfilePage({
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase"
                 style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
               >
-                Paths published
+                Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />
               </div>
             </Link>
@@ -168,7 +168,7 @@ export default async function ProfilePage({
           <div style={{ marginTop: 32 }}>
             <div className="mb-3 flex items-center justify-between">
               <div className="text-[11px] font-bold uppercase" style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}>
-                Published paths
+                Published projects
               </div>
               {published.length > 2 && (
                 <Link
@@ -186,7 +186,7 @@ export default async function ProfilePage({
               hrefFor={(id) => `/dashboard/${id}`}
               emptyMessage={
                 <>
-                  Nothing published yet — publish a path from{" "}
+                  Nothing published yet — publish a project from{" "}
                   <Link href="/projects" className="font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-neutral-700)" }}>
                     Projects.
                   </Link>
@@ -226,7 +226,7 @@ export default async function ProfilePage({
               hrefFor={(id) => `/dashboard/${id}`}
               emptyMessage={
                 <>
-                  Nothing published yet — publish a path from{" "}
+                  Nothing published yet — publish a project from{" "}
                   <Link href="/projects" className="font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-neutral-700)" }}>
                     Projects.
                   </Link>

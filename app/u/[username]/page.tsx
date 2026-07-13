@@ -111,7 +111,7 @@ export default async function PublicProfilePage({
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase"
                 style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
               >
-                Paths published
+                Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />
               </div>
             </div>
@@ -147,7 +147,7 @@ export default async function PublicProfilePage({
           {/* published paths */}
           <div style={{ marginTop: 32 }}>
             <div className="mb-3 text-[11px] font-bold uppercase" style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}>
-              Published paths
+              Published projects
             </div>
             <PublishedGrid
               items={published}
