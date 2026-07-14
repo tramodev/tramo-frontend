@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowBigUp, Award, Bell, GitFork, Rocket, UserPlus, X } from "lucide-react"
 import {
@@ -16,8 +16,6 @@ import {
   deleteNotification,
   type AppNotification,
 } from "@/lib/notifications"
-
-const POLL_INTERVAL_MS = 30_000
 
 const ICONS: Record<AppNotification["type"], React.ComponentType<{ className?: string }>> = {
   UPVOTE: ArrowBigUp,
@@ -58,7 +56,6 @@ export function NotificationButton() {
   const [notifications, setNotifications] = useState<AppNotification[] | null>(null)
   const [loggedIn, setLoggedIn] = useState(false)
   const router = useRouter()
-  const loggedInRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -67,7 +64,6 @@ export function NotificationButton() {
       .then((data: { isLoggedIn: boolean }) => {
         if (cancelled) return
         setLoggedIn(data.isLoggedIn)
-        loggedInRef.current = data.isLoggedIn
         if (data.isLoggedIn) {
           getUnreadCount().then((count) => {
             if (!cancelled) setUnreadCount(count)
@@ -76,19 +72,22 @@ export function NotificationButton() {
       })
       .catch(() => {})
 
-    const interval = setInterval(() => {
-      if (!cancelled && loggedInRef.current) {
-        getUnreadCount().then((count) => {
-          if (!cancelled) setUnreadCount(count)
-        })
-      }
-    }, POLL_INTERVAL_MS)
-
     return () => {
       cancelled = true
-      clearInterval(interval)
     }
   }, [])
+
+  useEffect(() => {
+    if (!loggedIn) return
+
+    const source = new EventSource("/api/notifications/stream")
+    source.addEventListener("unread-count", (event) => {
+      const data: { unreadCount: number } = JSON.parse((event as MessageEvent<string>).data)
+      setUnreadCount(data.unreadCount)
+    })
+
+    return () => source.close()
+  }, [loggedIn])
 
   function handleOpenChange(open: boolean) {
     if (!open || notifications !== null) return
