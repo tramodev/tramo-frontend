@@ -1,6 +1,4 @@
 import { MailCheck } from "lucide-react"
-import { archivo } from "@/lib/fonts"
-import "../../modernist.css"
 import { Wordmark } from "@/components/logo"
 import { AuthPoster } from "@/components/auth-poster"
 
@@ -12,7 +10,7 @@ export default async function ForgotPasswordCheckEmailPage({
   const { email } = await searchParams
 
   return (
-    <div className={`modernist grid min-h-svh lg:grid-cols-2 ${archivo.className}`}>
+    <>
       <div className="flex flex-col px-8 py-8 lg:px-24">
         <Wordmark />
         <div className="flex flex-1 flex-col justify-center">
@@ -37,6 +35,6 @@ export default async function ForgotPasswordCheckEmailPage({
         </div>
       </div>
       <AuthPoster lines={["Almost there,", "check your inbox."]} />
-    </div>
+    </>
   )
 }

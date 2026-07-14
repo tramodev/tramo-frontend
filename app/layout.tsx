@@ -5,7 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 // @ts-ignore
 
-import "./dashboard/Editor.css";
+import "./editor/Editor.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 

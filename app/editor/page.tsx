@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function DashboardIndexPage() {
+export default function EditorIndexPage() {
   const router = useRouter();
 
   useEffect(() => {

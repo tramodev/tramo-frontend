@@ -6,7 +6,7 @@ import { useTheme } from "next-themes"
 import { Minus, Plus } from "lucide-react"
 import type { NodeObject, LinkObject } from "react-force-graph-2d"
 
-import { Idea, Path } from "@/app/dashboard/types"
+import { Idea, Path } from "@/app/editor/types"
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
 

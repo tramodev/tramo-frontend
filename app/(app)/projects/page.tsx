@@ -43,7 +43,7 @@ export default function ProjectsPage() {
 
   const handleCreateProject = async () => {
     const project = await createProject("Untitled project")
-    router.push(`/dashboard/${project.id}`)
+    router.push(`/editor/${project.id}`)
   }
 
   const startRename = (project: Project) => {
@@ -117,7 +117,7 @@ export default function ProjectsPage() {
                 <Card
                   key={project.id}
                   className="group/card cursor-pointer gap-0 p-0 transition-colors hover:border-[var(--color-accent)]"
-                  onClick={() => router.push(`/dashboard/${project.id}`)}
+                  onClick={() => router.push(`/editor/${project.id}`)}
                 >
                   <CardContent
                     className="flex aspect-[4/3] items-center justify-center overflow-hidden p-0"

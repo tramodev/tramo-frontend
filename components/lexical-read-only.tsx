@@ -13,10 +13,10 @@ import { ListItemNode, ListNode } from "@lexical/list"
 import { CodeHighlightNode, CodeNode } from "@lexical/code"
 import { AutoLinkNode, LinkNode } from "@lexical/link"
 
-import ExampleTheme from "@/app/dashboard/ExampleTheme"
-import { ImageNode } from "@/app/dashboard/nodes/ImageNode"
-import IdeaLinkClickPlugin from "@/app/dashboard/plugins/IdeaLinkClickPlugin"
-import "@/app/dashboard/Editor.css"
+import ExampleTheme from "@/app/editor/ExampleTheme"
+import { ImageNode } from "@/app/editor/nodes/ImageNode"
+import IdeaLinkClickPlugin from "@/app/editor/plugins/IdeaLinkClickPlugin"
+import "@/app/editor/Editor.css"
 
 const nodes = [
   ParagraphNode,

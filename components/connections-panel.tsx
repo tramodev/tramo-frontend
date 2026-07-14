@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Link2, Plus, X } from "lucide-react"
 
-import { Idea, Path } from "@/app/dashboard/types"
+import { Idea, Path } from "@/app/editor/types"
 
 interface ConnectionsPanelProps {
   idea: Idea;

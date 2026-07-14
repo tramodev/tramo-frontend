@@ -161,7 +161,7 @@ export default async function ProfilePage({
           {tab === "published" && (
             <PublishedGrid
               items={published}
-              hrefFor={(id) => `/dashboard/${id}`}
+              hrefFor={(id) => `/editor/${id}`}
               emptyMessage={
                 <>
                   Nothing published yet — publish a project from{" "}
@@ -234,7 +234,7 @@ const ACTIVITY_ICONS: Record<ActivityItem["type"], React.ComponentType<{ classNa
 const OWN_PROJECT_TYPES = new Set<ActivityItem["type"]>(["published", "forked", "received_vote", "received_fork", "received_bookmark"])
 
 function activityHref(item: ActivityItem) {
-  return OWN_PROJECT_TYPES.has(item.type) ? `/dashboard/${item.projectId}` : `/p/${item.projectId}`
+  return OWN_PROJECT_TYPES.has(item.type) ? `/editor/${item.projectId}` : `/p/${item.projectId}`
 }
 
 function activityText(item: ActivityItem) {
@@ -340,7 +340,7 @@ function ForksPanel({ items }: { items: ForkFeedItem[] }) {
     <div className="flex flex-col">
       {items.map((item) => (
         <Row key={item.id}>
-          <Link href={`/dashboard/${item.id}`} className="absolute inset-0 z-0" aria-label={item.title} />
+          <Link href={`/editor/${item.id}`} className="absolute inset-0 z-0" aria-label={item.title} />
           <Thumbnail thumbnail={item.thumbnail} title={item.title} />
           <div className="min-w-0 flex-1">
             <div className="mb-1 text-[20px] font-bold">{item.title}</div>
@@ -363,7 +363,7 @@ function ForksPanel({ items }: { items: ForkFeedItem[] }) {
             </div>
           </div>
           <Link
-            href={`/dashboard/${item.id}`}
+            href={`/editor/${item.id}`}
             className="relative z-10 shrink-0 rounded-md text-[13px] font-bold transition-colors hover:bg-muted hover:text-[var(--color-text)]"
             style={{ padding: "8px 14px", border: "2px solid var(--color-divider)", color: "var(--color-neutral-600)" }}
           >

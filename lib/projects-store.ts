@@ -1,6 +1,6 @@
 'use server';
 
-import { Idea, Path } from "@/app/dashboard/types";
+import { Idea, Path } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 

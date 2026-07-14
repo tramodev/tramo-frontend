@@ -48,7 +48,7 @@ function notificationText(n: AppNotification) {
 function notificationHref(n: AppNotification): string {
   if (n.type === "FOLLOW") return n.latestActorUsername ? `/u/${encodeURIComponent(n.latestActorUsername)}` : "/explore"
   if (n.type === "BADGE") return "/profile"
-  return n.projectId ? `/dashboard/${n.projectId}` : "/profile"
+  return n.projectId ? `/editor/${n.projectId}` : "/profile"
 }
 
 export function NotificationButton() {

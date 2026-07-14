@@ -29,7 +29,7 @@ export function ForkButton({
     startTransition(async () => {
       try {
         const forked = await forkProject(projectId)
-        router.push(`/dashboard/${forked.id}`)
+        router.push(`/editor/${forked.id}`)
       } catch {
         setError(true)
       }

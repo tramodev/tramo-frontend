@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { forgotPasswordHandler } from "@/app/forgot-password/actions"
+import { forgotPasswordHandler } from "@/app/(auth)/forgot-password/actions"
 import { useActionState } from "react"
 
 export function ForgotPasswordForm({

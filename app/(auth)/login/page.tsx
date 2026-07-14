@@ -1,13 +1,11 @@
 import Link from "next/link"
-import { archivo } from "@/lib/fonts"
-import "../modernist.css"
 import { LoginForm } from "@/components/login-form"
 import { AuthPoster } from "@/components/auth-poster"
 import { Wordmark } from "@/components/logo"
 
 export default function LoginPage() {
   return (
-    <div className={`modernist grid min-h-svh lg:grid-cols-2 ${archivo.className}`}>
+    <>
       <div className="flex flex-col px-8 py-8 lg:px-24">
         <Link href="/">
           <Wordmark />
@@ -19,6 +17,6 @@ export default function LoginPage() {
         </div>
       </div>
       <AuthPoster lines={["Organize ideas,", "not files."]} />
-    </div>
+    </>
   )
 }

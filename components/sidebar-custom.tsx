@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ConfirmDialog } from "@/components/confirm-dialog"
-import { Path, Idea } from "@/app/dashboard/types"
+import { Path, Idea } from "@/app/editor/types"
 
 interface SidebarCustomProps {
   paths: Path[];

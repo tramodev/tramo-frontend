@@ -9,7 +9,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { authenticateHandler } from "@/app/login/actions"
+import { authenticateHandler } from "@/app/(auth)/login/actions"
 import { ResendVerificationButton } from "@/components/resend-verification-button"
 import { GoogleAuthButton } from "@/components/google-auth-button"
 import { useActionState, useState } from 'react';
