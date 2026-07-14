@@ -1,7 +1,6 @@
 "use client"
 
 import { ChevronRight } from "lucide-react"
-import Link from "next/link"
 
 import {
   Sidebar,
@@ -9,7 +8,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -18,24 +16,17 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Wordmark } from "@/components/logo"
 import type { PublicIdea, PublicPath } from "@/lib/public-project"
 
 interface PublicSidebarProps {
   paths: PublicPath[];
   selectedIdeaId?: string;
   onSelectIdea: (idea: PublicIdea) => void;
-  homeHref: string;
 }
 
-export function PublicSidebar({ paths, selectedIdeaId, onSelectIdea, homeHref }: PublicSidebarProps) {
+export function PublicSidebar({ paths, selectedIdeaId, onSelectIdea }: PublicSidebarProps) {
   return (
     <Sidebar>
-      <SidebarHeader style={{ borderBottom: "2px solid var(--color-divider)" }}>
-        <Link href={homeHref} className="flex items-center px-2 py-1">
-          <Wordmark />
-        </Link>
-      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>

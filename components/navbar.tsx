@@ -30,10 +30,10 @@ export async function Navbar() {
           ) : (
             <>
               <a href="/login" className="btn btn-ghost-plain">
-                Log in
+                Sign in
               </a>
               <a href="/signup" className="btn btn-primary">
-                Sign up
+                Get started
               </a>
             </>
           )}

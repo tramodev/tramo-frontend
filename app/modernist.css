@@ -242,7 +242,7 @@
 }
 
 .modernist [data-slot="sidebar-container"] {
-  border-width: 2px;
+  border-right-width: 2px;
 }
 .modernist [data-slot="sidebar-menu-button"],
 .modernist [data-slot="sidebar-menu-sub-button"] {
