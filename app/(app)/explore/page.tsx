@@ -3,7 +3,7 @@ import { Eye, Search } from "lucide-react"
 import { VoteButton } from "@/components/vote-button"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { PostOptionsMenu } from "@/components/post-options-menu"
-import { getPublishedFeed, getHotTopics, type FeedSort } from "@/lib/public-project"
+import { getExploreBundle, type FeedSort } from "@/lib/public-project"
 import { isLoggedIn, getUsername } from "@/lib/auth"
 
 function initial(username: string) {
@@ -17,25 +17,14 @@ export default async function ExplorePage({
 }) {
   const { q, sort: sortParam } = await searchParams
   const sort: FeedSort = sortParam === "hot" ? "hot" : "recent"
-  const [feed, allProjects, hotTopics, loggedIn, username] = await Promise.all([
-    getPublishedFeed(q, sort),
-    getPublishedFeed(undefined, "hot"),
-    getHotTopics(),
+  const [bundle, loggedIn, username] = await Promise.all([
+    getExploreBundle(q, sort),
     isLoggedIn(),
     getUsername(),
   ])
 
-  const featured = allProjects.find((project) => project.featured) ?? null
-  const projects = feed.filter((project) => project.id !== featured?.id)
-
-  const authorCounts = new Map<string, number>()
-  for (const project of allProjects) {
-    authorCounts.set(project.ownerUsername, (authorCounts.get(project.ownerUsername) ?? 0) + 1)
-  }
-  const activeAuthors = [...authorCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([username, count]) => ({ username, count }))
+  const { featured, hotTopics, activeAuthors } = bundle
+  const projects = bundle.feed.filter((project) => project.id !== featured?.id)
 
   return (
     <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>

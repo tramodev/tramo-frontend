@@ -105,17 +105,8 @@ function parseTags(tags: string | null): string[] {
   return tags.split(",").map((tag) => tag.trim()).filter(Boolean);
 }
 
-export async function getPublishedFeed(query?: string, sort: FeedSort = "recent"): Promise<ProjectFeedItem[]> {
-  const url = new URL(`${API_BASE_URL}/api/public/projects`);
-  if (query) url.searchParams.set("q", query);
-  url.searchParams.set("sort", sort);
-
-  const response = await fetch(url, { cache: "no-store", headers: await optionalAuthHeaders() });
-
-  if (!response.ok) return [];
-
-  const data: ProjectFeedItemDTO[] = await response.json();
-  return data.map((item) => ({
+function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
+  return {
     id: String(item.id),
     title: item.title,
     description: item.description,
@@ -129,21 +120,49 @@ export async function getPublishedFeed(query?: string, sort: FeedSort = "recent"
     viewCount: item.viewCount,
     forkCount: item.forkCount,
     featured: item.featured,
-  }));
+  };
+}
+
+export interface AuthorCount {
+  username: string;
+  count: number;
+}
+
+export interface ExploreBundle {
+  feed: ProjectFeedItem[];
+  featured: ProjectFeedItem | null;
+  hotTopics: TagCount[];
+  activeAuthors: AuthorCount[];
+}
+
+interface ExploreBundleDTO {
+  feed: ProjectFeedItemDTO[];
+  featured: ProjectFeedItemDTO | null;
+  hotTopics: TagCount[];
+  activeAuthors: AuthorCount[];
+}
+
+export async function getExploreBundle(query?: string, sort: FeedSort = "recent"): Promise<ExploreBundle> {
+  const url = new URL(`${API_BASE_URL}/api/public/explore`);
+  if (query) url.searchParams.set("q", query);
+  url.searchParams.set("sort", sort);
+
+  const response = await fetch(url, { cache: "no-store", headers: await optionalAuthHeaders() });
+
+  if (!response.ok) return { feed: [], featured: null, hotTopics: [], activeAuthors: [] };
+
+  const data: ExploreBundleDTO = await response.json();
+  return {
+    feed: data.feed.map(toFeedItem),
+    featured: data.featured ? toFeedItem(data.featured) : null,
+    hotTopics: data.hotTopics,
+    activeAuthors: data.activeAuthors,
+  };
 }
 
 export interface TagCount {
   tag: string;
   count: number;
-}
-
-export async function getHotTopics(): Promise<TagCount[]> {
-  const response = await fetch(`${API_BASE_URL}/api/public/tags`, {
-    cache: "no-store",
-  });
-
-  if (!response.ok) return [];
-  return response.json();
 }
 
 export async function getPublicProject(projectId: string): Promise<PublicProject | null> {
