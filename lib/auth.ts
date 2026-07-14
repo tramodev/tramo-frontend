@@ -1,5 +1,6 @@
 'use server';
 import { cookies } from 'next/headers';
+import { API_BASE_URL } from './config';
 
 export async function getAccessToken(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -9,6 +10,18 @@ export async function getAccessToken(): Promise<string | null> {
 export async function isLoggedIn(): Promise<boolean> {
   const cookieStore = await cookies();
   return !!(cookieStore.get('accessToken') || cookieStore.get('refreshToken'));
+}
+
+export async function isAdmin(): Promise<boolean> {
+  const token = await getAccessToken();
+  if (!token) return false;
+  const response = await fetch(`${API_BASE_URL}/api/profile/me`, {
+    cache: 'no-store',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return false;
+  const profile: { role: string } = await response.json();
+  return profile.role === 'ADMIN';
 }
 
 export async function getUsername(): Promise<string | null> {

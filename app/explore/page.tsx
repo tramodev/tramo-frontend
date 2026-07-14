@@ -2,15 +2,12 @@ import Link from "next/link"
 import { Eye, Search } from "lucide-react"
 import { archivo } from "@/lib/fonts"
 import "../modernist.css"
-import { Wordmark } from "@/components/logo"
-import { PrimaryNav } from "@/components/primary-nav"
-import { UserMenu } from "@/components/user-menu"
-import { NotificationButton } from "@/components/notification-button"
+import { AppHeader } from "@/components/app-header"
 import { VoteButton } from "@/components/vote-button"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { getPublishedFeed, getHotTopics, type FeedSort } from "@/lib/public-project"
 import { getHomeHref } from "@/lib/nav"
-import { isLoggedIn } from "@/lib/auth"
+import { isLoggedIn, isAdmin } from "@/lib/auth"
 import { Footer } from "@/components/footer"
 
 function initial(username: string) {
@@ -24,12 +21,13 @@ export default async function ExplorePage({
 }) {
   const { q, sort: sortParam } = await searchParams
   const sort: FeedSort = sortParam === "hot" ? "hot" : "recent"
-  const [feed, allProjects, hotTopics, homeHref, loggedIn] = await Promise.all([
+  const [feed, allProjects, hotTopics, homeHref, loggedIn, admin] = await Promise.all([
     getPublishedFeed(q, sort),
     getPublishedFeed(undefined, "hot"),
     getHotTopics(),
     getHomeHref(),
     isLoggedIn(),
+    isAdmin(),
   ])
 
   const featured = allProjects.find((project) => project.featured) ?? null
@@ -46,19 +44,7 @@ export default async function ExplorePage({
 
   return (
     <div className={`modernist flex min-h-svh flex-col ${archivo.className}`} style={{ background: "var(--color-bg)" }}>
-      <header
-        className="flex items-center gap-6"
-        style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
-      >
-        <Link href={homeHref} className="mr-auto">
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-4">
-          <PrimaryNav active="explore" loggedIn={loggedIn} />
-          <NotificationButton />
-          <UserMenu />
-        </div>
-      </header>
+      <AppHeader active="explore" homeHref={homeHref} loggedIn={loggedIn} isAdmin={admin} />
 
       <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
         <div

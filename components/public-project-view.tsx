@@ -11,6 +11,7 @@ import { VoteButton } from "@/components/vote-button"
 import { ForkButton } from "@/components/fork-button"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { AuthPromptActions } from "@/components/auth-prompt-actions"
+import { ReportButton } from "@/components/report-button"
 import { Wordmark } from "@/components/logo"
 import { UserMenu } from "@/components/user-menu"
 import type { PublicIdea, PublicProject } from "@/lib/public-project"
@@ -63,6 +64,7 @@ export function PublicProjectView({
         <div className="ml-auto flex items-center gap-3">
           {isLoggedIn ? (
             <>
+              {!isOwnProject && <ReportButton projectId={project.id} isLoggedIn={isLoggedIn} />}
               {!isOwnProject && <ForkButton projectId={project.id} isLoggedIn={isLoggedIn} />}
               <BookmarkButton
                 projectId={project.id}

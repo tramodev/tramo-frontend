@@ -42,9 +42,23 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
   }
 }
 
+async function isAdminUser(accessToken: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/profile/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    return data.role === 'ADMIN';
+  } catch {
+    return false;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const isProtected = path.startsWith('/dashboard') || path.startsWith('/projects') || path.startsWith('/profile');
+  const isProtected = path.startsWith('/dashboard') || path.startsWith('/projects') || path.startsWith('/profile') || path.startsWith('/admin');
 
   let accessToken = request.cookies.get('accessToken')?.value ?? null;
   const refreshToken = request.cookies.get('refreshToken')?.value ?? null;
@@ -63,8 +77,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  const needsAdminCheck = isLoggedIn && !!accessToken && (path.startsWith('/projects') || path === '/login' || path === '/signup');
+  const admin = needsAdminCheck && accessToken ? await isAdminUser(accessToken) : false;
+
+  if (path.startsWith('/projects') && admin) {
+    return NextResponse.redirect(new URL('/explore', request.url));
+  }
+
   if ((path === '/login' || path === '/signup') && isLoggedIn) {
-    return NextResponse.redirect(new URL('/projects', request.url));
+    return NextResponse.redirect(new URL(admin ? '/explore' : '/projects', request.url));
   }
 
   const needsAnonId = path.startsWith('/p/') && !request.cookies.get(ANON_ID_COOKIE);
@@ -103,6 +124,7 @@ export const config = {
     '/dashboard/:path*',
     '/projects/:path*',
     '/profile/:path*',
+    '/admin/:path*',
     '/login',
     '/signup',
     '/p/:path*',

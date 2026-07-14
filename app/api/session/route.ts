@@ -8,7 +8,12 @@ export async function GET() {
   const refreshToken = cookieStore.get('refreshToken');
   const isLoggedIn = !!(accessToken || refreshToken);
   const username = cookieStore.get('username')?.value ?? '';
-  const imageUrl = isLoggedIn ? (await getMyProfile())?.imageUrl ?? null : null;
+  const profile = isLoggedIn ? await getMyProfile() : null;
 
-  return NextResponse.json({ isLoggedIn, username, imageUrl });
+  return NextResponse.json({
+    isLoggedIn,
+    username,
+    imageUrl: profile?.imageUrl ?? null,
+    isAdmin: profile?.role === 'ADMIN',
+  });
 }

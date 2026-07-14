@@ -43,6 +43,7 @@ export interface UserProfile {
   bio: string | null;
   imageUrl: string | null;
   createdAt: string | null;
+  role: "ADMIN" | "USER";
 }
 
 export interface ProfileStats {
