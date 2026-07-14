@@ -60,8 +60,7 @@ export function FollowButton({
       </button>
       {error && (
         <span
-          className="absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-semibold"
-          style={{ color: "var(--color-accent)" }}
+          className="absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-semibold text-(--color-accent)"
         >
           Couldn&apos;t update, try again
         </span>

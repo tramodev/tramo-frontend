@@ -16,8 +16,7 @@ export function AppHeader({
 }) {
   return (
     <header
-      className="flex items-center gap-6"
-      style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
+      className="flex items-center gap-6 border-b-2 border-(--color-divider) py-[18px] px-10"
     >
       <Link href={homeHref} className="mr-auto">
         <Wordmark />

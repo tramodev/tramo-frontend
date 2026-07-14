@@ -42,8 +42,7 @@ export function AvatarMenu({ username, imageUrl }: { username: string; imageUrl?
             <Link href="/profile">
               <div className="flex items-center gap-2">
                 <span
-                  className="inline-flex shrink-0 items-center justify-center overflow-hidden text-[11px] font-extrabold"
-                  style={{ width: 24, height: 24, background: 'var(--color-text)', color: 'var(--color-bg)' }}
+                  className="inline-flex shrink-0 items-center justify-center overflow-hidden text-[11px] font-extrabold w-6 h-6 bg-(--color-text) text-(--color-bg)"
                 >
                   {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element

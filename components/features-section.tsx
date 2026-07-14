@@ -22,8 +22,7 @@ export const FeaturesSection: React.FC = () => {
   return (
     <section id="product" className="pt-[84px] pb-[70px]">
       <span
-        className="block text-[13px] uppercase tracking-[0.08em] tabular-nums mb-3.5"
-        style={{ color: 'var(--color-accent-700)' }}
+        className="block text-[13px] uppercase tracking-[0.08em] tabular-nums mb-3.5 text-(--color-accent-700)"
       >
         What MyPath does
       </span>
@@ -36,13 +35,12 @@ export const FeaturesSection: React.FC = () => {
         >
           <p className="relative font-extrabold text-[15px] tabular-nums">
             <span
-              className="hidden min-[1280px]:block absolute -left-6 top-0.5 w-2.5 h-2.5"
-              style={{ background: 'var(--color-accent)' }}
+              className="hidden min-[1280px]:block absolute -left-6 top-0.5 w-2.5 h-2.5 bg-(--color-accent)"
             />
             {f.n}
           </p>
           <h2 className="font-extrabold text-2xl tracking-[-0.01em]">{f.title}</h2>
-          <p className="text-[15.5px] leading-7 max-w-[52ch]" style={{ color: 'var(--color-neutral-800)' }}>
+          <p className="text-[15.5px] leading-7 max-w-[52ch] text-(--color-neutral-800)">
             {f.body}
           </p>
         </div>

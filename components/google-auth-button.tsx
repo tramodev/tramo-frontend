@@ -44,7 +44,7 @@ export function GoogleAuthButton({
           width={400}
         />
         {error && (
-          <p className="text-sm text-center" style={{ color: "var(--color-accent-700)" }}>
+          <p className="text-sm text-center text-(--color-accent-700)">
             {error}
           </p>
         )}

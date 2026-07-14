@@ -153,13 +153,12 @@ export function SidebarCustom({
   };
 
   return (
-    <Sidebar style={{ top: "64px", height: "calc(100svh - 64px)", borderTop: "none" }}>
+    <Sidebar className="top-16 h-[calc(100svh-64px)] border-t-0">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
             <span
-              className="text-[11px] font-bold uppercase"
-              style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+              className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
             >
               My Paths
             </span>
@@ -226,8 +225,7 @@ export function SidebarCustom({
                                 <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
                                 <span className="flex-1 truncate">{path.title}</span>
                                 <span
-                                  className="text-[11px] font-normal"
-                                  style={{ color: "var(--color-neutral-600)" }}
+                                  className="text-[11px] font-normal text-(--color-neutral-600)"
                                 >
                                   {pathIdeas.length}
                                 </span>
@@ -350,8 +348,7 @@ export function SidebarCustom({
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <Link2
-                                              className="ml-1 h-3 w-3 shrink-0"
-                                              style={{ color: "var(--color-accent)" }}
+                                              className="ml-1 h-3 w-3 shrink-0 text-(--color-accent)"
                                             />
                                           </TooltipTrigger>
                                           <TooltipContent>

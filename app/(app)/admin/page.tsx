@@ -8,7 +8,7 @@ export default async function AdminPage() {
   }
 
   return (
-    <main className="mx-auto w-full flex-1 px-8 py-8" style={{ maxWidth: 1000 }}>
+    <main className="mx-auto w-full flex-1 px-8 py-8 max-w-[1000px]">
       <AdminDashboard />
     </main>
   )

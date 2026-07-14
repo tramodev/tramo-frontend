@@ -31,12 +31,11 @@ export default async function PublicProfilePage({
   const { stats, badges, published } = profile
 
   return (
-    <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
-        <div style={{ padding: "44px 72px 0" }}>
+    <main className="mx-auto w-full flex-1 max-w-[1216px]">
+        <div className="pt-11 px-18 pb-0">
           <div className="flex items-start gap-7">
             <span
-              className="flex shrink-0 items-center justify-center overflow-hidden text-[46px] font-extrabold"
-              style={{ width: 140, height: 140, background: "var(--color-text)", color: "var(--color-bg)" }}
+              className="flex shrink-0 items-center justify-center overflow-hidden text-[46px] font-extrabold w-[140px] h-[140px] bg-(--color-text) text-(--color-bg)"
             >
               {profile.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -48,14 +47,13 @@ export default async function PublicProfilePage({
             <div className="min-w-0 flex-1">
               <div className="mb-1.5 flex items-center gap-4">
                 <h1
-                  className="text-[40px] font-extrabold"
-                  style={{ letterSpacing: "-0.025em", lineHeight: 1.05 }}
+                  className="text-[40px] font-extrabold tracking-[-0.025em] leading-[1.05]"
                 >
                   {profile.username}
                 </h1>
                 <FollowButton username={profile.username} initialFollowing={profile.following} isLoggedIn={loggedIn} />
               </div>
-              <div className="flex items-center gap-4 text-xs" style={{ marginBottom: 12, color: "var(--color-neutral-600)" }}>
+              <div className="flex items-center gap-4 text-xs mb-3 text-(--color-neutral-600)">
                 <span className="inline-flex items-center gap-1.5 font-semibold">
                   <Calendar className="h-[13px] w-[13px]" />
                   Joined {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
@@ -66,7 +64,7 @@ export default async function PublicProfilePage({
                 </span>
               </div>
               {profile.bio && (
-                <p className="mb-3 w-3/4 text-sm" style={{ lineHeight: 1.6, color: "var(--color-neutral-800)" }}>
+                <p className="mb-3 w-3/4 text-sm leading-[1.6] text-(--color-neutral-800)">
                   {profile.bio}
                 </p>
               )}
@@ -75,50 +73,45 @@ export default async function PublicProfilePage({
           </div>
 
           <div
-            className="grid rounded-lg"
-            style={{ marginTop: 28, gridTemplateColumns: "repeat(4, 1fr)", border: "2px solid var(--color-divider)" }}
+            className="grid rounded-lg mt-7 grid-cols-4 border-2 border-(--color-divider)"
           >
-            <div style={{ padding: "16px 20px", borderRight: "2px solid var(--color-divider)" }}>
+            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
               <div className="text-[26px] font-extrabold">{stats.pathsPublished}</div>
               <div
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
               >
                 Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />
               </div>
             </div>
-            <div style={{ padding: "16px 20px", borderRight: "2px solid var(--color-divider)" }}>
+            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
               <div className="text-[26px] font-extrabold">{stats.upvotesReceived}</div>
               <div
-                className="text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
               >
                 Upvotes received
               </div>
             </div>
-            <div style={{ padding: "16px 20px", borderRight: "2px solid var(--color-divider)" }}>
+            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
               <div className="text-[26px] font-extrabold">{stats.totalViews.toLocaleString()}</div>
               <div
-                className="text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
               >
                 Total views
               </div>
             </div>
-            <div style={{ padding: "16px 20px" }}>
+            <div className="py-4 px-5">
               <div className="text-[26px] font-extrabold">{stats.forksCount}</div>
               <div
-                className="text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
               >
                 Forks
               </div>
             </div>
           </div>
 
-          <div style={{ marginTop: 32 }}>
-            <div className="mb-3 text-[11px] font-bold uppercase" style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}>
+          <div className="mt-8">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)">
               Published projects
             </div>
             <PublishedGrid

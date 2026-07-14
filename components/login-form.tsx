@@ -36,16 +36,16 @@ export function LoginForm({
       {...props}
     >
       <div>
-        <h1 className="text-[40px] font-extrabold" style={{ letterSpacing: "-0.015em", marginLeft: "-0.058em" }}>
+        <h1 className="text-[40px] font-extrabold tracking-[-0.015em] ml-[-0.058em]">
           Log in
         </h1>
-        <p className="mt-3.5 text-[15px]" style={{ lineHeight: "28px", color: "var(--color-neutral-800)" }}>
+        <p className="mt-3.5 text-[15px] leading-7 text-(--color-neutral-800)">
           Enter your username below to access your account.
         </p>
       </div>
       <FieldGroup className="mt-2 gap-6">
         {state?.error && (
-          <div className="flex flex-col items-center gap-2 text-sm text-center" style={{ color: "var(--color-accent-700)" }}>
+          <div className="flex flex-col items-center gap-2 text-sm text-center text-(--color-accent-700)">
             {state.error}
             {state.needsVerification && (
               <ResendVerificationButton username={username} />
@@ -68,8 +68,7 @@ export function LoginForm({
             <FieldLabel htmlFor="password">Password</FieldLabel>
             <a
               href="/forgot-password"
-              className="text-[13px]"
-              style={{ color: "var(--color-accent-700)" }}
+              className="text-[13px] text-(--color-accent-700)"
             >
               Forgot your password?
             </a>
@@ -81,8 +80,7 @@ export function LoginForm({
         </Field>
         <FieldSeparator>
           <span
-            className="text-[11px] uppercase"
-            style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+            className="text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-600)"
           >
             Or continue with
           </span>
@@ -91,7 +89,7 @@ export function LoginForm({
           <GoogleAuthButton text="signin_with" />
           <FieldDescription className="text-left">
             Don&apos;t have an account?{" "}
-            <a href="signup" className="font-semibold" style={{ color: "var(--color-accent-700)" }}>
+            <a href="signup" className="font-semibold text-(--color-accent-700)">
               Sign up
             </a>
           </FieldDescription>

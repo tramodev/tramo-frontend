@@ -190,12 +190,10 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden"
+      className="relative h-full w-full overflow-hidden border-2 border-(--color-divider) bg-[size:24px_24px]"
       style={{
-        border: "2px solid var(--color-divider)",
         backgroundColor: colors.bg,
         backgroundImage: `radial-gradient(${colors.neutral400} 1px, transparent 1px)`,
-        backgroundSize: "24px 24px",
       }}
     >
       {dimensions.width > 0 && dimensions.height > 0 && (
@@ -269,14 +267,12 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
       )}
 
       <div
-        className="absolute bottom-6 right-6 flex"
-        style={{ border: "2px solid var(--color-text)" }}
+        className="absolute bottom-6 right-6 flex border-2 border-(--color-text)"
       >
         <button
           type="button"
           aria-label="Zoom in"
-          className="flex h-9 w-9 items-center justify-center hover:bg-[var(--color-neutral-200)]"
-          style={{ background: "var(--color-bg)" }}
+          className="flex h-9 w-9 items-center justify-center hover:bg-[var(--color-neutral-200)] bg-(--color-bg)"
           onClick={() => zoomBy(1.4)}
         >
           <Plus className="h-4 w-4" />
@@ -284,8 +280,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
         <button
           type="button"
           aria-label="Zoom out"
-          className="flex h-9 w-9 items-center justify-center hover:bg-[var(--color-neutral-200)]"
-          style={{ background: "var(--color-bg)", borderLeft: "2px solid var(--color-text)" }}
+          className="flex h-9 w-9 items-center justify-center hover:bg-[var(--color-neutral-200)] bg-(--color-bg) border-l-2 border-(--color-text)"
           onClick={() => zoomBy(1 / 1.4)}
         >
           <Minus className="h-4 w-4" />
@@ -293,33 +288,27 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
       </div>
 
       <div
-        className="absolute bottom-6 left-6 flex items-center gap-4 px-3.5 py-2"
-        style={{ background: "var(--color-bg)", border: "1px solid var(--color-neutral-400)" }}
+        className="absolute bottom-6 left-6 flex items-center gap-4 px-3.5 py-2 bg-(--color-bg) border border-(--color-neutral-400)"
       >
         <span
-          className="flex items-center gap-1.5 text-[11px] uppercase"
-          style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
+          className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-700)"
         >
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-accent)" }} />
+          <span className="h-2.5 w-2.5 rounded-full bg-(--color-accent)" />
           Selected
         </span>
         <span
-          className="flex items-center gap-1.5 text-[11px] uppercase"
-          style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
+          className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-700)"
         >
           <span
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ border: "2px solid var(--color-neutral-600)", boxSizing: "border-box" }}
+            className="h-2.5 w-2.5 rounded-full border-2 border-(--color-neutral-600) box-border"
           />
           Idea
         </span>
         <span
-          className="flex items-center gap-1.5 text-[11px] uppercase"
-          style={{ letterSpacing: "0.08em", color: "var(--color-neutral-700)" }}
+          className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-700)"
         >
           <span
-            className="h-2.5 w-2.5"
-            style={{ background: "hsla(222, 62%, 45%, 0.3)", border: "1.5px solid hsl(222, 62%, 45%)" }}
+            className="h-2.5 w-2.5 bg-[hsla(222,62%,45%,0.3)] border-[1.5px] border-[hsl(222,62%,45%)]"
           />
           Path (region contains its ideas)
         </span>

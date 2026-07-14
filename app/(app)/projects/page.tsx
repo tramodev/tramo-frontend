@@ -71,29 +71,23 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216, padding: "44px 72px 84px" }}>
+    <main className="mx-auto w-full flex-1 max-w-[1216px] pt-11 px-18 pb-[84px]">
         <span
-          className="block text-[11px] font-bold uppercase"
-          style={{ letterSpacing: "0.12em", color: "var(--color-accent)", marginBottom: "8px" }}
+          className="block text-[11px] font-bold uppercase tracking-[0.12em] text-(--color-accent) mb-2"
         >
           Your workspace
         </span>
-        <h1 className="text-[48px] font-extrabold" style={{ letterSpacing: "-0.025em", lineHeight: 1.05, marginBottom: 28 }}>
+        <h1 className="text-[48px] font-extrabold tracking-[-0.025em] leading-[1.05] mb-7">
           Start a new project
         </h1>
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           <button
             onClick={handleCreateProject}
-            className="group flex aspect-[3/4] flex-col items-start justify-end gap-2 p-5 transition-colors"
-            style={{
-              background: "var(--color-bg)",
-              border: "2px dashed var(--color-neutral-500)",
-              color: "var(--color-neutral-700)",
-            }}
+            className="group flex aspect-[3/4] flex-col items-start justify-end gap-2 p-5 transition-colors bg-(--color-bg) border-2 border-dashed border-(--color-neutral-500) text-(--color-neutral-700)"
           >
             <Plus
+              strokeWidth={2}
               className="h-7 w-7 transition-colors group-hover:text-[var(--color-accent-700)]"
-              style={{ strokeWidth: 2 }}
             />
             <span className="text-sm font-semibold transition-colors group-hover:text-[var(--color-accent-700)]">
               Blank project
@@ -104,11 +98,11 @@ export default function ProjectsPage() {
         <div className="mt-[70px]">
           <span className="kicker mb-5">My projects</span>
           {loading ? (
-            <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>
+            <p className="text-sm text-(--color-neutral-700)">
               Loading...
             </p>
           ) : projects.length === 0 ? (
-            <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>
+            <p className="text-sm text-(--color-neutral-700)">
               No projects yet. Create a blank project to get started.
             </p>
           ) : (
@@ -120,8 +114,7 @@ export default function ProjectsPage() {
                   onClick={() => router.push(`/editor/${project.id}`)}
                 >
                   <CardContent
-                    className="flex aspect-[4/3] items-center justify-center overflow-hidden p-0"
-                    style={{ borderBottom: "2px solid var(--color-divider)" }}
+                    className="flex aspect-[4/3] items-center justify-center overflow-hidden p-0 border-b-2 border-(--color-divider)"
                   >
                     {project.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -132,12 +125,12 @@ export default function ProjectsPage() {
                       />
                     ) : (
                       <FolderKanban
-                        className="h-9 w-9"
-                        style={{ color: "var(--color-neutral-600)", strokeWidth: 1.5 }}
+                        strokeWidth={1.5}
+                        className="h-9 w-9 text-(--color-neutral-600)"
                       />
                     )}
                   </CardContent>
-                  <CardHeader className="gap-0 p-0" style={{ padding: "14px 16px" }}>
+                  <CardHeader className="gap-0 p-0 py-3.5 px-4">
                     <div className="flex items-center justify-between gap-2">
                       {editingId === project.id ? (
                         <Input
@@ -176,8 +169,7 @@ export default function ProjectsPage() {
                       </Button>
                     </div>
                     <p
-                      className="text-xs tabular-nums"
-                      style={{ marginTop: 6, color: "var(--color-neutral-700)" }}
+                      className="text-xs tabular-nums mt-1.5 text-(--color-neutral-700)"
                     >
                       Edited {formatUpdatedAt(project.updatedAt)}
                     </p>

@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const [loggedIn, admin, homeHref] = await Promise.all([isLoggedIn(), isAdmin(), getHomeHref()])
 
   return (
-    <div className={`modernist flex min-h-svh flex-col ${archivo.className}`} style={{ background: "var(--color-bg)" }}>
+    <div className={`modernist flex min-h-svh flex-col bg-(--color-bg) ${archivo.className}`}>
       <AppHeader homeHref={admin ? "/explore" : homeHref} loggedIn={loggedIn} isAdmin={admin} />
       {children}
       <Footer />

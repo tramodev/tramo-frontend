@@ -46,8 +46,8 @@ export function VerifyEmailClient() {
     <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
       {status === 'verifying' && (
         <>
-          <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--color-accent)' }} />
-          <p className="text-[15px]" style={{ color: 'var(--color-neutral-800)' }}>
+          <Loader2 className="h-8 w-8 animate-spin text-(--color-accent)" />
+          <p className="text-[15px] text-(--color-neutral-800)">
             Verifying your email...
           </p>
         </>
@@ -55,7 +55,7 @@ export function VerifyEmailClient() {
       {status === 'success' && (
         <>
           <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-          <p className="text-[15px]" style={{ color: 'var(--color-neutral-800)' }}>
+          <p className="text-[15px] text-(--color-neutral-800)">
             Email verified. Redirecting...
           </p>
         </>
@@ -63,10 +63,10 @@ export function VerifyEmailClient() {
       {status === 'error' && (
         <>
           <XCircle className="h-8 w-8 text-red-600" />
-          <p className="text-[15px]" style={{ color: 'var(--color-neutral-800)' }}>
+          <p className="text-[15px] text-(--color-neutral-800)">
             {error}
           </p>
-          <a href="/login" className="text-sm font-semibold" style={{ color: 'var(--color-accent-700)' }}>
+          <a href="/login" className="text-sm font-semibold text-(--color-accent-700)">
             Back to log in
           </a>
         </>

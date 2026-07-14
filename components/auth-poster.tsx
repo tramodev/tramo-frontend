@@ -12,10 +12,9 @@ const NODES = [
 export function AuthPoster({ lines }: AuthPosterProps) {
   return (
     <div
-      className="relative hidden flex-col justify-end overflow-hidden p-[72px] lg:flex"
-      style={{ background: "var(--color-accent)", color: "var(--color-bg)" }}
+      className="relative hidden flex-col justify-end overflow-hidden p-[72px] lg:flex bg-(--color-accent) text-(--color-bg)"
     >
-      <svg className="pointer-events-none absolute inset-0 h-full w-full" style={{ opacity: 0.55 }}>
+      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-55">
         {NODES.map((node) => (
           <line
             key={node.top + node.left}
@@ -29,28 +28,20 @@ export function AuthPoster({ lines }: AuthPosterProps) {
         ))}
       </svg>
       <div
-        className="absolute h-9 w-9"
-        style={{ top: "38%", left: "50%", transform: "translate(-50%, -50%)", background: "var(--color-bg)" }}
+        className="absolute h-9 w-9 top-[38%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-(--color-bg)"
       />
       {NODES.map((node) => (
         <div
           key={node.top + node.left}
-          className="absolute box-border"
-          style={{
-            top: node.top,
-            left: node.left,
-            width: node.size,
-            height: node.size,
-            border: "2px solid var(--color-bg)",
-          }}
+          className="absolute box-border border-2 border-(--color-bg)"
+          style={{ top: node.top, left: node.left, width: node.size, height: node.size }}
         />
       ))}
       <h2
-        className="relative m-0 text-[52px] font-extrabold"
-        style={{ lineHeight: 1.06, letterSpacing: "-0.015em", marginLeft: "-0.058em" }}
+        className="relative m-0  leading-[1.06] tracking-[-0.015em] ml-[]"
       >
-        <span className="block">{lines[0]}</span>
-        <span className="block">{lines[1]}</span>
+        <span className="block text-[52px] font-extrabold">{lines[0]}</span>
+        <span className="block text-[20px] font-medium">{lines[1]}</span>
       </h2>
     </div>
   );

@@ -71,6 +71,7 @@ export interface ProjectFeedItem {
   title: string;
   description: string | null;
   ownerUsername: string;
+  ownerAvatar: string | null;
   thumbnail: string | null;
   tags: string[];
   modifiedDate: string;
@@ -87,6 +88,7 @@ interface ProjectFeedItemDTO {
   title: string;
   description: string | null;
   ownerUsername: string;
+  ownerAvatar: string | null;
   thumbnail: string | null;
   tags: string | null;
   modifiedDate: string;
@@ -111,6 +113,7 @@ function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
     title: item.title,
     description: item.description,
     ownerUsername: item.ownerUsername,
+    ownerAvatar: item.ownerAvatar,
     thumbnail: item.thumbnail,
     tags: parseTags(item.tags),
     modifiedDate: item.modifiedDate,
@@ -125,6 +128,7 @@ function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
 
 export interface AuthorCount {
   username: string;
+  avatar: string | null;
   count: number;
 }
 

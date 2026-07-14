@@ -513,13 +513,12 @@ export default function DashboardPage() {
       className="h-screen min-h-0 flex-col"
     >
       <header
-        className="flex h-16 shrink-0 items-center gap-4 px-8"
-        style={{ borderBottom: "2px solid var(--color-divider)" }}
+        className="flex h-16 shrink-0 items-center gap-4 px-8 border-b-2 border-(--color-divider)"
       >
         <Link href="/projects" title="Back to projects">
           <Wordmark />
         </Link>
-        <span className="h-[18px] w-[2px]" style={{ background: "var(--color-divider)" }} />
+        <span className="h-[18px] w-[2px] bg-(--color-divider)" />
         {isEditingTitle ? (
           <Input
             autoFocus
@@ -543,7 +542,7 @@ export default function DashboardPage() {
         )}
         <div className="ml-auto flex items-center gap-3">
           {view === 'editor' && selectedIdea && (
-            <span className="text-xs" style={{ color: 'var(--color-neutral-600)' }}>
+            <span className="text-xs text-(--color-neutral-600)">
               {textStats.words} words · {textStats.characters} characters
             </span>
           )}
@@ -555,8 +554,7 @@ export default function DashboardPage() {
             onTagsChange={setTags}
           />
           <span
-            className="flex items-center gap-1.5 text-xs"
-            style={{ color: 'var(--color-neutral-700)', width: 60 }}
+            className="flex items-center gap-1.5 text-xs text-(--color-neutral-700) w-[60px]"
           >
             {saveStatus === 'saving' && (
               <>
@@ -566,7 +564,7 @@ export default function DashboardPage() {
             )}
             {(saveStatus === 'saved' || saveStatus === 'idle') && (
               <>
-                <Check className="h-3.5 w-3.5" style={{ color: 'var(--color-accent)' }} />
+                <Check className="h-3.5 w-3.5 text-(--color-accent)" />
                 Saved
               </>
             )}
@@ -603,7 +601,6 @@ export default function DashboardPage() {
                 onClick={() => setView('editor')}
                 title="Close graph view"
                 className="absolute top-6 right-6 z-10 flex h-8 w-8 items-center justify-center"
-                style={{ color: "var(--color-neutral-600)" }}
               >
                 <X className="h-4 w-4" />
               </button>

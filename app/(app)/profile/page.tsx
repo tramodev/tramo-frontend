@@ -51,24 +51,22 @@ export default async function ProfilePage({
   ]
 
   return (
-    <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
-        <div style={{ padding: "44px 72px 0" }}>
+    <main className="mx-auto w-full flex-1 max-w-[1216px]">
+        <div className="pt-11 px-18 pb-0">
           <div className="flex items-start gap-7">
             <AvatarUpload username={profile.username} imageUrl={profile.imageUrl} />
             <div className="min-w-0 flex-1">
               <span
-                className="block text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.12em", color: "var(--color-accent)", marginBottom: "6px" }}
+                className="block text-[11px] font-bold uppercase tracking-[0.12em] text-(--color-accent) mb-1.5"
               >
                 My profile
               </span>
               <h1
-                className="text-[40px] font-extrabold"
-                style={{ letterSpacing: "-0.025em", lineHeight: 1.05, marginBottom: "8px" }}
+                className="text-[40px] font-extrabold tracking-[-0.025em] leading-[1.05] mb-2"
               >
                 {profile.username}
               </h1>
-              <div className="flex items-center gap-4 text-xs" style={{ marginBottom: 12, color: "var(--color-neutral-600)" }}>
+              <div className="flex items-center gap-4 text-xs mb-3 text-(--color-neutral-600)">
                 {profile.createdAt && (
                   <span className="inline-flex items-center gap-1.5 font-semibold">
                     <Calendar className="h-[13px] w-[13px]" />
@@ -81,7 +79,7 @@ export default async function ProfilePage({
                   {(stats?.followersCount ?? 0).toLocaleString()} followers
                 </span>
               </div>
-              <div style={{ marginBottom: 12 }}>
+              <div className="mb-3">
                 <BioEditor initialBio={profile.bio} />
               </div>
               <BadgesPanel badges={badges} />
@@ -89,66 +87,59 @@ export default async function ProfilePage({
           </div>
 
           <div
-            className="grid rounded-lg"
-            style={{ marginTop: 28, gridTemplateColumns: "repeat(4, 1fr)", border: "2px solid var(--color-divider)" }}
+            className="grid rounded-lg mt-7 grid-cols-4 border-2 border-(--color-divider)"
           >
             <Link
               href="/projects"
-              className="transition-colors hover:bg-muted"
-              style={{ padding: "16px 20px", borderRight: "2px solid var(--color-divider)" }}
+              className="transition-colors hover:bg-muted py-4 px-5 border-r-2 border-(--color-divider)"
             >
               <div className="text-[26px] font-extrabold">{stats?.pathsPublished ?? 0}</div>
               <div
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
               >
                 Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />
               </div>
             </Link>
-            <div style={{ padding: "16px 20px", borderRight: "2px solid var(--color-divider)" }}>
+            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
               <div className="text-[26px] font-extrabold">{stats?.upvotesReceived ?? 0}</div>
               <div
-                className="text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
               >
                 Upvotes received
               </div>
             </div>
-            <div style={{ padding: "16px 20px", borderRight: "2px solid var(--color-divider)" }}>
+            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
               <div className="text-[26px] font-extrabold">{(stats?.totalViews ?? 0).toLocaleString()}</div>
               <div
-                className="text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
               >
                 Total views
               </div>
             </div>
-            <div style={{ padding: "16px 20px" }}>
+            <div className="py-4 px-5">
               <div className="text-[26px] font-extrabold">{stats?.forksCount ?? 0}</div>
               <div
-                className="text-[11px] font-bold uppercase"
-                style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
               >
                 Forks
               </div>
             </div>
           </div>
 
-          <div className="flex gap-6" style={{ borderBottom: "2px solid var(--color-divider)", marginTop: 32 }}>
+          <div className="flex gap-6 border-b-2 border-(--color-divider) mt-8">
             {tabs.map(({ key, label, count }) => (
               <Link
                 key={key}
                 href={`/profile?tab=${key}`}
-                className="inline-flex items-baseline gap-1.5 pb-2 text-sm font-bold transition-colors"
-                style={{
-                  marginBottom: -2,
-                  color: tab === key ? "var(--color-text)" : "var(--color-neutral-600)",
-                  borderBottom: tab === key ? "2px solid var(--color-accent)" : "2px solid transparent",
-                }}
+                className={`inline-flex items-baseline gap-1.5 pb-2 text-sm font-bold transition-colors -mb-0.5 border-b-2 ${
+                  tab === key
+                    ? "text-(--color-text) border-(--color-accent)"
+                    : "text-(--color-neutral-600) border-transparent"
+                }`}
               >
                 {label}
-                <span className="text-xs" style={{ color: "var(--color-neutral-600)" }}>
+                <span className="text-xs text-(--color-neutral-600)">
                   {count}
                 </span>
               </Link>
@@ -156,7 +147,7 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        <div style={{ padding: "8px 72px 56px" }}>
+        <div className="pt-2 px-18 pb-14">
           {tab === "activity" && <ActivityPanel items={activity} />}
           {tab === "published" && (
             <PublishedGrid
@@ -165,7 +156,7 @@ export default async function ProfilePage({
               emptyMessage={
                 <>
                   Nothing published yet — publish a project from{" "}
-                  <Link href="/projects" className="font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-neutral-700)" }}>
+                  <Link href="/projects" className="font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)">
                     Projects.
                   </Link>
                 </>
@@ -183,8 +174,7 @@ export default async function ProfilePage({
 function Row({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="relative flex items-center gap-5 rounded-lg transition-colors hover:bg-muted"
-      style={{ margin: "0 -16px", padding: "22px 16px", borderBottom: "2px solid var(--color-divider)" }}
+      className="relative flex items-center gap-5 rounded-lg transition-colors hover:bg-muted -mx-4 py-[22px] px-4 border-b-2 border-(--color-divider)"
     >
       {children}
     </div>
@@ -194,14 +184,13 @@ function Row({ children }: { children: React.ReactNode }) {
 function Thumbnail({ thumbnail, title }: { thumbnail: string | null; title: string }) {
   return (
     <div
-      className="grid shrink-0 place-items-center overflow-hidden rounded-md"
-      style={{ width: 96, height: 64, border: "2px solid var(--color-divider)", background: "var(--color-neutral-200)" }}
+      className="grid shrink-0 place-items-center overflow-hidden rounded-md w-24 h-16 border-2 border-(--color-divider) bg-(--color-neutral-200)"
     >
       {thumbnail ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={thumbnail} alt="" className="h-full w-full object-cover object-top" />
       ) : (
-        <span className="text-2xl font-extrabold" style={{ color: "var(--color-accent)" }}>
+        <span className="text-2xl font-extrabold text-(--color-accent)">
           {initial(title)}
         </span>
       )}
@@ -211,9 +200,9 @@ function Thumbnail({ thumbnail, title }: { thumbnail: string | null; title: stri
 
 function EmptyState({ message, linkHref, linkLabel }: { message: string; linkHref: string; linkLabel: string }) {
   return (
-    <p className="text-sm" style={{ color: "var(--color-neutral-600)" }}>
+    <p className="text-sm text-(--color-neutral-600)">
       {message}{" "}
-      <Link href={linkHref} className="font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-neutral-700)" }}>
+      <Link href={linkHref} className="font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)">
         {linkLabel}
       </Link>
     </p>
@@ -276,13 +265,12 @@ function ActivityPanel({ items }: { items: ActivityItem[] }) {
           <Row key={`${item.type}-${item.projectId}-${index}`}>
             <Link href={activityHref(item)} className="absolute inset-0 z-0" aria-label={item.projectTitle} />
             <span
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
-              style={{ background: "var(--color-neutral-200)", color: "var(--color-neutral-700)" }}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-(--color-neutral-200) text-(--color-neutral-700)"
             >
               <Icon className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1 text-sm">{activityText(item)}</div>
-            <div className="shrink-0 text-xs" style={{ color: "var(--color-neutral-600)" }}>
+            <div className="shrink-0 text-xs text-(--color-neutral-600)">
               {formatActivityDate(item.timestamp)}
             </div>
           </Row>
@@ -304,11 +292,10 @@ function BookmarksPanel({ items, loggedIn }: { items: ProjectFeedItem[]; loggedI
           <Thumbnail thumbnail={item.thumbnail} title={item.title} />
           <div className="min-w-0 flex-1">
             <div className="mb-1 text-[20px] font-bold">{item.title}</div>
-            <div className="flex items-center gap-2.5 text-xs" style={{ color: "var(--color-neutral-600)" }}>
+            <div className="flex items-center gap-2.5 text-xs text-(--color-neutral-600)">
               <a
                 href={`/u/${encodeURIComponent(item.ownerUsername)}`}
-                className="relative z-10 font-semibold hover:text-[var(--color-accent)]"
-                style={{ color: "var(--color-neutral-700)" }}
+                className="relative z-10 font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)"
               >
                 by {item.ownerUsername}
               </a>
@@ -344,15 +331,14 @@ function ForksPanel({ items }: { items: ForkFeedItem[] }) {
           <Thumbnail thumbnail={item.thumbnail} title={item.title} />
           <div className="min-w-0 flex-1">
             <div className="mb-1 text-[20px] font-bold">{item.title}</div>
-            <div className="flex items-center gap-2.5 text-xs" style={{ color: "var(--color-neutral-600)" }}>
+            <div className="flex items-center gap-2.5 text-xs text-(--color-neutral-600)">
               <GitFork className="h-[11px] w-[11px]" />
               {item.forkedFromOwnerUsername ? (
                 <span>
                   forked from{" "}
                   <a
                     href={`/u/${encodeURIComponent(item.forkedFromOwnerUsername)}`}
-                    className="relative z-10 font-semibold hover:text-[var(--color-accent)]"
-                    style={{ color: "var(--color-neutral-700)" }}
+                    className="relative z-10 font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)"
                   >
                     {item.forkedFromOwnerUsername}
                   </a>
@@ -364,8 +350,7 @@ function ForksPanel({ items }: { items: ForkFeedItem[] }) {
           </div>
           <Link
             href={`/editor/${item.id}`}
-            className="relative z-10 shrink-0 rounded-md text-[13px] font-bold transition-colors hover:bg-muted hover:text-[var(--color-text)]"
-            style={{ padding: "8px 14px", border: "2px solid var(--color-divider)", color: "var(--color-neutral-600)" }}
+            className="relative z-10 shrink-0 rounded-md text-[13px] font-bold transition-colors hover:bg-muted hover:text-[var(--color-text)] py-2 px-3.5 border-2 border-(--color-divider) text-(--color-neutral-600)"
           >
             Open
           </Link>
@@ -387,12 +372,11 @@ function UpvotedPanel({ items, loggedIn }: { items: ProjectFeedItem[]; loggedIn:
           <Thumbnail thumbnail={item.thumbnail} title={item.title} />
           <div className="min-w-0 flex-1">
             <div className="mb-1 text-[20px] font-bold">{item.title}</div>
-            <div className="text-xs" style={{ color: "var(--color-neutral-600)" }}>
+            <div className="text-xs text-(--color-neutral-600)">
               by{" "}
               <a
                 href={`/u/${encodeURIComponent(item.ownerUsername)}`}
-                className="relative z-10 font-semibold hover:text-[var(--color-accent)]"
-                style={{ color: "var(--color-neutral-700)" }}
+                className="relative z-10 font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)"
               >
                 {item.ownerUsername}
               </a>

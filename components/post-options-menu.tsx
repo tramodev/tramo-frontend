@@ -90,8 +90,7 @@ export function PostOptionsMenu({
             type="button"
             onClick={(e) => e.stopPropagation()}
             title="More options"
-            className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center transition-colors hover:bg-muted ${className ?? "relative"}`}
-            style={{ color: "var(--color-neutral-600)" }}
+            className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center transition-colors cursor-pointer text-(--color-neutral-600) hover:text-(--color-accent) ${className ?? "relative"}`}
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
@@ -132,7 +131,7 @@ export function PostOptionsMenu({
             </DialogDescription>
           </DialogHeader>
           {submitted ? (
-            <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>
+            <p className="text-sm text-(--color-neutral-700)">
               Thanks — your report has been submitted.
             </p>
           ) : (

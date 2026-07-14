@@ -32,14 +32,11 @@ export function PrimaryNav({
           <Link
             key={item.key}
             href={item.href}
-            className="text-[13px] uppercase transition-colors"
-            style={{
-              letterSpacing: "0.08em",
-              fontWeight: active ? 700 : 400,
-              color: active ? "var(--color-text)" : "var(--color-neutral-600)",
-              borderBottom: active ? "2px solid var(--color-accent)" : "2px solid transparent",
-              paddingBottom: "2px",
-            }}
+            className={`text-[13px] uppercase transition-colors tracking-[0.08em] pb-0.5 border-b-2 ${
+              active
+                ? "font-bold text-(--color-text) border-(--color-accent)"
+                : "font-normal text-(--color-neutral-600) border-transparent"
+            }`}
           >
             {item.label}
           </Link>

@@ -80,28 +80,27 @@ export function AdminDashboard() {
       <section>
         <h2 className="mb-4 text-xl font-bold">Open reports</h2>
         {reportsLoading ? (
-          <p className="text-sm" style={{ color: "var(--color-neutral-600)" }}>Loading...</p>
+          <p className="text-sm text-(--color-neutral-600)">Loading...</p>
         ) : reports.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--color-neutral-600)" }}>No open reports.</p>
+          <p className="text-sm text-(--color-neutral-600)">No open reports.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {reports.map((report) => (
               <div
                 key={report.id}
-                className="flex items-start justify-between gap-4 rounded-lg p-4"
-                style={{ border: "2px solid var(--color-divider)" }}
+                className="flex items-start justify-between gap-4 rounded-lg p-4 border-2 border-(--color-divider)"
               >
                 <div className="flex min-w-0 flex-col gap-1">
                   <div className="flex items-center gap-2 text-sm">
-                    <Flag className="h-3.5 w-3.5" style={{ color: "var(--color-accent)" }} />
+                    <Flag className="h-3.5 w-3.5 text-(--color-accent)" />
                     <Link href={`/p/${report.projectId}`} target="_blank" className="font-bold hover:underline">
                       {report.projectTitle}
                     </Link>
-                    <span style={{ color: "var(--color-neutral-600)" }}>
+                    <span className="text-(--color-neutral-600)">
                       reported by {report.reporterUsername}
                     </span>
                   </div>
-                  <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>{report.reason}</p>
+                  <p className="text-sm text-(--color-neutral-700)">{report.reason}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleDismiss(report.id)}>
@@ -119,8 +118,8 @@ export function AdminDashboard() {
 
       <section>
         <h2 className="mb-4 text-xl font-bold">Users</h2>
-        <div className="relative mb-4" style={{ maxWidth: 360 }}>
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" style={{ color: "var(--color-neutral-600)" }} />
+        <div className="relative mb-4 max-w-[360px]">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-(--color-neutral-600)" />
           <Input
             placeholder="Search by username or email..."
             className="pl-9"
@@ -132,25 +131,24 @@ export function AdminDashboard() {
           />
         </div>
         {usersLoading ? (
-          <p className="text-sm" style={{ color: "var(--color-neutral-600)" }}>Loading...</p>
+          <p className="text-sm text-(--color-neutral-600)">Loading...</p>
         ) : (
           <div className="flex flex-col gap-2">
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between gap-4 rounded-lg p-3"
-                style={{ border: "2px solid var(--color-divider)" }}
+                className="flex items-center justify-between gap-4 rounded-lg p-3 border-2 border-(--color-divider)"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="font-bold">{user.username}</span>
-                  <span className="text-sm" style={{ color: "var(--color-neutral-600)" }}>{user.email}</span>
+                  <span className="text-sm text-(--color-neutral-600)">{user.email}</span>
                   {user.role === "ADMIN" && (
-                    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: "var(--color-neutral-200)" }}>
+                    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold bg-(--color-neutral-200)">
                       ADMIN
                     </span>
                   )}
                   {user.banned && (
-                    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: "var(--color-accent)" }}>
+                    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold text-white bg-(--color-accent)">
                       BANNED
                     </span>
                   )}
@@ -182,8 +180,8 @@ export function AdminDashboard() {
       />
 
       {banTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.4)" }}>
-          <div className="w-full max-w-sm rounded-lg p-5" style={{ background: "var(--color-bg)", border: "2px solid var(--color-divider)" }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)]">
+          <div className="w-full max-w-sm rounded-lg p-5 bg-(--color-bg) border-2 border-(--color-divider)">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-bold">Ban {banTarget.username}?</h3>
               <button type="button" onClick={() => setBanTarget(null)}>

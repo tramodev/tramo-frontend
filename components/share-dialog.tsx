@@ -83,8 +83,7 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
       <DialogTrigger asChild>
         <Button
           variant="secondary"
-          className="h-auto gap-2 rounded-none px-[14px] py-[9px] text-[13px] font-extrabold"
-          style={{ background: "var(--color-neutral-300)", color: "var(--color-text)" }}
+          className="h-auto gap-2 rounded-none px-[14px] py-[9px] text-[13px] font-extrabold bg-(--color-neutral-300) text-(--color-text)"
         >
           <Share2 className="h-[15px] w-[15px]" />
           Share

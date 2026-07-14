@@ -18,15 +18,7 @@ interface ConnectionsPanelProps {
 
 const MAX_GRAPH_NODES_PER_SIDE = 3;
 
-function sectionLabelStyle() {
-  return {
-    fontSize: 11,
-    fontWeight: 700,
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.08em",
-    color: "var(--color-neutral-600)",
-  };
-}
+const SECTION_LABEL_CLASSES = "text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)";
 
 function truncateLabel(title: string): string {
   return title.length > 14 ? `${title.slice(0, 13)}…` : title;
@@ -88,7 +80,7 @@ function NeighborhoodGraph({ idea, ideas, paths }: { idea: Idea; ideas: Record<s
   });
 
   return (
-    <svg width="244" height="170" viewBox="0 0 244 170" style={{ display: "block" }}>
+    <svg width="244" height="170" viewBox="0 0 244 170" className="block">
       {siblings.map((node) => (
         <line
           key={`edge-sibling-${node.id}`}
@@ -208,12 +200,11 @@ export function ConnectionsPanel({
 
   return (
     <div
-      className="flex w-[280px] shrink-0 flex-col gap-[22px] overflow-hidden"
-      style={{ borderLeft: "2px solid var(--color-divider)", padding: "20px 16px" }}
+      className="flex w-[280px] shrink-0 flex-col gap-[22px] overflow-hidden border-l-2 border-(--color-divider) py-5 px-4"
     >
       <div>
         <div className="mb-2.5 flex items-center justify-between">
-          <span style={sectionLabelStyle()}>Linked ideas</span>
+          <span className={SECTION_LABEL_CLASSES}>Linked ideas</span>
           <button
             type="button"
             aria-label="Link an idea"
@@ -227,8 +218,7 @@ export function ConnectionsPanel({
           {linkedIdeas.map((linked) => (
             <div
               key={linked.id}
-              className="group/linked flex items-center gap-2"
-              style={{ border: "2px solid var(--color-divider)", padding: "9px 10px" }}
+              className="group/linked flex items-center gap-2 border-2 border-(--color-divider) py-[9px] px-2.5"
               onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--color-accent)")}
               onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--color-divider)")}
             >
@@ -237,7 +227,7 @@ export function ConnectionsPanel({
                 onClick={() => onSelectIdea(linked)}
                 className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
               >
-                <Link2 className="h-[13px] w-[13px] shrink-0" style={{ color: "var(--color-accent)" }} />
+                <Link2 className="h-[13px] w-[13px] shrink-0 text-(--color-accent)" />
                 <span className="truncate text-[13px] font-semibold">{linked.title}</span>
               </button>
               <button
@@ -251,7 +241,7 @@ export function ConnectionsPanel({
             </div>
           ))}
           {linkedIdeas.length === 0 && !isAddingIdea && (
-            <span className="text-xs italic" style={{ color: "var(--color-neutral-600)" }}>
+            <span className="text-xs italic text-(--color-neutral-600)">
               None yet
             </span>
           )}
@@ -289,15 +279,14 @@ export function ConnectionsPanel({
       </div>
 
       <div>
-        <div className="mb-2.5" style={sectionLabelStyle()}>
+        <div className={`mb-2.5 ${SECTION_LABEL_CLASSES}`}>
           In paths
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {memberPaths.map((path) => (
             <span
               key={path.id}
-              className="text-[11px] font-semibold"
-              style={{ background: "var(--color-neutral-300)", padding: "4px 10px" }}
+              className="text-[11px] font-semibold bg-(--color-neutral-300) py-1 px-2.5"
             >
               {path.title}
             </span>
@@ -337,7 +326,6 @@ export function ConnectionsPanel({
                 type="button"
                 onClick={() => setIsAddingPath(true)}
                 className="flex items-center gap-1 text-[11px] font-semibold"
-                style={{ border: "2px solid var(--color-divider)", padding: "2px 10px" }}
               >
                 <Plus className="h-2.5 w-2.5" />
                 Add
@@ -347,14 +335,13 @@ export function ConnectionsPanel({
         </div>
       </div>
 
-      <div style={{ borderTop: "2px solid var(--color-divider)", paddingTop: 16 }}>
+      <div className="border-t-2 border-(--color-divider) pt-4">
         <div className="mb-2.5 flex items-center justify-between">
-          <span style={sectionLabelStyle()}>Graph preview</span>
+          <span className={SECTION_LABEL_CLASSES}>Graph preview</span>
           <button
             type="button"
             onClick={onOpenGraph}
-            className="cursor-pointer text-[11px] font-bold"
-            style={{ color: "var(--color-accent-600)" }}
+            className="cursor-pointer text-[11px] font-bold text-(--color-accent-600)"
           >
             Open graph
           </button>

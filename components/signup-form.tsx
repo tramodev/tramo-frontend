@@ -69,16 +69,16 @@ export function SignupForm({
   return (
     <form action={formAction} className={cn("flex flex-col gap-6", className)} {...props}>
       <div>
-        <h1 className="text-[40px] font-extrabold" style={{ letterSpacing: "-0.015em", marginLeft: "-0.058em" }}>
+        <h1 className="text-[40px] font-extrabold tracking-[-0.015em] ml-[-0.058em]">
           Create your account
         </h1>
-        <p className="mt-3.5 text-[15px]" style={{ lineHeight: "28px", color: "var(--color-neutral-800)" }}>
+        <p className="mt-3.5 text-[15px] leading-7 text-(--color-neutral-800)">
           Fill in the form below to create your account.
         </p>
       </div>
       <FieldGroup className="mt-2 gap-6">
         {errors?.general && (
-          <div className="text-sm text-center" style={{ color: "var(--color-accent-700)" }}>
+          <div className="text-sm text-center text-(--color-accent-700)">
             {errors.general}
           </div>
         )}
@@ -208,8 +208,7 @@ export function SignupForm({
         </Field>
         <FieldSeparator>
           <span
-            className="text-[11px] uppercase"
-            style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+            className="text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-600)"
           >
             Or continue with
           </span>
@@ -218,7 +217,7 @@ export function SignupForm({
           <GoogleAuthButton text="signup_with" />
           <FieldDescription className="text-left">
             Already have an account?{" "}
-            <a href="login" className="font-semibold" style={{ color: "var(--color-accent-700)" }}>
+            <a href="login" className="font-semibold text-(--color-accent-700)">
               Sign in
             </a>
           </FieldDescription>

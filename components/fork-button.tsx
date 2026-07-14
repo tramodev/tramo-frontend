@@ -42,8 +42,7 @@ export function ForkButton({
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="relative z-10 flex shrink-0 items-center gap-2 rounded-md text-xs font-bold transition-colors hover:bg-[var(--color-accent-600)]"
-        style={{ padding: "7px 12px", background: "var(--color-accent)", color: "#fff" }}
+        className="relative z-10 flex shrink-0 items-center gap-2 rounded-md text-xs font-bold transition-colors hover:bg-[var(--color-accent-600)] py-[7px] px-3 bg-(--color-accent) text-[#fff]"
         title={error ? "Fork failed, try again" : "Fork this project into your account"}
       >
         <GitFork className="h-[13px] w-[13px]" />

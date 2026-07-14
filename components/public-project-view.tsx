@@ -38,24 +38,22 @@ export function PublicProjectView({
   return (
     <>
       <header
-        className="flex h-16 shrink-0 items-center gap-4 px-8"
-        style={{ borderBottom: "2px solid var(--color-divider)" }}
+        className="flex h-16 shrink-0 items-center gap-4 px-8 border-b-2 border-(--color-divider)"
       >
         <Link href={homeHref} title="Back to projects">
           <Wordmark />
         </Link>
-        <span className="h-[18px] w-[2px]" style={{ background: "var(--color-divider)" }} />
+        <span className="h-[18px] w-[2px] bg-(--color-divider)" />
         <div className="flex items-center gap-3">
           <span className="text-[15px] font-bold">{project.title}</span>
-          <span className="text-xs" style={{ color: "var(--color-neutral-600)" }}>
+          <span className="text-xs text-(--color-neutral-600)">
             by{" "}
             <Link href={`/u/${encodeURIComponent(project.ownerUsername)}`} className="font-semibold hover:text-[var(--color-accent)]">
               {project.ownerUsername}
             </Link>
           </span>
           <span
-            className="flex items-center gap-1 text-xs"
-            style={{ color: "var(--color-neutral-600)" }}
+            className="flex items-center gap-1 text-xs text-(--color-neutral-600)"
           >
             <Eye className="h-3.5 w-3.5" />
             {project.viewCount} views
@@ -94,7 +92,7 @@ export function PublicProjectView({
           <div className="flex-1 overflow-auto px-2 py-2">
             {selectedIdea ? (
               <div className="mx-auto flex max-w-[820px] flex-col gap-4 px-6 py-8">
-                <h1 className="text-[28px] font-bold" style={{ letterSpacing: "-0.01em" }}>
+                <h1 className="text-[28px] font-bold tracking-[-0.01em]">
                   {selectedIdea.title}
                 </h1>
                 <LexicalReadOnly key={selectedIdea.id} content={selectedIdea.content} onIdeaClick={handleIdeaLinkClick} />

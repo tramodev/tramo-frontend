@@ -31,8 +31,7 @@ export function PublicSidebar({ paths, selectedIdeaId, onSelectIdea }: PublicSid
         <SidebarGroup>
           <SidebarGroupLabel>
             <span
-              className="text-[11px] font-bold uppercase"
-              style={{ letterSpacing: "0.08em", color: "var(--color-neutral-600)" }}
+              className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
             >
               Paths
             </span>

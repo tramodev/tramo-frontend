@@ -15,12 +15,12 @@ export default async function ForgotPasswordCheckEmailPage({
         <Wordmark />
         <div className="flex flex-1 flex-col justify-center">
           <div className="flex w-full max-w-[400px] flex-col gap-6">
-            <MailCheck className="h-10 w-10" style={{ color: "var(--color-accent)" }} />
+            <MailCheck className="h-10 w-10 text-(--color-accent)" />
             <div>
-              <h1 className="text-[32px] font-extrabold" style={{ letterSpacing: "-0.015em" }}>
+              <h1 className="text-[32px] font-extrabold tracking-[-0.015em]">
                 Check your email
               </h1>
-              <p className="mt-3.5 text-[15px]" style={{ lineHeight: "28px", color: "var(--color-neutral-800)" }}>
+              <p className="mt-3.5 text-[15px] leading-7 text-(--color-neutral-800)">
                 {email ? (
                   <>If an account exists for <strong>{email}</strong>, we sent a link to reset your password.</>
                 ) : (
@@ -28,7 +28,7 @@ export default async function ForgotPasswordCheckEmailPage({
                 )}
               </p>
             </div>
-            <a href="/login" className="text-sm font-semibold" style={{ color: "var(--color-accent-700)" }}>
+            <a href="/login" className="text-sm font-semibold text-(--color-accent-700)">
               Back to log in
             </a>
           </div>

@@ -521,7 +521,7 @@ export default function ToolbarPlugin() {
         type="file"
         accept="image/*"
         onChange={handleImageFileChange}
-        style={{ display: 'none' }}
+        className="hidden"
       />
 
       <Divider />

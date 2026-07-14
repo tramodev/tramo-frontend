@@ -54,10 +54,9 @@ export function VoteButton({
       onClick={handleClick}
       disabled={isPending}
       aria-pressed={voted}
-      className="relative z-10 flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 transition-colors hover:bg-muted"
-      style={{
-        color: voted ? "var(--color-accent)" : "var(--color-neutral-600)",
-      }}
+      className={`relative z-10 flex shrink-0 items-center gap-0.5 rounded-md pr-1 py-1.5 transition-colors cursor-pointer hover:text-(--color-accent) ${
+        voted ? "text-(--color-accent)" : "text-(--color-neutral-600)"
+      }`}
     >
       <ArrowBigUp className="h-5 w-5" fill={voted ? "currentColor" : "none"} />
       <span className="text-xs font-bold">{count}</span>

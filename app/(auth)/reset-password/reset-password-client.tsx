@@ -36,10 +36,10 @@ export function ResetPasswordClient() {
     return (
       <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
         <XCircle className="h-8 w-8 text-red-600" />
-        <p className="text-[15px]" style={{ color: "var(--color-neutral-800)" }}>
+        <p className="text-[15px] text-(--color-neutral-800)">
           Missing reset token.
         </p>
-        <a href="/forgot-password" className="text-sm font-semibold" style={{ color: "var(--color-accent-700)" }}>
+        <a href="/forgot-password" className="text-sm font-semibold text-(--color-accent-700)">
           Request a new link
         </a>
       </div>
@@ -50,7 +50,7 @@ export function ResetPasswordClient() {
     return (
       <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
         <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-        <p className="text-[15px]" style={{ color: "var(--color-neutral-800)" }}>
+        <p className="text-[15px] text-(--color-neutral-800)">
           Password reset. Redirecting to log in...
         </p>
       </div>
@@ -84,16 +84,16 @@ export function ResetPasswordClient() {
   return (
     <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6 w-full max-w-[400px]")}>
       <div>
-        <h1 className="text-[40px] font-extrabold" style={{ letterSpacing: "-0.015em", marginLeft: "-0.058em" }}>
+        <h1 className="text-[40px] font-extrabold tracking-[-0.015em] ml-[-0.058em]">
           Reset password
         </h1>
-        <p className="mt-3.5 text-[15px]" style={{ lineHeight: "28px", color: "var(--color-neutral-800)" }}>
+        <p className="mt-3.5 text-[15px] leading-7 text-(--color-neutral-800)">
           Choose a new password for your account.
         </p>
       </div>
       <FieldGroup className="mt-2 gap-6">
         {error && (
-          <div className="text-sm text-center" style={{ color: "var(--color-accent-700)" }}>
+          <div className="text-sm text-center text-(--color-accent-700)">
             {error}
           </div>
         )}

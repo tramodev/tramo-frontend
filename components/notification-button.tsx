@@ -117,14 +117,12 @@ export function NotificationButton() {
         <button
           type="button"
           aria-label="Notifications"
-          className="relative flex shrink-0 items-center justify-center transition-colors hover:bg-muted"
-          style={{ color: "var(--color-neutral-600)" }}
+          className="relative flex shrink-0 items-center justify-center transition-colors hover:bg-muted text-(--color-neutral-600)"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <span
-              className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold"
-              style={{ background: "var(--color-accent)", color: "#fff" }}
+              className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold bg-(--color-accent) text-[#fff]"
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
@@ -133,11 +131,11 @@ export function NotificationButton() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         {notifications === null ? (
-          <div className="px-2 py-3 text-sm" style={{ color: "var(--color-neutral-600)" }}>
+          <div className="px-2 py-3 text-sm text-(--color-neutral-600)">
             Loading...
           </div>
         ) : notifications.length === 0 ? (
-          <div className="px-2 py-3 text-sm" style={{ color: "var(--color-neutral-600)" }}>
+          <div className="px-2 py-3 text-sm text-(--color-neutral-600)">
             No notifications yet.
           </div>
         ) : (
@@ -150,15 +148,15 @@ export function NotificationButton() {
                 className="group relative items-start gap-2 py-2 pr-7"
               >
                 <span
-                  className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full"
-                  style={{
-                    background: n.read ? "var(--color-neutral-200)" : "var(--color-accent)",
-                    color: n.read ? "var(--color-neutral-600)" : "#fff",
-                  }}
+                  className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
+                    n.read
+                      ? "bg-(--color-neutral-200) text-(--color-neutral-600)"
+                      : "bg-(--color-accent) text-white"
+                  }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                 </span>
-                <span className="min-w-0 text-sm" style={{ fontWeight: n.read ? 400 : 700 }}>
+                <span className={`min-w-0 text-sm ${n.read ? "font-normal" : "font-bold"}`}>
                   {notificationText(n)}
                 </span>
                 <button
@@ -166,7 +164,6 @@ export function NotificationButton() {
                   onClick={(event) => handleDelete(event, n.id)}
                   aria-label="Dismiss notification"
                   className="absolute right-1 top-1.5 shrink-0 rounded-md p-1 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                  style={{ color: "var(--color-neutral-600)" }}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
