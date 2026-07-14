@@ -6,12 +6,10 @@ import { UserMenu } from "@/components/user-menu"
 import { NotificationButton } from "@/components/notification-button"
 
 export function AppHeader({
-  active,
   homeHref,
   loggedIn,
   isAdmin,
 }: {
-  active?: "projects" | "explore" | "admin"
   homeHref: string
   loggedIn: boolean
   isAdmin: boolean
@@ -25,7 +23,7 @@ export function AppHeader({
         <Wordmark />
       </Link>
       <div className="flex items-center gap-4">
-        <PrimaryNav active={active} loggedIn={loggedIn} isAdmin={isAdmin} />
+        <PrimaryNav loggedIn={loggedIn} isAdmin={isAdmin} />
         <NotificationButton />
         <UserMenu />
       </div>

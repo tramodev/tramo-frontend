@@ -1,11 +1,5 @@
 import Link from "next/link"
 import { ArrowBigUp, ArrowUpRight, Bookmark, Calendar, Eye, GitFork, Rocket, Users } from "lucide-react"
-import { archivo } from "@/lib/fonts"
-import "../modernist.css"
-import { Wordmark } from "@/components/logo"
-import { PrimaryNav } from "@/components/primary-nav"
-import { UserMenu } from "@/components/user-menu"
-import { NotificationButton } from "@/components/notification-button"
 import { VoteButton } from "@/components/vote-button"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { ForkButton } from "@/components/fork-button"
@@ -13,8 +7,6 @@ import { BadgesPanel } from "@/components/badges-panel"
 import { AvatarUpload } from "@/components/avatar-upload"
 import { BioEditor } from "@/components/bio-editor"
 import { PublishedGrid } from "@/components/published-grid"
-import { Footer } from "@/components/footer"
-import { getHomeHref } from "@/lib/nav"
 import { getUsername, isLoggedIn } from "@/lib/auth"
 import {
   getMyProfile,
@@ -40,10 +32,9 @@ export default async function ProfilePage({
   const { tab: tabParam } = await searchParams
   const tab: Tab = TAB_KEYS.includes(tabParam as Tab) ? (tabParam as Tab) : "activity"
 
-  const [fetchedProfile, bundle, homeHref, loggedIn, cookieUsername] = await Promise.all([
+  const [fetchedProfile, bundle, loggedIn, cookieUsername] = await Promise.all([
     getMyProfile(),
     getMyProfileBundle(),
-    getHomeHref(),
     isLoggedIn(),
     getUsername(),
   ])
@@ -60,22 +51,7 @@ export default async function ProfilePage({
   ]
 
   return (
-    <div className={`modernist flex min-h-svh flex-col ${archivo.className}`} style={{ background: "var(--color-bg)" }}>
-      <header
-        className="flex items-center gap-6"
-        style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
-      >
-        <Link href={homeHref} className="mr-auto">
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-4">
-          <PrimaryNav loggedIn={loggedIn} />
-          <NotificationButton />
-          <UserMenu />
-        </div>
-      </header>
-
-      <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
+    <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
         <div style={{ padding: "44px 72px 0" }}>
           <div className="flex items-start gap-7">
             <AvatarUpload username={profile.username} imageUrl={profile.imageUrl} />
@@ -200,9 +176,7 @@ export default async function ProfilePage({
           {tab === "forks" && <ForksPanel items={forks} />}
           {tab === "upvoted" && <UpvotedPanel items={upvoted} loggedIn={loggedIn} />}
         </div>
-      </main>
-      <Footer />
-    </div>
+    </main>
   )
 }
 

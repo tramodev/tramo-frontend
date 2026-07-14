@@ -1,17 +1,8 @@
-import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { ArrowUpRight, Calendar, Users } from "lucide-react"
-import { archivo } from "@/lib/fonts"
-import "../../modernist.css"
-import { Wordmark } from "@/components/logo"
-import { PrimaryNav } from "@/components/primary-nav"
-import { UserMenu } from "@/components/user-menu"
-import { NotificationButton } from "@/components/notification-button"
 import { BadgesPanel } from "@/components/badges-panel"
 import { PublishedGrid } from "@/components/published-grid"
 import { FollowButton } from "@/components/follow-button"
-import { Footer } from "@/components/footer"
-import { getHomeHref } from "@/lib/nav"
 import { isLoggedIn } from "@/lib/auth"
 import { getPublicProfile } from "@/lib/public-profile"
 
@@ -25,9 +16,8 @@ export default async function PublicProfilePage({
   params: Promise<{ username: string }>
 }) {
   const { username } = await params
-  const [profile, homeHref, loggedIn] = await Promise.all([
+  const [profile, loggedIn] = await Promise.all([
     getPublicProfile(username),
-    getHomeHref(),
     isLoggedIn(),
   ])
 
@@ -41,22 +31,7 @@ export default async function PublicProfilePage({
   const { stats, badges, published } = profile
 
   return (
-    <div className={`modernist flex min-h-svh flex-col ${archivo.className}`} style={{ background: "var(--color-bg)" }}>
-      <header
-        className="flex items-center gap-6"
-        style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
-      >
-        <Link href={homeHref} className="mr-auto">
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-4">
-          <PrimaryNav loggedIn={loggedIn} />
-          <NotificationButton />
-          <UserMenu />
-        </div>
-      </header>
-
-      <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
+    <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
         <div style={{ padding: "44px 72px 0" }}>
           <div className="flex items-start gap-7">
             <span
@@ -153,8 +128,6 @@ export default async function PublicProfilePage({
             />
           </div>
         </div>
-      </main>
-      <Footer />
-    </div>
+    </main>
   )
 }

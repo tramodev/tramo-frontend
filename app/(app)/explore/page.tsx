@@ -1,14 +1,10 @@
 import Link from "next/link"
 import { Eye, Search } from "lucide-react"
-import { archivo } from "@/lib/fonts"
-import "../modernist.css"
-import { AppHeader } from "@/components/app-header"
 import { VoteButton } from "@/components/vote-button"
 import { BookmarkButton } from "@/components/bookmark-button"
+import { PostOptionsMenu } from "@/components/post-options-menu"
 import { getPublishedFeed, getHotTopics, type FeedSort } from "@/lib/public-project"
-import { getHomeHref } from "@/lib/nav"
-import { isLoggedIn, isAdmin } from "@/lib/auth"
-import { Footer } from "@/components/footer"
+import { isLoggedIn, getUsername } from "@/lib/auth"
 
 function initial(username: string) {
   return username.charAt(0).toUpperCase()
@@ -21,13 +17,12 @@ export default async function ExplorePage({
 }) {
   const { q, sort: sortParam } = await searchParams
   const sort: FeedSort = sortParam === "hot" ? "hot" : "recent"
-  const [feed, allProjects, hotTopics, homeHref, loggedIn, admin] = await Promise.all([
+  const [feed, allProjects, hotTopics, loggedIn, username] = await Promise.all([
     getPublishedFeed(q, sort),
     getPublishedFeed(undefined, "hot"),
     getHotTopics(),
-    getHomeHref(),
     isLoggedIn(),
-    isAdmin(),
+    getUsername(),
   ])
 
   const featured = allProjects.find((project) => project.featured) ?? null
@@ -43,10 +38,7 @@ export default async function ExplorePage({
     .map(([username, count]) => ({ username, count }))
 
   return (
-    <div className={`modernist flex min-h-svh flex-col ${archivo.className}`} style={{ background: "var(--color-bg)" }}>
-      <AppHeader active="explore" homeHref={homeHref} loggedIn={loggedIn} isAdmin={admin} />
-
-      <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
+    <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216 }}>
         <div
           className="flex items-end justify-between gap-8"
           style={{ padding: "44px 72px 0" }}
@@ -118,6 +110,13 @@ export default async function ExplorePage({
               style={{ margin: "0 72px", padding: "36px 0", gridTemplateColumns: "1fr 400px", gap: 56 }}
             >
               <Link href={`/p/${featured.id}`} className="absolute inset-0 z-0" aria-label={featured.title} />
+              <PostOptionsMenu
+                projectId={featured.id}
+                ownerUsername={featured.ownerUsername}
+                isLoggedIn={loggedIn}
+                isOwnPost={featured.ownerUsername === username}
+                className="absolute top-2 right-2 z-10"
+              />
               <div>
                 <span
                   className="block text-[11px] font-bold uppercase"
@@ -141,9 +140,9 @@ export default async function ExplorePage({
                   >
                     {initial(featured.ownerUsername)}
                   </span>
-                  <a href={`/u/${encodeURIComponent(featured.ownerUsername)}`} className="relative z-10 font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-text)" }}>
+                  <Link href={`/u/${encodeURIComponent(featured.ownerUsername)}`} className="relative z-10 font-semibold hover:text-[var(--color-accent)]" style={{ color: "var(--color-text)" }}>
                     {featured.ownerUsername}
-                  </a>
+                  </Link>
                   <span className="inline-flex items-center gap-1">
                     <Eye className="h-3.5 w-3.5" />
                     {featured.viewCount.toLocaleString()}
@@ -235,6 +234,13 @@ export default async function ExplorePage({
                   }}
                 >
                   <Link href={`/p/${project.id}`} className="absolute inset-0 z-0" aria-label={project.title} />
+                  <PostOptionsMenu
+                    projectId={project.id}
+                    ownerUsername={project.ownerUsername}
+                    isLoggedIn={loggedIn}
+                    isOwnPost={project.ownerUsername === username}
+                    className="absolute top-2 right-2 z-10"
+                  />
                   <span className="text-sm font-bold" style={{ color: "var(--color-accent)" }}>
                     {String(index + 1).padStart(2, "0")}
                   </span>
@@ -243,13 +249,13 @@ export default async function ExplorePage({
                       {project.title}
                     </div>
                     <div className="flex items-center gap-2.5 text-xs" style={{ color: "var(--color-neutral-600)" }}>
-                      <a
+                      <Link
                         href={`/u/${encodeURIComponent(project.ownerUsername)}`}
                         className="relative z-10 font-semibold hover:text-[var(--color-accent)]"
                         style={{ color: "var(--color-neutral-700)" }}
                       >
                         {project.ownerUsername}
-                      </a>
+                      </Link>
                       <span className="inline-flex items-center gap-1">
                         <Eye className="h-[13px] w-[13px]" />
                         {project.viewCount.toLocaleString()}
@@ -309,7 +315,7 @@ export default async function ExplorePage({
                   </h3>
                   <div className="mt-3 flex flex-col">
                     {hotTopics.map(({ tag, count }) => (
-                      <a
+                      <Link
                         key={tag}
                         href={`/explore?q=${encodeURIComponent(tag)}`}
                         className="flex items-center justify-between px-2 py-2 text-sm transition-colors hover:bg-muted"
@@ -319,7 +325,7 @@ export default async function ExplorePage({
                         <span className="text-xs" style={{ color: "var(--color-neutral-600)" }}>
                           {count}
                         </span>
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -334,7 +340,7 @@ export default async function ExplorePage({
                   </h3>
                   <div className="mt-3 flex flex-col">
                     {activeAuthors.map(({ username, count }) => (
-                      <a
+                      <Link
                         key={username}
                         href={`/u/${encodeURIComponent(username)}`}
                         className="flex items-center gap-2.5 px-2 py-2 text-sm transition-colors hover:bg-muted"
@@ -350,7 +356,7 @@ export default async function ExplorePage({
                         <span className="text-xs" style={{ color: "var(--color-neutral-600)" }}>
                           {count}
                         </span>
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -358,8 +364,6 @@ export default async function ExplorePage({
             </aside>
           )}
         </div>
-      </main>
-      <Footer />
-    </div>
+    </main>
   )
 }

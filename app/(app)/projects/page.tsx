@@ -2,20 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Plus, FolderKanban, Trash2 } from "lucide-react"
 
-import { archivo } from "@/lib/fonts"
-import "../modernist.css"
-import { Wordmark } from "@/components/logo"
-import { PrimaryNav } from "@/components/primary-nav"
-import { UserMenu } from "@/components/user-menu"
-import { NotificationButton } from "@/components/notification-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/confirm-dialog"
-import { Footer } from "@/components/footer"
 import {
   createProject,
   deleteProject,
@@ -23,6 +15,7 @@ import {
   renameProject,
   type Project,
 } from "@/lib/projects-store"
+
 
 function formatUpdatedAt(iso: string): string {
   const date = new Date(iso)
@@ -78,21 +71,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className={`modernist flex min-h-svh flex-col ${archivo.className}`}>
-      <header
-        className="flex items-center gap-6"
-        style={{ borderBottom: "2px solid var(--color-divider)", padding: "18px 40px" }}
-      >
-        <Link href="/projects" className="mr-auto">
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-4">
-          <PrimaryNav active="projects" />
-          <NotificationButton />
-          <UserMenu />
-        </div>
-      </header>
-      <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216, padding: "44px 72px 84px" }}>
+    <main className="mx-auto w-full flex-1" style={{ maxWidth: 1216, padding: "44px 72px 84px" }}>
         <span
           className="block text-[11px] font-bold uppercase"
           style={{ letterSpacing: "0.12em", color: "var(--color-accent)", marginBottom: "8px" }}
@@ -208,8 +187,6 @@ export default function ProjectsPage() {
             </div>
           )}
         </div>
-      </main>
-      <Footer />
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
@@ -220,6 +197,6 @@ export default function ProjectsPage() {
         confirmLabel="Delete"
         onConfirm={confirmDelete}
       />
-    </div>
+    </main>
   )
 }
