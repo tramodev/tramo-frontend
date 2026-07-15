@@ -86,22 +86,18 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          <div
-            className="grid rounded-lg mt-7 grid-cols-4 border-2 border-(--color-divider)"
-          >
-            <Link
-              href="/projects"
-              className="transition-colors hover:bg-muted py-4 px-5 border-r-2 border-(--color-divider)"
-            >
+          <div className="mt-7 h-px bg-(--color-divider)" />
+          <div className="grid grid-cols-4 gap-8 py-5 text-center">
+            <Link href="/projects" className="group">
               <div className="text-[26px] font-extrabold">{stats?.pathsPublished ?? 0}</div>
               <div
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600) group-hover:text-(--color-accent) transition-colors"
               >
                 Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />
               </div>
             </Link>
-            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
+            <div>
               <div className="text-[26px] font-extrabold">{stats?.upvotesReceived ?? 0}</div>
               <div
                 className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
@@ -109,7 +105,7 @@ export default async function ProfilePage({
                 Upvotes received
               </div>
             </div>
-            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
+            <div>
               <div className="text-[26px] font-extrabold">{(stats?.totalViews ?? 0).toLocaleString()}</div>
               <div
                 className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
@@ -117,7 +113,7 @@ export default async function ProfilePage({
                 Total views
               </div>
             </div>
-            <div className="py-4 px-5">
+            <div>
               <div className="text-[26px] font-extrabold">{stats?.forksCount ?? 0}</div>
               <div
                 className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
@@ -126,8 +122,9 @@ export default async function ProfilePage({
               </div>
             </div>
           </div>
+          <div className="h-px bg-(--color-divider)" />
 
-          <div className="flex gap-6 border-b-2 border-(--color-divider) mt-8">
+          <div className="flex gap-6 border-b border-(--color-divider) mt-8">
             {tabs.map(({ key, label, count }) => (
               <Link
                 key={key}
@@ -174,7 +171,7 @@ export default async function ProfilePage({
 function Row({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="relative flex items-center gap-5 rounded-lg transition-colors hover:bg-muted -mx-4 py-[22px] px-4 border-b-2 border-(--color-divider)"
+      className="relative flex items-center gap-5 rounded-lg transition-colors hover:bg-muted -mx-4 py-[22px] px-4 border-b border-(--color-divider)"
     >
       {children}
     </div>
@@ -184,7 +181,7 @@ function Row({ children }: { children: React.ReactNode }) {
 function Thumbnail({ thumbnail, title }: { thumbnail: string | null; title: string }) {
   return (
     <div
-      className="grid shrink-0 place-items-center overflow-hidden rounded-md w-24 h-16 border-2 border-(--color-divider) bg-(--color-neutral-200)"
+      className="grid shrink-0 place-items-center overflow-hidden rounded-md w-24 h-16 border border-(--color-divider) bg-(--color-neutral-200)"
     >
       {thumbnail ? (
         // eslint-disable-next-line @next/next/no-img-element

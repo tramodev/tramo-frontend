@@ -13,7 +13,8 @@ export const PosterCta: React.FC = () => {
         <div className="mt-[42px]">
           <a
             href="/signup"
-            className="btn btn-ghost text-(--color-bg) border-(--color-bg)"
+            className="btn btn-ghost"
+            style={{ color: "var(--color-bg)", borderColor: "var(--color-bg)" }}
           >
             Start for free
           </a>

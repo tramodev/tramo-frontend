@@ -45,7 +45,7 @@ export function AvatarUpload({ username, imageUrl }: { username: string; imageUr
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isPending}
-        className="group relative flex items-center justify-center overflow-hidden text-[46px] font-extrabold"
+        className="group relative flex items-center justify-center overflow-hidden rounded-full text-[46px] font-extrabold"
         title="Change avatar"
       >
         {preview ? (

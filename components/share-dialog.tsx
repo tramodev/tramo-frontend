@@ -107,7 +107,7 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
                 type="button"
                 onClick={() => changeVisibility(option.value)}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-lg border-2 p-3 text-center transition-colors",
+                  "flex flex-col items-center gap-1.5 rounded-lg border p-3 text-center transition-colors",
                   isActive ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
                 )}
               >

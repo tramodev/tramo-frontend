@@ -4,7 +4,7 @@ export const Hero: React.FC = () => {
   return (
     <div className="pt-24 text-center">
       <h1
-        className="font-extrabold leading-[1.06] tracking-[-0.02em] text-[clamp(42px, 6.2vw, 76px)]"
+        className="font-extrabold leading-[1.06] tracking-[-0.02em] text-[clamp(42px,6.2vw,76px)]"
       >
         <span className="block">Organize learning as interconnected ideas,</span>
         <span className="block text-(--color-accent)">

@@ -407,6 +407,7 @@ export default function ToolbarPlugin() {
           </option>
         ))}
       </select>
+      <Divider />
       <div className="font-size-control">
         <button
           onClick={() => updateFontSizeByStep(-1)}

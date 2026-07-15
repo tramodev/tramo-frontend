@@ -197,6 +197,10 @@
   border-width: 2px;
   box-shadow: none;
 }
+.modernist [data-slot="card"].rounded-card {
+  border-radius: 2px;
+  border-width: 1px;
+}
 
 .modernist [data-slot="badge"] {
   border-radius: 0;
@@ -242,7 +246,7 @@
 }
 
 .modernist [data-slot="sidebar-container"] {
-  border-right-width: 2px;
+  border-right-width: 1px;
 }
 .modernist [data-slot="sidebar-menu-button"],
 .modernist [data-slot="sidebar-menu-sub-button"] {
@@ -294,7 +298,7 @@
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 13px;
-  border-radius: 0;
+  border-radius: 50%;
   cursor: pointer;
 }
 

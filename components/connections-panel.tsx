@@ -200,7 +200,7 @@ export function ConnectionsPanel({
 
   return (
     <div
-      className="flex w-[280px] shrink-0 flex-col gap-[22px] overflow-hidden border-l-2 border-(--color-divider) py-5 px-4"
+      className="flex w-[280px] shrink-0 flex-col gap-[22px] overflow-hidden border-l border-(--color-divider) py-5 px-4"
     >
       <div>
         <div className="mb-2.5 flex items-center justify-between">
@@ -218,7 +218,7 @@ export function ConnectionsPanel({
           {linkedIdeas.map((linked) => (
             <div
               key={linked.id}
-              className="group/linked flex items-center gap-2 border-2 border-(--color-divider) py-[9px] px-2.5"
+              className="group/linked flex items-center gap-2 border border-(--color-divider) py-[9px] px-2.5"
               onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--color-accent)")}
               onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--color-divider)")}
             >
@@ -335,7 +335,7 @@ export function ConnectionsPanel({
         </div>
       </div>
 
-      <div className="border-t-2 border-(--color-divider) pt-4">
+      <div className="border-t border-(--color-divider) pt-4">
         <div className="mb-2.5 flex items-center justify-between">
           <span className={SECTION_LABEL_CLASSES}>Graph preview</span>
           <button

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Eye, Search } from "lucide-react"
+import { Eye, MessageCircle, Search } from "lucide-react"
 import { VoteButton } from "@/components/vote-button"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { PostOptionsMenu } from "@/components/post-options-menu"
@@ -70,7 +70,7 @@ export default async function ExplorePage({
         <form
           action="/explore"
           method="get"
-          className="flex items-center gap-3.5 pb-1.5"
+          className="flex items-end gap-3.5"
         >
           <input type="hidden" name="sort" value={sort} />
           <div className="relative w-[340px]">
@@ -82,7 +82,7 @@ export default async function ExplorePage({
               name="q"
               defaultValue={q ?? ""}
               placeholder="Search published projects..."
-              className="w-full rounded-lg border-2 text-sm outline-none border-(--color-divider) bg-(--color-bg) pt-2 pr-3 pb-2 pl-9"
+              className="w-full rounded-none border-0 border-b border-(--color-divider) text-sm outline-none focus-visible:!outline-none focus:border-(--color-accent) transition-colors bg-transparent pt-0 pr-3 pb-1 pl-9"
             />
           </div>
           <div className="flex items-center gap-5">
@@ -107,7 +107,7 @@ export default async function ExplorePage({
           </div>
         </form>
       </div>
-      <div className="mt-7 mx-18 h-0.5 bg-(--color-divider)" />
+      <div className="mt-7 mx-18 h-px bg-(--color-divider)" />
 
       {featured && (
         <>
@@ -132,14 +132,14 @@ export default async function ExplorePage({
 
               </div>
               <h2
-                className="text-[32px] font-extrabold tracking-[-0.02em] leading-[1.12] mb-2.5"
+                className="text-[38px] font-extrabold tracking-[-0.02em] leading-[1.12] mb-2.5"
               >
                 {featured.title}
               </h2>
 
               {featured.description && (
                 <p
-                  className="text-[15px] leading-[1.6] text-(--color-neutral-500) max-w-[62ch] mb-4"
+                  className="text-[17px] leading-[1.6] text-(--color-neutral-500) max-w-[62ch] mb-4"
                 >
                   {featured.description}
                 </p>
@@ -172,9 +172,13 @@ export default async function ExplorePage({
                     isLoggedIn={loggedIn}
                   />
 
-                  <span className="inline-flex items-center gap-1 text-xs font-medium">
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-(--color-neutral-600)">
                     <Eye className="h-5 w-5 ml-1" />
                     {featured.viewCount.toLocaleString()}
+                  </span>
+                  <span className="ml-3 inline-flex items-center gap-1 text-xs font-medium text-(--color-neutral-600)">
+                    <MessageCircle className="h-4 w-4" />
+                    0
                   </span>
                 </div>
                 <div className="flex items-center ml-auto">
@@ -199,7 +203,7 @@ export default async function ExplorePage({
 
             </div>
             <div
-              className="grid place-items-center overflow-hidden rounded-lg h-[250px] border-2 border-(--color-divider) bg-(--color-neutral-200)"
+              className="grid place-items-center overflow-hidden rounded-lg h-[250px] border border-(--color-neutral-300) bg-(--color-neutral-200)"
             >
               {featured.thumbnail ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -215,7 +219,7 @@ export default async function ExplorePage({
               )}
             </div>
           </div>
-          <div className="my-0 mx-18 h-0.5 bg-(--color-divider)" />
+          <div className="my-0 mx-18 h-px bg-(--color-divider)" />
         </>
       )}
 
@@ -235,7 +239,7 @@ export default async function ExplorePage({
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="relative flex justify-between rounded-lg transition-colors hover:bg-muted gap-5 -mx-4 py-[22px] px-4 border-b-2 border-(--color-divider)"
+                className="relative flex justify-between rounded-lg gap-5 -mx-4 py-[22px] px-4 border-b border-(--color-divider)"
               >
                 <Link href={`/p/${project.id}`} className="absolute inset-0 z-0" aria-label={project.title} />
 
@@ -250,11 +254,11 @@ export default async function ExplorePage({
                     </Link>
 
                   </div>
-                  <div className="mb-1 text-[20px] font-bold leading-[1.2]">
+                  <div className="mb-1 text-[24px] font-bold leading-[1.2]">
                     {project.title}
                   </div>
                   {project.description && (
-                    <p className="mb-5 mt-4 text-sm leading-[1.6] text-(--color-neutral-500) max-w-[70ch] line-clamp-2">
+                    <p className="mb-5 mt-4 text-[16px] leading-[1.6] text-(--color-neutral-500) max-w-[70ch] line-clamp-2">
                       {project.description}
                     </p>
                   )}
@@ -279,9 +283,13 @@ export default async function ExplorePage({
                         initialCount={project.voteCount}
                         isLoggedIn={loggedIn}
                       />
-                      <span className="inline-flex items-center gap-1 text-xs font-medium">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-(--color-neutral-600)">
                         <Eye className="h-5 w-5 ml-1" />
                         {project.viewCount.toLocaleString()}
+                      </span>
+                      <span className="ml-3 inline-flex items-center gap-1 text-xs font-medium text-(--color-neutral-600)">
+                        <MessageCircle className="h-4 w-4" />
+                        0
                       </span>
                     </div>
                     <div className="flex">
@@ -302,16 +310,16 @@ export default async function ExplorePage({
 
 
                 </div>
-                <div className="flex shrink-0 items-end gap-4 self-end">
+                <div className="flex shrink-0 items-center gap-4 self-center">
                   <div
-                    className="grid place-items-center overflow-hidden rounded-md w-[156px] h-[128px] border-2 border-(--color-divider) bg-(--color-neutral-200)"
+                    className="grid place-items-center overflow-hidden rounded-lg w-[156px] h-[128px] border border-(--color-neutral-300) bg-(--color-neutral-200)"
                   >
                     {project.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={project.thumbnail}
                         alt=""
-                        className="h-full w-full rounded-md object-cover object-top"
+                        className="h-full w-full rounded-lg object-cover object-top"
                       />
                     ) : (
                       <span className="text-2xl font-extrabold text-(--color-accent)">
@@ -341,7 +349,7 @@ export default async function ExplorePage({
                     <Link
                       key={tag}
                       href={`/explore?q=${encodeURIComponent(tag)}`}
-                      className="flex items-center justify-between px-2 py-2 text-sm transition-colors hover:bg-muted border-b-2 border-(--color-divider)"
+                      className="flex items-center justify-between px-2 py-2 text-sm transition-colors hover:bg-muted border-b border-(--color-divider)"
                     >
                       <span>{tag}</span>
                       <span className="text-xs text-(--color-neutral-600)">
@@ -364,7 +372,7 @@ export default async function ExplorePage({
                     <Link
                       key={username}
                       href={`/u/${encodeURIComponent(username)}`}
-                      className="flex items-center gap-2.5 px-2 py-2 text-sm transition-colors hover:bg-muted border-b-2 border-(--color-divider)"
+                      className="flex items-center gap-2.5 px-2 py-2 text-sm transition-colors hover:bg-muted border-b border-(--color-divider)"
                     >
                       <AuthorAvatar username={username} avatar={avatar} size={26} />
                       <span className="min-w-0 flex-1 truncate">{username}</span>

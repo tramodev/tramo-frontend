@@ -513,7 +513,7 @@ export default function DashboardPage() {
       className="h-screen min-h-0 flex-col"
     >
       <header
-        className="flex h-16 shrink-0 items-center gap-4 px-8 border-b-2 border-(--color-divider)"
+        className="flex h-16 shrink-0 items-center gap-4 px-8 border-b border-(--color-divider)"
       >
         <Link href="/projects" title="Back to projects">
           <Wordmark />

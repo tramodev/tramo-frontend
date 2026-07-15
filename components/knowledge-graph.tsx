@@ -190,7 +190,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden border-2 border-(--color-divider) bg-[size:24px_24px]"
+      className="relative h-full w-full overflow-hidden border border-(--color-divider) bg-[size:24px_24px]"
       style={{
         backgroundColor: colors.bg,
         backgroundImage: `radial-gradient(${colors.neutral400} 1px, transparent 1px)`,
@@ -267,7 +267,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
       )}
 
       <div
-        className="absolute bottom-6 right-6 flex border-2 border-(--color-text)"
+        className="absolute bottom-6 right-6 flex border border-(--color-text)"
       >
         <button
           type="button"
@@ -280,7 +280,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
         <button
           type="button"
           aria-label="Zoom out"
-          className="flex h-9 w-9 items-center justify-center hover:bg-[var(--color-neutral-200)] bg-(--color-bg) border-l-2 border-(--color-text)"
+          className="flex h-9 w-9 items-center justify-center hover:bg-[var(--color-neutral-200)] bg-(--color-bg) border-l border-(--color-text)"
           onClick={() => zoomBy(1 / 1.4)}
         >
           <Minus className="h-4 w-4" />
@@ -300,7 +300,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
           className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-700)"
         >
           <span
-            className="h-2.5 w-2.5 rounded-full border-2 border-(--color-neutral-600) box-border"
+            className="h-2.5 w-2.5 rounded-full border border-(--color-neutral-600) box-border"
           />
           Idea
         </span>

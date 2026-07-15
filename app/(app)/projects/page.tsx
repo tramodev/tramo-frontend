@@ -83,7 +83,7 @@ export default function ProjectsPage() {
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           <button
             onClick={handleCreateProject}
-            className="group flex aspect-[3/4] flex-col items-start justify-end gap-2 p-5 transition-colors bg-(--color-bg) border-2 border-dashed border-(--color-neutral-500) text-(--color-neutral-700)"
+            className="group flex aspect-[3/4] cursor-pointer flex-col items-start justify-end gap-2 rounded-lg p-5 transition-colors bg-(--color-bg) border-2 border-dashed border-(--color-neutral-500) hover:border-(--color-accent) text-(--color-neutral-700)"
           >
             <Plus
               strokeWidth={2}
@@ -110,11 +110,11 @@ export default function ProjectsPage() {
               {projects.map((project) => (
                 <Card
                   key={project.id}
-                  className="group/card cursor-pointer gap-0 p-0 transition-colors hover:border-[var(--color-accent)]"
+                  className="group/card rounded-card cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:border-[var(--color-accent)]"
                   onClick={() => router.push(`/editor/${project.id}`)}
                 >
                   <CardContent
-                    className="flex aspect-[4/3] items-center justify-center overflow-hidden p-0 border-b-2 border-(--color-divider)"
+                    className="flex aspect-[4/3] items-center justify-center overflow-hidden p-0 border-b border-(--color-divider)"
                   >
                     {project.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
