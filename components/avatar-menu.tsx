@@ -7,15 +7,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Settings, Sun, SunMoon } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
 
 export function AvatarMenu({ username, imageUrl }: { username: string; imageUrl?: string | null }) {
   const initials = username.slice(0, 2).toUpperCase();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -23,6 +28,7 @@ export function AvatarMenu({ username, imageUrl }: { username: string; imageUrl?
   }, []);
 
   const isDark = mounted && resolvedTheme === 'dark';
+  const ThemeIcon = mounted && theme === 'system' ? SunMoon : isDark ? Moon : Sun;
 
   return (
     <DropdownMenu>
@@ -61,15 +67,34 @@ export function AvatarMenu({ username, imageUrl }: { username: string; imageUrl?
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault();
-            setTheme(isDark ? 'light' : 'dark');
-          }}
-        >
-          {isDark ? <Sun /> : <Moon />}
-          {isDark ? 'Light mode' : 'Dark mode'}
+        <DropdownMenuItem asChild>
+          <Link href="/settings">
+            <Settings />
+            Settings
+          </Link>
         </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <ThemeIcon />
+            Theme
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuRadioGroup value={mounted ? theme : undefined} onValueChange={setTheme}>
+              <DropdownMenuRadioItem value="system">
+                <SunMoon />
+                Use device theme
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="light">
+                <Sun />
+                Light theme
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">
+                <Moon />
+                Dark theme
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild variant="destructive">
           <form action={handleLogout} className="w-full">

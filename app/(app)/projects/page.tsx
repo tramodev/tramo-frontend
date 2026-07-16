@@ -109,7 +109,7 @@ export default function ProjectsPage() {
                   onClick={() => router.push(`/editor/${project.id}`)}
                 >
                   <CardContent
-                    className={`mx-2 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-sm p-0 ${
+                    className={`mx-2 mt-2 flex aspect-[4/4] items-center justify-center overflow-hidden rounded-sm p-0 ${
                       project.thumbnail ? "" : "bg-surface-container-high"
                     }`}
                   >

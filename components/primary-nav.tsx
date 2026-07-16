@@ -32,7 +32,7 @@ export function PrimaryNav({
           <Link
             key={item.key}
             href={item.href}
-            className={`inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-colors ${
+            className={`inline-flex h-10 items-center rounded-full px-5 text-base font-medium transition-colors ${
               active
                 ? "bg-secondary text-secondary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"

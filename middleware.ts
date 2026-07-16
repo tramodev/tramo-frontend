@@ -58,7 +58,7 @@ async function isAdminUser(accessToken: string): Promise<boolean> {
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const isProtected = path.startsWith('/editor') || path.startsWith('/projects') || path.startsWith('/profile') || path.startsWith('/admin');
+  const isProtected = path.startsWith('/editor') || path.startsWith('/projects') || path.startsWith('/profile') || path.startsWith('/admin') || path.startsWith('/settings');
 
   let accessToken = request.cookies.get('accessToken')?.value ?? null;
   const refreshToken = request.cookies.get('refreshToken')?.value ?? null;
@@ -125,6 +125,7 @@ export const config = {
     '/projects/:path*',
     '/profile/:path*',
     '/admin/:path*',
+    '/settings/:path*',
     '/login',
     '/signup',
     '/p/:path*',

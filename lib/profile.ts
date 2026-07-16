@@ -41,6 +41,7 @@ export interface ForkFeedItem extends ProjectFeedItem {
 
 export interface UserProfile {
   username: string;
+  email: string;
   bio: string | null;
   imageUrl: string | null;
   createdAt: string | null;
