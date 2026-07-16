@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from "next/headers";
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, EXPLORE_PAGE_SIZE } from "./config";
 import { getAccessToken } from "./auth";
 
 async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
@@ -134,6 +134,7 @@ export interface AuthorCount {
 
 export interface ExploreBundle {
   feed: ProjectFeedItem[];
+  hasMore: boolean;
   featured: ProjectFeedItem | null;
   hotTopics: TagCount[];
   activeAuthors: AuthorCount[];
@@ -141,23 +142,32 @@ export interface ExploreBundle {
 
 interface ExploreBundleDTO {
   feed: ProjectFeedItemDTO[];
+  hasMore: boolean;
   featured: ProjectFeedItemDTO | null;
   hotTopics: TagCount[];
   activeAuthors: AuthorCount[];
 }
 
-export async function getExploreBundle(query?: string, sort: FeedSort = "recent"): Promise<ExploreBundle> {
+export async function getExploreBundle(
+  query?: string,
+  sort: FeedSort = "recent",
+  page: number = 0,
+  size: number = EXPLORE_PAGE_SIZE
+): Promise<ExploreBundle> {
   const url = new URL(`${API_BASE_URL}/api/public/explore`);
   if (query) url.searchParams.set("q", query);
   url.searchParams.set("sort", sort);
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("size", String(size));
 
   const response = await fetch(url, { cache: "no-store", headers: await optionalAuthHeaders() });
 
-  if (!response.ok) return { feed: [], featured: null, hotTopics: [], activeAuthors: [] };
+  if (!response.ok) return { feed: [], hasMore: false, featured: null, hotTopics: [], activeAuthors: [] };
 
   const data: ExploreBundleDTO = await response.json();
   return {
     feed: data.feed.map(toFeedItem),
+    hasMore: data.hasMore,
     featured: data.featured ? toFeedItem(data.featured) : null,
     hotTopics: data.hotTopics,
     activeAuthors: data.activeAuthors,
