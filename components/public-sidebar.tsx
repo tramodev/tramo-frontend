@@ -26,7 +26,7 @@ interface PublicSidebarProps {
 
 export function PublicSidebar({ paths, selectedIdeaId, onSelectIdea }: PublicSidebarProps) {
   return (
-    <Sidebar>
+    <Sidebar variant="floating" className="top-16 h-[calc(100svh-64px)] pt-0 px-3 pb-3">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>

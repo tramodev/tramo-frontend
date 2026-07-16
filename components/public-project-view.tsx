@@ -78,23 +78,25 @@ export function PublicProjectView({
           {isLoggedIn && <UserMenu />}
         </div>
       </header>
-      <div className="relative flex flex-1 min-h-0 transform-gpu">
+      <div className="flex flex-1 min-h-0">
         <PublicSidebar
           paths={project.paths}
           selectedIdeaId={selectedIdea?.id}
           onSelectIdea={setSelectedIdea}
         />
         <SidebarInset>
-          <div className="flex-1 overflow-auto px-2 py-2">
+          <div className="flex flex-1 min-h-0 gap-3 pr-3 pb-3">
             {selectedIdea ? (
-              <div className="mx-auto flex max-w-[820px] flex-col gap-4 px-6 py-8">
-                <h1 className="font-display text-[28px] font-medium">
-                  {selectedIdea.title}
-                </h1>
-                <LexicalReadOnly key={selectedIdea.id} content={selectedIdea.content} onIdeaClick={handleIdeaLinkClick} />
+              <div className="flex min-w-0 flex-1 flex-col overflow-auto rounded-2xl bg-popover">
+                <div className="mx-auto flex w-full max-w-[820px] flex-col gap-4 px-6 py-8">
+                  <h1 className="font-display text-[28px] font-medium">
+                    {selectedIdea.title}
+                  </h1>
+                  <LexicalReadOnly key={selectedIdea.id} content={selectedIdea.content} onIdeaClick={handleIdeaLinkClick} />
+                </div>
               </div>
             ) : (
-              <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+              <div className="flex h-full w-full min-h-[60vh] flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
                 <FolderPlus className="h-12 w-12 opacity-40" />
                 <p className="text-lg font-medium">This project has no published content yet</p>
               </div>

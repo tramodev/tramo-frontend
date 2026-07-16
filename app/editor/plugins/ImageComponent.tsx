@@ -35,6 +35,7 @@ export default function ImageComponent({
   resizable,
 }: ImageComponentProps) {
   const [editor] = useLexicalComposerContext();
+  const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
@@ -53,6 +54,7 @@ export default function ImageComponent({
   );
 
   useEffect(() => {
+    if (!isEditable) return;
     return mergeRegister(
       editor.registerCommand(
         CLICK_COMMAND,
@@ -73,7 +75,7 @@ export default function ImageComponent({
       editor.registerCommand(KEY_DELETE_COMMAND, onDelete, COMMAND_PRIORITY_LOW),
       editor.registerCommand(KEY_BACKSPACE_COMMAND, onDelete, COMMAND_PRIORITY_LOW),
     );
-  }, [clearSelected, editor, isSelected, onDelete, setSelected]);
+  }, [clearSelected, editor, isEditable, isSelected, onDelete, setSelected]);
 
   const handleResizeStart = (
     corner: 'nw' | 'ne' | 'sw' | 'se',
@@ -124,7 +126,7 @@ export default function ImageComponent({
           height: height === 'inherit' ? undefined : `${height}px`,
         }}
       />
-      {resizable && isSelected && (
+      {resizable && isEditable && isSelected && (
         <>
           <div
             className="editor-image-resizer editor-image-resizer-nw"
