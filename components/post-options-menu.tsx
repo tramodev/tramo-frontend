@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { MoreHorizontal, Flag, UserPlus, UserCheck } from "lucide-react"
+import { MoreHorizontal, Flag, Share2, UserPlus, UserCheck } from "lucide-react"
 
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { reportProject } from "@/lib/moderation"
 import { toggleFollow } from "@/lib/public-profile"
+import { shareProjectToFollowers } from "@/lib/projects-store"
 
 export function PostOptionsMenu({
   projectId,
@@ -54,6 +55,11 @@ export function PostOptionsMenu({
     if (!requireLogin()) return
     const result = await toggleFollow(ownerUsername)
     setFollowing(result.following)
+  }
+
+  async function handleShare() {
+    if (!requireLogin()) return
+    await shareProjectToFollowers(projectId)
   }
 
   function handleReportSelect() {
@@ -96,9 +102,11 @@ export function PostOptionsMenu({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {isOwnPost ? (
-            <DropdownMenuItem disabled>No actions available</DropdownMenuItem>
-          ) : (
+          <DropdownMenuItem onSelect={handleShare}>
+            <Share2 className="h-3.5 w-3.5" />
+            Share to followers
+          </DropdownMenuItem>
+          {!isOwnPost && (
             <>
               <DropdownMenuItem onSelect={handleFollow}>
                 {following ? (

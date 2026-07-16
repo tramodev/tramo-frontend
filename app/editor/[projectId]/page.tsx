@@ -50,7 +50,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { UserMenu } from '@/components/user-menu';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Check, FolderPlus, Loader2, X } from 'lucide-react';
-import { Path, Idea } from '../types';
+import { Path, Idea, TitleAlign } from '../types';
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -61,6 +61,7 @@ import {
   deletePath as deletePathRequest,
   createIdea,
   renameIdea,
+  setIdeaTitleAlign,
   attachIdeaToPath,
   detachIdeaFromPath,
   linkIdeas as linkIdeasRequest,
@@ -278,6 +279,23 @@ export default function DashboardPage() {
 
   const selectedIdea = selectedIdeaId ? ideas[selectedIdeaId] : undefined;
   const textStats = useMemo(() => countTextStats(selectedIdea?.content ?? ''), [selectedIdea?.content]);
+
+  const [activeAlignTarget, setActiveAlignTarget] = useState<'title' | 'body'>('body');
+
+  const commitIdeaTitle = (ideaId: string, currentTitle: string, nextValue: string) => {
+    const trimmed = nextValue.trim();
+    if (!trimmed || trimmed === currentTitle) return;
+    handleRenameIdea(ideaId, trimmed);
+  };
+
+  const handleSetIdeaTitleAlign = async (ideaId: string, titleAlign: TitleAlign) => {
+    setIdeas(prevIdeas => {
+      const idea = prevIdeas[ideaId];
+      if (!idea) return prevIdeas;
+      return { ...prevIdeas, [ideaId]: { ...idea, titleAlign } };
+    });
+    await setIdeaTitleAlign(ideaId, titleAlign);
+  };
 
   const handleSelectIdea = async (idea: Idea) => {
     setView('editor');
@@ -613,21 +631,45 @@ export default function DashboardPage() {
               <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-popover">
                 <LexicalComposer initialConfig={editorConfig}>
                   <div className="editor-container flex flex-1 min-h-0 flex-col">
-                    <ToolbarPlugin />
+                    <ToolbarPlugin
+                      titleFocused={activeAlignTarget === 'title'}
+                      titleAlign={selectedIdea.titleAlign}
+                      onSetTitleAlign={(align) => handleSetIdeaTitleAlign(selectedIdea.id, align)}
+                    />
                     <div className="editor-inner">
                       <div className="editor-content-column">
-                        <RichTextPlugin
-                          contentEditable={
-                            <ContentEditable
-                              className="editor-input"
-                              aria-placeholder={placeholder}
-                              placeholder={
-                                <div className="editor-placeholder">{placeholder}</div>
+                        <div className="pt-9">
+                          <input
+                            key={`${selectedIdea.id}-${selectedIdea.title}`}
+                            defaultValue={selectedIdea.title}
+                            onFocus={() => setActiveAlignTarget('title')}
+                            onBlur={(e) => commitIdeaTitle(selectedIdea.id, selectedIdea.title, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                (e.target as HTMLInputElement).blur();
                               }
-                            />
-                          }
-                          ErrorBoundary={LexicalErrorBoundary}
-                        />
+                            }}
+                            placeholder="Untitled"
+                            style={{ textAlign: selectedIdea.titleAlign }}
+                            className="w-full border-0 bg-transparent font-display text-[28px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40"
+                          />
+                        </div>
+                        <div className="relative flex flex-1 min-h-0 flex-col">
+                          <RichTextPlugin
+                            contentEditable={
+                              <ContentEditable
+                                className="editor-input"
+                                aria-placeholder={placeholder}
+                                onFocus={() => setActiveAlignTarget('body')}
+                                placeholder={
+                                  <div className="editor-placeholder">{placeholder}</div>
+                                }
+                              />
+                            }
+                            ErrorBoundary={LexicalErrorBoundary}
+                          />
+                        </div>
                         <HistoryPlugin />
                         <AutoFocusPlugin />
                         <ListPlugin />

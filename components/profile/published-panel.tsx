@@ -1,19 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PublishedGrid } from "@/components/published-grid"
 import { getMyPublishedPage } from "@/lib/profile"
+import { getPublicUserPublishedPage } from "@/lib/public-profile"
 import type { ProjectFeedItem } from "@/lib/public-project"
 import { PAGE_SIZE } from "@/lib/config"
 
 export function PublishedPanel({
   initialItems,
   initialHasMore,
+  username,
+  emptyMessage,
 }: {
   initialItems: ProjectFeedItem[]
   initialHasMore: boolean
+  username?: string
+  emptyMessage: React.ReactNode
 }) {
   const [items, setItems] = useState(initialItems)
   const [page, setPage] = useState(1)
@@ -24,7 +28,9 @@ export function PublishedPanel({
     if (isLoading) return
     setIsLoading(true)
     try {
-      const result = await getMyPublishedPage(page, PAGE_SIZE)
+      const result = username
+        ? await getPublicUserPublishedPage(username, page, PAGE_SIZE)
+        : await getMyPublishedPage(page, PAGE_SIZE)
       setItems((prev) => [...prev, ...result.items])
       setPage((prev) => prev + 1)
       setHasMore(result.hasMore)
@@ -37,15 +43,8 @@ export function PublishedPanel({
     <>
       <PublishedGrid
         items={items}
-        hrefFor={(id) => `/editor/${id}`}
-        emptyMessage={
-          <>
-            Nothing published yet — publish a project from{" "}
-            <Link href="/projects" className="font-medium text-primary">
-              Projects.
-            </Link>
-          </>
-        }
+        hrefFor={(id) => (username ? `/p/${id}` : `/editor/${id}`)}
+        emptyMessage={emptyMessage}
       />
       {hasMore && (
         <div className="flex justify-center mt-6">

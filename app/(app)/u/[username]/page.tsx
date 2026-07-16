@@ -2,10 +2,11 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { ArrowUpRight, Calendar, Users } from "lucide-react"
 import { BadgesPanel } from "@/components/badges-panel"
-import { PublishedGrid } from "@/components/published-grid"
+import { PublishedPanel } from "@/components/profile/published-panel"
 import { FollowButton } from "@/components/follow-button"
 import { isLoggedIn } from "@/lib/auth"
-import { getPublicProfile } from "@/lib/public-profile"
+import { getPublicProfile, getPublicUserPublishedPage } from "@/lib/public-profile"
+import { PAGE_SIZE } from "@/lib/config"
 
 function initial(username: string) {
   return username.charAt(0).toUpperCase()
@@ -29,11 +30,12 @@ export default async function PublicProfilePage({
     redirect("/profile")
   }
 
-  const { stats, badges, published } = profile
+  const { stats, badges } = profile
+  const { items: published, hasMore: publishedHasMore } = await getPublicUserPublishedPage(username, 0, PAGE_SIZE)
 
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
-        <div className="pt-9 px-18 pb-0">
+        <div className="pt-9 px-18 pb-14">
           <div className="flex items-start gap-7 rounded-[28px] bg-card p-8">
             <span
               className="flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-[46px] font-medium w-[140px] h-[140px] bg-primary text-primary-foreground"
@@ -55,7 +57,7 @@ export default async function PublicProfilePage({
               <div className="flex items-center gap-4 text-[13px] mb-3.5 text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <Calendar className="h-[14px] w-[14px]" />
-                  Joined {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+                  Joined {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </span>
                 <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="inline-flex items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
@@ -107,9 +109,10 @@ export default async function PublicProfilePage({
             <div className="mb-3 text-[13px] font-medium text-muted-foreground">
               Published projects
             </div>
-            <PublishedGrid
-              items={published}
-              hrefFor={(id) => `/p/${id}`}
+            <PublishedPanel
+              initialItems={published}
+              initialHasMore={publishedHasMore}
+              username={username}
               emptyMessage={`${profile.username} hasn't published anything yet.`}
             />
           </div>

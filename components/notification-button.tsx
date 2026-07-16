@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowBigUp, Award, Bell, GitFork, Rocket, UserPlus, X } from "lucide-react"
+import { ArrowBigUp, Award, Bell, GitFork, Rocket, Share2, UserPlus, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,8 @@ const ICONS: Record<AppNotification["type"], React.ComponentType<{ className?: s
   FOLLOW: UserPlus,
   BADGE: Award,
   FEATURED: Rocket,
+  PUBLISH: Rocket,
+  SHARE: Share2,
 }
 
 function others(count: number) {
@@ -42,12 +44,17 @@ function notificationText(n: AppNotification) {
       return <>You earned the <strong>{n.badgeName}</strong> badge</>
     case "FEATURED":
       return <><strong>{n.projectTitle}</strong> was featured on Explore</>
+    case "PUBLISH":
+      return <>{n.latestActorUsername}{others(n.count)} published <strong>{n.projectTitle}</strong></>
+    case "SHARE":
+      return <>{n.latestActorUsername}{others(n.count)} shared <strong>{n.projectTitle}</strong></>
   }
 }
 
 function notificationHref(n: AppNotification): string {
   if (n.type === "FOLLOW") return n.latestActorUsername ? `/u/${encodeURIComponent(n.latestActorUsername)}` : "/explore"
   if (n.type === "BADGE") return "/profile"
+  if (n.type === "PUBLISH" || n.type === "SHARE") return n.projectId ? `/p/${n.projectId}` : "/explore"
   return n.projectId ? `/editor/${n.projectId}` : "/profile"
 }
 

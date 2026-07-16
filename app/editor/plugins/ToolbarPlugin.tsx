@@ -128,7 +128,15 @@ function Divider() {
   return <div className="divider" />;
 }
 
-export default function ToolbarPlugin() {
+export default function ToolbarPlugin({
+  titleFocused,
+  titleAlign,
+  onSetTitleAlign,
+}: {
+  titleFocused?: boolean;
+  titleAlign?: 'left' | 'center' | 'right';
+  onSetTitleAlign?: (align: 'left' | 'center' | 'right') => void;
+} = {}) {
   const [editor] = useLexicalComposerContext();
   const toolbarRef = useRef(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -468,17 +476,22 @@ export default function ToolbarPlugin() {
         <DropdownMenuTrigger asChild>
           <button className="toolbar-item align-dropdown-trigger spaced" aria-label="Align text">
             {(() => {
-              const Active = ALIGN_OPTIONS.find((option) => option.value === elementFormat)?.Icon ?? AlignLeft;
+              const activeValue = titleFocused ? titleAlign ?? 'left' : elementFormat;
+              const Active = ALIGN_OPTIONS.find((option) => option.value === activeValue)?.Icon ?? AlignLeft;
               return <Active size={18} />;
             })()}
             <ChevronDown size={12} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          {ALIGN_OPTIONS.map(({ value, label, Icon }) => (
+          {(titleFocused ? ALIGN_OPTIONS.filter((option) => option.value !== 'justify') : ALIGN_OPTIONS).map(({ value, label, Icon }) => (
             <DropdownMenuItem
               key={value}
-              onSelect={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value)}
+              onSelect={() =>
+                titleFocused
+                  ? onSetTitleAlign?.(value as 'left' | 'center' | 'right')
+                  : editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value)
+              }
             >
               <Icon className="h-4 w-4" />
               {label}

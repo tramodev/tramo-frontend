@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "./config";
 import { authenticatedFetch } from "./api";
 
-export type NotificationType = "UPVOTE" | "FORK" | "FOLLOW" | "BADGE" | "FEATURED";
+export type NotificationType = "UPVOTE" | "FORK" | "FOLLOW" | "BADGE" | "FEATURED" | "PUBLISH" | "SHARE";
 
 interface NotificationDTO {
   id: number;

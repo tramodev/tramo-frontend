@@ -1,6 +1,6 @@
 'use server';
 
-import { Idea, Path } from "@/app/editor/types";
+import { Idea, Path, TitleAlign } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 
@@ -43,6 +43,7 @@ interface IdeaDTO {
   id: number;
   title: string;
   type: string | null;
+  titleAlign: string | null;
   createdDate: string;
   modifiedDate: string;
 }
@@ -120,6 +121,7 @@ export async function getProject(id: string): Promise<Project | null> {
     ideas[String(ideaId)] = {
       id: String(ideaId),
       title: dto.title,
+      titleAlign: (dto.titleAlign as TitleAlign) ?? "center",
       content: "",
       linkedIdeaIds: linkLists[index].map((linked) => String(linked.id)),
     };
@@ -216,6 +218,13 @@ export async function toggleProjectVote(id: string): Promise<VoteResult> {
   return parseResponse<VoteResponseDTO>(response);
 }
 
+export async function shareProjectToFollowers(id: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/share`, {
+    method: "POST",
+  });
+  await expectOk(response);
+}
+
 export async function forkProject(id: string): Promise<Project> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/fork`, {
     method: "POST",
@@ -267,7 +276,7 @@ export async function createIdea(pathId: string, title: string): Promise<Idea> {
     body: JSON.stringify({ title }),
   });
   const dto = await parseResponse<IdeaDTO>(response);
-  return { id: String(dto.id), title: dto.title, content: "", linkedIdeaIds: [] };
+  return { id: String(dto.id), title: dto.title, titleAlign: (dto.titleAlign as TitleAlign) ?? "center", content: "", linkedIdeaIds: [] };
 }
 
 export async function renameIdea(ideaId: string, title: string): Promise<void> {
@@ -275,6 +284,15 @@ export async function renameIdea(ideaId: string, title: string): Promise<void> {
     method: "PUT",
     headers: jsonHeaders,
     body: JSON.stringify({ title }),
+  });
+  await expectOk(response);
+}
+
+export async function setIdeaTitleAlign(ideaId: string, titleAlign: TitleAlign): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/idea/${ideaId}`, {
+    method: "PUT",
+    headers: jsonHeaders,
+    body: JSON.stringify({ titleAlign }),
   });
   await expectOk(response);
 }

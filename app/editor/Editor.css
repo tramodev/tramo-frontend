@@ -48,6 +48,10 @@
   caret-color: var(--primary);
 }
 
+.thumbnail-capture-content .editor-input {
+  padding-top: 0;
+}
+
 .editor-input:focus,
 .editor-input:focus-visible {
   outline: 0;

@@ -54,6 +54,7 @@ export function ThumbnailCapture({
   return (
     <div
       ref={ref}
+      className="thumbnail-capture-content"
       style={{
         position: "fixed",
         top: -9999,

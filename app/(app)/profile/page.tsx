@@ -66,7 +66,7 @@ export default async function ProfilePage({
                   <span className="inline-flex items-center gap-1.5">
                     <Calendar className="h-[14px] w-[14px]" />
                     Joined{" "}
-                    {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+                    {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </span>
                 )}
                 <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="inline-flex items-center gap-1.5 hover:text-foreground">
@@ -149,7 +149,20 @@ async function ActivityTab() {
 
 async function PublishedTab() {
   const { items, hasMore } = await getMyPublishedPage(0, PAGE_SIZE)
-  return <PublishedPanel initialItems={items} initialHasMore={hasMore} />
+  return (
+    <PublishedPanel
+      initialItems={items}
+      initialHasMore={hasMore}
+      emptyMessage={
+        <>
+          Nothing published yet — publish a project from{" "}
+          <Link href="/projects" className="font-medium text-primary">
+            Projects.
+          </Link>
+        </>
+      }
+    />
+  )
 }
 
 async function BookmarksTab(loggedIn: boolean) {

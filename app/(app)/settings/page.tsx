@@ -65,7 +65,7 @@ export default async function SettingsPage({
                     <dt className="text-muted-foreground">Joined</dt>
                     <dd className="inline-flex items-center gap-1.5 font-medium">
                       <Calendar className="h-[14px] w-[14px]" />
-                      {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
+                      {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                     </dd>
                   </div>
                 )}

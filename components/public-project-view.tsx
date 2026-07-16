@@ -12,6 +12,7 @@ import { ForkButton } from "@/components/fork-button"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { AuthPromptActions } from "@/components/auth-prompt-actions"
 import { ReportButton } from "@/components/report-button"
+import { ShareToFollowersButton } from "@/components/share-to-followers-button"
 import { UserMenu } from "@/components/user-menu"
 import type { PublicIdea, PublicProject } from "@/lib/public-project"
 
@@ -58,6 +59,7 @@ export function PublicProjectView({
             <>
               {!isOwnProject && <ReportButton projectId={project.id} isLoggedIn={isLoggedIn} />}
               {!isOwnProject && <ForkButton projectId={project.id} isLoggedIn={isLoggedIn} />}
+              <ShareToFollowersButton projectId={project.id} isLoggedIn={isLoggedIn} />
               <BookmarkButton
                 projectId={project.id}
                 initialBookmarked={project.bookmarkedByRequester}

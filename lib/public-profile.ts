@@ -35,7 +35,6 @@ interface PublicProfileDTO {
   createdAt: string;
   stats: ProfileStats;
   badges: Badge[];
-  published: ProjectFeedItemDTO[];
   following: boolean;
   self: boolean;
 }
@@ -47,7 +46,6 @@ export interface PublicProfile {
   createdAt: string;
   stats: ProfileStats;
   badges: Badge[];
-  published: ProjectFeedItem[];
   following: boolean;
   self: boolean;
 }
@@ -83,7 +81,7 @@ export async function getPublicProfile(username: string): Promise<PublicProfile 
   });
   if (!response.ok) return null;
   const data: PublicProfileDTO = await response.json();
-  return { ...data, published: data.published.map(toFeedItem) };
+  return data;
 }
 
 export async function toggleFollow(username: string): Promise<{ following: boolean; followersCount: number }> {
@@ -138,4 +136,14 @@ export async function getFollowersPage(username: string, page: number, size: num
 
 export async function getFollowingPage(username: string, page: number, size: number): Promise<ProfilePage<FollowUser>> {
   return fetchFollowPage("following", username, page, size);
+}
+
+export async function getPublicUserPublishedPage(username: string, page: number, size: number): Promise<ProfilePage<ProjectFeedItem>> {
+  const response = await fetch(`${API_BASE_URL}/api/public/users/${encodeURIComponent(username)}/published?page=${page}&size=${size}`, {
+    cache: "no-store",
+    headers: await optionalAuthHeaders(),
+  });
+  if (!response.ok) return { items: [], hasMore: false };
+  const data: PageResponseDTO<ProjectFeedItemDTO> = await response.json();
+  return { items: data.content.map(toFeedItem), hasMore: data.hasMore };
 }

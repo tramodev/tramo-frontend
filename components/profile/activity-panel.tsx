@@ -59,7 +59,7 @@ function activityText(item: ActivityItem) {
 }
 
 function formatActivityDate(timestamp: string) {
-  return new Date(timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+  return new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
 export function ActivityPanel({
