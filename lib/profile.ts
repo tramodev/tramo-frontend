@@ -54,6 +54,7 @@ export interface ProfileStats {
   totalViews: number;
   forksCount: number;
   followersCount: number;
+  followingCount: number;
 }
 
 export interface Badge {

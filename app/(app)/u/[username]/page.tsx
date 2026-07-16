@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { ArrowUpRight, Calendar, Users } from "lucide-react"
 import { BadgesPanel } from "@/components/badges-panel"
@@ -56,10 +57,14 @@ export default async function PublicProfilePage({
                   <Calendar className="h-[14px] w-[14px]" />
                   Joined {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
                 </span>
-                <span className="inline-flex items-center gap-1.5">
+                <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="inline-flex items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
                   {stats.followersCount.toLocaleString()} followers
-                </span>
+                </Link>
+                <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=following`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                  <Users className="h-[14px] w-[14px]" />
+                  {stats.followingCount.toLocaleString()} following
+                </Link>
               </div>
               {profile.bio && (
                 <p className="mb-3.5 w-3/4 text-sm leading-[1.6] text-foreground">

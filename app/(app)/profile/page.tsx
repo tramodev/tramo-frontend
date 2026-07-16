@@ -69,10 +69,14 @@ export default async function ProfilePage({
                     {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1.5">
+                <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="inline-flex items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
                   {(stats?.followersCount ?? 0).toLocaleString()} followers
-                </span>
+                </Link>
+                <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=following`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                  <Users className="h-[14px] w-[14px]" />
+                  {(stats?.followingCount ?? 0).toLocaleString()} following
+                </Link>
               </div>
               <div className="mb-3.5">
                 <BioEditor initialBio={profile.bio} />

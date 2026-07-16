@@ -93,3 +93,49 @@ export async function toggleFollow(username: string): Promise<{ following: boole
   if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
   return response.json();
 }
+
+interface FollowUserDTO {
+  username: string;
+  imageUrl: string | null;
+  bio: string | null;
+  followingByRequester: boolean;
+}
+
+export interface FollowUser {
+  username: string;
+  imageUrl: string | null;
+  bio: string | null;
+  followingByRequester: boolean;
+}
+
+interface PageResponseDTO<T> {
+  content: T[];
+  hasMore: boolean;
+}
+
+export interface ProfilePage<T> {
+  items: T[];
+  hasMore: boolean;
+}
+
+function toFollowUser(item: FollowUserDTO): FollowUser {
+  return { ...item };
+}
+
+async function fetchFollowPage(kind: "followers" | "following", username: string, page: number, size: number): Promise<ProfilePage<FollowUser>> {
+  const response = await fetch(`${API_BASE_URL}/api/public/users/${encodeURIComponent(username)}/${kind}?page=${page}&size=${size}`, {
+    cache: "no-store",
+    headers: await optionalAuthHeaders(),
+  });
+  if (!response.ok) return { items: [], hasMore: false };
+  const data: PageResponseDTO<FollowUserDTO> = await response.json();
+  return { items: data.content.map(toFollowUser), hasMore: data.hasMore };
+}
+
+export async function getFollowersPage(username: string, page: number, size: number): Promise<ProfilePage<FollowUser>> {
+  return fetchFollowPage("followers", username, page, size);
+}
+
+export async function getFollowingPage(username: string, page: number, size: number): Promise<ProfilePage<FollowUser>> {
+  return fetchFollowPage("following", username, page, size);
+}
