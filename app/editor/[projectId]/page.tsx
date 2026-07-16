@@ -42,12 +42,11 @@ import IdeaMentionPlugin from '../plugins/IdeaMentionPlugin';
 import IdeaLinkClickPlugin from '../plugins/IdeaLinkClickPlugin';
 import { ImageNode } from '../nodes/ImageNode';
 import { parseAllowedColor, parseAllowedFontSize } from '../styleConfig';
-import Link from 'next/link';
-import { Wordmark } from '@/components/logo';
+import { ProjectShell } from '@/components/project-shell';
 import { SidebarCustom } from '@/components/sidebar-custom';
 import { ConnectionsPanel } from '@/components/connections-panel';
 import { KnowledgeGraph } from '@/components/knowledge-graph';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { UserMenu } from '@/components/user-menu';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Check, FolderPlus, Loader2, X } from 'lucide-react';
@@ -512,87 +511,87 @@ export default function DashboardPage() {
       style={{ "--sidebar-width": "288px" } as React.CSSProperties}
       className="h-screen min-h-0 flex-col"
     >
-      <header className="flex h-16 shrink-0 items-center gap-4 px-8">
-        <Link href="/projects" title="Back to projects">
-          <Wordmark />
-        </Link>
-        <span className="h-[18px] w-px bg-border" />
-        {isEditingTitle ? (
-          <Input
-            autoFocus
-            value={editingTitleValue}
-            className="h-8 max-w-xs"
-            onChange={(e) => setEditingTitleValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') submitEditTitle();
-              if (e.key === 'Escape') setIsEditingTitle(false);
-            }}
-            onBlur={submitEditTitle}
-          />
-        ) : (
-          <span
-            className="text-[15px] font-medium"
-            onDoubleClick={startEditTitle}
-            title="Double-click to rename"
-          >
-            {projectTitle}
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-3">
-          {view === 'editor' && selectedIdea && (
-            <span className="text-xs text-muted-foreground">
-              {textStats.words} words · {textStats.characters} characters
+      <ProjectShell
+        homeHref="/projects"
+        titleSlot={
+          isEditingTitle ? (
+            <Input
+              autoFocus
+              value={editingTitleValue}
+              className="h-8 max-w-xs"
+              onChange={(e) => setEditingTitleValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitEditTitle();
+                if (e.key === 'Escape') setIsEditingTitle(false);
+              }}
+              onBlur={submitEditTitle}
+            />
+          ) : (
+            <span
+              className="text-[15px] font-medium"
+              onDoubleClick={startEditTitle}
+              title="Double-click to rename"
+            >
+              {projectTitle}
             </span>
-          )}
-          <ShareDialog
-            projectId={projectId}
-            visibility={visibility}
-            onVisibilityChange={handleVisibilityChange}
-            tags={tags}
-            onTagsChange={setTags}
+          )
+        }
+        actions={
+          <>
+            {view === 'editor' && selectedIdea && (
+              <span className="text-xs text-muted-foreground">
+                {textStats.words} words · {textStats.characters} characters
+              </span>
+            )}
+            <ShareDialog
+              projectId={projectId}
+              visibility={visibility}
+              onVisibilityChange={handleVisibilityChange}
+              tags={tags}
+              onTagsChange={setTags}
+            />
+            <span
+              className="flex items-center gap-1.5 text-xs text-muted-foreground w-[60px]"
+            >
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Saving
+                </>
+              )}
+              {(saveStatus === 'saved' || saveStatus === 'idle') && (
+                <>
+                  <Check className="h-3.5 w-3.5 text-primary" />
+                  Saved
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <>
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                  Save failed
+                </>
+              )}
+            </span>
+            <UserMenu />
+          </>
+        }
+        sidebar={
+          <SidebarCustom
+            paths={paths}
+            ideas={ideas}
+            selectedIdeaId={selectedIdeaId}
+            onSelectIdea={handleSelectIdea}
+            onCreatePath={handleCreatePath}
+            onCreateIdea={handleCreateIdea}
+            onLinkIdeaToPath={handleLinkIdeaToPath}
+            onRenamePath={handleRenamePath}
+            onRenameIdea={handleRenameIdea}
+            onDeletePath={handleDeletePath}
+            onUnlinkIdeaFromPath={handleUnlinkIdeaFromPath}
           />
-          <span
-            className="flex items-center gap-1.5 text-xs text-muted-foreground w-[60px]"
-          >
-            {saveStatus === 'saving' && (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Saving
-              </>
-            )}
-            {(saveStatus === 'saved' || saveStatus === 'idle') && (
-              <>
-                <Check className="h-3.5 w-3.5 text-primary" />
-                Saved
-              </>
-            )}
-            {saveStatus === 'error' && (
-              <>
-                <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-                Save failed
-              </>
-            )}
-          </span>
-          <UserMenu />
-        </div>
-      </header>
-      <div className="flex flex-1 min-h-0">
-        <SidebarCustom
-          paths={paths}
-          ideas={ideas}
-          selectedIdeaId={selectedIdeaId}
-          onSelectIdea={handleSelectIdea}
-          onCreatePath={handleCreatePath}
-          onCreateIdea={handleCreateIdea}
-          onLinkIdeaToPath={handleLinkIdeaToPath}
-          onRenamePath={handleRenamePath}
-          onRenameIdea={handleRenameIdea}
-          onDeletePath={handleDeletePath}
-          onUnlinkIdeaFromPath={handleUnlinkIdeaFromPath}
-        />
-        <SidebarInset>
-          <div className="flex flex-1 min-h-0 gap-3 pr-3 pb-3">
-          {view === 'graph' ? (
+        }
+        content={
+          view === 'graph' ? (
             <div className="relative flex-1 overflow-hidden rounded-2xl bg-popover">
               <button
                 type="button"
@@ -677,10 +676,9 @@ export default function DashboardPage() {
                   : "Select an idea from the sidebar, or create a new one inside a path."}
               </p>
             </div>
-          )}
-        </div>
-        </SidebarInset>
-      </div>
+          )
+        }
+      />
       {thumbnailCaptureContent && (
         <ThumbnailCapture content={thumbnailCaptureContent} onCapture={handleThumbnailCaptured} />
       )}
