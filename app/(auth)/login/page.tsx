@@ -7,7 +7,7 @@ export default function LoginPage() {
   return (
     <>
       <div className="flex flex-col px-8 py-8 lg:px-24">
-        <Link href="/">
+        <Link href="/" className="mb-10">
           <Wordmark />
         </Link>
         <div className="flex flex-1 flex-col justify-center">

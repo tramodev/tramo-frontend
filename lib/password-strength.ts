@@ -14,10 +14,10 @@ export function getPasswordStrength(password: string): PasswordStrength {
   if (/[^a-zA-Z0-9]/.test(password)) score++
 
   if (score <= 1) {
-    return { label: "Weak", filled: 1, barColor: "bg-red-500", textColor: "text-red-600" }
+    return { label: "Weak", filled: 1, barColor: "bg-destructive", textColor: "text-destructive" }
   }
   if (score <= 3) {
-    return { label: "Medium", filled: 2, barColor: "bg-amber-500", textColor: "text-amber-600" }
+    return { label: "Medium", filled: 2, barColor: "bg-warning", textColor: "text-warning-foreground" }
   }
-  return { label: "Strong", filled: 3, barColor: "bg-emerald-500", textColor: "text-emerald-600" }
+  return { label: "Strong", filled: 3, barColor: "bg-success", textColor: "text-success" }
 }

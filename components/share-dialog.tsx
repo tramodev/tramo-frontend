@@ -81,10 +81,7 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button
-          variant="secondary"
-          className="h-auto gap-2 rounded-none px-[14px] py-[9px] text-[13px] font-extrabold bg-(--color-neutral-300) text-(--color-text)"
-        >
+        <Button variant="secondary" size="lg">
           <Share2 className="h-[15px] w-[15px]" />
           Share
         </Button>
@@ -111,7 +108,7 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
                   isActive ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
                 )}
               >
-                <Icon className="h-4 w-4" style={isActive ? { color: "var(--color-accent)" } : undefined} />
+                <Icon className={cn("h-4 w-4", isActive && "text-primary")} />
                 <span className="text-xs font-medium">{option.label}</span>
               </button>
             );

@@ -153,13 +153,14 @@ export function SidebarCustom({
   };
 
   return (
-    <Sidebar className="top-16 h-[calc(100svh-64px)] border-t-0">
+    <Sidebar
+      variant="floating"
+      className="top-16 h-[calc(100svh-64px)] pt-0 px-3 pb-3"
+    >
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
-            <span
-              className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-            >
+            <span className="text-xs font-medium text-muted-foreground">
               My Paths
             </span>
             <Button
@@ -224,9 +225,7 @@ export function SidebarCustom({
                               <SidebarMenuButton onDoubleClick={() => startEditPath(path)} className="font-semibold">
                                 <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
                                 <span className="flex-1 truncate">{path.title}</span>
-                                <span
-                                  className="text-[11px] font-normal text-(--color-neutral-600)"
-                                >
+                                <span className="text-[11px] font-normal text-muted-foreground">
                                   {pathIdeas.length}
                                 </span>
                               </SidebarMenuButton>
@@ -326,21 +325,17 @@ export function SidebarCustom({
                                       isActive={selectedIdeaId === idea.id}
                                       onClick={() => onSelectIdea(idea)}
                                       onDoubleClick={() => startEditIdea(idea)}
-                                      style={
+                                      className={
                                         selectedIdeaId === idea.id
-                                          ? {
-                                              background: "color-mix(in srgb, var(--color-accent) 18%, transparent)",
-                                              color: "var(--color-accent-600)",
-                                            }
+                                          ? "bg-secondary text-secondary-foreground"
                                           : undefined
                                       }
                                     >
                                       <span
-                                        className="h-2 w-2 shrink-0"
-                                        style={
+                                        className={
                                           selectedIdeaId === idea.id
-                                            ? { background: "var(--color-accent)" }
-                                            : { border: "1.5px solid var(--color-neutral-600)", boxSizing: "border-box" }
+                                            ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary"
+                                            : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"
                                         }
                                       />
                                       <span className="truncate">{idea.title}</span>
@@ -348,7 +343,7 @@ export function SidebarCustom({
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <Link2
-                                              className="ml-1 h-3 w-3 shrink-0 text-(--color-accent)"
+                                              className="ml-1 h-3 w-3 shrink-0 text-primary"
                                             />
                                           </TooltipTrigger>
                                           <TooltipContent>

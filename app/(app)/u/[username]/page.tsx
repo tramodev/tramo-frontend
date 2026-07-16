@@ -32,10 +32,10 @@ export default async function PublicProfilePage({
 
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
-        <div className="pt-11 px-18 pb-0">
-          <div className="flex items-start gap-7">
+        <div className="pt-9 px-18 pb-0">
+          <div className="flex items-start gap-7 rounded-[28px] bg-card p-8">
             <span
-              className="flex shrink-0 items-center justify-center overflow-hidden text-[46px] font-extrabold w-[140px] h-[140px] bg-(--color-text) text-(--color-bg)"
+              className="flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-[46px] font-medium w-[140px] h-[140px] bg-primary text-primary-foreground"
             >
               {profile.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -45,26 +45,24 @@ export default async function PublicProfilePage({
               )}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="mb-1.5 flex items-center gap-4">
-                <h1
-                  className="text-[40px] font-extrabold tracking-[-0.025em] leading-[1.05]"
-                >
+              <div className="mb-2 flex items-center gap-4">
+                <h1 className="font-display text-[36px] font-normal leading-[1.1]">
                   {profile.username}
                 </h1>
                 <FollowButton username={profile.username} initialFollowing={profile.following} isLoggedIn={loggedIn} />
               </div>
-              <div className="flex items-center gap-4 text-xs mb-3 text-(--color-neutral-600)">
-                <span className="inline-flex items-center gap-1.5 font-semibold">
-                  <Calendar className="h-[13px] w-[13px]" />
+              <div className="flex items-center gap-4 text-[13px] mb-3.5 text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-[14px] w-[14px]" />
                   Joined {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
                 </span>
-                <span className="inline-flex items-center gap-1.5 font-semibold">
-                  <Users className="h-[13px] w-[13px]" />
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="h-[14px] w-[14px]" />
                   {stats.followersCount.toLocaleString()} followers
                 </span>
               </div>
               {profile.bio && (
-                <p className="mb-3 w-3/4 text-sm leading-[1.6] text-(--color-neutral-800)">
+                <p className="mb-3.5 w-3/4 text-sm leading-[1.6] text-foreground">
                   {profile.bio}
                 </p>
               )}
@@ -72,46 +70,36 @@ export default async function PublicProfilePage({
             </div>
           </div>
 
-          <div
-            className="grid rounded-lg mt-7 grid-cols-4 border-2 border-(--color-divider)"
-          >
-            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
-              <div className="text-[26px] font-extrabold">{stats.pathsPublished}</div>
-              <div
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-              >
+          <div className="grid gap-3 mt-3 grid-cols-4 text-center">
+            <div className="rounded-2xl bg-card py-[18px]">
+              <div className="font-display text-[28px] font-medium text-primary">{stats.pathsPublished}</div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-0.5">
                 Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />
               </div>
             </div>
-            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
-              <div className="text-[26px] font-extrabold">{stats.upvotesReceived}</div>
-              <div
-                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-              >
+            <div className="rounded-2xl bg-card py-[18px]">
+              <div className="font-display text-[28px] font-medium text-primary">{stats.upvotesReceived}</div>
+              <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Upvotes received
               </div>
             </div>
-            <div className="py-4 px-5 border-r-2 border-(--color-divider)">
-              <div className="text-[26px] font-extrabold">{stats.totalViews.toLocaleString()}</div>
-              <div
-                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-              >
+            <div className="rounded-2xl bg-card py-[18px]">
+              <div className="font-display text-[28px] font-medium text-primary">{stats.totalViews.toLocaleString()}</div>
+              <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Total views
               </div>
             </div>
-            <div className="py-4 px-5">
-              <div className="text-[26px] font-extrabold">{stats.forksCount}</div>
-              <div
-                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-              >
+            <div className="rounded-2xl bg-card py-[18px]">
+              <div className="font-display text-[28px] font-medium text-primary">{stats.forksCount}</div>
+              <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Forks
               </div>
             </div>
           </div>
 
           <div className="mt-8">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)">
+            <div className="mb-3 text-[13px] font-medium text-muted-foreground">
               Published projects
             </div>
             <PublishedGrid

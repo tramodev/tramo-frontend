@@ -117,13 +117,11 @@ export function NotificationButton() {
         <button
           type="button"
           aria-label="Notifications"
-          className="relative flex shrink-0 items-center justify-center transition-colors hover:bg-muted text-(--color-neutral-600)"
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span
-              className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold bg-(--color-accent) text-[#fff]"
-            >
+            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -131,11 +129,11 @@ export function NotificationButton() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         {notifications === null ? (
-          <div className="px-2 py-3 text-sm text-(--color-neutral-600)">
+          <div className="px-2 py-3 text-sm text-muted-foreground">
             Loading...
           </div>
         ) : notifications.length === 0 ? (
-          <div className="px-2 py-3 text-sm text-(--color-neutral-600)">
+          <div className="px-2 py-3 text-sm text-muted-foreground">
             No notifications yet.
           </div>
         ) : (
@@ -150,8 +148,8 @@ export function NotificationButton() {
                 <span
                   className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
                     n.read
-                      ? "bg-(--color-neutral-200) text-(--color-neutral-600)"
-                      : "bg-(--color-accent) text-white"
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-primary text-primary-foreground"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />

@@ -464,6 +464,29 @@ export default function ToolbarPlugin() {
         </DropdownMenuContent>
       </DropdownMenu>
 
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="toolbar-item align-dropdown-trigger spaced" aria-label="Align text">
+            {(() => {
+              const Active = ALIGN_OPTIONS.find((option) => option.value === elementFormat)?.Icon ?? AlignLeft;
+              return <Active size={18} />;
+            })()}
+            <ChevronDown size={12} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {ALIGN_OPTIONS.map(({ value, label, Icon }) => (
+            <DropdownMenuItem
+              key={value}
+              onSelect={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value)}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <Divider />
       <button
         onClick={() => {
@@ -550,30 +573,6 @@ export default function ToolbarPlugin() {
         aria-label="Quote">
         <Quote size={18} />
       </button>
-
-      <Divider />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="toolbar-item align-dropdown-trigger" aria-label="Align text">
-            {(() => {
-              const Active = ALIGN_OPTIONS.find((option) => option.value === elementFormat)?.Icon ?? AlignLeft;
-              return <Active size={18} />;
-            })()}
-            <ChevronDown size={12} />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          {ALIGN_OPTIONS.map(({ value, label, Icon }) => (
-            <DropdownMenuItem
-              key={value}
-              onSelect={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value)}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   );
 }

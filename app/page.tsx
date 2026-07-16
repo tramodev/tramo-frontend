@@ -1,6 +1,4 @@
 import { redirect } from "next/navigation";
-import { archivo } from "@/lib/fonts";
-import "./landing.css";
 import { BrowserMockup } from "@/components/browser-mockup";
 import { Hero } from "@/components/hero";
 import { Navbar } from "@/components/navbar";
@@ -15,7 +13,7 @@ export default async function Home() {
   }
 
   return (
-    <div className={`modernist min-h-screen ${archivo.className}`}>
+    <div className="min-h-screen">
       <Navbar />
 
       <div className="max-w-[1216px] mx-auto px-[72px]">
@@ -25,7 +23,7 @@ export default async function Home() {
           <BrowserMockup />
         </div>
 
-        <hr className="hr" />
+        <hr className="border-t border-border" />
 
         <FeaturesSection />
       </div>

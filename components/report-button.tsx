@@ -58,7 +58,7 @@ export function ReportButton({ projectId, isLoggedIn }: { projectId: string; isL
           type="button"
           onClick={handleTriggerClick}
           title="Report this project"
-          className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center transition-colors hover:bg-muted text-(--color-neutral-600)"
+          className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-muted text-muted-foreground"
         >
           <Flag className="h-4 w-4" />
         </button>
@@ -71,7 +71,7 @@ export function ReportButton({ projectId, isLoggedIn }: { projectId: string; isL
           </DialogDescription>
         </DialogHeader>
         {submitted ? (
-          <p className="text-sm text-(--color-neutral-700)">
+          <p className="text-sm text-muted-foreground">
             Thanks — your report has been submitted.
           </p>
         ) : (

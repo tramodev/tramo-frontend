@@ -30,9 +30,7 @@ export function PublicSidebar({ paths, selectedIdeaId, onSelectIdea }: PublicSid
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
-            <span
-              className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-            >
+            <span className="text-xs font-medium text-muted-foreground">
               Paths
             </span>
           </SidebarGroupLabel>
@@ -56,11 +54,10 @@ export function PublicSidebar({ paths, selectedIdeaId, onSelectIdea }: PublicSid
                               onClick={() => onSelectIdea(idea)}
                             >
                               <span
-                                className="h-2 w-2 shrink-0"
-                                style={
+                                className={
                                   selectedIdeaId === idea.id
-                                    ? { background: "var(--color-accent)" }
-                                    : { border: "1.5px solid var(--color-neutral-600)", boxSizing: "border-box" }
+                                    ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary"
+                                    : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"
                                 }
                               />
                               <span className="truncate">{idea.title}</span>

@@ -81,14 +81,20 @@ const fieldVariants = cva(
 function Field({
   className,
   orientation = "vertical",
+  floatingLabel = false,
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
+}: React.ComponentProps<"div"> &
+  VariantProps<typeof fieldVariants> & { floatingLabel?: boolean }) {
   return (
     <div
       role="group"
       data-slot="field"
       data-orientation={orientation}
-      className={cn(fieldVariants({ orientation }), className)}
+      className={cn(
+        fieldVariants({ orientation }),
+        floatingLabel && "field-outlined",
+        className
+      )}
       {...props}
     />
   )

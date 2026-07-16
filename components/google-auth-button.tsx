@@ -38,13 +38,13 @@ export function GoogleAuthButton({
           onSuccess={handleSuccess}
           onError={() => setError("Google sign-in failed. Please try again.")}
           theme="outline"
-          shape="rectangular"
+          shape="pill"
           size="large"
           text={text}
           width={400}
         />
         {error && (
-          <p className="text-sm text-center text-(--color-accent-700)">
+          <p className="text-sm text-center text-destructive">
             {error}
           </p>
         )}

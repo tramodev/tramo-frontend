@@ -16,7 +16,7 @@ export function PublishedGrid({
   emptyMessage: React.ReactNode
 }) {
   if (items.length === 0) {
-    return <p className="text-sm text-(--color-neutral-600)">{emptyMessage}</p>
+    return <p className="text-sm text-muted-foreground">{emptyMessage}</p>
   }
   return (
     <div className="grid gap-4 grid-cols-2">
@@ -24,25 +24,23 @@ export function PublishedGrid({
         <Link
           key={item.id}
           href={hrefFor(item.id)}
-          className="rounded-lg transition-colors hover:bg-muted border-2 border-(--color-divider) py-[18px] px-5"
+          className="rounded-2xl bg-card transition-colors hover:bg-muted py-[18px] px-5"
         >
           <div className="mb-2 flex items-center gap-2">
-            <span
-              className="text-[11px] font-bold uppercase tracking-[0.06em] text-(--color-accent)"
-            >
+            <span className="text-xs font-medium text-primary">
               Published
             </span>
-            <span className="text-xs text-(--color-neutral-600)">
+            <span className="text-xs text-muted-foreground">
               Updated {formatCardDate(item.modifiedDate)}
             </span>
           </div>
-          <div className="mb-1.5 text-lg font-bold">{item.title}</div>
+          <div className="mb-1.5 font-display text-lg font-medium">{item.title}</div>
           {item.description && (
-            <p className="mb-3 text-sm text-(--color-neutral-600)">
+            <p className="mb-3 text-sm text-muted-foreground">
               {item.description}
             </p>
           )}
-          <div className="flex items-center gap-3 text-xs font-semibold text-(--color-neutral-600)">
+          <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <ArrowBigUp className="h-[13px] w-[13px]" />
               {item.voteCount.toLocaleString()}

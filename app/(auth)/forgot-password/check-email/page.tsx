@@ -12,15 +12,15 @@ export default async function ForgotPasswordCheckEmailPage({
   return (
     <>
       <div className="flex flex-col px-8 py-8 lg:px-24">
-        <Wordmark />
+        <Wordmark className="mb-10" />
         <div className="flex flex-1 flex-col justify-center">
           <div className="flex w-full max-w-[400px] flex-col gap-6">
-            <MailCheck className="h-10 w-10 text-(--color-accent)" />
+            <MailCheck className="h-10 w-10 text-primary" />
             <div>
-              <h1 className="text-[32px] font-extrabold tracking-[-0.015em]">
+              <h1 className="font-display text-[32px] font-normal">
                 Check your email
               </h1>
-              <p className="mt-3.5 text-[15px] leading-7 text-(--color-neutral-800)">
+              <p className="mt-3.5 text-[15px] leading-7 text-muted-foreground">
                 {email ? (
                   <>If an account exists for <strong>{email}</strong>, we sent a link to reset your password.</>
                 ) : (
@@ -28,7 +28,7 @@ export default async function ForgotPasswordCheckEmailPage({
                 )}
               </p>
             </div>
-            <a href="/login" className="text-sm font-semibold text-(--color-accent-700)">
+            <a href="/login" className="text-sm font-medium text-primary">
               Back to log in
             </a>
           </div>

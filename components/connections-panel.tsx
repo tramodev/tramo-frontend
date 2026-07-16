@@ -18,7 +18,7 @@ interface ConnectionsPanelProps {
 
 const MAX_GRAPH_NODES_PER_SIDE = 3;
 
-const SECTION_LABEL_CLASSES = "text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)";
+const SECTION_LABEL_CLASSES = "text-xs font-medium text-muted-foreground";
 
 function truncateLabel(title: string): string {
   return title.length > 14 ? `${title.slice(0, 13)}…` : title;
@@ -88,7 +88,7 @@ function NeighborhoodGraph({ idea, ideas, paths }: { idea: Idea; ideas: Record<s
           y1={cy}
           x2={node.x}
           y2={node.y}
-          stroke="var(--color-neutral-400)"
+          stroke="var(--border)"
           strokeWidth={1.5}
         />
       ))}
@@ -99,36 +99,34 @@ function NeighborhoodGraph({ idea, ideas, paths }: { idea: Idea; ideas: Record<s
           y1={cy}
           x2={node.x}
           y2={node.y}
-          stroke="var(--color-accent)"
+          stroke="var(--primary)"
           strokeWidth={1.5}
         />
       ))}
       {siblings.map((node) => (
-        <rect
+        <circle
           key={`node-sibling-${node.id}`}
-          x={node.x - 5}
-          y={node.y - 5}
-          width={10}
-          height={10}
+          cx={node.x}
+          cy={node.y}
+          r={5}
           fill="none"
-          stroke="var(--color-neutral-500)"
+          stroke="var(--muted-foreground)"
           strokeWidth={1.5}
         />
       ))}
       {linked.map((node) => (
-        <rect
+        <circle
           key={`node-linked-${node.id}`}
-          x={node.x - 6}
-          y={node.y - 6}
-          width={12}
-          height={12}
+          cx={node.x}
+          cy={node.y}
+          r={6}
           fill="none"
-          stroke="var(--color-accent)"
+          stroke="var(--primary)"
           strokeWidth={1.5}
         />
       ))}
-      <rect x={cx - 8} y={cy - 8} width={16} height={16} fill="var(--color-accent)" />
-      <text x={cx} y={cy + 32} textAnchor="middle" fontSize={9} fill="var(--color-neutral-700)">
+      <circle cx={cx} cy={cy} r={8} fill="var(--primary)" />
+      <text x={cx} y={cy + 32} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)">
         this idea
       </text>
       {siblings.map((node) => (
@@ -138,7 +136,7 @@ function NeighborhoodGraph({ idea, ideas, paths }: { idea: Idea; ideas: Record<s
           y={node.y + (node.y < cy ? -10 : 20)}
           textAnchor="middle"
           fontSize={9}
-          fill="var(--color-neutral-700)"
+          fill="var(--muted-foreground)"
         >
           {truncateLabel(node.title)}
         </text>
@@ -150,7 +148,7 @@ function NeighborhoodGraph({ idea, ideas, paths }: { idea: Idea; ideas: Record<s
           y={node.y + (node.y < cy ? -10 : 20)}
           textAnchor="middle"
           fontSize={9}
-          fill="var(--color-neutral-700)"
+          fill="var(--muted-foreground)"
         >
           {truncateLabel(node.title)}
         </text>
@@ -199,9 +197,7 @@ export function ConnectionsPanel({
   };
 
   return (
-    <div
-      className="flex w-[280px] shrink-0 flex-col gap-[22px] overflow-hidden border-l border-(--color-divider) py-5 px-4"
-    >
+    <div className="flex w-72 shrink-0 flex-col gap-[22px] overflow-hidden rounded-2xl bg-card py-5 px-4">
       <div>
         <div className="mb-2.5 flex items-center justify-between">
           <span className={SECTION_LABEL_CLASSES}>Linked ideas</span>
@@ -218,17 +214,15 @@ export function ConnectionsPanel({
           {linkedIdeas.map((linked) => (
             <div
               key={linked.id}
-              className="group/linked flex items-center gap-2 border border-(--color-divider) py-[9px] px-2.5"
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--color-accent)")}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--color-divider)")}
+              className="group/linked flex items-center gap-2 rounded-sm border border-border bg-popover py-[9px] px-2.5 transition-colors hover:border-primary"
             >
               <button
                 type="button"
                 onClick={() => onSelectIdea(linked)}
                 className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
               >
-                <Link2 className="h-[13px] w-[13px] shrink-0 text-(--color-accent)" />
-                <span className="truncate text-[13px] font-semibold">{linked.title}</span>
+                <Link2 className="h-[13px] w-[13px] shrink-0 text-primary" />
+                <span className="truncate text-[13px] font-medium">{linked.title}</span>
               </button>
               <button
                 type="button"
@@ -241,7 +235,7 @@ export function ConnectionsPanel({
             </div>
           ))}
           {linkedIdeas.length === 0 && !isAddingIdea && (
-            <span className="text-xs italic text-(--color-neutral-600)">
+            <span className="text-xs italic text-muted-foreground">
               None yet
             </span>
           )}
@@ -286,7 +280,7 @@ export function ConnectionsPanel({
           {memberPaths.map((path) => (
             <span
               key={path.id}
-              className="text-[11px] font-semibold bg-(--color-neutral-300) py-1 px-2.5"
+              className="rounded-sm text-[11px] font-medium bg-secondary text-secondary-foreground py-1 px-2.5"
             >
               {path.title}
             </span>
@@ -325,7 +319,7 @@ export function ConnectionsPanel({
               <button
                 type="button"
                 onClick={() => setIsAddingPath(true)}
-                className="flex items-center gap-1 text-[11px] font-semibold"
+                className="flex items-center gap-1 rounded-sm border border-dashed border-input py-1 px-2.5 text-[11px] font-medium text-muted-foreground hover:border-primary hover:text-primary"
               >
                 <Plus className="h-2.5 w-2.5" />
                 Add
@@ -335,13 +329,13 @@ export function ConnectionsPanel({
         </div>
       </div>
 
-      <div className="border-t border-(--color-divider) pt-4">
+      <div className="border-t border-border pt-4">
         <div className="mb-2.5 flex items-center justify-between">
           <span className={SECTION_LABEL_CLASSES}>Graph preview</span>
           <button
             type="button"
             onClick={onOpenGraph}
-            className="cursor-pointer text-[11px] font-bold text-(--color-accent-600)"
+            className="cursor-pointer text-[11px] font-medium text-primary"
           >
             Open graph
           </button>

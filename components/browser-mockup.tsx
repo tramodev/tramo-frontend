@@ -45,83 +45,60 @@ const GRAPH_NODES = [
 
 export const BrowserMockup: React.FC = () => {
   return (
-    <div
-      className="w-full aspect-[16/9] flex flex-col overflow-hidden border-2 border-(--color-text) bg-(--color-bg)"
-    >
-      <div
-        className="h-11 flex items-center gap-3 px-5 shrink-0 border-b-2 border-(--color-divider)"
-      >
-        <span className="font-extrabold text-[13px] tracking-[-0.01em]">
-          MyPath<span className="text-(--color-accent)">.</span>
+    <div className="w-full aspect-[16/9] flex flex-col overflow-hidden rounded-[28px] border border-border bg-popover shadow-elevation-2">
+      <div className="h-12 flex items-center gap-3 px-5 shrink-0 bg-card border-b border-border">
+        <span className="font-display font-semibold text-[14px]">
+          MyPath<span className="text-primary"> ●</span>
         </span>
-        <span className="h-[14px] w-px bg-(--color-divider)" />
-        <span className="text-[13px] font-bold">Intro to slow living</span>
+        <span className="h-4 w-px bg-border" />
+        <span className="text-[13px] font-medium">Intro to slow living</span>
         <div className="flex-1" />
-        <span className="text-[11px] hidden md:inline text-(--color-neutral-600)">
+        <span className="text-[11px] hidden md:inline text-muted-foreground">
           142 words · 812 characters
         </span>
-        <span
-          className="flex items-center gap-1 text-[11px] font-semibold text-(--color-neutral-700)"
-        >
+        <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-[12px] font-medium text-secondary-foreground">
           <Share2 className="w-3 h-3" />
           Share
         </span>
-        <span
-          className="flex items-center gap-1 text-[11px] font-semibold text-(--color-accent)"
-        >
+        <span className="flex items-center gap-1 text-[11px] font-medium text-primary">
           <Check className="w-3 h-3" />
           Saved
         </span>
-        <span
-          className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-extrabold bg-(--color-text) text-(--color-bg)"
-        >
+        <span className="w-[26px] h-[26px] shrink-0 rounded-full flex items-center justify-center text-[11px] font-medium bg-primary text-primary-foreground">
           A
         </span>
       </div>
 
       <div className="flex flex-1 min-h-0">
-        <div
-          className="w-[176px] hidden md:flex flex-col shrink-0 p-4 gap-3 overflow-hidden border-r-2 border-(--color-divider)"
-        >
-          <div className="flex items-center justify-between">
-            <h3
-              className="text-[10px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-            >
+        <div className="w-[184px] hidden md:flex flex-col shrink-0 p-2.5 gap-3 overflow-hidden bg-card border-r border-border">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-[11px] font-medium text-muted-foreground">
               My paths
             </h3>
-            <Plus className="w-3 h-3 text-(--color-neutral-600)" />
+            <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="flex flex-col gap-3">
             {PATHS.map((path) => (
               <div key={path.title}>
-                <div
-                  className="flex items-center gap-2 text-[13px] font-semibold text-(--color-neutral-800)"
-                >
-                  <span
-                    className="w-1.5 h-1.5 shrink-0 box-border border-[1.5px] border-(--color-neutral-600)"
-                  />
+                <div className="flex items-center gap-2 px-2 text-[13px] font-medium">
+                  <span className="w-[7px] h-[7px] shrink-0 rounded-full box-border border-[1.5px] border-input" />
                   {path.title}
                 </div>
-                <ul className="mt-1 flex flex-col gap-1 pl-3.5">
+                <ul className="mt-1 flex flex-col gap-0.5 pl-2.5">
                   {path.ideas.map((idea) => (
                     <li
                       key={idea.title}
-                      className="flex items-center gap-2 text-[13px] truncate -ml-1.5 px-1.5 py-0.5"
-                      style={
+                      className={`flex items-center gap-2 rounded-full text-[13px] font-medium truncate px-2.5 py-[5px] ${
                         idea.active
-                          ? {
-                              background: 'color-mix(in srgb, var(--color-accent) 18%, transparent)',
-                              color: 'var(--color-accent-600)',
-                            }
-                          : { color: 'var(--color-neutral-700)' }
-                      }
+                          ? 'bg-secondary text-secondary-foreground'
+                          : 'text-muted-foreground'
+                      }`}
                     >
                       <span
-                        className="w-1.5 h-1.5 shrink-0 box-border"
-                        style={
+                        className={
                           idea.active
-                            ? { background: 'var(--color-accent)' }
-                            : { border: '1.5px solid var(--color-neutral-600)' }
+                            ? 'w-[7px] h-[7px] shrink-0 rounded-full bg-primary'
+                            : 'w-[7px] h-[7px] shrink-0 rounded-full box-border border-[1.5px] border-input'
                         }
                       />
                       {idea.title}
@@ -134,58 +111,56 @@ export const BrowserMockup: React.FC = () => {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0">
-          <div
-            className="flex items-center gap-2.5 px-4 h-9 shrink-0 overflow-hidden border-b-2 border-(--color-divider) text-(--color-neutral-700)"
-          >
+          <div className="flex items-center gap-2.5 px-4 h-10 shrink-0 overflow-hidden border-b border-border text-muted-foreground">
             <Undo className="w-3.5 h-3.5" />
             <Redo className="w-3.5 h-3.5" />
-            <span className="h-3.5 w-px shrink-0 bg-(--color-divider)" />
-            <span className="flex items-center gap-1 text-[11px] font-semibold shrink-0">
-              Georgia
+            <span className="h-3.5 w-px shrink-0 bg-border" />
+            <span className="flex items-center gap-1 text-[11px] font-medium shrink-0">
+              Roboto
               <ChevronDown className="w-3 h-3" />
             </span>
-            <span className="flex items-center gap-0.5 text-[11px] font-semibold shrink-0">
+            <span className="flex items-center gap-0.5 text-[11px] font-medium shrink-0">
               <ChevronDown className="w-3 h-3" />
               15
               <ChevronUp className="w-3 h-3" />
             </span>
-            <span className="h-3.5 w-px shrink-0 bg-(--color-divider)" />
-            <span className="flex items-center gap-1 text-[11px] font-semibold shrink-0">
+            <span className="h-3.5 w-px shrink-0 bg-border" />
+            <span className="flex items-center gap-1 text-[11px] font-medium shrink-0">
               <Type className="w-3.5 h-3.5" />
               Normal
             </span>
-            <span className="h-3.5 w-px shrink-0 bg-(--color-divider)" />
+            <span className="h-3.5 w-px shrink-0 bg-border" />
             <Bold className="w-3.5 h-3.5" />
             <Italic className="w-3.5 h-3.5" />
             <Underline className="w-3.5 h-3.5" />
-            <span className="h-3.5 w-px shrink-0 bg-(--color-divider)" />
+            <span className="h-3.5 w-px shrink-0 bg-border" />
             <LinkIcon className="w-3.5 h-3.5" />
             <ImageIcon className="w-3.5 h-3.5" />
-            <span className="h-3.5 w-px shrink-0 bg-(--color-divider)" />
+            <span className="h-3.5 w-px shrink-0 bg-border" />
             <List className="w-3.5 h-3.5" />
             <ListOrdered className="w-3.5 h-3.5" />
             <Quote className="w-3.5 h-3.5" />
-            <span className="h-3.5 w-px shrink-0 bg-(--color-divider)" />
+            <span className="h-3.5 w-px shrink-0 bg-border" />
             <AlignLeft className="w-3.5 h-3.5" />
           </div>
 
           <div className="flex-1 overflow-hidden p-6">
-            <h1 className="font-extrabold text-xl mb-2.5 tracking-[-0.01em]">
+            <h1 className="font-display font-medium text-xl mb-2.5">
               Why slow down
             </h1>
-            <p className="text-[13px] leading-6 mb-3 text-(--color-neutral-800)">
+            <p className="text-[13px] leading-6 mb-3 text-muted-foreground">
               Slow living isn&apos;t about doing less — it&apos;s about giving each thing the attention
               it deserves. This idea links to{' '}
-              <span className="text-(--color-accent-600) underline font-semibold">
+              <span className="text-primary font-medium">
                 Morning rituals
               </span>{' '}
               and{' '}
-              <span className="text-(--color-accent-600) underline font-semibold">
+              <span className="text-primary font-medium">
                 Digital minimalism
               </span>
               .
             </p>
-            <ul className="flex flex-col gap-1.5 text-[13px] text-(--color-neutral-800)">
+            <ul className="flex flex-col gap-1.5 text-[13px] text-muted-foreground">
               <li>— Notice when you&apos;re rushing out of habit, not necessity</li>
               <li>— Pick one ritual to protect every morning</li>
               <li>— Let unfinished things stay unfinished sometimes</li>
@@ -193,53 +168,43 @@ export const BrowserMockup: React.FC = () => {
           </div>
         </div>
 
-        <div
-          className="w-[200px] hidden lg:flex flex-col shrink-0 p-4 gap-2 overflow-hidden border-l-2 border-(--color-divider)"
-        >
+        <div className="w-[204px] hidden lg:flex flex-col shrink-0 p-4 gap-2 overflow-hidden border-l border-border">
           <div className="flex items-center justify-between">
-            <h3
-              className="text-[10px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-            >
+            <h3 className="text-[11px] font-medium text-muted-foreground">
               Linked ideas
             </h3>
-            <Plus className="w-3 h-3 text-(--color-neutral-600)" />
+            <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="flex flex-col gap-1.5">
             {LINKED_IDEAS.map((title) => (
               <div
                 key={title}
-                className="flex items-center gap-1.5 min-w-0 border-2 border-(--color-divider) py-[7px] px-2"
+                className="flex items-center gap-1.5 min-w-0 rounded-sm border border-border py-[7px] px-2.5"
               >
-                <Link2 className="w-3 h-3 shrink-0 text-(--color-accent)" />
-                <span className="truncate text-[12px] font-semibold flex-1">{title}</span>
-                <X className="w-2.5 h-2.5 shrink-0 text-(--color-neutral-600)" />
+                <Link2 className="w-3 h-3 shrink-0 text-primary" />
+                <span className="truncate text-[12px] font-medium flex-1">{title}</span>
+                <X className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
               </div>
             ))}
           </div>
 
-          <h3
-            className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-          >
+          <h3 className="mt-2.5 text-[11px] font-medium text-muted-foreground">
             In paths
           </h3>
-          <span
-            className="self-start text-[11px] font-semibold bg-(--color-neutral-300) py-1 px-2.5"
-          >
+          <span className="self-start rounded-sm bg-surface-container-highest px-3 py-1 text-[11px] font-medium">
             Getting started
           </span>
 
-          <div className="mt-2.5 flex items-center justify-between border-t-2 border-(--color-divider) pt-2.5">
-            <h3
-              className="text-[10px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-            >
+          <div className="mt-2.5 flex items-center justify-between border-t border-border pt-2.5">
+            <h3 className="text-[11px] font-medium text-muted-foreground">
               Graph preview
             </h3>
-            <span className="flex items-center gap-1 text-[10px] font-bold text-(--color-accent-600)">
+            <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
               <GraphIcon className="w-3 h-3" />
               Open
             </span>
           </div>
-          <div className="relative flex-1 border-2 border-(--color-divider) min-h-[90px]">
+          <div className="relative flex-1 rounded-xl bg-card min-h-[90px]">
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
               {GRAPH_NODES.map((node) => (
                 <line
@@ -248,18 +213,16 @@ export const BrowserMockup: React.FC = () => {
                   y1="50%"
                   x2={node.left}
                   y2={node.top}
-                  stroke="var(--color-neutral-500)"
+                  stroke="var(--input)"
                   strokeWidth={1}
                 />
               ))}
             </svg>
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-(--color-accent)"
-            />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary" />
             {GRAPH_NODES.map((node) => (
               <div
                 key={node.top}
-                className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 box-border bg-(--color-bg) border-[1.5px] border-(--color-neutral-600)"
+                className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full box-border bg-popover border-[1.5px] border-input"
                 style={{ top: node.top, left: node.left }}
               />
             ))}

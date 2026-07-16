@@ -15,9 +15,7 @@ export function AppHeader({
   isAdmin: boolean
 }) {
   return (
-    <header
-      className="flex items-center gap-6 border-b border-(--color-divider) py-[18px] px-10"
-    >
+    <header className="flex items-center gap-6 py-[18px] px-10">
       <Link href={homeHref} className="mr-auto">
         <Wordmark />
       </Link>

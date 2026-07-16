@@ -5,42 +5,44 @@ const features = [
     n: '01',
     title: 'Ideas, linked as you write',
     body: "Every idea lives inside a path. Type @ to link it to any other idea in your project — the connections stay live wherever you're reading, no manual outlining required.",
+    chip: 'bg-accent text-accent-foreground',
+    radius: 'rounded-t-[28px] rounded-b-[4px]',
   },
   {
     n: '02',
     title: "Private until you're ready",
     body: 'Write and edit freely in private. When a path is ready, publish it with one click — it gets its own shareable link and shows up on Explore for others to find.',
+    chip: 'bg-secondary text-secondary-foreground',
+    radius: 'rounded-[4px]',
   },
   {
     n: '03',
     title: 'Built to be found and built on',
     body: "Published paths can be upvoted, bookmarked, or forked into someone else's account. Earn badges as your work gets attention, and follow the authors whose paths you keep coming back to.",
+    chip: 'bg-tertiary text-tertiary-foreground',
+    radius: 'rounded-t-[4px] rounded-b-[28px]',
   },
 ];
 
 export const FeaturesSection: React.FC = () => {
   return (
-    <section id="product" className="pt-[84px] pb-[70px]">
-      <span
-        className="block text-[13px] uppercase tracking-[0.08em] tabular-nums mb-3.5 text-(--color-accent-700)"
-      >
+    <section id="product" className="pt-16 pb-[84px]">
+      <span className="block text-sm font-medium mb-5 text-primary">
         What MyPath does
       </span>
 
-      {features.map((f, i) => (
+      {features.map((f) => (
         <div
           key={f.n}
-          className="grid grid-cols-1 md:grid-cols-[160px_420px_1fr] gap-x-[72px] gap-y-7 items-baseline py-[42px]"
-          style={i > 0 ? { borderTop: '2px solid var(--color-divider)' } : undefined}
+          className={`grid grid-cols-1 md:grid-cols-[80px_minmax(200px,380px)_1fr] gap-x-10 gap-y-2 items-start p-9 mb-2 bg-card ${f.radius}`}
         >
-          <p className="relative font-extrabold text-[15px] tabular-nums">
-            <span
-              className="hidden min-[1280px]:block absolute -left-6 top-0.5 w-2.5 h-2.5 bg-(--color-accent)"
-            />
+          <span
+            className={`flex items-center justify-center h-12 w-12 rounded-full text-base font-medium ${f.chip}`}
+          >
             {f.n}
-          </p>
-          <h2 className="font-extrabold text-2xl tracking-[-0.01em]">{f.title}</h2>
-          <p className="text-[15.5px] leading-7 max-w-[52ch] text-(--color-neutral-800)">
+          </span>
+          <h2 className="font-display font-medium text-2xl mt-2">{f.title}</h2>
+          <p className="text-[15.5px] leading-[1.65] max-w-[52ch] mt-2 text-muted-foreground">
             {f.body}
           </p>
         </div>

@@ -46,27 +46,27 @@ export function VerifyEmailClient() {
     <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
       {status === 'verifying' && (
         <>
-          <Loader2 className="h-8 w-8 animate-spin text-(--color-accent)" />
-          <p className="text-[15px] text-(--color-neutral-800)">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-[15px] text-muted-foreground">
             Verifying your email...
           </p>
         </>
       )}
       {status === 'success' && (
         <>
-          <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-          <p className="text-[15px] text-(--color-neutral-800)">
+          <CheckCircle2 className="h-8 w-8 text-success" />
+          <p className="text-[15px] text-muted-foreground">
             Email verified. Redirecting...
           </p>
         </>
       )}
       {status === 'error' && (
         <>
-          <XCircle className="h-8 w-8 text-red-600" />
-          <p className="text-[15px] text-(--color-neutral-800)">
+          <XCircle className="h-8 w-8 text-destructive" />
+          <p className="text-[15px] text-muted-foreground">
             {error}
           </p>
-          <a href="/login" className="text-sm font-semibold text-(--color-accent-700)">
+          <a href="/login" className="text-sm font-medium text-primary">
             Back to log in
           </a>
         </>

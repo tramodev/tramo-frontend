@@ -102,8 +102,8 @@ export function AvatarCropModal({
         </DialogHeader>
 
         <div
-          className="relative touch-none select-none overflow-hidden rounded-md border"
-          style={{ width: FRAME_SIZE, height: FRAME_SIZE, background: "var(--color-neutral-200)", cursor: img ? "grab" : "default" }}
+          className="relative touch-none select-none overflow-hidden rounded-md border bg-muted"
+          style={{ width: FRAME_SIZE, height: FRAME_SIZE, cursor: img ? "grab" : "default" }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}

@@ -11,10 +11,8 @@ const NODES = [
 
 export function AuthPoster({ lines }: AuthPosterProps) {
   return (
-    <div
-      className="relative hidden flex-col justify-end overflow-hidden p-[72px] lg:flex bg-(--color-accent) text-(--color-bg)"
-    >
-      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-55">
+    <div className="relative m-4 hidden flex-col justify-end overflow-hidden rounded-[28px] p-16 lg:flex bg-accent text-accent-foreground">
+      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-50">
         {NODES.map((node) => (
           <line
             key={node.top + node.left}
@@ -27,20 +25,16 @@ export function AuthPoster({ lines }: AuthPosterProps) {
           />
         ))}
       </svg>
-      <div
-        className="absolute h-9 w-9 top-[38%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-(--color-bg)"
-      />
+      <div className="absolute top-[38%] left-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary" />
       {NODES.map((node) => (
         <div
           key={node.top + node.left}
-          className="absolute box-border border-2 border-(--color-bg)"
+          className="absolute box-border -translate-x-1/2 -translate-y-1/2 rounded-full border-[2.5px] border-current"
           style={{ top: node.top, left: node.left, width: node.size, height: node.size }}
         />
       ))}
-      <h2
-        className="relative m-0  leading-[1.06] tracking-[-0.015em] ml-[]"
-      >
-        <span className="block text-[52px] font-extrabold">{lines[0]}</span>
+      <h2 className="relative m-0 leading-[1.12]">
+        <span className="block font-display text-[48px] font-normal">{lines[0]}</span>
         <span className="block text-[20px] font-medium">{lines[1]}</span>
       </h2>
     </div>

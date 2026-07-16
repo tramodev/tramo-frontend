@@ -509,16 +509,14 @@ export default function DashboardPage() {
 
   return (
     <SidebarProvider
-      style={{ "--sidebar-width": "240px" } as React.CSSProperties}
+      style={{ "--sidebar-width": "288px" } as React.CSSProperties}
       className="h-screen min-h-0 flex-col"
     >
-      <header
-        className="flex h-16 shrink-0 items-center gap-4 px-8 border-b border-(--color-divider)"
-      >
+      <header className="flex h-16 shrink-0 items-center gap-4 px-8">
         <Link href="/projects" title="Back to projects">
           <Wordmark />
         </Link>
-        <span className="h-[18px] w-[2px] bg-(--color-divider)" />
+        <span className="h-[18px] w-px bg-border" />
         {isEditingTitle ? (
           <Input
             autoFocus
@@ -533,7 +531,7 @@ export default function DashboardPage() {
           />
         ) : (
           <span
-            className="text-[15px] font-bold"
+            className="text-[15px] font-medium"
             onDoubleClick={startEditTitle}
             title="Double-click to rename"
           >
@@ -542,7 +540,7 @@ export default function DashboardPage() {
         )}
         <div className="ml-auto flex items-center gap-3">
           {view === 'editor' && selectedIdea && (
-            <span className="text-xs text-(--color-neutral-600)">
+            <span className="text-xs text-muted-foreground">
               {textStats.words} words · {textStats.characters} characters
             </span>
           )}
@@ -554,7 +552,7 @@ export default function DashboardPage() {
             onTagsChange={setTags}
           />
           <span
-            className="flex items-center gap-1.5 text-xs text-(--color-neutral-700) w-[60px]"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground w-[60px]"
           >
             {saveStatus === 'saving' && (
               <>
@@ -564,7 +562,7 @@ export default function DashboardPage() {
             )}
             {(saveStatus === 'saved' || saveStatus === 'idle') && (
               <>
-                <Check className="h-3.5 w-3.5 text-(--color-accent)" />
+                <Check className="h-3.5 w-3.5 text-primary" />
                 Saved
               </>
             )}
@@ -593,14 +591,14 @@ export default function DashboardPage() {
           onUnlinkIdeaFromPath={handleUnlinkIdeaFromPath}
         />
         <SidebarInset>
-          <div className={view === 'graph' ? 'relative flex-1 overflow-hidden p-4' : 'flex flex-1 min-h-0'}>
+          <div className="flex flex-1 min-h-0 gap-3 pr-3 pb-3">
           {view === 'graph' ? (
-            <>
+            <div className="relative flex-1 overflow-hidden rounded-2xl bg-popover">
               <button
                 type="button"
                 onClick={() => setView('editor')}
                 title="Close graph view"
-                className="absolute top-6 right-6 z-10 flex h-8 w-8 items-center justify-center"
+                className="absolute top-6 right-6 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-card hover:bg-muted"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -610,10 +608,10 @@ export default function DashboardPage() {
                 selectedIdeaId={selectedIdeaId}
                 onSelectIdea={handleSelectIdea}
               />
-            </>
+            </div>
           ) : selectedIdea ? (
             <>
-              <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-popover">
                 <LexicalComposer initialConfig={editorConfig}>
                   <div className="editor-container flex flex-1 min-h-0 flex-col">
                     <ToolbarPlugin />
@@ -668,7 +666,7 @@ export default function DashboardPage() {
               />
             </>
           ) : (
-            <div className="flex h-full w-full min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+            <div className="flex h-full w-full min-h-[60vh] flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
               <FolderPlus className="h-12 w-12 opacity-40" />
               <p className="text-lg font-medium">
                 {paths.length === 0 ? "No paths yet" : "No idea selected"}

@@ -21,7 +21,7 @@ function BadgeIcon({ badge, size = 16 }: { badge: Badge; size?: number }) {
   return (
     <span
       className={`grid shrink-0 place-items-center rounded-full ${
-        badge.earned ? "bg-(--color-accent) text-white" : "bg-(--color-neutral-200) text-(--color-neutral-600)"
+        badge.earned ? "bg-tertiary text-tertiary-foreground" : "bg-surface-container-high text-muted-foreground"
       }`}
       style={{ width: size + 16, height: size + 16 }}
       title={badge.name}
@@ -47,14 +47,14 @@ export function BadgesPanel({ badges }: { badges: Badge[] }) {
             ))}
           </div>
         ) : (
-          <span className="text-xs text-(--color-neutral-600)">
+          <span className="text-xs text-muted-foreground">
             None yet
           </span>
         )}
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-xs font-bold transition-colors hover:text-[var(--color-accent)]"
+          className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
         >
           View all ({earned.length}/{badges.length})
         </button>
@@ -72,30 +72,28 @@ export function BadgesPanel({ badges }: { badges: Badge[] }) {
               return (
                 <div
                   key={badge.code}
-                  className={`rounded-lg py-4 px-[18px] border-2 ${
-                    badge.earned ? "border-(--color-accent) opacity-100" : "border-(--color-divider) opacity-70"
+                  className={`rounded-2xl py-4 px-[18px] ${
+                    badge.earned ? "bg-tertiary/40" : "bg-card opacity-70"
                   }`}
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <BadgeIcon badge={badge} />
                     {badge.earned && (
-                      <span
-                        className="text-[10px] font-bold uppercase tracking-[0.06em] text-(--color-accent)"
-                      >
+                      <span className="text-[11px] font-medium text-tertiary-foreground">
                         Earned
                       </span>
                     )}
                   </div>
-                  <div className="mb-1 text-sm font-bold">{badge.name}</div>
-                  <div className="mb-2 text-xs text-(--color-neutral-600)">
+                  <div className="mb-1 text-sm font-medium">{badge.name}</div>
+                  <div className="mb-2 text-xs text-muted-foreground">
                     {badge.description}
                   </div>
                   {!badge.earned && (
                     <>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--color-neutral-200)">
-                        <div className="h-full rounded-full bg-(--color-accent)" style={{ width: `${pct}%` }} />
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                       </div>
-                      <div className="mt-1 text-[11px] font-semibold text-(--color-neutral-600)">
+                      <div className="mt-1 text-[11px] font-medium text-muted-foreground">
                         {badge.progress.toLocaleString()} / {badge.target.toLocaleString()}
                       </div>
                     </>

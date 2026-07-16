@@ -69,21 +69,24 @@ export function SignupForm({
   return (
     <form action={formAction} className={cn("flex flex-col gap-6", className)} {...props}>
       <div>
-        <h1 className="text-[40px] font-extrabold tracking-[-0.015em] ml-[-0.058em]">
-          Create your account
-        </h1>
-        <p className="mt-3.5 text-[15px] leading-7 text-(--color-neutral-800)">
+        <h1 className="font-display text-[36px] font-normal">Create your account</h1>
+        <p className="mt-3 text-[15px] leading-6 text-muted-foreground">
           Fill in the form below to create your account.
         </p>
       </div>
-      <FieldGroup className="mt-2 gap-6">
+      <FieldGroup className="mt-2 gap-[22px]">
         {errors?.general && (
-          <div className="text-sm text-center text-(--color-accent-700)">
+          <div className="text-sm text-center text-destructive">
             {errors.general}
           </div>
         )}
-        <Field>
-          <FieldLabel htmlFor="username">Username</FieldLabel>
+        <Field floatingLabel>
+          <FieldLabel
+            htmlFor="username"
+            style={usernameAvailability === "available" ? { color: "var(--primary)" } : undefined}
+          >
+            Username
+          </FieldLabel>
           <div className="relative">
             <Input
               id="username"
@@ -97,19 +100,21 @@ export function SignupForm({
               className={usernameAvailability !== "idle" ? "pr-9" : undefined}
             />
             {usernameAvailability === "checking" && (
-              <Loader2 className="absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 animate-spin text-neutral-500" />
+              <Loader2 className="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
             )}
             {usernameAvailability === "available" && (
-              <CheckCircle2 className="absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+              <CheckCircle2 className="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-success" />
             )}
           </div>
           {errors?.username ? (
             <FieldError>{errors.username}</FieldError>
           ) : usernameAvailability === "taken" ? (
             <FieldError>Username is already taken</FieldError>
+          ) : usernameAvailability === "available" ? (
+            <FieldDescription className="text-success">Username is available</FieldDescription>
           ) : null}
         </Field>
-        <Field>
+        <Field floatingLabel>
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <div className="relative">
             <Input
@@ -124,10 +129,10 @@ export function SignupForm({
               className={emailAvailability !== "idle" ? "pr-9" : undefined}
             />
             {emailAvailability === "checking" && (
-              <Loader2 className="absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 animate-spin text-neutral-500" />
+              <Loader2 className="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
             )}
             {emailAvailability === "available" && (
-              <CheckCircle2 className="absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+              <CheckCircle2 className="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-success" />
             )}
           </div>
           {errors?.email ? (
@@ -141,12 +146,13 @@ export function SignupForm({
             </FieldDescription>
           )}
         </Field>
-        <Field>
+        <Field floatingLabel>
           <FieldLabel htmlFor="password">Password</FieldLabel>
           <Input
             id="password"
             name="password"
             type="password"
+            placeholder=" "
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -160,7 +166,7 @@ export function SignupForm({
                     key={i}
                     className={cn(
                       "h-1 flex-1 rounded-full",
-                      i < strength.filled ? strength.barColor : "bg-neutral-300"
+                      i < strength.filled ? strength.barColor : "bg-surface-container-highest"
                     )}
                   />
                 ))}
@@ -178,13 +184,14 @@ export function SignupForm({
             </FieldDescription>
           )}
         </Field>
-        <Field>
+        <Field floatingLabel>
           <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
           <div className="relative">
             <Input
               id="confirm-password"
               name="confirm-password"
               type="password"
+              placeholder=" "
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -192,7 +199,7 @@ export function SignupForm({
               className={passwordsMatch ? "pr-9" : undefined}
             />
             {passwordsMatch && (
-              <CheckCircle2 className="absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+              <CheckCircle2 className="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-success" />
             )}
           </div>
           {errors?.confirmPassword ? (
@@ -202,14 +209,12 @@ export function SignupForm({
           )}
         </Field>
         <Field>
-          <Button type="submit" disabled={isPending} className="w-full justify-start">
+          <Button type="submit" size="xl" disabled={isPending} className="w-full">
             {isPending ? "Creating account..." : "Create account"}
           </Button>
         </Field>
         <FieldSeparator>
-          <span
-            className="text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-600)"
-          >
+          <span className="text-xs font-medium text-muted-foreground">
             Or continue with
           </span>
         </FieldSeparator>
@@ -217,7 +222,7 @@ export function SignupForm({
           <GoogleAuthButton text="signup_with" />
           <FieldDescription className="text-left">
             Already have an account?{" "}
-            <a href="login" className="font-semibold text-(--color-accent-700)">
+            <a href="login" className="font-medium text-primary">
               Sign in
             </a>
           </FieldDescription>

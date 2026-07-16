@@ -45,7 +45,7 @@ export function AvatarUpload({ username, imageUrl }: { username: string; imageUr
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isPending}
-        className="group relative flex items-center justify-center overflow-hidden rounded-full text-[46px] font-extrabold"
+        className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary text-[34px] font-medium font-display text-primary-foreground"
         title="Change avatar"
       >
         {preview ? (
@@ -63,7 +63,7 @@ export function AvatarUpload({ username, imageUrl }: { username: string; imageUr
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       {error && (
         <span
-          className="absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-semibold text-(--color-accent)"
+          className="absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-medium text-destructive"
         >
           Upload failed, try again
         </span>

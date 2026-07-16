@@ -54,12 +54,14 @@ export function VoteButton({
       onClick={handleClick}
       disabled={isPending}
       aria-pressed={voted}
-      className={`relative z-10 flex shrink-0 items-center gap-0.5 rounded-md pr-1 py-1.5 transition-colors cursor-pointer hover:text-(--color-accent) ${
-        voted ? "text-(--color-accent)" : "text-(--color-neutral-600)"
+      className={`relative z-10 flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-colors ${
+        voted
+          ? "bg-secondary text-secondary-foreground"
+          : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
       }`}
     >
-      <ArrowBigUp className="h-5 w-5" fill={voted ? "currentColor" : "none"} />
-      <span className="text-xs font-bold">{count}</span>
+      <ArrowBigUp className="h-[15px] w-[15px]" fill={voted ? "currentColor" : "none"} />
+      <span className="text-[13px]">{count}</span>
     </button>
   )
 }

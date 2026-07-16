@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 // @ts-ignore
 
 import "./globals.css";
@@ -8,16 +7,7 @@ import "./globals.css";
 import "./editor/Editor.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { robotoFlex, roboto, robotoMono } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "MyPath",
@@ -32,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`modernist ${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${robotoFlex.variable} ${roboto.variable} ${robotoMono.variable} font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"

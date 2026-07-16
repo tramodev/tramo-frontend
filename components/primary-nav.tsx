@@ -25,17 +25,17 @@ export function PrimaryNav({
   })
 
   return (
-    <nav className="flex items-center gap-4">
+    <nav className="flex items-center gap-2">
       {items.map((item) => {
         const active = pathname.startsWith(item.href)
         return (
           <Link
             key={item.key}
             href={item.href}
-            className={`text-[13px] uppercase transition-colors tracking-[0.08em] pb-0.5 border-b-2 ${
+            className={`inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-colors ${
               active
-                ? "font-bold text-(--color-text) border-(--color-accent)"
-                : "font-normal text-(--color-neutral-600) border-transparent"
+                ? "bg-secondary text-secondary-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             {item.label}

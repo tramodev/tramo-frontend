@@ -35,11 +35,11 @@ export function ResetPasswordClient() {
   if (!token) {
     return (
       <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
-        <XCircle className="h-8 w-8 text-red-600" />
-        <p className="text-[15px] text-(--color-neutral-800)">
+        <XCircle className="h-8 w-8 text-destructive" />
+        <p className="text-[15px] text-muted-foreground">
           Missing reset token.
         </p>
-        <a href="/forgot-password" className="text-sm font-semibold text-(--color-accent-700)">
+        <a href="/forgot-password" className="text-sm font-semibold text-primary">
           Request a new link
         </a>
       </div>
@@ -49,8 +49,8 @@ export function ResetPasswordClient() {
   if (success) {
     return (
       <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
-        <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-        <p className="text-[15px] text-(--color-neutral-800)">
+        <CheckCircle2 className="h-8 w-8 text-success" />
+        <p className="text-[15px] text-muted-foreground">
           Password reset. Redirecting to log in...
         </p>
       </div>
@@ -84,25 +84,26 @@ export function ResetPasswordClient() {
   return (
     <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6 w-full max-w-[400px]")}>
       <div>
-        <h1 className="text-[40px] font-extrabold tracking-[-0.015em] ml-[-0.058em]">
+        <h1 className="font-display text-[36px] font-normal">
           Reset password
         </h1>
-        <p className="mt-3.5 text-[15px] leading-7 text-(--color-neutral-800)">
+        <p className="mt-3 text-[15px] leading-6 text-muted-foreground">
           Choose a new password for your account.
         </p>
       </div>
-      <FieldGroup className="mt-2 gap-6">
+      <FieldGroup className="mt-2 gap-[22px]">
         {error && (
-          <div className="text-sm text-center text-(--color-accent-700)">
+          <div className="text-sm text-center text-destructive">
             {error}
           </div>
         )}
-        <Field>
+        <Field floatingLabel>
           <FieldLabel htmlFor="password">New password</FieldLabel>
           <Input
             id="password"
             name="password"
             type="password"
+            placeholder=" "
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -115,7 +116,7 @@ export function ResetPasswordClient() {
                     key={i}
                     className={cn(
                       "h-1 flex-1 rounded-full",
-                      i < strength.filled ? strength.barColor : "bg-neutral-300"
+                      i < strength.filled ? strength.barColor : "bg-surface-container-highest"
                     )}
                   />
                 ))}
@@ -129,20 +130,21 @@ export function ResetPasswordClient() {
             Must be at least 6 characters and include an uppercase letter, a number, and a symbol.
           </FieldDescription>
         </Field>
-        <Field>
+        <Field floatingLabel>
           <FieldLabel htmlFor="confirm-password">Confirm new password</FieldLabel>
           <div className="relative">
             <Input
               id="confirm-password"
               name="confirm-password"
               type="password"
+              placeholder=" "
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className={passwordsMatch ? "pr-9" : undefined}
             />
             {passwordsMatch && (
-              <CheckCircle2 className="absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+              <CheckCircle2 className="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-success" />
             )}
           </div>
           {!passwordsMatch && confirmPassword.length > 0 && (
@@ -150,7 +152,7 @@ export function ResetPasswordClient() {
           )}
         </Field>
         <Field>
-          <Button type="submit" disabled={isPending} className="w-full justify-start">
+          <Button type="submit" size="xl" disabled={isPending} className="w-full">
             {isPending ? "Resetting..." : "Reset password"}
           </Button>
         </Field>

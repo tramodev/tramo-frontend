@@ -46,14 +46,14 @@ export function BioEditor({ initialBio }: { initialBio: string | null }) {
           maxLength={255}
           autoFocus
           placeholder="Tell people a bit about yourself"
-          className="w-full resize-none rounded-md text-sm outline-none focus:border-[var(--color-accent)]"
+          className="w-full resize-none rounded-xs border border-input bg-transparent p-3 text-sm outline-none focus:border-2 focus:border-primary"
         />
         <div className="mt-2 flex items-center gap-3">
           <button
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="rounded-md text-xs font-bold transition-colors hover:bg-[var(--color-accent-600)] py-[7px] px-3.5 bg-(--color-accent) text-[#fff]"
+            className="rounded-full text-xs font-medium transition-colors hover:bg-primary/90 py-[7px] px-3.5 bg-primary text-primary-foreground"
           >
             {isPending ? "Saving..." : "Save"}
           </button>
@@ -61,12 +61,12 @@ export function BioEditor({ initialBio }: { initialBio: string | null }) {
             type="button"
             onClick={() => setEditing(false)}
             disabled={isPending}
-            className="text-xs font-bold transition-colors hover:text-[var(--color-text)]"
+            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Cancel
           </button>
           {error && (
-            <span className="text-xs font-semibold text-(--color-accent)">
+            <span className="text-xs font-medium text-destructive">
               Couldn&apos;t save, try again
             </span>
           )}
@@ -78,14 +78,14 @@ export function BioEditor({ initialBio }: { initialBio: string | null }) {
   return (
     <div className="group flex w-3/4 items-start gap-2">
       <p
-        className={`text-sm leading-[1.6] ${bio ? "text-(--color-neutral-800) not-italic" : "text-(--color-neutral-600) italic"}`}
+        className={`text-sm leading-[1.6] ${bio ? "text-foreground not-italic" : "text-muted-foreground italic"}`}
       >
         {bio || BASELINE}
       </p>
       <button
         type="button"
         onClick={startEditing}
-        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 mt-0.5 text-(--color-neutral-600)"
+        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 mt-0.5 text-muted-foreground"
         title="Edit description"
       >
         <Pencil className="h-3.5 w-3.5" />

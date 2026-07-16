@@ -7,7 +7,7 @@ export default function ResetPasswordPage() {
   return (
     <>
       <div className="flex flex-col px-8 py-8 lg:px-24">
-        <Wordmark />
+        <Wordmark className="mb-10" />
         <div className="flex flex-1 flex-col justify-center">
           <Suspense fallback={null}>
             <ResetPasswordClient />

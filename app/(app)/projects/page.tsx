@@ -72,37 +72,32 @@ export default function ProjectsPage() {
 
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px] pt-11 px-18 pb-[84px]">
-        <span
-          className="block text-[11px] font-bold uppercase tracking-[0.12em] text-(--color-accent) mb-2"
-        >
+        <span className="block text-sm font-medium text-primary mb-2">
           Your workspace
         </span>
-        <h1 className="text-[48px] font-extrabold tracking-[-0.025em] leading-[1.05] mb-7">
+        <h1 className="font-display text-[44px] font-normal leading-[1.1] mb-7">
           Start a new project
         </h1>
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           <button
             onClick={handleCreateProject}
-            className="group flex aspect-[3/4] cursor-pointer flex-col items-start justify-end gap-2 rounded-lg p-5 transition-colors bg-(--color-bg) border-2 border-dashed border-(--color-neutral-500) hover:border-(--color-accent) text-(--color-neutral-700)"
+            className="group flex aspect-[3/4] cursor-pointer flex-col items-start justify-end gap-2 rounded-lg p-5 transition-colors bg-card border border-dashed border-input text-muted-foreground hover:bg-muted hover:border-primary hover:text-primary"
           >
-            <Plus
-              strokeWidth={2}
-              className="h-7 w-7 transition-colors group-hover:text-[var(--color-accent-700)]"
-            />
-            <span className="text-sm font-semibold transition-colors group-hover:text-[var(--color-accent-700)]">
+            <Plus strokeWidth={2} className="h-7 w-7 transition-colors" />
+            <span className="text-sm font-medium transition-colors">
               Blank project
             </span>
           </button>
         </div>
 
         <div className="mt-[70px]">
-          <span className="kicker mb-5">My projects</span>
+          <span className="mb-5 block text-sm font-medium text-muted-foreground">My projects</span>
           {loading ? (
-            <p className="text-sm text-(--color-neutral-700)">
+            <p className="text-sm text-muted-foreground">
               Loading...
             </p>
           ) : projects.length === 0 ? (
-            <p className="text-sm text-(--color-neutral-700)">
+            <p className="text-sm text-muted-foreground">
               No projects yet. Create a blank project to get started.
             </p>
           ) : (
@@ -110,11 +105,13 @@ export default function ProjectsPage() {
               {projects.map((project) => (
                 <Card
                   key={project.id}
-                  className="group/card rounded-card cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:border-[var(--color-accent)]"
+                  className="group/card cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
                   onClick={() => router.push(`/editor/${project.id}`)}
                 >
                   <CardContent
-                    className="flex aspect-[4/3] items-center justify-center overflow-hidden p-0 border-b border-(--color-divider)"
+                    className={`mx-2 mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-sm p-0 ${
+                      project.thumbnail ? "" : "bg-surface-container-high"
+                    }`}
                   >
                     {project.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -126,11 +123,11 @@ export default function ProjectsPage() {
                     ) : (
                       <FolderKanban
                         strokeWidth={1.5}
-                        className="h-9 w-9 text-(--color-neutral-600)"
+                        className="h-9 w-9 text-muted-foreground"
                       />
                     )}
                   </CardContent>
-                  <CardHeader className="gap-0 p-0 py-3.5 px-4">
+                  <CardHeader className="gap-0 p-0 py-3 px-4">
                     <div className="flex items-center justify-between gap-2">
                       {editingId === project.id ? (
                         <Input
@@ -147,7 +144,7 @@ export default function ProjectsPage() {
                         />
                       ) : (
                         <CardTitle
-                          className="truncate text-sm font-bold"
+                          className="truncate text-sm font-medium"
                           onDoubleClick={(e) => {
                             e.stopPropagation()
                             startRename(project)
@@ -168,9 +165,7 @@ export default function ProjectsPage() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    <p
-                      className="text-xs tabular-nums mt-1.5 text-(--color-neutral-700)"
-                    >
+                    <p className="text-xs tabular-nums mt-1 text-muted-foreground">
                       Edited {formatUpdatedAt(project.updatedAt)}
                     </p>
                   </CardHeader>

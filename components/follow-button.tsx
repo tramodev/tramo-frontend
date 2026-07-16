@@ -48,20 +48,17 @@ export function FollowButton({
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="inline-flex items-center gap-2 rounded-md text-[13px] font-bold transition-colors"
-        style={
+        className={`inline-flex items-center gap-2 rounded-full py-2 px-3.5 text-[13px] font-medium transition-colors ${
           following
-            ? { padding: "8px 14px", border: "2px solid var(--color-divider)", color: "var(--color-neutral-600)" }
-            : { padding: "8px 14px", background: "var(--color-accent)", color: "#fff" }
-        }
+            ? "border border-input text-muted-foreground hover:bg-muted"
+            : "bg-primary text-primary-foreground hover:bg-primary/90"
+        }`}
       >
         {following ? <UserCheck className="h-[15px] w-[15px]" /> : <UserPlus className="h-[15px] w-[15px]" />}
         {following ? "Following" : "Follow"}
       </button>
       {error && (
-        <span
-          className="absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-semibold text-(--color-accent)"
-        >
+        <span className="absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-medium text-destructive">
           Couldn&apos;t update, try again
         </span>
       )}

@@ -52,99 +52,86 @@ export default async function ProfilePage({
 
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
-        <div className="pt-11 px-18 pb-0">
-          <div className="flex items-start gap-7">
+        <div className="pt-9 px-18 pb-0">
+          <div className="flex items-start gap-7 rounded-[28px] bg-card p-8">
             <AvatarUpload username={profile.username} imageUrl={profile.imageUrl} />
             <div className="min-w-0 flex-1">
-              <span
-                className="block text-[11px] font-bold uppercase tracking-[0.12em] text-(--color-accent) mb-1.5"
-              >
+              <span className="block text-[13px] font-medium text-primary mb-1.5">
                 My profile
               </span>
-              <h1
-                className="text-[40px] font-extrabold tracking-[-0.025em] leading-[1.05] mb-2"
-              >
+              <h1 className="font-display text-[36px] font-normal leading-[1.1] mb-2.5">
                 {profile.username}
               </h1>
-              <div className="flex items-center gap-4 text-xs mb-3 text-(--color-neutral-600)">
+              <div className="flex items-center gap-4 text-[13px] mb-3.5 text-muted-foreground">
                 {profile.createdAt && (
-                  <span className="inline-flex items-center gap-1.5 font-semibold">
-                    <Calendar className="h-[13px] w-[13px]" />
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar className="h-[14px] w-[14px]" />
                     Joined{" "}
                     {new Date(profile.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1.5 font-semibold">
-                  <Users className="h-[13px] w-[13px]" />
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="h-[14px] w-[14px]" />
                   {(stats?.followersCount ?? 0).toLocaleString()} followers
                 </span>
               </div>
-              <div className="mb-3">
+              <div className="mb-3.5">
                 <BioEditor initialBio={profile.bio} />
               </div>
               <BadgesPanel badges={badges} />
             </div>
           </div>
 
-          <div className="mt-7 h-px bg-(--color-divider)" />
-          <div className="grid grid-cols-4 gap-8 py-5 text-center">
-            <Link href="/projects" className="group">
-              <div className="text-[26px] font-extrabold">{stats?.pathsPublished ?? 0}</div>
-              <div
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600) group-hover:text-(--color-accent) transition-colors"
-              >
+          <div className="grid grid-cols-4 gap-3 pt-3 text-center">
+            <Link href="/projects" className="group rounded-2xl bg-card py-[18px] transition-colors hover:bg-muted">
+              <div className="font-display text-[28px] font-medium text-primary">{stats?.pathsPublished ?? 0}</div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-0.5">
                 Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />
               </div>
             </Link>
-            <div>
-              <div className="text-[26px] font-extrabold">{stats?.upvotesReceived ?? 0}</div>
-              <div
-                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-              >
+            <div className="rounded-2xl bg-card py-[18px]">
+              <div className="font-display text-[28px] font-medium text-primary">{stats?.upvotesReceived ?? 0}</div>
+              <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Upvotes received
               </div>
             </div>
-            <div>
-              <div className="text-[26px] font-extrabold">{(stats?.totalViews ?? 0).toLocaleString()}</div>
-              <div
-                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-              >
+            <div className="rounded-2xl bg-card py-[18px]">
+              <div className="font-display text-[28px] font-medium text-primary">{(stats?.totalViews ?? 0).toLocaleString()}</div>
+              <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Total views
               </div>
             </div>
-            <div>
-              <div className="text-[26px] font-extrabold">{stats?.forksCount ?? 0}</div>
-              <div
-                className="text-[11px] font-bold uppercase tracking-[0.08em] text-(--color-neutral-600)"
-              >
+            <div className="rounded-2xl bg-card py-[18px]">
+              <div className="font-display text-[28px] font-medium text-primary">{stats?.forksCount ?? 0}</div>
+              <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Forks
               </div>
             </div>
           </div>
-          <div className="h-px bg-(--color-divider)" />
 
-          <div className="flex gap-6 border-b border-(--color-divider) mt-8">
+          <div className="flex gap-1 border-b border-border mt-8">
             {tabs.map(({ key, label, count }) => (
               <Link
                 key={key}
                 href={`/profile?tab=${key}`}
-                className={`inline-flex items-baseline gap-1.5 pb-2 text-sm font-bold transition-colors -mb-0.5 border-b-2 ${
-                  tab === key
-                    ? "text-(--color-text) border-(--color-accent)"
-                    : "text-(--color-neutral-600) border-transparent"
+                className={`relative inline-flex items-baseline gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
+                  tab === key ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {label}
-                <span className="text-xs text-(--color-neutral-600)">
+                <span className="text-xs">
                   {count}
                 </span>
+                {tab === key && (
+                  <span className="absolute inset-x-4 -bottom-px h-[3px] rounded-t-[3px] bg-primary" />
+                )}
               </Link>
             ))}
           </div>
         </div>
 
-        <div className="pt-2 px-18 pb-14">
+        <div className="pt-4 px-18 pb-14">
           {tab === "activity" && <ActivityPanel items={activity} />}
           {tab === "published" && (
             <PublishedGrid
@@ -153,7 +140,7 @@ export default async function ProfilePage({
               emptyMessage={
                 <>
                   Nothing published yet — publish a project from{" "}
-                  <Link href="/projects" className="font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)">
+                  <Link href="/projects" className="font-medium text-primary">
                     Projects.
                   </Link>
                 </>
@@ -170,9 +157,7 @@ export default async function ProfilePage({
 
 function Row({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="relative flex items-center gap-5 rounded-lg transition-colors hover:bg-muted -mx-4 py-[22px] px-4 border-b border-(--color-divider)"
-    >
+    <div className="relative flex items-center gap-5 rounded-2xl transition-colors hover:bg-card -mx-4 py-4 px-4">
       {children}
     </div>
   )
@@ -180,14 +165,12 @@ function Row({ children }: { children: React.ReactNode }) {
 
 function Thumbnail({ thumbnail, title }: { thumbnail: string | null; title: string }) {
   return (
-    <div
-      className="grid shrink-0 place-items-center overflow-hidden rounded-md w-24 h-16 border border-(--color-divider) bg-(--color-neutral-200)"
-    >
+    <div className="grid shrink-0 place-items-center overflow-hidden rounded-md w-24 h-16 bg-surface-container-high">
       {thumbnail ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={thumbnail} alt="" className="h-full w-full object-cover object-top" />
       ) : (
-        <span className="text-2xl font-extrabold text-(--color-accent)">
+        <span className="font-display text-2xl font-medium text-primary">
           {initial(title)}
         </span>
       )}
@@ -197,9 +180,9 @@ function Thumbnail({ thumbnail, title }: { thumbnail: string | null; title: stri
 
 function EmptyState({ message, linkHref, linkLabel }: { message: string; linkHref: string; linkLabel: string }) {
   return (
-    <p className="text-sm text-(--color-neutral-600)">
+    <p className="text-sm text-muted-foreground">
       {message}{" "}
-      <Link href={linkHref} className="font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)">
+      <Link href={linkHref} className="font-medium text-primary">
         {linkLabel}
       </Link>
     </p>
@@ -215,6 +198,16 @@ const ACTIVITY_ICONS: Record<ActivityItem["type"], React.ComponentType<{ classNa
   received_vote: ArrowBigUp,
   received_fork: GitFork,
   received_bookmark: Bookmark,
+}
+
+const ACTIVITY_CHIP_COLORS: Record<ActivityItem["type"], string> = {
+  published: "bg-accent text-accent-foreground",
+  voted: "bg-secondary text-secondary-foreground",
+  received_vote: "bg-secondary text-secondary-foreground",
+  forked: "bg-tertiary text-tertiary-foreground",
+  received_fork: "bg-tertiary text-tertiary-foreground",
+  bookmarked: "bg-surface-container-high text-muted-foreground",
+  received_bookmark: "bg-surface-container-high text-muted-foreground",
 }
 
 const OWN_PROJECT_TYPES = new Set<ActivityItem["type"]>(["published", "forked", "received_vote", "received_fork", "received_bookmark"])
@@ -262,12 +255,12 @@ function ActivityPanel({ items }: { items: ActivityItem[] }) {
           <Row key={`${item.type}-${item.projectId}-${index}`}>
             <Link href={activityHref(item)} className="absolute inset-0 z-0" aria-label={item.projectTitle} />
             <span
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-(--color-neutral-200) text-(--color-neutral-700)"
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${ACTIVITY_CHIP_COLORS[item.type]}`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-[17px] w-[17px]" />
             </span>
             <div className="min-w-0 flex-1 text-sm">{activityText(item)}</div>
-            <div className="shrink-0 text-xs text-(--color-neutral-600)">
+            <div className="shrink-0 text-xs text-muted-foreground">
               {formatActivityDate(item.timestamp)}
             </div>
           </Row>
@@ -288,11 +281,11 @@ function BookmarksPanel({ items, loggedIn }: { items: ProjectFeedItem[]; loggedI
           <Link href={`/p/${item.id}`} className="absolute inset-0 z-0" aria-label={item.title} />
           <Thumbnail thumbnail={item.thumbnail} title={item.title} />
           <div className="min-w-0 flex-1">
-            <div className="mb-1 text-[20px] font-bold">{item.title}</div>
-            <div className="flex items-center gap-2.5 text-xs text-(--color-neutral-600)">
+            <div className="mb-1 font-display text-xl font-medium">{item.title}</div>
+            <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
               <a
                 href={`/u/${encodeURIComponent(item.ownerUsername)}`}
-                className="relative z-10 font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)"
+                className="relative z-10 font-medium text-muted-foreground hover:text-primary"
               >
                 by {item.ownerUsername}
               </a>
@@ -327,15 +320,15 @@ function ForksPanel({ items }: { items: ForkFeedItem[] }) {
           <Link href={`/editor/${item.id}`} className="absolute inset-0 z-0" aria-label={item.title} />
           <Thumbnail thumbnail={item.thumbnail} title={item.title} />
           <div className="min-w-0 flex-1">
-            <div className="mb-1 text-[20px] font-bold">{item.title}</div>
-            <div className="flex items-center gap-2.5 text-xs text-(--color-neutral-600)">
+            <div className="mb-1 font-display text-xl font-medium">{item.title}</div>
+            <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
               <GitFork className="h-[11px] w-[11px]" />
               {item.forkedFromOwnerUsername ? (
                 <span>
                   forked from{" "}
                   <a
                     href={`/u/${encodeURIComponent(item.forkedFromOwnerUsername)}`}
-                    className="relative z-10 font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)"
+                    className="relative z-10 font-medium text-muted-foreground hover:text-primary"
                   >
                     {item.forkedFromOwnerUsername}
                   </a>
@@ -347,7 +340,7 @@ function ForksPanel({ items }: { items: ForkFeedItem[] }) {
           </div>
           <Link
             href={`/editor/${item.id}`}
-            className="relative z-10 shrink-0 rounded-md text-[13px] font-bold transition-colors hover:bg-muted hover:text-[var(--color-text)] py-2 px-3.5 border-2 border-(--color-divider) text-(--color-neutral-600)"
+            className="relative z-10 shrink-0 rounded-full text-[13px] font-medium transition-colors border border-input text-muted-foreground hover:bg-muted hover:text-foreground py-2 px-4"
           >
             Open
           </Link>
@@ -368,12 +361,12 @@ function UpvotedPanel({ items, loggedIn }: { items: ProjectFeedItem[]; loggedIn:
           <Link href={`/p/${item.id}`} className="absolute inset-0 z-0" aria-label={item.title} />
           <Thumbnail thumbnail={item.thumbnail} title={item.title} />
           <div className="min-w-0 flex-1">
-            <div className="mb-1 text-[20px] font-bold">{item.title}</div>
-            <div className="text-xs text-(--color-neutral-600)">
+            <div className="mb-1 font-display text-xl font-medium">{item.title}</div>
+            <div className="text-xs text-muted-foreground">
               by{" "}
               <a
                 href={`/u/${encodeURIComponent(item.ownerUsername)}`}
-                className="relative z-10 font-semibold hover:text-[var(--color-accent)] text-(--color-neutral-700)"
+                className="relative z-10 font-medium text-muted-foreground hover:text-primary"
               >
                 {item.ownerUsername}
               </a>

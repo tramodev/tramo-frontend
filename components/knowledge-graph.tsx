@@ -41,19 +41,17 @@ interface GraphColors {
   text: string;
   accent: string;
   ink: string;
-  neutral400: string;
-  neutral500: string;
-  neutral600: string;
+  border: string;
+  mutedForeground: string;
 }
 
 const FALLBACK_COLORS: GraphColors = {
-  bg: "#f3f2f2",
-  text: "#201e1d",
-  accent: "#4338ca",
-  ink: "#201e1d",
-  neutral400: "#bab6b6",
-  neutral500: "#9b9797",
-  neutral600: "#7d7979",
+  bg: "#F6FAFE",
+  text: "#171C1F",
+  accent: "#00668B",
+  ink: "#171C1F",
+  border: "#C1C7CD",
+  mutedForeground: "#41484D",
 };
 
 function readColors(el: HTMLElement | null): GraphColors {
@@ -61,13 +59,12 @@ function readColors(el: HTMLElement | null): GraphColors {
   const style = getComputedStyle(el);
   const read = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
-    bg: read("--color-bg", FALLBACK_COLORS.bg),
-    text: read("--color-text", FALLBACK_COLORS.text),
-    accent: read("--color-accent", FALLBACK_COLORS.accent),
-    ink: read("--color-text", FALLBACK_COLORS.ink),
-    neutral400: read("--color-neutral-400", FALLBACK_COLORS.neutral400),
-    neutral500: read("--color-neutral-500", FALLBACK_COLORS.neutral500),
-    neutral600: read("--color-neutral-600", FALLBACK_COLORS.neutral600),
+    bg: read("--background", FALLBACK_COLORS.bg),
+    text: read("--foreground", FALLBACK_COLORS.text),
+    accent: read("--primary", FALLBACK_COLORS.accent),
+    ink: read("--foreground", FALLBACK_COLORS.ink),
+    border: read("--border", FALLBACK_COLORS.border),
+    mutedForeground: read("--muted-foreground", FALLBACK_COLORS.mutedForeground),
   };
 }
 
@@ -141,7 +138,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
         const labelTopY = cy - radius;
 
         const fontSize = 11 / globalScale;
-        ctx.font = `700 ${fontSize}px Archivo, system-ui, sans-serif`;
+        ctx.font = `500 ${fontSize}px "Roboto Flex", system-ui, sans-serif`;
         const textWidth = ctx.measureText(path.title).width;
         const padX = 6 / globalScale;
         const padY = 3 / globalScale;
@@ -190,10 +187,10 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden border border-(--color-divider) bg-[size:24px_24px]"
+      className="relative h-full w-full overflow-hidden bg-[size:24px_24px]"
       style={{
         backgroundColor: colors.bg,
-        backgroundImage: `radial-gradient(${colors.neutral400} 1px, transparent 1px)`,
+        backgroundImage: `radial-gradient(${colors.border} 1px, transparent 1px)`,
       }}
     >
       {dimensions.width > 0 && dimensions.height > 0 && (
@@ -230,12 +227,12 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
               ctx.fillStyle = colors.bg;
               ctx.fill();
               ctx.lineWidth = 1.5 / Math.max(globalScale, 1);
-              ctx.strokeStyle = colors.neutral600;
+              ctx.strokeStyle = colors.mutedForeground;
               ctx.stroke();
             }
 
             const fontSize = (isSelected ? 12 : 10) / globalScale;
-            ctx.font = `${isSelected ? "700" : "400"} ${fontSize}px Archivo, system-ui, sans-serif`;
+            ctx.font = `${isSelected ? "500" : "400"} ${fontSize}px "Roboto Flex", system-ui, sans-serif`;
             const label = graphNode.name;
             const textWidth = ctx.measureText(label).width;
             const padX = 5 / globalScale;
@@ -250,7 +247,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
               fontSize + padY * 2
             );
             ctx.lineWidth = 1 / Math.max(globalScale, 1);
-            ctx.strokeStyle = isSelected ? colors.ink : colors.neutral400;
+            ctx.strokeStyle = isSelected ? colors.ink : colors.border;
             ctx.strokeRect(
               x - textWidth / 2 - padX,
               labelY,
@@ -266,13 +263,11 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
         />
       )}
 
-      <div
-        className="absolute bottom-6 right-6 flex border border-(--color-text)"
-      >
+      <div className="absolute bottom-6 right-6 flex rounded-full border border-input bg-popover shadow-elevation-1 overflow-hidden">
         <button
           type="button"
           aria-label="Zoom in"
-          className="flex h-9 w-9 items-center justify-center hover:bg-[var(--color-neutral-200)] bg-(--color-bg)"
+          className="flex h-9 w-9 items-center justify-center hover:bg-muted"
           onClick={() => zoomBy(1.4)}
         >
           <Plus className="h-4 w-4" />
@@ -280,36 +275,24 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
         <button
           type="button"
           aria-label="Zoom out"
-          className="flex h-9 w-9 items-center justify-center hover:bg-[var(--color-neutral-200)] bg-(--color-bg) border-l border-(--color-text)"
+          className="flex h-9 w-9 items-center justify-center border-l border-input hover:bg-muted"
           onClick={() => zoomBy(1 / 1.4)}
         >
           <Minus className="h-4 w-4" />
         </button>
       </div>
 
-      <div
-        className="absolute bottom-6 left-6 flex items-center gap-4 px-3.5 py-2 bg-(--color-bg) border border-(--color-neutral-400)"
-      >
-        <span
-          className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-700)"
-        >
-          <span className="h-2.5 w-2.5 rounded-full bg-(--color-accent)" />
+      <div className="absolute bottom-6 left-6 flex items-center gap-4 rounded-2xl px-3.5 py-2 bg-popover shadow-elevation-1">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <span className="h-2.5 w-2.5 rounded-full bg-primary" />
           Selected
         </span>
-        <span
-          className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-700)"
-        >
-          <span
-            className="h-2.5 w-2.5 rounded-full border border-(--color-neutral-600) box-border"
-          />
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <span className="h-2.5 w-2.5 rounded-full border border-muted-foreground box-border" />
           Idea
         </span>
-        <span
-          className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-(--color-neutral-700)"
-        >
-          <span
-            className="h-2.5 w-2.5 bg-[hsla(222,62%,45%,0.3)] border-[1.5px] border-[hsl(222,62%,45%)]"
-          />
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <span className="h-2.5 w-2.5 rounded-full bg-[hsla(222,62%,45%,0.3)] border-[1.5px] border-[hsl(222,62%,45%)]" />
           Path (region contains its ideas)
         </span>
       </div>

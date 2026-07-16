@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { GitFork } from "lucide-react"
 import { forkProject } from "@/lib/projects-store"
+import { Button } from "@/components/ui/button"
 
 export function ForkButton({
   projectId,
@@ -38,29 +39,31 @@ export function ForkButton({
 
   if (variant === "filled") {
     return (
-      <button
+      <Button
         type="button"
+        size="sm"
         onClick={handleClick}
         disabled={isPending}
-        className="relative z-10 flex shrink-0 items-center gap-2 rounded-md text-xs font-bold transition-colors hover:bg-[var(--color-accent-600)] py-[7px] px-3 bg-(--color-accent) text-[#fff]"
+        className="relative z-10"
         title={error ? "Fork failed, try again" : "Fork this project into your account"}
       >
         <GitFork className="h-[13px] w-[13px]" />
         {isPending ? "Forking..." : "Fork"}
-      </button>
+      </Button>
     )
   }
 
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="sm"
       onClick={handleClick}
       disabled={isPending}
-      className="btn btn-secondary"
       title={error ? "Fork failed, try again" : "Fork this project into your account"}
     >
       <GitFork className="h-4 w-4" />
       {isPending ? "Forking..." : "Fork"}
-    </button>
+    </Button>
   )
 }
