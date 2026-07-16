@@ -130,44 +130,74 @@ export async function updateMyProfile(fields: { bio?: string; imageUrl?: string 
   return response.json();
 }
 
-interface ProfileBundleDTO {
+interface ProfileStatsBundleDTO {
   stats: ProfileStats;
   badges: Badge[];
-  bookmarks: ProjectFeedItemDTO[];
-  upvoted: ProjectFeedItemDTO[];
-  forks: ForkFeedItemDTO[];
-  published: ProjectFeedItemDTO[];
-  activity: ActivityItemDTO[];
 }
 
-export interface ProfileBundle {
+export interface ProfileStatsBundle {
   stats: ProfileStats | null;
   badges: Badge[];
-  bookmarks: ProjectFeedItem[];
-  upvoted: ProjectFeedItem[];
-  forks: ForkFeedItem[];
-  published: ProjectFeedItem[];
-  activity: ActivityItem[];
 }
 
-const EMPTY_BUNDLE: ProfileBundle = { stats: null, badges: [], bookmarks: [], upvoted: [], forks: [], published: [], activity: [] };
+const EMPTY_STATS_BUNDLE: ProfileStatsBundle = { stats: null, badges: [] };
 
-export async function getMyProfileBundle(): Promise<ProfileBundle> {
-  const response = await fetch(`${API_BASE_URL}/api/profile/bundle`, { cache: "no-store", headers: await authHeaders() });
-  if (!response.ok) return EMPTY_BUNDLE;
-  const data: ProfileBundleDTO = await response.json();
-  return {
-    stats: data.stats,
-    badges: data.badges,
-    bookmarks: data.bookmarks.map(toFeedItem),
-    upvoted: data.upvoted.map(toFeedItem),
-    forks: data.forks.map((item) => ({
-      ...toFeedItem(item),
-      forkedFromProjectId: item.forkedFromProjectId != null ? String(item.forkedFromProjectId) : null,
-      forkedFromTitle: item.forkedFromTitle,
-      forkedFromOwnerUsername: item.forkedFromOwnerUsername,
-    })),
-    published: data.published.map(toFeedItem),
-    activity: data.activity.map((item) => ({ ...item, projectId: String(item.projectId) })),
-  };
+export async function getMyProfileStats(): Promise<ProfileStatsBundle> {
+  const response = await fetch(`${API_BASE_URL}/api/profile/stats`, { cache: "no-store", headers: await authHeaders() });
+  if (!response.ok) return EMPTY_STATS_BUNDLE;
+  const data: ProfileStatsBundleDTO = await response.json();
+  return { stats: data.stats, badges: data.badges };
+}
+
+interface PageResponseDTO<T> {
+  content: T[];
+  hasMore: boolean;
+}
+
+export interface ProfilePage<T> {
+  items: T[];
+  hasMore: boolean;
+}
+
+async function fetchProfilePage<T, D>(
+  path: string,
+  page: number,
+  size: number,
+  map: (item: D) => T
+): Promise<ProfilePage<T>> {
+  const response = await fetch(`${API_BASE_URL}/api/profile/${path}?page=${page}&size=${size}`, {
+    cache: "no-store",
+    headers: await authHeaders(),
+  });
+  if (!response.ok) return { items: [], hasMore: false };
+  const data: PageResponseDTO<D> = await response.json();
+  return { items: data.content.map(map), hasMore: data.hasMore };
+}
+
+export async function getMyPublishedPage(page: number, size: number): Promise<ProfilePage<ProjectFeedItem>> {
+  return fetchProfilePage<ProjectFeedItem, ProjectFeedItemDTO>("published", page, size, toFeedItem);
+}
+
+export async function getMyBookmarksPage(page: number, size: number): Promise<ProfilePage<ProjectFeedItem>> {
+  return fetchProfilePage<ProjectFeedItem, ProjectFeedItemDTO>("bookmarks", page, size, toFeedItem);
+}
+
+export async function getMyUpvotedPage(page: number, size: number): Promise<ProfilePage<ProjectFeedItem>> {
+  return fetchProfilePage<ProjectFeedItem, ProjectFeedItemDTO>("upvoted", page, size, toFeedItem);
+}
+
+export async function getMyForksPage(page: number, size: number): Promise<ProfilePage<ForkFeedItem>> {
+  return fetchProfilePage<ForkFeedItem, ForkFeedItemDTO>("forks", page, size, (item) => ({
+    ...toFeedItem(item),
+    forkedFromProjectId: item.forkedFromProjectId != null ? String(item.forkedFromProjectId) : null,
+    forkedFromTitle: item.forkedFromTitle,
+    forkedFromOwnerUsername: item.forkedFromOwnerUsername,
+  }));
+}
+
+export async function getMyActivityPage(page: number, size: number): Promise<ProfilePage<ActivityItem>> {
+  return fetchProfilePage<ActivityItem, ActivityItemDTO>("activity", page, size, (item) => ({
+    ...item,
+    projectId: String(item.projectId),
+  }));
 }
