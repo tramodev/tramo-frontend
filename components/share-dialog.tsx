@@ -6,21 +6,30 @@ import { Check, Copy, Globe, Lock, Share2, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { setProjectVisibility, setProjectTags, type ProjectVisibility } from "@/lib/projects-store"
+import {
+  setProjectVisibility,
+  setProjectDescription,
+  setProjectTags,
+  type ProjectVisibility,
+} from "@/lib/projects-store"
 import { cn } from "@/lib/utils"
 
 interface ShareDialogProps {
   projectId: string;
   visibility: ProjectVisibility;
   onVisibilityChange: (visibility: ProjectVisibility) => void;
+  description: string;
+  onDescriptionChange: (description: string) => void;
   tags: string;
   onTagsChange: (tags: string) => void;
 }
@@ -51,18 +60,43 @@ const OPTIONS: {
   },
 ];
 
-export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, onTagsChange }: ShareDialogProps) {
+export function ShareDialog({
+  projectId,
+  visibility,
+  onVisibilityChange,
+  description,
+  onDescriptionChange,
+  tags,
+  onTagsChange,
+}: ShareDialogProps) {
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [selectedVisibility, setSelectedVisibility] = useState(visibility);
+  const [descriptionInput, setDescriptionInput] = useState(description);
   const [tagsInput, setTagsInput] = useState(tags);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/p/${projectId}`
     : "";
-  const current = OPTIONS.find((option) => option.value === visibility) ?? OPTIONS[0];
+  const selected = OPTIONS.find((option) => option.value === selectedVisibility) ?? OPTIONS[0];
+  const hasPendingChange = selectedVisibility !== visibility;
 
-  const changeVisibility = async (next: ProjectVisibility) => {
-    if (next === visibility) return;
-    onVisibilityChange(next);
-    await setProjectVisibility(projectId, next);
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setSelectedVisibility(visibility);
+      setDescriptionInput(description);
+      setTagsInput(tags);
+      setValidationError(null);
+    }
+    setOpen(next);
+  };
+
+  const submitDescription = async () => {
+    const next = descriptionInput.trim();
+    if (next === description) return;
+    onDescriptionChange(next);
+    await setProjectDescription(projectId, next);
   };
 
   const submitTags = async () => {
@@ -72,6 +106,31 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
     await setProjectTags(projectId, next);
   };
 
+  const applyVisibility = async () => {
+    if (!hasPendingChange || isApplying) return;
+
+    if (selectedVisibility === "published" && !descriptionInput.trim()) {
+      setValidationError("Add a description before publishing.");
+      return;
+    }
+
+    setIsApplying(true);
+    setValidationError(null);
+    try {
+      if (descriptionInput.trim() !== description) {
+        await submitDescription();
+      }
+      onVisibilityChange(selectedVisibility);
+      await setProjectVisibility(projectId, selectedVisibility);
+    } catch {
+      setSelectedVisibility(visibility);
+      onVisibilityChange(visibility);
+      setValidationError("Something went wrong — try again.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
   const copyLink = async () => {
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -79,7 +138,7 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="secondary" size="lg">
           <Share2 className="h-[15px] w-[15px]" />
@@ -97,12 +156,15 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
         <div className="grid grid-cols-3 gap-2">
           {OPTIONS.map((option) => {
             const Icon = option.icon;
-            const isActive = option.value === visibility;
+            const isActive = option.value === selectedVisibility;
             return (
               <button
                 key={option.value}
                 type="button"
-                onClick={() => changeVisibility(option.value)}
+                onClick={() => {
+                  setSelectedVisibility(option.value);
+                  setValidationError(null);
+                }}
                 className={cn(
                   "flex flex-col items-center gap-1.5 rounded-lg border p-3 text-center transition-colors",
                   isActive ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
@@ -114,7 +176,42 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
             );
           })}
         </div>
-        <p className="text-xs text-muted-foreground">{current.description}</p>
+        <p className="text-xs text-muted-foreground">{selected.description}</p>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="share-description">Description</Label>
+          <Textarea
+            id="share-description"
+            placeholder="What's this project about?"
+            value={descriptionInput}
+            onChange={(e) => setDescriptionInput(e.target.value)}
+            onBlur={submitDescription}
+            rows={3}
+          />
+          <p className="text-xs text-muted-foreground">
+            Required to publish. Shown on Explore and the public project page.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="share-tags">Tags</Label>
+          <Input
+            id="share-tags"
+            placeholder="webdev, react, tutorial"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            onBlur={submitTags}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submitTags();
+              }
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            Comma-separated. Helps people find this on Explore and shows up in Hot topics.
+          </p>
+        </div>
 
         {visibility !== "private" && (
           <div className="flex items-center gap-2">
@@ -128,26 +225,17 @@ export function ShareDialog({ projectId, visibility, onVisibilityChange, tags, o
           </div>
         )}
 
-        {visibility === "published" && (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="share-tags">Tags</Label>
-            <Input
-              id="share-tags"
-              placeholder="webdev, react, tutorial"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              onBlur={submitTags}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  submitTags();
-                }
-              }}
-            />
-            <p className="text-xs text-muted-foreground">
-              Comma-separated. Helps people find this on Explore and shows up in Hot topics.
-            </p>
-          </div>
+        {(hasPendingChange || validationError) && (
+          <DialogFooter className="flex-col items-stretch gap-2 sm:flex-col">
+            {validationError && (
+              <p className="text-xs text-destructive">{validationError}</p>
+            )}
+            {hasPendingChange && (
+              <Button onClick={applyVisibility} disabled={isApplying} className="w-full">
+                {isApplying ? "Applying..." : `Switch to ${selected.label}`}
+              </Button>
+            )}
+          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>

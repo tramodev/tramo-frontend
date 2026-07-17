@@ -13,7 +13,7 @@ export function Thumbnail({ thumbnail, title }: { thumbnail: string | null; titl
     <div className="grid shrink-0 place-items-center overflow-hidden rounded-md w-24 h-16 bg-surface-container-high">
       {thumbnail ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={thumbnail} alt="" className="h-full w-full object-cover object-top" />
+        <img src={thumbnail} alt="" className="h-full w-full scale-[1.15] object-cover object-top" />
       ) : (
         <span className="font-display text-2xl font-medium text-primary">
           {title.charAt(0).toUpperCase()}

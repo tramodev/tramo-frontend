@@ -220,6 +220,7 @@ export default function DashboardPage() {
   const [loaded, setLoaded] = useState(false);
   const [projectTitle, setProjectTitle] = useState('');
   const [visibility, setVisibility] = useState<ProjectVisibility>('private');
+  const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
@@ -241,6 +242,7 @@ export default function DashboardPage() {
       }
       setProjectTitle(project.title);
       setVisibility(project.visibility);
+      setDescription(project.description);
       setTags(project.tags);
       setPaths(project.paths);
       setIdeas(project.ideas);
@@ -565,6 +567,8 @@ export default function DashboardPage() {
               projectId={projectId}
               visibility={visibility}
               onVisibilityChange={handleVisibilityChange}
+              description={description}
+              onDescriptionChange={setDescription}
               tags={tags}
               onTagsChange={setTags}
             />

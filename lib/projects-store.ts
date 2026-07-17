@@ -9,6 +9,7 @@ export type ProjectVisibility = "private" | "unlisted" | "published";
 export interface Project {
   id: string;
   title: string;
+  description: string;
   paths: Path[];
   ideas: Record<string, Idea>;
   visibility: ProjectVisibility;
@@ -67,6 +68,7 @@ function toProjectSummary(dto: ProjectDTO): Project {
   return {
     id: String(dto.id),
     title: dto.title,
+    description: dto.description ?? "",
     paths: [],
     ideas: {},
     visibility: dto.visibility ?? "private",
@@ -136,6 +138,7 @@ export async function getProject(id: string): Promise<Project | null> {
   return {
     id: String(projectDto.id),
     title: projectDto.title,
+    description: projectDto.description ?? "",
     paths,
     ideas,
     visibility: projectDto.visibility ?? "private",
@@ -188,6 +191,15 @@ export async function setProjectThumbnail(id: string, thumbnail: string): Promis
     method: "PUT",
     headers: jsonHeaders,
     body: JSON.stringify({ thumbnail }),
+  });
+  await expectOk(response);
+}
+
+export async function setProjectDescription(id: string, description: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}`, {
+    method: "PUT",
+    headers: jsonHeaders,
+    body: JSON.stringify({ description }),
   });
   await expectOk(response);
 }
