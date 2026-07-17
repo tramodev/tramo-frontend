@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { API_BASE_URL, EXPLORE_PAGE_SIZE } from "./config";
 import { getAccessToken } from "./auth";
+import type { TitleAlign } from "@/app/editor/types";
 
 async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
   const token = await getAccessToken();
@@ -19,6 +20,7 @@ export interface PublicIdea {
   title: string;
   type: string | null;
   content: string;
+  titleAlign: TitleAlign;
 }
 
 export interface PublicPath {
@@ -46,6 +48,7 @@ interface PublicIdeaDTO {
   title: string;
   type: string | null;
   content: string;
+  titleAlign: TitleAlign | null;
 }
 
 interface PublicPathDTO {
@@ -213,6 +216,7 @@ export async function getPublicProject(projectId: string): Promise<PublicProject
         title: idea.title,
         type: idea.type,
         content: idea.content,
+        titleAlign: idea.titleAlign ?? "center",
       })),
     })),
   };

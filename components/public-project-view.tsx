@@ -99,7 +99,7 @@ export function PublicProjectView({
           {selectedIdea ? (
             <div className="rounded-2xl bg-popover">
               <div className="mx-auto flex w-full max-w-[820px] flex-col gap-4 px-6 py-8">
-                <h1 className="font-display text-[28px] font-medium">
+                <h1 className="font-display text-[28px] font-medium" style={{ textAlign: selectedIdea.titleAlign }}>
                   {selectedIdea.title}
                 </h1>
                 <LexicalReadOnly key={selectedIdea.id} content={selectedIdea.content} onIdeaClick={handleIdeaLinkClick} />
