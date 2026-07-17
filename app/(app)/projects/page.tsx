@@ -105,7 +105,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main className="mx-auto w-full flex-1 max-w-[1216px] pt-11 px-18 pb-[84px]">
+    <main className="mx-auto w-full flex-1 max-w-[1280px] pt-11 px-18 pb-[84px]">
         <span className="block text-sm font-medium text-primary mb-2">
           Your workspace
         </span>
@@ -176,15 +176,15 @@ export default function ProjectsPage() {
               No projects yet. Create a blank project to get started.
             </p>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-[repeat(auto-fill,208px)] justify-between gap-6">
               {sortedProjects.map((project) => (
                 <Card
                   key={project.id}
-                  className="group/card cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
+                  className="group/card flex h-[255px] w-[208px] flex-col cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
                   onClick={() => router.push(`/editor/${project.id}`)}
                 >
                   <CardContent
-                    className={`mx-2 mt-2 flex aspect-[4/4] items-center justify-center overflow-hidden rounded-sm p-0 ${
+                    className={`mx-2 mt-2 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-sm p-0 ${
                       project.thumbnail ? "" : "bg-surface-container-high"
                     }`}
                   >
@@ -193,7 +193,7 @@ export default function ProjectsPage() {
                       <img
                         src={project.thumbnail}
                         alt=""
-                        className="h-full w-full scale-[1.15] object-cover object-top"
+                        className="h-full w-full object-cover object-top"
                       />
                     ) : (
                       <FolderKanban
@@ -202,7 +202,7 @@ export default function ProjectsPage() {
                       />
                     )}
                   </CardContent>
-                  <CardHeader className="gap-0 p-0 py-3 px-4">
+                  <CardHeader className="shrink-0 gap-0 p-0 py-3 px-4">
                     <div className="flex items-center justify-between gap-2">
                       {editingId === project.id ? (
                         <Input
@@ -291,7 +291,7 @@ export default function ProjectsPage() {
                       <img
                         src={project.thumbnail}
                         alt=""
-                        className="h-full w-full scale-[1.15] object-cover object-top"
+                        className="h-full w-full object-cover object-top"
                       />
                     ) : (
                       <FolderKanban strokeWidth={1.5} className="h-5 w-5 text-muted-foreground" />

@@ -77,8 +77,20 @@ export default function ImageComponent({
     );
   }, [clearSelected, editor, isEditable, isSelected, onDelete, setSelected]);
 
+  useEffect(() => {
+    if (!isEditable || !isSelected) return;
+    const handlePointerDownOutside = (event: MouseEvent) => {
+      const rootElement = editor.getRootElement();
+      if (rootElement && !rootElement.contains(event.target as Node)) {
+        clearSelected();
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDownOutside);
+    return () => document.removeEventListener('mousedown', handlePointerDownOutside);
+  }, [isEditable, isSelected, editor, clearSelected]);
+
   const handleResizeStart = (
-    corner: 'nw' | 'ne' | 'sw' | 'se',
+    handle: 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w',
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
     event.preventDefault();
@@ -86,14 +98,31 @@ export default function ImageComponent({
     const image = imageRef.current;
     if (!image) return;
     const startX = event.clientX;
-    const startWidth = image.getBoundingClientRect().width;
+    const startY = event.clientY;
+    const rect = image.getBoundingClientRect();
+    const startWidth = rect.width;
+    const startHeight = rect.height;
     const aspectRatio = image.naturalWidth / image.naturalHeight || 1;
-    const sign = corner === 'nw' || corner === 'sw' ? -1 : 1;
+    const isCorner = handle.length === 2;
+    const xSign = handle === 'nw' || handle === 'sw' || handle === 'w' ? -1 : 1;
+    const ySign = handle === 'nw' || handle === 'ne' || handle === 'n' ? -1 : 1;
 
     const onPointerMove = (moveEvent: PointerEvent) => {
-      const delta = (moveEvent.clientX - startX) * sign;
-      const newWidth = Math.max(50, startWidth + delta);
-      const newHeight = newWidth / aspectRatio;
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+
+      if (isCorner) {
+        const delta = (moveEvent.clientX - startX) * xSign;
+        newWidth = Math.max(50, startWidth + delta);
+        newHeight = newWidth / aspectRatio;
+      } else if (handle === 'e' || handle === 'w') {
+        const delta = (moveEvent.clientX - startX) * xSign;
+        newWidth = Math.max(50, startWidth + delta);
+      } else {
+        const delta = (moveEvent.clientY - startY) * ySign;
+        newHeight = Math.max(50, startHeight + delta);
+      }
+
       editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if ($isImageNode(node)) {
@@ -143,6 +172,22 @@ export default function ImageComponent({
           <div
             className="editor-image-resizer editor-image-resizer-se"
             onPointerDown={(event) => handleResizeStart('se', event)}
+          />
+          <div
+            className="editor-image-resizer editor-image-resizer-n"
+            onPointerDown={(event) => handleResizeStart('n', event)}
+          />
+          <div
+            className="editor-image-resizer editor-image-resizer-s"
+            onPointerDown={(event) => handleResizeStart('s', event)}
+          />
+          <div
+            className="editor-image-resizer editor-image-resizer-e"
+            onPointerDown={(event) => handleResizeStart('e', event)}
+          />
+          <div
+            className="editor-image-resizer editor-image-resizer-w"
+            onPointerDown={(event) => handleResizeStart('w', event)}
           />
         </>
       )}

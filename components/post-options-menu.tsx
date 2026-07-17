@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { reportProject } from "@/lib/moderation"
-import { toggleFollow } from "@/lib/public-profile"
+import { toggleFollow, getPublicProfile } from "@/lib/public-profile"
 import { shareProjectToFollowers } from "@/lib/projects-store"
 
 export function PostOptionsMenu({
@@ -42,6 +42,7 @@ export function PostOptionsMenu({
   const [submitted, setSubmitted] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [following, setFollowing] = useState(false)
+  const [followKnown, setFollowKnown] = useState(false)
 
   function requireLogin(): boolean {
     if (!isLoggedIn) {
@@ -55,6 +56,13 @@ export function PostOptionsMenu({
     if (!requireLogin()) return
     const result = await toggleFollow(ownerUsername)
     setFollowing(result.following)
+  }
+
+  async function handleMenuOpenChange(open: boolean) {
+    if (!open || followKnown || isOwnPost || !isLoggedIn) return
+    setFollowKnown(true)
+    const profile = await getPublicProfile(ownerUsername)
+    setFollowing(profile?.following ?? false)
   }
 
   async function handleShare() {
@@ -90,7 +98,7 @@ export function PostOptionsMenu({
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={handleMenuOpenChange}>
         <DropdownMenuTrigger asChild>
           <button
             type="button"

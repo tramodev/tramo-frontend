@@ -227,10 +227,14 @@ export default function DashboardPage() {
 
   const [paths, setPaths] = useState<Path[]>([]);
   const [ideas, setIdeas] = useState<Record<string, Idea>>({});
+  const ideasRef = useRef<Record<string, Idea>>({});
+  useEffect(() => {
+    ideasRef.current = ideas;
+  }, [ideas]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState<'editor' | 'graph'>('editor');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [thumbnailCaptureContent, setThumbnailCaptureContent] = useState<string | null>(null);
+  const [thumbnailCapture, setThumbnailCapture] = useState<{ title: string; titleAlign: TitleAlign; content: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -283,6 +287,15 @@ export default function DashboardPage() {
   const textStats = useMemo(() => countTextStats(selectedIdea?.content ?? ''), [selectedIdea?.content]);
 
   const [activeAlignTarget, setActiveAlignTarget] = useState<'title' | 'body'>('body');
+
+  const editorInnerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = editorInnerRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.scrollTop = 0;
+    }));
+  }, [selectedIdeaId]);
 
   const commitIdeaTitle = (ideaId: string, currentTitle: string, nextValue: string) => {
     const trimmed = nextValue.trim();
@@ -447,14 +460,18 @@ export default function DashboardPage() {
 
     try {
       const content = await getIdeaContent(firstIdeaId);
-      if (content) setThumbnailCaptureContent(content);
+      if (content) setThumbnailCapture({
+        title: ideasRef.current[firstIdeaId]?.title ?? '',
+        titleAlign: ideasRef.current[firstIdeaId]?.titleAlign ?? 'center',
+        content,
+      });
     } catch (err) {
       console.error(err);
     }
   };
 
   const handleThumbnailCaptured = useCallback(async (dataUrl: string | null) => {
-    setThumbnailCaptureContent(null);
+    setThumbnailCapture(null);
     if (!dataUrl) return;
     try {
       await setProjectThumbnail(projectId, dataUrl);
@@ -466,7 +483,7 @@ export default function DashboardPage() {
   const pendingContentRef = useRef<{ ideaId: string; content: string } | null>(null);
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const flushPendingContent = useCallback(() => {
+  const flushPendingContent = useCallback((captureThumbnail: boolean) => {
     if (saveContentTimeoutRef.current) {
       clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = null;
@@ -478,8 +495,12 @@ export default function DashboardPage() {
     saveIdeaContent(pending.ideaId, pending.content)
       .then(() => {
         setSaveStatus('saved');
-        if (pending.ideaId === firstIdeaIdRef.current) {
-          setThumbnailCaptureContent(pending.content);
+        if (captureThumbnail && pending.ideaId === firstIdeaIdRef.current) {
+          setThumbnailCapture({
+            title: ideasRef.current[pending.ideaId]?.title ?? '',
+            titleAlign: ideasRef.current[pending.ideaId]?.titleAlign ?? 'center',
+            content: pending.content,
+          });
         }
       })
       .catch((err) => {
@@ -489,7 +510,8 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    return () => flushPendingContent();
+    // capture the thumbnail only when actually leaving the idea, not on every autosave tick
+    return () => flushPendingContent(true);
   }, [selectedIdeaId, flushPendingContent]);
 
   const onChange = useCallback((editorState: EditorState) => {
@@ -505,7 +527,7 @@ export default function DashboardPage() {
       pendingContentRef.current = { ideaId: selectedIdeaId, content: json };
       setSaveStatus('saving');
       if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
-      saveContentTimeoutRef.current = setTimeout(flushPendingContent, 600);
+      saveContentTimeoutRef.current = setTimeout(() => flushPendingContent(false), 600);
     });
   }, [selectedIdeaId, flushPendingContent]);
 
@@ -640,7 +662,7 @@ export default function DashboardPage() {
                       titleAlign={selectedIdea.titleAlign}
                       onSetTitleAlign={(align) => handleSetIdeaTitleAlign(selectedIdea.id, align)}
                     />
-                    <div className="editor-inner">
+                    <div className="editor-inner" ref={editorInnerRef}>
                       <div className="editor-content-column">
                         <div className="pt-9">
                           <input
@@ -725,8 +747,13 @@ export default function DashboardPage() {
           )
         }
       />
-      {thumbnailCaptureContent && (
-        <ThumbnailCapture content={thumbnailCaptureContent} onCapture={handleThumbnailCaptured} />
+      {thumbnailCapture && (
+        <ThumbnailCapture
+          title={thumbnailCapture.title}
+          titleAlign={thumbnailCapture.titleAlign}
+          content={thumbnailCapture.content}
+          onCapture={handleThumbnailCaptured}
+        />
       )}
     </SidebarProvider>
   )

@@ -153,7 +153,7 @@ export default async function ExplorePage({
               <img
                 src={featured.thumbnail}
                 alt=""
-                className="h-full w-full scale-[1.15] object-cover object-top"
+                className="h-full w-full object-cover object-top"
               />
             ) : (
               <span className="font-display text-[84px] font-medium text-accent-foreground leading-none">
