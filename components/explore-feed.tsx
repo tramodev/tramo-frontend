@@ -50,7 +50,11 @@ export function ExploreFeed({
     <>
       {items.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          {query ? `Nothing found for "${query}".` : "Nothing published yet."}
+          {query
+            ? `Nothing found for "${query}".`
+            : sort === "following"
+              ? "Nothing here yet — follow people to see what they publish."
+              : "Nothing published yet."}
         </p>
       )}
       <div className="flex flex-col gap-3">
@@ -103,7 +107,7 @@ export function ExploreFeed({
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
                     <MessageCircle className="h-[15px] w-[15px]" />
-                    0
+                    {project.commentCount.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-muted-foreground">

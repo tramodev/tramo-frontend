@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowBigUp, Award, Bell, GitFork, Rocket, Share2, UserPlus, X } from "lucide-react"
+import { ArrowBigUp, Award, Bell, GitFork, MessageCircle, Rocket, Share2, UserPlus, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ const ICONS: Record<AppNotification["type"], React.ComponentType<{ className?: s
   FEATURED: Rocket,
   PUBLISH: Rocket,
   SHARE: Share2,
+  COMMENT: MessageCircle,
 }
 
 function others(count: number) {
@@ -48,13 +49,15 @@ function notificationText(n: AppNotification) {
       return <>{n.latestActorUsername}{others(n.count)} published <strong>{n.projectTitle}</strong></>
     case "SHARE":
       return <>{n.latestActorUsername}{others(n.count)} shared <strong>{n.projectTitle}</strong></>
+    case "COMMENT":
+      return <>{n.latestActorUsername}{others(n.count)} commented on <strong>{n.projectTitle}</strong></>
   }
 }
 
 function notificationHref(n: AppNotification): string {
   if (n.type === "FOLLOW") return n.latestActorUsername ? `/u/${encodeURIComponent(n.latestActorUsername)}` : "/explore"
   if (n.type === "BADGE") return "/profile"
-  if (n.type === "PUBLISH" || n.type === "SHARE") return n.projectId ? `/p/${n.projectId}` : "/explore"
+  if (n.type === "PUBLISH" || n.type === "SHARE" || n.type === "COMMENT") return n.projectId ? `/p/${n.projectId}` : "/explore"
   return n.projectId ? `/editor/${n.projectId}` : "/profile"
 }
 

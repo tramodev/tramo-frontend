@@ -14,7 +14,7 @@ export default async function ExplorePage({
   searchParams: Promise<{ q?: string; sort?: string }>
 }) {
   const { q, sort: sortParam } = await searchParams
-  const sort: FeedSort = sortParam === "hot" ? "hot" : "recent"
+  const sort: FeedSort = sortParam === "hot" ? "hot" : sortParam === "following" ? "following" : "recent"
   const [bundle, loggedIn, username] = await Promise.all([
     getExploreBundle(q, sort),
     isLoggedIn(),
@@ -48,10 +48,16 @@ export default async function ExplorePage({
           </div>
           <div className="flex h-10 items-center overflow-hidden rounded-full border border-input">
             {(
-              [
-                ["recent", "Recent"],
-                ["hot", "Hot"],
-              ] as const
+              loggedIn
+                ? ([
+                    ["recent", "Recent"],
+                    ["hot", "Hot"],
+                    ["following", "Following"],
+                  ] as const)
+                : ([
+                    ["recent", "Recent"],
+                    ["hot", "Hot"],
+                  ] as const)
             ).map(([value, label], i) => (
               <span key={value} className="flex h-full items-center">
                 {i > 0 && <span className="h-full w-px bg-input" />}
@@ -123,7 +129,7 @@ export default async function ExplorePage({
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
                   <MessageCircle className="h-[15px] w-[15px]" />
-                  0
+                  {featured.commentCount.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center ml-auto gap-1 text-muted-foreground">
@@ -164,6 +170,7 @@ export default async function ExplorePage({
             Recently published
           </div>
           <ExploreFeed
+            key={`${sort}-${q ?? ""}`}
             initialItems={bundle.feed}
             initialHasMore={bundle.hasMore}
             featuredId={featured?.id}

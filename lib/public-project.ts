@@ -38,6 +38,7 @@ export interface PublicProject {
   votedByRequester: boolean;
   bookmarkedByRequester: boolean;
   viewCount: number;
+  commentCount: number;
 }
 
 interface PublicIdeaDTO {
@@ -64,6 +65,7 @@ interface PublicProjectDTO {
   votedByRequester: boolean;
   bookmarkedByRequester: boolean;
   viewCount: number;
+  commentCount: number;
 }
 
 export interface ProjectFeedItem {
@@ -80,6 +82,7 @@ export interface ProjectFeedItem {
   bookmarkedByRequester: boolean;
   viewCount: number;
   forkCount: number;
+  commentCount: number;
   featured: boolean;
 }
 
@@ -97,10 +100,11 @@ interface ProjectFeedItemDTO {
   bookmarkedByRequester: boolean;
   viewCount: number;
   forkCount: number;
+  commentCount: number;
   featured: boolean;
 }
 
-export type FeedSort = "recent" | "hot";
+export type FeedSort = "recent" | "hot" | "following";
 
 function parseTags(tags: string | null): string[] {
   if (!tags) return [];
@@ -122,6 +126,7 @@ function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
     bookmarkedByRequester: item.bookmarkedByRequester,
     viewCount: item.viewCount,
     forkCount: item.forkCount,
+    commentCount: item.commentCount,
     featured: item.featured,
   };
 }
@@ -199,6 +204,7 @@ export async function getPublicProject(projectId: string): Promise<PublicProject
     votedByRequester: data.votedByRequester,
     bookmarkedByRequester: data.bookmarkedByRequester,
     viewCount: data.viewCount,
+    commentCount: data.commentCount,
     paths: data.paths.map((path) => ({
       id: String(path.id),
       title: path.title,

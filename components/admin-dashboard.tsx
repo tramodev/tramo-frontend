@@ -48,17 +48,18 @@ export function AdminDashboard() {
     refreshUsers("")
   }, [])
 
-  async function handleDismiss(id: string) {
-    setReports((current) => current.filter((r) => r.id !== id))
-    await dismissReport(id)
+  async function handleDismiss(report: Report) {
+    setReports((current) => current.filter((r) => r.id !== report.id))
+    await dismissReport(report.id, report.type)
   }
 
   async function handleUnpublish() {
-    if (!unpublishTarget) return
+    const projectId = unpublishTarget?.projectId
+    if (!unpublishTarget || !projectId) return
     const target = unpublishTarget
     setUnpublishTarget(null)
     setReports((current) => current.filter((r) => r.id !== target.id))
-    await unpublishProject(target.projectId, target.reason)
+    await unpublishProject(projectId, target.reason)
   }
 
   async function handleBanConfirm() {
@@ -93,22 +94,40 @@ export function AdminDashboard() {
                 <div className="flex min-w-0 flex-col gap-1">
                   <div className="flex items-center gap-2 text-sm">
                     <Flag className="h-3.5 w-3.5 text-primary" />
-                    <Link href={`/p/${report.projectId}`} target="_blank" className="font-medium hover:underline">
-                      {report.projectTitle}
-                    </Link>
-                    <span className="text-muted-foreground">
-                      reported by {report.reporterUsername}
-                    </span>
+                    {report.type === "COMMENT" ? (
+                      <>
+                        <Link href={`/p/${report.projectId}`} target="_blank" className="font-medium hover:underline">
+                          comment on {report.projectTitle}
+                        </Link>
+                        <span className="text-muted-foreground">
+                          reported by {report.reporterUsername}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Link href={`/p/${report.projectId}`} target="_blank" className="font-medium hover:underline">
+                          {report.projectTitle}
+                        </Link>
+                        <span className="text-muted-foreground">
+                          reported by {report.reporterUsername}
+                        </span>
+                      </>
+                    )}
                   </div>
+                  {report.type === "COMMENT" && (
+                    <p className="text-sm italic text-muted-foreground">&ldquo;{report.commentContent}&rdquo;</p>
+                  )}
                   <p className="text-sm text-muted-foreground">{report.reason}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleDismiss(report.id)}>
+                  <Button variant="outline" size="sm" onClick={() => handleDismiss(report)}>
                     Dismiss
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={() => setUnpublishTarget(report)}>
-                    Unpublish
-                  </Button>
+                  {report.type === "PROJECT" && (
+                    <Button variant="destructive" size="sm" onClick={() => setUnpublishTarget(report)}>
+                      Unpublish
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
