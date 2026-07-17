@@ -482,6 +482,8 @@ export default function DashboardPage() {
 
   const pendingContentRef = useRef<{ ideaId: string; content: string } | null>(null);
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastThumbnailCaptureRef = useRef(0);
+  const THUMBNAIL_RECAPTURE_INTERVAL_MS = 10000;
 
   const flushPendingContent = useCallback((captureThumbnail: boolean) => {
     if (saveContentTimeoutRef.current) {
@@ -496,6 +498,7 @@ export default function DashboardPage() {
       .then(() => {
         setSaveStatus('saved');
         if (captureThumbnail && pending.ideaId === firstIdeaIdRef.current) {
+          lastThumbnailCaptureRef.current = Date.now();
           setThumbnailCapture({
             title: ideasRef.current[pending.ideaId]?.title ?? '',
             titleAlign: ideasRef.current[pending.ideaId]?.titleAlign ?? 'center',
@@ -527,7 +530,8 @@ export default function DashboardPage() {
       pendingContentRef.current = { ideaId: selectedIdeaId, content: json };
       setSaveStatus('saving');
       if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
-      saveContentTimeoutRef.current = setTimeout(() => flushPendingContent(false), 600);
+      const dueForThumbnailRecapture = Date.now() - lastThumbnailCaptureRef.current > THUMBNAIL_RECAPTURE_INTERVAL_MS;
+      saveContentTimeoutRef.current = setTimeout(() => flushPendingContent(dueForThumbnailRecapture), 600);
     });
   }, [selectedIdeaId, flushPendingContent]);
 

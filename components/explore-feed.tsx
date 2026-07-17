@@ -103,11 +103,11 @@ export function ExploreFeed({
                   />
                   <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
                     <Eye className="h-[17px] w-[17px]" />
-                    {project.viewCount.toLocaleString()}
+                    {project.viewCount.toLocaleString('en-US')}
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
                     <MessageCircle className="h-[15px] w-[15px]" />
-                    {project.commentCount.toLocaleString()}
+                    {project.commentCount.toLocaleString('en-US')}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-muted-foreground">

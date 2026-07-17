@@ -44,8 +44,8 @@ export default async function FollowersPage({
             }`}
           >
             {key === "followers"
-              ? `${profile.stats.followersCount.toLocaleString()} Followers`
-              : `${profile.stats.followingCount.toLocaleString()} Following`}
+              ? `${profile.stats.followersCount.toLocaleString('en-US')} Followers`
+              : `${profile.stats.followingCount.toLocaleString('en-US')} Following`}
             {tab === key && (
               <span className="absolute inset-x-4 -bottom-px h-[3px] rounded-t-[3px] bg-primary" />
             )}

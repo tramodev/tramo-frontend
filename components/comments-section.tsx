@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Flag, MessageCircle, Reply, Trash2 } from "lucide-react"
 
 import { AuthorAvatar } from "@/components/author-avatar"
@@ -273,7 +274,11 @@ function CommentItem({
       <AuthorAvatar username={comment.authorUsername ?? "?"} avatar={comment.authorAvatar} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium">{comment.authorUsername}</span>
+          {comment.authorUsername && (
+            <Link href={`/u/${encodeURIComponent(comment.authorUsername)}`} className="font-medium hover:underline">
+              {comment.authorUsername}
+            </Link>
+          )}
           <span className="text-xs text-muted-foreground">{timeAgo(comment.createdDate)}</span>
         </div>
         <p className="text-sm">{comment.content}</p>

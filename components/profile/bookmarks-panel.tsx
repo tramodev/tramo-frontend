@@ -60,11 +60,11 @@ export function BookmarksPanel({
                 </a>
                 <span className="inline-flex items-center gap-1">
                   <Eye className="h-[13px] w-[13px]" />
-                  {item.viewCount.toLocaleString()}
+                  {item.viewCount.toLocaleString('en-US')}
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <ArrowBigUp className="h-[13px] w-[13px]" />
-                  {item.voteCount.toLocaleString()}
+                  {item.voteCount.toLocaleString('en-US')}
                 </span>
               </div>
             </div>

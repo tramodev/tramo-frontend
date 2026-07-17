@@ -125,11 +125,11 @@ export default async function ExplorePage({
                 />
                 <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
                   <Eye className="h-[17px] w-[17px]" />
-                  {featured.viewCount.toLocaleString()}
+                  {featured.viewCount.toLocaleString('en-US')}
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
                   <MessageCircle className="h-[15px] w-[15px]" />
-                  {featured.commentCount.toLocaleString()}
+                  {featured.commentCount.toLocaleString('en-US')}
                 </span>
               </div>
               <div className="flex items-center ml-auto gap-1 text-muted-foreground">

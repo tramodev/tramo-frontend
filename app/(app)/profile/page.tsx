@@ -71,11 +71,11 @@ export default async function ProfilePage({
                 )}
                 <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="inline-flex items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
-                  {(stats?.followersCount ?? 0).toLocaleString()} followers
+                  {(stats?.followersCount ?? 0).toLocaleString('en-US')} followers
                 </Link>
                 <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=following`} className="inline-flex items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
-                  {(stats?.followingCount ?? 0).toLocaleString()} following
+                  {(stats?.followingCount ?? 0).toLocaleString('en-US')} following
                 </Link>
               </div>
               <div className="mb-3.5">
@@ -100,7 +100,7 @@ export default async function ProfilePage({
               </div>
             </div>
             <div className="rounded-2xl bg-card py-[18px]">
-              <div className="font-display text-[28px] font-medium text-primary">{(stats?.totalViews ?? 0).toLocaleString()}</div>
+              <div className="font-display text-[28px] font-medium text-primary">{(stats?.totalViews ?? 0).toLocaleString('en-US')}</div>
               <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Total views
               </div>

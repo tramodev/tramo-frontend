@@ -94,7 +94,7 @@ export function BadgesPanel({ badges }: { badges: Badge[] }) {
                         <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                       </div>
                       <div className="mt-1 text-[11px] font-medium text-muted-foreground">
-                        {badge.progress.toLocaleString()} / {badge.target.toLocaleString()}
+                        {badge.progress.toLocaleString('en-US')} / {badge.target.toLocaleString('en-US')}
                       </div>
                     </>
                   )}

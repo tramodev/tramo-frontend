@@ -61,11 +61,11 @@ export default async function PublicProfilePage({
                 </span>
                 <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="inline-flex items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
-                  {stats.followersCount.toLocaleString()} followers
+                  {stats.followersCount.toLocaleString('en-US')} followers
                 </Link>
                 <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=following`} className="inline-flex items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
-                  {stats.followingCount.toLocaleString()} following
+                  {stats.followingCount.toLocaleString('en-US')} following
                 </Link>
               </div>
               {profile.bio && (
@@ -92,7 +92,7 @@ export default async function PublicProfilePage({
               </div>
             </div>
             <div className="rounded-2xl bg-card py-[18px]">
-              <div className="font-display text-[28px] font-medium text-primary">{stats.totalViews.toLocaleString()}</div>
+              <div className="font-display text-[28px] font-medium text-primary">{stats.totalViews.toLocaleString('en-US')}</div>
               <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Total views
               </div>

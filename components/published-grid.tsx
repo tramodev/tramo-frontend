@@ -43,15 +43,15 @@ export function PublishedGrid({
           <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <ArrowBigUp className="h-[13px] w-[13px]" />
-              {item.voteCount.toLocaleString()}
+              {item.voteCount.toLocaleString('en-US')}
             </span>
             <span className="inline-flex items-center gap-1">
               <Eye className="h-[13px] w-[13px]" />
-              {item.viewCount.toLocaleString()}
+              {item.viewCount.toLocaleString('en-US')}
             </span>
             <span className="inline-flex items-center gap-1">
               <GitFork className="h-[13px] w-[13px]" />
-              {item.forkCount.toLocaleString()}
+              {item.forkCount.toLocaleString('en-US')}
             </span>
           </div>
         </Link>
