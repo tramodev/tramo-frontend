@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Camera } from "lucide-react"
 import { updateMyProfile } from "@/lib/profile"
+import { uploadImage } from "@/lib/upload-image"
 import { AvatarCropModal } from "@/components/avatar-crop-modal"
 
 function initial(username: string) {
@@ -26,12 +27,13 @@ export function AvatarUpload({ username, imageUrl }: { username: string; imageUr
     setPendingFile(file)
   }
 
-  function handleCropConfirm(dataUrl: string) {
+  function handleCropConfirm(blob: Blob) {
     setPendingFile(null)
     startTransition(async () => {
       try {
-        await updateMyProfile({ imageUrl: dataUrl })
-        setPreview(dataUrl)
+        const publicUrl = await uploadImage(blob, "avatar")
+        await updateMyProfile({ imageUrl: publicUrl })
+        setPreview(publicUrl)
         router.refresh()
       } catch {
         setError(true)

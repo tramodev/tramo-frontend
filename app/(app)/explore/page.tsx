@@ -22,6 +22,7 @@ export default async function ExplorePage({
   ])
 
   const { featured, hotTopics, activeAuthors } = bundle
+  const hasSidebar = hotTopics.length > 0 || activeAuthors.length > 0
 
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
@@ -164,7 +165,13 @@ export default async function ExplorePage({
         </div>
       )}
 
-      <div className="flex gap-12 pt-9 px-18 pb-14">
+      <div
+        className={
+          hasSidebar
+            ? "grid grid-cols-1 gap-12 pt-9 px-18 pb-14 lg:grid-cols-[minmax(0,1fr)_272px]"
+            : "flex gap-12 pt-9 px-18 pb-14"
+        }
+      >
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-medium text-muted-foreground mb-3">
             Recently published
@@ -181,8 +188,8 @@ export default async function ExplorePage({
           />
         </div>
 
-        {(hotTopics.length > 0 || activeAuthors.length > 0) && (
-          <aside className="sticky top-6 hidden flex-shrink-0 flex-col gap-5 self-start lg:flex w-[272px]">
+        {hasSidebar && (
+          <aside className="sticky top-6 hidden flex-col gap-5 self-start lg:flex">
             {hotTopics.length > 0 && (
               <div className="rounded-2xl bg-card p-5">
                 <h3 className="text-[13px] font-medium text-muted-foreground">

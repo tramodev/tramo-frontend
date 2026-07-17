@@ -22,11 +22,15 @@ export function PublicProjectView({
   homeHref,
   isLoggedIn,
   isOwnProject,
+  username,
+  imageUrl,
 }: {
   project: PublicProject
   homeHref: string
   isLoggedIn: boolean
   isOwnProject: boolean
+  username: string | null
+  imageUrl: string | null
 }) {
   const allIdeas = project.paths.flatMap((path) => path.ideas)
   const [selectedIdea, setSelectedIdea] = useState<PublicIdea | undefined>(allIdeas[0])
@@ -84,7 +88,7 @@ export function PublicProjectView({
           ) : (
             <AuthPromptActions />
           )}
-          {isLoggedIn && <UserMenu />}
+          {isLoggedIn && <UserMenu loggedIn={isLoggedIn} username={username} imageUrl={imageUrl} />}
         </>
       }
       sidebar={

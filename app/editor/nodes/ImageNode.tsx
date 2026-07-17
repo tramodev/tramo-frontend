@@ -123,6 +123,11 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     writable.__height = height;
   }
 
+  setSrc(src: string): void {
+    const writable = this.getWritable();
+    writable.__src = src;
+  }
+
   createDOM(config: EditorConfig): HTMLElement {
     const span = document.createElement('span');
     const className = config.theme.image;

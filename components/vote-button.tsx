@@ -54,7 +54,7 @@ export function VoteButton({
       onClick={handleClick}
       disabled={isPending}
       aria-pressed={voted}
-      className={`relative z-10 flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-colors ${
+      className={`relative z-10 flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full  text-sm font-medium transition-colors ${
         voted
           ? "bg-secondary text-secondary-foreground"
           : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"

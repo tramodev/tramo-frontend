@@ -61,31 +61,21 @@ function notificationHref(n: AppNotification): string {
   return n.projectId ? `/editor/${n.projectId}` : "/profile"
 }
 
-export function NotificationButton() {
+export function NotificationButton({ loggedIn }: { loggedIn: boolean }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<AppNotification[] | null>(null)
-  const [loggedIn, setLoggedIn] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
+    if (!loggedIn) return
     let cancelled = false
-    fetch("/api/session")
-      .then((res) => res.json())
-      .then((data: { isLoggedIn: boolean }) => {
-        if (cancelled) return
-        setLoggedIn(data.isLoggedIn)
-        if (data.isLoggedIn) {
-          getUnreadCount().then((count) => {
-            if (!cancelled) setUnreadCount(count)
-          })
-        }
-      })
-      .catch(() => {})
-
+    getUnreadCount().then((count) => {
+      if (!cancelled) setUnreadCount(count)
+    })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [loggedIn])
 
   useEffect(() => {
     if (!loggedIn) return

@@ -64,7 +64,9 @@ export async function middleware(request: NextRequest) {
   const refreshToken = request.cookies.get('refreshToken')?.value ?? null;
   let refreshedAccessToken: string | null = null;
 
-  if (isProtected && refreshToken && (!accessToken || isExpiringSoon(accessToken))) {
+  const isServerAction = request.headers.has('next-action');
+
+  if (isProtected && !isServerAction && refreshToken && (!accessToken || isExpiringSoon(accessToken))) {
     refreshedAccessToken = await refreshAccessToken(refreshToken);
     if (refreshedAccessToken) {
       accessToken = refreshedAccessToken;

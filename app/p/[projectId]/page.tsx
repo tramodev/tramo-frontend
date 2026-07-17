@@ -3,6 +3,7 @@ import { PublicProjectView } from "@/components/public-project-view"
 import { getPublicProject } from "@/lib/public-project"
 import { getHomeHref } from "@/lib/nav"
 import { isLoggedIn, getUsername } from "@/lib/auth"
+import { getMyProfile } from "@/lib/profile"
 
 export default async function PublicProjectPage({
   params,
@@ -16,6 +17,7 @@ export default async function PublicProjectPage({
     isLoggedIn(),
     getUsername(),
   ])
+  const profile = loggedIn ? await getMyProfile() : null
 
   if (!project) {
     notFound()
@@ -29,6 +31,8 @@ export default async function PublicProjectPage({
       homeHref={homeHref}
       isLoggedIn={loggedIn}
       isOwnProject={isOwnProject}
+      username={profile?.username ?? null}
+      imageUrl={profile?.imageUrl ?? null}
     />
   )
 }

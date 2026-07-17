@@ -22,7 +22,7 @@ export function AvatarCropModal({
 }: {
   file: File
   onCancel: () => void
-  onConfirm: (dataUrl: string) => void
+  onConfirm: (blob: Blob) => void
 }) {
   const [img, setImg] = useState<HTMLImageElement | null>(null)
   const [baseScale, setBaseScale] = useState(1)
@@ -88,7 +88,7 @@ export function AvatarCropModal({
     const drawX = EXPORT_SIZE / 2 - drawWidth / 2 + position.x * k
     const drawY = EXPORT_SIZE / 2 - drawHeight / 2 + position.y * k
     ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight)
-    onConfirm(canvas.toDataURL("image/jpeg", 0.85))
+    canvas.toBlob((blob) => blob && onConfirm(blob), "image/jpeg", 0.85)
   }
 
   const scale = baseScale * zoom

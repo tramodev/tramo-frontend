@@ -77,7 +77,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { INSERT_IMAGE_COMMAND } from './ImagesPlugin';
+import { insertImageWithUpload } from './ImagesPlugin';
 
 type ElementFormat = 'left' | 'center' | 'right' | 'justify';
 
@@ -371,14 +371,7 @@ export default function ToolbarPlugin({
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-        altText: file.name,
-        src: reader.result as string,
-      });
-    };
-    reader.readAsDataURL(file);
+    insertImageWithUpload(editor, file);
   };
 
   return (

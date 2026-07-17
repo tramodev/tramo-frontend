@@ -18,7 +18,7 @@ export function ThumbnailCapture({
   title: string;
   titleAlign: TitleAlign;
   content: string;
-  onCapture: (dataUrl: string | null) => void;
+  onCapture: (blob: Blob | null) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -43,7 +43,9 @@ export function ThumbnailCapture({
         const ctx = resized.getContext("2d");
         ctx?.drawImage(canvas, 0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
 
-        if (!cancelled) onCapture(resized.toDataURL("image/jpeg", 0.9));
+        resized.toBlob((blob) => {
+          if (!cancelled) onCapture(blob);
+        }, "image/jpeg", 0.9);
       } catch (err) {
         console.error(err);
         if (!cancelled) onCapture(null);

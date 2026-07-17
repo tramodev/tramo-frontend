@@ -70,6 +70,8 @@ import {
   type ProjectVisibility,
 } from '@/lib/projects-store';
 import { getIdeaContent, saveIdeaContent } from '@/lib/idea-content-client';
+import { getMyProfile } from '@/lib/profile';
+import { uploadImage } from '@/lib/upload-image';
 import { ShareDialog } from '@/components/share-dialog';
 import { ThumbnailCapture } from '@/components/thumbnail-capture';
 
@@ -235,6 +237,17 @@ export default function DashboardPage() {
   const [view, setView] = useState<'editor' | 'graph'>('editor');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [thumbnailCapture, setThumbnailCapture] = useState<{ title: string; titleAlign: TitleAlign; content: string } | null>(null);
+  const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMyProfile().then((p) => {
+      if (!cancelled) setProfile(p);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -470,11 +483,12 @@ export default function DashboardPage() {
     }
   };
 
-  const handleThumbnailCaptured = useCallback(async (dataUrl: string | null) => {
+  const handleThumbnailCaptured = useCallback(async (blob: Blob | null) => {
     setThumbnailCapture(null);
-    if (!dataUrl) return;
+    if (!blob) return;
     try {
-      await setProjectThumbnail(projectId, dataUrl);
+      const publicUrl = await uploadImage(blob, 'thumbnail');
+      await setProjectThumbnail(projectId, publicUrl);
     } catch (err) {
       console.error(err);
     }
@@ -620,7 +634,7 @@ export default function DashboardPage() {
                 </>
               )}
             </span>
-            <UserMenu />
+            <UserMenu loggedIn={!!profile} username={profile?.username ?? null} imageUrl={profile?.imageUrl ?? null} />
           </>
         }
         sidebar={

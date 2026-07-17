@@ -1,15 +1,23 @@
 import { AppHeader } from "@/components/app-header"
 import { Footer } from "@/components/footer"
 import { isLoggedIn } from "@/lib/auth"
-import { isAdmin } from "@/lib/session"
+import { getMyProfile } from "@/lib/profile"
 import { getHomeHref } from "@/lib/nav"
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [loggedIn, admin, homeHref] = await Promise.all([isLoggedIn(), isAdmin(), getHomeHref()])
+  const [loggedIn, homeHref] = await Promise.all([isLoggedIn(), getHomeHref()])
+  const profile = loggedIn ? await getMyProfile() : null
+  const admin = profile?.role === "ADMIN"
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
-      <AppHeader homeHref={admin ? "/explore" : homeHref} loggedIn={loggedIn} isAdmin={admin} />
+      <AppHeader
+        homeHref={admin ? "/explore" : homeHref}
+        loggedIn={loggedIn}
+        isAdmin={admin}
+        username={profile?.username ?? null}
+        imageUrl={profile?.imageUrl ?? null}
+      />
       {children}
       <Footer />
     </div>

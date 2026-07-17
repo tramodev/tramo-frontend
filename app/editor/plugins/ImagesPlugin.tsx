@@ -4,29 +4,27 @@ import { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { mergeRegister } from '@lexical/utils';
 import {
+  $getNodeByKey,
   $insertNodes,
   COMMAND_PRIORITY_HIGH,
   createCommand,
   DRAGOVER_COMMAND,
   DROP_COMMAND,
   LexicalCommand,
+  NodeKey,
   PASTE_COMMAND,
 } from 'lexical';
-import { $createImageNode, ImageNode, ImagePayload } from '../nodes/ImageNode';
+import { $createImageNode, $isImageNode, ImageNode, ImagePayload } from '../nodes/ImageNode';
+import { resizeImageToBlob } from '@/lib/image-resize';
+import { uploadImage } from '@/lib/upload-image';
 
 export type InsertImagePayload = Readonly<ImagePayload>;
 
 export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> =
   createCommand('INSERT_IMAGE_COMMAND');
 
-function readFileAsDataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
+export const EDITOR_IMAGE_MAX_DIMENSION = 1600;
+export const EDITOR_IMAGE_QUALITY = 0.85;
 
 function getImageFiles(dataTransfer: DataTransfer): File[] {
   const files: File[] = [];
@@ -39,13 +37,48 @@ function getImageFiles(dataTransfer: DataTransfer): File[] {
   return files;
 }
 
-async function insertImageFiles(
+// Inserts a local preview immediately (optimistic UI), then swaps it for the
+// real R2 URL once the background upload finishes - or removes it on failure.
+export function insertImageWithUpload(
+  editor: ReturnType<typeof useLexicalComposerContext>[0],
+  file: File,
+): void {
+  const previewUrl = URL.createObjectURL(file);
+  let key: NodeKey | null = null;
+
+  editor.update(() => {
+    const imageNode = $createImageNode({ altText: file.name, src: previewUrl });
+    $insertNodes([imageNode]);
+    key = imageNode.getKey();
+  });
+
+  (async () => {
+    try {
+      const blob = await resizeImageToBlob(file, EDITOR_IMAGE_MAX_DIMENSION, EDITOR_IMAGE_QUALITY);
+      const src = await uploadImage(blob, 'editor-image');
+      editor.update(() => {
+        if (key === null) return;
+        const node = $getNodeByKey(key);
+        if ($isImageNode(node)) {
+          node.setSrc(src);
+        }
+      });
+    } catch (err) {
+      console.error('Failed to upload image', err);
+      editor.update(() => {
+        if (key === null) return;
+        $getNodeByKey(key)?.remove();
+      });
+    }
+  })();
+}
+
+function insertImageFiles(
   editor: ReturnType<typeof useLexicalComposerContext>[0],
   files: File[],
-): Promise<void> {
+): void {
   for (const file of files) {
-    const src = await readFileAsDataURL(file);
-    editor.dispatchCommand(INSERT_IMAGE_COMMAND, { altText: file.name, src });
+    insertImageWithUpload(editor, file);
   }
 }
 
