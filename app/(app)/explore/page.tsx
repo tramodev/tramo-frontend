@@ -175,7 +175,7 @@ export default async function ExplorePage({
         </div>
 
         {(hotTopics.length > 0 || activeAuthors.length > 0) && (
-          <aside className="hidden flex-shrink-0 flex-col gap-5 lg:flex w-[272px]">
+          <aside className="sticky top-6 hidden flex-shrink-0 flex-col gap-5 self-start lg:flex w-[272px]">
             {hotTopics.length > 0 && (
               <div className="rounded-2xl bg-card p-5">
                 <h3 className="text-[13px] font-medium text-muted-foreground">
