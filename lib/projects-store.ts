@@ -124,7 +124,7 @@ export async function getProject(id: string): Promise<Project | null> {
       id: String(ideaId),
       title: dto.title,
       titleAlign: (dto.titleAlign as TitleAlign) ?? "center",
-      content: "",
+      content: null,
       linkedIdeaIds: linkLists[index].map((linked) => String(linked.id)),
     };
   });

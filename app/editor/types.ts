@@ -4,7 +4,7 @@ export interface Idea {
     id: string;
     title: string;
     titleAlign: TitleAlign;
-    content: string;
+    content: string | null;
     linkedIdeaIds: string[];
 }
 

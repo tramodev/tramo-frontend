@@ -325,10 +325,14 @@ export default function DashboardPage() {
     await setIdeaTitleAlign(ideaId, titleAlign);
   };
 
+  const selectIdeaRequestRef = useRef(0);
+
   const handleSelectIdea = async (idea: Idea) => {
     setView('editor');
+    const requestId = ++selectIdeaRequestRef.current;
     try {
       const content = await getIdeaContent(idea.id);
+      if (selectIdeaRequestRef.current !== requestId) return;
       setIdeas(prevIdeas => {
         const existing = prevIdeas[idea.id];
         if (!existing) return prevIdeas;
@@ -337,6 +341,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error(err);
     }
+    if (selectIdeaRequestRef.current !== requestId) return;
     setSelectedIdeaId(idea.id);
   };
 
@@ -497,7 +502,12 @@ export default function DashboardPage() {
   const pendingContentRef = useRef<{ ideaId: string; content: string } | null>(null);
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastThumbnailCaptureRef = useRef(0);
+  const loadedIdeaContentRef = useRef<string | null>(null);
   const THUMBNAIL_RECAPTURE_INTERVAL_MS = 10000;
+
+  const handleContentApplied = useCallback((ideaId: string) => {
+    loadedIdeaContentRef.current = ideaId;
+  }, []);
 
   const flushPendingContent = useCallback((captureThumbnail: boolean) => {
     if (saveContentTimeoutRef.current) {
@@ -534,6 +544,7 @@ export default function DashboardPage() {
   const onChange = useCallback((editorState: EditorState) => {
     editorState.read(() => {
       if (!selectedIdeaId) return;
+      if (loadedIdeaContentRef.current !== selectedIdeaId) return;
       const json = JSON.stringify(editorState.toJSON());
       setIdeas(prevIdeas => {
         const idea = prevIdeas[selectedIdeaId];
@@ -732,8 +743,8 @@ export default function DashboardPage() {
                         />
                         <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
 
-                        <UpdateContentPlugin content={selectedIdea.content} ideaId={selectedIdea.id} />
-                        <OnChangePlugin onChange={onChange} />
+                        <UpdateContentPlugin content={selectedIdea.content} ideaId={selectedIdea.id} onContentApplied={handleContentApplied} />
+                        <OnChangePlugin onChange={onChange} ignoreSelectionChange />
                       </div>
                     </div>
                   </div>
