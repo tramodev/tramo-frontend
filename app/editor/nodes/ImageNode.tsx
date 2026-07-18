@@ -14,6 +14,13 @@ import type {
 import { $applyNodeReplacement, DecoratorNode } from 'lexical';
 import * as React from 'react';
 import ImageComponent from '../plugins/ImageComponent';
+import { R2_PUBLIC_BASE_URL } from '@/lib/config';
+
+const ALLOWED_SRC_PREFIXES = [R2_PUBLIC_BASE_URL, 'blob:'];
+
+function isAllowedImageSrc(src: string): boolean {
+  return ALLOWED_SRC_PREFIXES.some((prefix) => prefix && src.startsWith(prefix));
+}
 
 export interface ImagePayload {
   altText: string;
@@ -64,7 +71,8 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
 
   static importJSON(serializedNode: SerializedImageNode): ImageNode {
     const { altText, height, width, src } = serializedNode;
-    return $createImageNode({ altText, height, src, width });
+    const safeSrc = isAllowedImageSrc(src) ? src : '';
+    return $createImageNode({ altText, height, src: safeSrc, width });
   }
 
   exportDOM(): DOMExportOutput {
