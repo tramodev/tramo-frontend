@@ -48,7 +48,7 @@ export const BrowserMockup: React.FC = () => {
     <div className="w-full aspect-[16/9] flex flex-col overflow-hidden rounded-[28px] border border-border bg-background shadow-elevation-2">
       <div className="h-12 flex items-center gap-3 px-5 shrink-0 bg-card border-b border-border">
         <span className="font-display font-semibold text-[14px]">
-          MyPath<span className="text-primary"> ●</span>
+          Tramo<span className="text-primary"> ●</span>
         </span>
         <span className="h-4 w-px bg-border" />
         <span className="text-[13px] font-medium">Intro to slow living</span>

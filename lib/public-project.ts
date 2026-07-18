@@ -11,7 +11,7 @@ async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
 }
 
 async function anonIdHeader(): Promise<HeadersInit | undefined> {
-  const anonId = (await cookies()).get("mypath_anon_id")?.value;
+  const anonId = (await cookies()).get("tramo_anon_id")?.value;
   return anonId ? { "X-Anon-Id": anonId } : undefined;
 }
 

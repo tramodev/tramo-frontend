@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-baseline gap-0.5", className)}>
-      <span className="font-display font-semibold text-2xl">MyPath</span>
+      <span className="font-display font-semibold text-2xl">Tramo</span>
       <span
         className="w-1.5 h-1.5 rounded-full mb-1 ml-0.5 animate-pulse bg-primary"
       />

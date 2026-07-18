@@ -28,7 +28,7 @@ export const FeaturesSection: React.FC = () => {
   return (
     <section id="product" className="pt-16 pb-[84px]">
       <span className="block text-sm font-medium mb-5 text-primary">
-        What MyPath does
+        What Tramo does
       </span>
 
       {features.map((f) => (

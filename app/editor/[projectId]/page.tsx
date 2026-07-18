@@ -192,7 +192,7 @@ const editorConfig = {
   theme: ExampleTheme,
 };
 
-const lastIdeaStorageKey = (projectId: string) => `mypath:lastIdea:${projectId}`;
+const lastIdeaStorageKey = (projectId: string) => `tramo:lastIdea:${projectId}`;
 
 function countTextStats(content: string): { words: number; characters: number } {
   if (!content) return { words: 0, characters: 0 };

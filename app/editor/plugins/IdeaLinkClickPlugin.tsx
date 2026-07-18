@@ -15,7 +15,7 @@ export default function IdeaLinkClickPlugin({ onNavigate }: { onNavigate: (ideaI
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
-      const anchor = target?.closest?.(`a[rel^="${IDEA_LINK_REL_PREFIX}"]`) as HTMLAnchorElement | null;
+      const anchor = target?.closest?.(`a[rel^="${IDEA_LINK_REL_PREFIX}"], a[rel^="mypath-idea:"]`) as HTMLAnchorElement | null;
       if (!anchor) return;
       const ideaId = ideaIdFromRel(anchor.getAttribute('rel') ?? '');
       if (!ideaId) return;

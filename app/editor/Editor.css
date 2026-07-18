@@ -109,6 +109,7 @@
   text-decoration: underline;
 }
 
+a[rel^="tramo-idea:"],
 a[rel^="mypath-idea:"] {
   color: var(--primary);
   text-decoration: underline;

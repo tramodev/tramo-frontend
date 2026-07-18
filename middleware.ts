@@ -6,7 +6,7 @@ import { API_BASE_URL } from '@/lib/config';
 // Backs the public-project view counter's per-visitor dedup for anonymous
 // visitors (logged-in visitors dedup by user id instead) — see
 // lib/public-project.ts and mypath-backend's ProjectView entity.
-const ANON_ID_COOKIE = 'mypath_anon_id';
+const ANON_ID_COOKIE = 'tramo_anon_id';
 
 const ACCESS_TOKEN_MAX_AGE = 60 * 15;
 const REFRESH_MARGIN_SECONDS = 60;
