@@ -177,13 +177,18 @@ export async function deleteProject(id: string): Promise<void> {
 export async function setProjectVisibility(
   id: string,
   visibility: ProjectVisibility,
-): Promise<void> {
+): Promise<{ error: string | null }> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}`, {
     method: "PUT",
     headers: jsonHeaders,
     body: JSON.stringify({ visibility }),
   });
-  await expectOk(response);
+  if (!response.ok) {
+    // surface backend limit messages (e.g. weekly publish cap) instead of a generic failure
+    const message = await response.json().then((body) => body?.message).catch(() => null);
+    return { error: message ?? `Request failed with status ${response.status}` };
+  }
+  return { error: null };
 }
 
 export async function setProjectThumbnail(id: string, thumbnail: string): Promise<void> {

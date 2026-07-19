@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Crown, Eye, GitFork, Lock, Rocket, Sparkles, Star, TrendingUp, Users } from "lucide-react"
+import { Crown, Eye, GitFork, Heart, Lock, Rocket, Sparkles, Star, TrendingUp, Users } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { Badge } from "@/lib/profile"
 
 const BADGE_ICONS: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  supporter: Heart,
   first_publish: Rocket,
   prolific: Sparkles,
   rising_star: Star,

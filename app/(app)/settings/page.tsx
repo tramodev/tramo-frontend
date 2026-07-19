@@ -1,14 +1,17 @@
 import Link from "next/link"
 import { Calendar } from "lucide-react"
 import { SettingsView } from "@/components/settings-view"
+import { PlanPanel } from "@/components/plan-panel"
 import { getMyProfile } from "@/lib/profile"
+import { getSubscriptionStatus } from "@/lib/subscription"
 import { getUsername } from "@/lib/auth"
 
-type Tab = "account" | "notifications" | "privacy"
+type Tab = "account" | "plan" | "notifications" | "privacy"
 
-const TAB_KEYS: Tab[] = ["account", "notifications", "privacy"]
+const TAB_KEYS: Tab[] = ["account", "plan", "notifications", "privacy"]
 const TABS: { key: Tab; label: string }[] = [
   { key: "account", label: "Account" },
+  { key: "plan", label: "Plan" },
   { key: "notifications", label: "Notifications" },
   { key: "privacy", label: "Privacy" },
 ]
@@ -74,6 +77,8 @@ export default async function SettingsPage({
             <SettingsView />
           </div>
         )}
+
+        {tab === "plan" && <PlanPanel initialStatus={await getSubscriptionStatus()} />}
 
         {tab === "notifications" && (
           <p className="max-w-[480px] text-sm text-muted-foreground">

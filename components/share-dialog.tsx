@@ -121,7 +121,12 @@ export function ShareDialog({
         await submitDescription();
       }
       onVisibilityChange(selectedVisibility);
-      await setProjectVisibility(projectId, selectedVisibility);
+      const { error } = await setProjectVisibility(projectId, selectedVisibility);
+      if (error) {
+        setSelectedVisibility(visibility);
+        onVisibilityChange(visibility);
+        setValidationError(error);
+      }
     } catch {
       setSelectedVisibility(visibility);
       onVisibilityChange(visibility);
