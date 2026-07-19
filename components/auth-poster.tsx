@@ -33,16 +33,37 @@ export function AuthPoster({
   )
 }
 
+export const TRAIL_PATHS = [
+  { d: "M-40 780 C 120 720, 180 640, 210 520 C 235 420, 300 370, 400 350", opacity: 0.9 },
+  { d: "M400 350 C 490 332, 540 260, 560 170", opacity: 0.9 },
+  { d: "M400 350 C 480 366, 530 420, 556 480", opacity: 0.9 },
+  { d: "M210 520 C 160 470, 150 420, 168 360", opacity: 0.55 },
+]
+
+export const TRAIL_CIRCLES = [
+  { cx: 566, cy: 140, r: 16, fill: true, opacity: 1 },
+  { cx: 562, cy: 494, r: 12, fill: false, strokeWidth: 9, opacity: 1 },
+  { cx: 172, cy: 346, r: 10, fill: false, strokeWidth: 8, opacity: 0.55 },
+]
+
 export function TrailArt() {
   return (
     <svg className="absolute inset-0 h-full w-full" viewBox="0 0 688 868" fill="none" preserveAspectRatio="xMidYMid slice">
-      <path d="M-40 780 C 120 720, 180 640, 210 520 C 235 420, 300 370, 400 350" className="stroke-primary" strokeWidth="10" strokeLinecap="round" opacity="0.9" />
-      <path d="M400 350 C 490 332, 540 260, 560 170" className="stroke-primary" strokeWidth="10" strokeLinecap="round" opacity="0.9" />
-      <path d="M400 350 C 480 366, 530 420, 556 480" className="stroke-primary" strokeWidth="10" strokeLinecap="round" opacity="0.9" />
-      <path d="M210 520 C 160 470, 150 420, 168 360" className="stroke-primary" strokeWidth="10" strokeLinecap="round" opacity="0.55" />
-      <circle cx="566" cy="140" r="16" className="fill-primary" />
-      <circle cx="562" cy="494" r="12" className="stroke-primary" fill="none" strokeWidth="9" />
-      <circle cx="172" cy="346" r="10" className="stroke-primary" fill="none" strokeWidth="8" opacity="0.55" />
+      {TRAIL_PATHS.map((p) => (
+        <path key={p.d} d={p.d} className="stroke-primary" strokeWidth="10" strokeLinecap="round" opacity={p.opacity} />
+      ))}
+      {TRAIL_CIRCLES.map((c) => (
+        <circle
+          key={`${c.cx}-${c.cy}`}
+          cx={c.cx}
+          cy={c.cy}
+          r={c.r}
+          className={c.fill ? "fill-primary" : "stroke-primary"}
+          fill={c.fill ? undefined : "none"}
+          strokeWidth={c.strokeWidth}
+          opacity={c.opacity}
+        />
+      ))}
     </svg>
   )
 }

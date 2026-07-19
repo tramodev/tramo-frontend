@@ -1,4 +1,5 @@
 import React from 'react';
+import { FadeUp } from '@/components/landing-motion';
 
 const features = [
   {
@@ -31,21 +32,22 @@ export const FeaturesSection: React.FC = () => {
         What Tramo does
       </span>
 
-      {features.map((f) => (
-        <div
-          key={f.n}
-          className={`grid grid-cols-1 md:grid-cols-[80px_minmax(200px,380px)_1fr] gap-x-10 gap-y-2 items-start p-9 mb-2 bg-card ${f.radius}`}
-        >
-          <span
-            className={`flex items-center justify-center h-12 w-12 rounded-full text-base font-medium ${f.chip}`}
+      {features.map((f, i) => (
+        <FadeUp key={f.n} delay={i * 0.1}>
+          <div
+            className={`grid grid-cols-1 md:grid-cols-[80px_minmax(200px,380px)_1fr] gap-x-10 gap-y-2 items-start p-9 mb-2 bg-card ${f.radius}`}
           >
-            {f.n}
-          </span>
-          <h2 className="font-display font-medium text-2xl mt-2">{f.title}</h2>
-          <p className="text-[15.5px] leading-[1.65] max-w-[52ch] mt-2 text-muted-foreground">
-            {f.body}
-          </p>
-        </div>
+            <span
+              className={`flex items-center justify-center h-12 w-12 rounded-full text-base font-medium ${f.chip}`}
+            >
+              {f.n}
+            </span>
+            <h2 className="font-display font-medium text-2xl mt-2">{f.title}</h2>
+            <p className="text-[15.5px] leading-[1.65] max-w-[52ch] mt-2 text-muted-foreground">
+              {f.body}
+            </p>
+          </div>
+        </FadeUp>
       ))}
     </section>
   );
