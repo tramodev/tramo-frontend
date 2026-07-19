@@ -16,7 +16,7 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <AuthPoster lines={["Organize ideas,", "not files."]} />
+      <AuthPoster variant="cards" title="Every idea finds its place" subtitle="Collect, connect, and retrace your thinking" />
     </>
   )
 }

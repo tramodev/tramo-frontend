@@ -14,7 +14,7 @@ export default function ResetPasswordPage() {
           </Suspense>
         </div>
       </div>
-      <AuthPoster lines={["New start,", "new password."]} />
+      <AuthPoster variant="trail" title="New start" subtitle="Set a new password" />
     </>
   )
 }

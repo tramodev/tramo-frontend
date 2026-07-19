@@ -16,7 +16,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <AuthPoster lines={["Find your path", "One idea at a time, until it all connects"]} />
+      <AuthPoster variant="trail" title="Find your path" subtitle="One idea at a time, until it all connects" />
     </>
   )
 }

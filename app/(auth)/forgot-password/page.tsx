@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
       </div>
-      <AuthPoster lines={["Happens to,", "everyone."]} />
+      <AuthPoster variant="trail" title="Happens to everyone" subtitle="We'll get you back in" />
     </>
   )
 }

@@ -33,7 +33,7 @@ export default async function CheckEmailPage({
           </div>
         </div>
       </div>
-      <AuthPoster lines={["Almost there,", "check your inbox."]} />
+      <AuthPoster variant="cards" title="Almost there" subtitle="Check your inbox to confirm your account" />
     </>
   )
 }

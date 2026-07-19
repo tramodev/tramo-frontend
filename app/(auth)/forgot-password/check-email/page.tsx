@@ -34,7 +34,7 @@ export default async function ForgotPasswordCheckEmailPage({
           </div>
         </div>
       </div>
-      <AuthPoster lines={["Almost there,", "check your inbox."]} />
+      <AuthPoster variant="cards" title="Almost there" subtitle="Check your inbox for a reset link" />
     </>
   )
 }

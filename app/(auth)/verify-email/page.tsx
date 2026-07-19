@@ -14,7 +14,7 @@ export default function VerifyEmailPage() {
           </Suspense>
         </div>
       </div>
-      <AuthPoster lines={["Verifying,", "one moment."]} />
+      <AuthPoster variant="trail" title="Verifying" subtitle="Just one moment" />
     </>
   )
 }
