@@ -1,8 +1,10 @@
 'use server';
 
+import { headers } from "next/headers";
 import { Idea, Path, TitleAlign } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
+import { anonIdHeader } from "./public-project";
 
 export type ProjectVisibility = "private" | "unlisted" | "published";
 
@@ -229,8 +231,13 @@ interface VoteResponseDTO {
 }
 
 export async function toggleProjectVote(id: string): Promise<VoteResult> {
+  const clientIp = (await headers()).get("x-forwarded-for");
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/vote`, {
     method: "POST",
+    headers: {
+      ...(clientIp ? { "X-Forwarded-For": clientIp } : undefined),
+      ...(await anonIdHeader()),
+    },
   });
   return parseResponse<VoteResponseDTO>(response);
 }

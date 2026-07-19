@@ -10,7 +10,7 @@ async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
   return token ? { Authorization: `Bearer ${token}` } : undefined;
 }
 
-async function anonIdHeader(): Promise<HeadersInit | undefined> {
+export async function anonIdHeader(): Promise<HeadersInit | undefined> {
   const anonId = (await cookies()).get("tramo_anon_id")?.value;
   return anonId ? { "X-Anon-Id": anonId } : undefined;
 }
