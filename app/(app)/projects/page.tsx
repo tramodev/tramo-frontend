@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { PlanUsageChip } from "@/components/plan-usage-chip"
 import {
   createProject,
   deleteProject,
@@ -106,9 +107,12 @@ export default function ProjectsPage() {
 
   return (
     <main className="mx-auto w-full flex-1 max-w-[1280px] pt-11 px-18 pb-[84px]">
-        <span className="block text-sm font-medium text-primary mb-2">
-          Your workspace
-        </span>
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm font-medium text-primary">
+            Your workspace
+          </span>
+          <PlanUsageChip />
+        </div>
         <h1 className="font-display text-[44px] font-normal leading-[1.1] mb-7">
           Start a new project
         </h1>

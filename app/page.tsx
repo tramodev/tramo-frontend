@@ -3,6 +3,7 @@ import { BrowserMockup } from "@/components/browser-mockup";
 import { Hero } from "@/components/hero";
 import { Navbar } from "@/components/navbar";
 import { FeaturesSection } from "@/components/features-section";
+import { PricingSection } from "@/components/pricing-section";
 import { PosterCta } from "@/components/poster-cta";
 import { Footer } from "@/components/footer";
 import { FadeUp, LandingMotionConfig } from "@/components/landing-motion";
@@ -28,6 +29,10 @@ export default async function Home() {
           <hr className="border-t border-border" />
 
           <FeaturesSection />
+
+          <hr className="border-t border-border" />
+
+          <PricingSection />
         </div>
 
         <FadeUp>

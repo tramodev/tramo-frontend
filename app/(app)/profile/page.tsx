@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ArrowUpRight, Calendar, Users } from "lucide-react"
 import { BadgesPanel } from "@/components/badges-panel"
+import { PlanUsageChip } from "@/components/plan-usage-chip"
 import { AvatarUpload } from "@/components/avatar-upload"
 import { BioEditor } from "@/components/bio-editor"
 import { PublishedPanel } from "@/components/profile/published-panel"
@@ -77,6 +78,7 @@ export default async function ProfilePage({
                   <Users className="h-[14px] w-[14px]" />
                   {(stats?.followingCount ?? 0).toLocaleString('en-US')} following
                 </Link>
+                <PlanUsageChip />
               </div>
               <div className="mb-3.5">
                 <BioEditor initialBio={profile.bio} />
