@@ -19,7 +19,7 @@ export function AuthPoster({
   return (
     <div
       className={cn(
-        "relative m-4 hidden flex-col justify-end overflow-hidden rounded-[28px] p-16 lg:flex bg-accent text-accent-foreground",
+        "relative m-4 hidden flex-col justify-end overflow-hidden rounded-[28px] p-16 lg:flex lg:sticky lg:top-4 lg:h-[calc(100svh-2rem)] bg-accent text-accent-foreground",
         className,
       )}
     >
