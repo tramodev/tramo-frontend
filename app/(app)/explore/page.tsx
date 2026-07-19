@@ -124,11 +124,11 @@ export default async function ExplorePage({
                   initialCount={featured.voteCount}
                   isLoggedIn={loggedIn}
                 />
-                <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                <span className="inline-flex items-center px-2 text-[13px] text-muted-foreground">
                   <Eye className="h-[17px] w-[17px]" />
                   {featured.viewCount.toLocaleString('en-US')}
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                <span className="inline-flex items-center px-2 text-[13px] text-muted-foreground">
                   <MessageCircle className="h-[15px] w-[15px]" />
                   {featured.commentCount.toLocaleString('en-US')}
                 </span>

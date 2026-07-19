@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<body style="margin:0;font-family:sans-serif">
+  <div id="src" style="width:400px;padding:16px;background:#F6FAFE">
+    <h1 style="font-size:20px">Capture test</h1>
+    <p>Text + cross-origin R2 image below:</p>
+    <img src="https://pub-809332af245f4f50954cd6523674cc35.r2.dev/thumbnail/1/5b4e553dfa568280281033741fcc1d7a6b5cd261da634daeb4d72418b85fb2f7.jpg" style="width:200px" />
+  </div>
+  <div id="out" style="border-top:4px solid red"></div>
+  <script src="/__h2c_test_lib.js"></script>
+  <script>
+    window.addEventListener('load', () => {
+      const img = document.querySelector('#src img');
+      const run = () => html2canvas(document.getElementById('src'), { backgroundColor: '#F6FAFE', useCORS: true })
+        .then(c => { c.id = 'result'; document.getElementById('out').appendChild(c); });
+      img.complete ? run() : img.addEventListener('load', run);
+    });
+  </script>
+</body>
+</html>

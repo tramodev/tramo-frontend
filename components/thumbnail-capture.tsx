@@ -35,6 +35,9 @@ export function ThumbnailCapture({
           windowWidth: CAPTURE_WIDTH,
           backgroundColor: "#F6FAFE",
           scale: 1,
+          // editor images live on R2 (cross-origin) — without this html2canvas
+          // silently skips them and thumbnails lose their images
+          useCORS: true,
         });
 
         const resized = document.createElement("canvas");
