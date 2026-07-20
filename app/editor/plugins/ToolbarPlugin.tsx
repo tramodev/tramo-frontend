@@ -75,6 +75,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { insertImageWithUpload } from './ImagesPlugin';
 import { OPEN_LINK_EDITOR_COMMAND } from './FloatingLinkEditorPlugin';
 import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
@@ -376,24 +377,34 @@ export default function ToolbarPlugin({
 
   return (
     <div className="toolbar" ref={toolbarRef}>
-      <button
-        disabled={!canUndo}
-        onClick={() => {
-          editor.dispatchCommand(UNDO_COMMAND, undefined);
-        }}
-        className="toolbar-item spaced"
-        aria-label="Undo">
-        <Undo size={18} />
-      </button>
-      <button
-        disabled={!canRedo}
-        onClick={() => {
-          editor.dispatchCommand(REDO_COMMAND, undefined);
-        }}
-        className="toolbar-item"
-        aria-label="Redo">
-        <Redo size={18} />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            disabled={!canUndo}
+            onClick={() => {
+              editor.dispatchCommand(UNDO_COMMAND, undefined);
+            }}
+            className="toolbar-item spaced"
+            aria-label="Undo">
+            <Undo size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Undo</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            disabled={!canRedo}
+            onClick={() => {
+              editor.dispatchCommand(REDO_COMMAND, undefined);
+            }}
+            className="toolbar-item"
+            aria-label="Redo">
+            <Redo size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Redo</TooltipContent>
+      </Tooltip>
       <Divider />
       <select
         className="toolbar-item font-family-select"
@@ -410,12 +421,17 @@ export default function ToolbarPlugin({
       </select>
       <Divider />
       <div className="font-size-control">
-        <button
-          onClick={() => updateFontSizeByStep(-1)}
-          className="toolbar-item"
-          aria-label="Decrease font size">
-          <ChevronDown size={14} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => updateFontSizeByStep(-1)}
+              className="toolbar-item"
+              aria-label="Decrease font size">
+              <ChevronDown size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Decrease font size</TooltipContent>
+        </Tooltip>
         <input
           type="number"
           className="font-size-input"
@@ -432,26 +448,36 @@ export default function ToolbarPlugin({
           }}
           aria-label="Font Size"
         />
-        <button
-          onClick={() => updateFontSizeByStep(1)}
-          className="toolbar-item"
-          aria-label="Increase font size">
-          <ChevronUp size={14} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => updateFontSizeByStep(1)}
+              className="toolbar-item"
+              aria-label="Increase font size">
+              <ChevronUp size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Increase font size</TooltipContent>
+        </Tooltip>
       </div>
 
       <Divider />
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="toolbar-item align-dropdown-trigger spaced" aria-label="Text style">
-            {(() => {
-              const Active =
-                HEADING_OPTIONS.find((option) => option.value === blockType)?.Icon ?? Type;
-              return <Active size={18} />;
-            })()}
-            <ChevronDown size={12} />
-          </button>
-        </DropdownMenuTrigger>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button className="toolbar-item align-dropdown-trigger spaced" aria-label="Text style">
+                {(() => {
+                  const Active =
+                    HEADING_OPTIONS.find((option) => option.value === blockType)?.Icon ?? Type;
+                  return <Active size={18} />;
+                })()}
+                <ChevronDown size={12} />
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Text style</TooltipContent>
+        </Tooltip>
         <DropdownMenuContent align="start">
           {HEADING_OPTIONS.map(({ value, label, Icon }) => (
             <DropdownMenuItem
@@ -472,16 +498,21 @@ export default function ToolbarPlugin({
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="toolbar-item align-dropdown-trigger spaced" aria-label="Align text">
-            {(() => {
-              const activeValue = titleFocused ? titleAlign ?? 'left' : elementFormat;
-              const Active = ALIGN_OPTIONS.find((option) => option.value === activeValue)?.Icon ?? AlignLeft;
-              return <Active size={18} />;
-            })()}
-            <ChevronDown size={12} />
-          </button>
-        </DropdownMenuTrigger>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button className="toolbar-item align-dropdown-trigger spaced" aria-label="Align text">
+                {(() => {
+                  const activeValue = titleFocused ? titleAlign ?? 'left' : elementFormat;
+                  const Active = ALIGN_OPTIONS.find((option) => option.value === activeValue)?.Icon ?? AlignLeft;
+                  return <Active size={18} />;
+                })()}
+                <ChevronDown size={12} />
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Align text</TooltipContent>
+        </Tooltip>
         <DropdownMenuContent align="start">
           {(titleFocused ? ALIGN_OPTIONS.filter((option) => option.value !== 'justify') : ALIGN_OPTIONS).map(({ value, label, Icon }) => (
             <DropdownMenuItem
@@ -500,57 +531,87 @@ export default function ToolbarPlugin({
       </DropdownMenu>
 
       <Divider />
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-        }}
-        className={'toolbar-item spaced ' + (isBold ? 'active' : '')}
-        aria-pressed={isBold}
-        aria-label="Format Bold">
-        <Bold size={18} />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-        }}
-        className={'toolbar-item spaced ' + (isItalic ? 'active' : '')}
-        aria-pressed={isItalic}
-        aria-label="Format Italics">
-        <Italic size={18} />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
-        }}
-        className={'toolbar-item spaced ' + (isUnderline ? 'active' : '')}
-        aria-pressed={isUnderline}
-        aria-label="Format Underline">
-        <Underline size={18} />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
-        }}
-        className={'toolbar-item spaced ' + (isStrikethrough ? 'active' : '')}
-        aria-pressed={isStrikethrough}
-        aria-label="Format Strikethrough">
-        <Strikethrough size={18} />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
-        }}
-        className={'toolbar-item spaced ' + (isCode ? 'active' : '')}
-        aria-pressed={isCode}
-        aria-label="Format Code">
-        <Code size={18} />
-      </button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="toolbar-item spaced" aria-label="Text color">
-            <Baseline size={18} style={textColor ? { color: textColor } : undefined} />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
+            }}
+            className={'toolbar-item spaced ' + (isBold ? 'active' : '')}
+            aria-pressed={isBold}
+            aria-label="Format Bold">
+            <Bold size={18} />
           </button>
-        </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Bold</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
+            }}
+            className={'toolbar-item spaced ' + (isItalic ? 'active' : '')}
+            aria-pressed={isItalic}
+            aria-label="Format Italics">
+            <Italic size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Italic</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
+            }}
+            className={'toolbar-item spaced ' + (isUnderline ? 'active' : '')}
+            aria-pressed={isUnderline}
+            aria-label="Format Underline">
+            <Underline size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Underline</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
+            }}
+            className={'toolbar-item spaced ' + (isStrikethrough ? 'active' : '')}
+            aria-pressed={isStrikethrough}
+            aria-label="Format Strikethrough">
+            <Strikethrough size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Strikethrough</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
+            }}
+            className={'toolbar-item spaced ' + (isCode ? 'active' : '')}
+            aria-pressed={isCode}
+            aria-label="Format Code">
+            <Code size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Inline code</TooltipContent>
+      </Tooltip>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button className="toolbar-item spaced" aria-label="Text color">
+                <Baseline size={18} style={textColor ? { color: textColor } : undefined} />
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Text color</TooltipContent>
+        </Tooltip>
         <DropdownMenuContent align="start">
           {COLOR_OPTIONS.map(({ value, label }) => (
             <DropdownMenuItem key={label} onSelect={() => applyStyleText({ color: value || null })}>
@@ -563,19 +624,29 @@ export default function ToolbarPlugin({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      <button
-        onClick={insertLink}
-        className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
-        aria-pressed={isLink}
-        aria-label="Insert Link">
-        <LinkIcon size={18} />
-      </button>
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="toolbar-item spaced"
-        aria-label="Insert Image">
-        <ImageIcon size={18} />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={insertLink}
+            className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
+            aria-pressed={isLink}
+            aria-label="Insert Link">
+            <LinkIcon size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Link</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="toolbar-item spaced"
+            aria-label="Insert Image">
+            <ImageIcon size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Insert image</TooltipContent>
+      </Tooltip>
       <input
         ref={fileInputRef}
         type="file"
@@ -585,36 +656,65 @@ export default function ToolbarPlugin({
       />
 
       <Divider />
-      <button
-        onClick={formatBulletList}
-        className={'toolbar-item spaced ' + (blockType === 'bullet' ? 'active' : '')}
-        aria-label="Bullet List">
-        <ListIcon size={18} />
-      </button>
-      <button
-        onClick={formatNumberedList}
-        className={'toolbar-item spaced ' + (blockType === 'number' ? 'active' : '')}
-        aria-label="Numbered List">
-        <ListOrdered size={18} />
-      </button>
-      <button
-        onClick={formatCheckList}
-        className={'toolbar-item spaced ' + (blockType === 'check' ? 'active' : '')}
-        aria-label="Check List">
-        <CheckSquare size={18} />
-      </button>
-      <button
-        onClick={formatQuote}
-        className={'toolbar-item spaced ' + (blockType === 'quote' ? 'active' : '')}
-        aria-label="Quote">
-        <Quote size={18} />
-      </button>
-      <button
-        onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
-        className="toolbar-item spaced"
-        aria-label="Insert Divider">
-        <Minus size={18} />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={formatBulletList}
+            className={'toolbar-item spaced ' + (blockType === 'bullet' ? 'active' : '')}
+            aria-pressed={blockType === 'bullet'}
+            aria-label="Bullet List">
+            <ListIcon size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Bulleted list</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={formatNumberedList}
+            className={'toolbar-item spaced ' + (blockType === 'number' ? 'active' : '')}
+            aria-pressed={blockType === 'number'}
+            aria-label="Numbered List">
+            <ListOrdered size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Numbered list</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={formatCheckList}
+            className={'toolbar-item spaced ' + (blockType === 'check' ? 'active' : '')}
+            aria-pressed={blockType === 'check'}
+            aria-label="Check List">
+            <CheckSquare size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Check list</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={formatQuote}
+            className={'toolbar-item spaced ' + (blockType === 'quote' ? 'active' : '')}
+            aria-pressed={blockType === 'quote'}
+            aria-label="Quote">
+            <Quote size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Quote</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
+            className="toolbar-item spaced"
+            aria-label="Insert Divider">
+            <Minus size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Divider</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

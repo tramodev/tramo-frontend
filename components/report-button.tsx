@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { reportProject } from "@/lib/moderation"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function ReportButton({ projectId, isLoggedIn }: { projectId: string; isLoggedIn: boolean }) {
   const [open, setOpen] = useState(false)
@@ -53,16 +54,20 @@ export function ReportButton({ projectId, isLoggedIn }: { projectId: string; isL
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          onClick={handleTriggerClick}
-          title="Report this project"
-          className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-muted text-muted-foreground"
-        >
-          <Flag className="h-4 w-4" />
-        </button>
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              onClick={handleTriggerClick}
+              className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-muted text-muted-foreground"
+            >
+              <Flag className="h-4 w-4" />
+            </button>
+          </DialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Report this project</TooltipContent>
+      </Tooltip>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Report this project</DialogTitle>

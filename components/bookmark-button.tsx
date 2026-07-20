@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Bookmark } from "lucide-react"
 import { toggleProjectBookmark } from "@/lib/projects-store"
 import { BurstParticles } from "@/components/burst-particles"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function BookmarkButton({
   projectId,
@@ -44,23 +45,27 @@ export function BookmarkButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isPending}
-      aria-pressed={bookmarked}
-      title={bookmarked ? "Remove bookmark" : "Bookmark this project"}
-      className={`relative z-10 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted ${
-        bookmarked ? "text-primary" : "text-muted-foreground"
-      }`}
-    >
-      <span key={burstId} className="relative inline-flex">
-        <Bookmark
-          className={burstId > 0 ? "h-4 w-4 burst-pop" : "h-4 w-4"}
-          fill={bookmarked ? "currentColor" : "none"}
-        />
-        {burstId > 0 && <BurstParticles />}
-      </span>
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={isPending}
+          aria-pressed={bookmarked}
+          className={`relative z-10 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted ${
+            bookmarked ? "text-primary" : "text-muted-foreground"
+          }`}
+        >
+          <span key={burstId} className="relative inline-flex">
+            <Bookmark
+              className={burstId > 0 ? "h-4 w-4 burst-pop" : "h-4 w-4"}
+              fill={bookmarked ? "currentColor" : "none"}
+            />
+            {burstId > 0 && <BurstParticles />}
+          </span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{bookmarked ? "Remove bookmark" : "Bookmark this project"}</TooltipContent>
+    </Tooltip>
   )
 }

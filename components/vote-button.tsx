@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { ArrowBigUp } from "lucide-react"
 import { toggleProjectVote } from "@/lib/projects-store"
 import { BurstParticles } from "@/components/burst-particles"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function VoteButton({
   projectId,
@@ -52,25 +53,30 @@ export function VoteButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isPending}
-      aria-pressed={voted}
-      className={`relative z-10 flex h-8 shrink-0 px-2 cursor-pointer items-center rounded-full text-sm font-medium transition-colors ${
-        voted
-          ? "bg-secondary text-secondary-foreground"
-          : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
-      }`}
-    >
-      <span key={burstId} className="relative inline-flex">
-        <ArrowBigUp
-          className={burstId > 0 ? "h-[15px] w-[15px] burst-pop" : "h-[15px] w-[15px]"}
-          fill={voted ? "currentColor" : "none"}
-        />
-        {burstId > 0 && <BurstParticles />}
-      </span>
-      <span className="text-[13px]">{count}</span>
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={isPending}
+          aria-pressed={voted}
+          className={`relative z-10 flex h-8 shrink-0 px-2 cursor-pointer items-center rounded-full text-sm font-medium transition-colors ${
+            voted
+              ? "bg-secondary text-secondary-foreground"
+              : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
+          }`}
+        >
+          <span key={burstId} className="relative inline-flex">
+            <ArrowBigUp
+              className={burstId > 0 ? "h-[15px] w-[15px] burst-pop" : "h-[15px] w-[15px]"}
+              fill={voted ? "currentColor" : "none"}
+            />
+            {burstId > 0 && <BurstParticles />}
+          </span>
+          <span className="text-[13px]">{count}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{voted ? "Remove upvote" : "Upvote"}</TooltipContent>
+    </Tooltip>
   )
 }

@@ -14,6 +14,7 @@ import {
 } from 'lexical';
 import { $findMatchingParent } from '@lexical/utils';
 import { Check, ExternalLink, Pencil, Trash2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ideaIdFromRel } from './ideaLink';
 
 export const OPEN_LINK_EDITOR_COMMAND: LexicalCommand<void> = createCommand('OPEN_LINK_EDITOR_COMMAND');
@@ -179,9 +180,14 @@ export default function FloatingLinkEditorPlugin() {
             }}
             placeholder="Enter URL"
           />
-          <button onClick={saveUrl} aria-label="Save link">
-            <Check size={15} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={saveUrl} aria-label="Save link">
+                <Check size={15} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Save</TooltipContent>
+          </Tooltip>
         </>
       ) : (
         <>
@@ -189,18 +195,28 @@ export default function FloatingLinkEditorPlugin() {
             <ExternalLink size={13} />
             <span className="floating-link-editor-url">{linkUrl}</span>
           </a>
-          <button
-            onClick={() => {
-              setDraftUrl(linkUrl);
-              setEditing(true);
-            }}
-            aria-label="Edit link"
-          >
-            <Pencil size={15} />
-          </button>
-          <button onClick={removeLink} aria-label="Remove link">
-            <Trash2 size={15} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => {
+                  setDraftUrl(linkUrl);
+                  setEditing(true);
+                }}
+                aria-label="Edit link"
+              >
+                <Pencil size={15} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Edit link</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={removeLink} aria-label="Remove link">
+                <Trash2 size={15} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Remove link</TooltipContent>
+          </Tooltip>
         </>
       )}
     </div>,
