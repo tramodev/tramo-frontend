@@ -27,7 +27,21 @@ export function ThumbnailCapture({
 
     const timeout = setTimeout(async () => {
       if (!ref.current || cancelled) return;
+      const objectUrls: string[] = [];
       try {
+        const images = Array.from(ref.current.querySelectorAll("img")).filter(
+          (img) => img.src.startsWith("http")
+        );
+        await Promise.allSettled(
+          images.map(async (img) => {
+            const response = await fetch(img.src, { mode: "cors", cache: "no-store" });
+            if (!response.ok) return;
+            const url = URL.createObjectURL(await response.blob());
+            objectUrls.push(url);
+            img.src = url;
+          })
+        );
+        if (!ref.current || cancelled) return;
         const html2canvas = (await import("html2canvas")).default;
         const canvas = await html2canvas(ref.current, {
           width: CAPTURE_WIDTH,
@@ -52,6 +66,8 @@ export function ThumbnailCapture({
       } catch (err) {
         console.error(err);
         if (!cancelled) onCapture(null);
+      } finally {
+        objectUrls.forEach((url) => URL.revokeObjectURL(url));
       }
     }, 200);
 
