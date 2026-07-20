@@ -201,6 +201,8 @@ const editorConfig = {
 };
 
 const lastIdeaStorageKey = (projectId: string) => `tramo:lastIdea:${projectId}`;
+const SIDEBAR_OPEN_STORAGE_KEY = 'tramo:editorSidebarOpen';
+const CONNECTIONS_OPEN_STORAGE_KEY = 'tramo:editorConnectionsOpen';
 
 function countTextStats(content: string): { words: number; characters: number } {
   if (!content) return { words: 0, characters: 0 };
@@ -243,9 +245,23 @@ export default function DashboardPage() {
   }, [ideas]);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState<'editor' | 'graph'>('editor');
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(
+    () => typeof window === 'undefined' || localStorage.getItem(SIDEBAR_OPEN_STORAGE_KEY) !== 'false'
+  );
+  const [connectionsPanelOpen, setConnectionsPanelOpen] = useState(
+    () => typeof window === 'undefined' || localStorage.getItem(CONNECTIONS_OPEN_STORAGE_KEY) !== 'false'
+  );
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [thumbnailCapture, setThumbnailCapture] = useState<{ title: string; titleAlign: TitleAlign; content: string } | null>(null);
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_OPEN_STORAGE_KEY, String(leftSidebarOpen));
+  }, [leftSidebarOpen]);
+
+  useEffect(() => {
+    localStorage.setItem(CONNECTIONS_OPEN_STORAGE_KEY, String(connectionsPanelOpen));
+  }, [connectionsPanelOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -601,7 +617,9 @@ export default function DashboardPage() {
 
   return (
     <SidebarProvider
-      style={{ "--sidebar-width": "288px" } as React.CSSProperties}
+      open={leftSidebarOpen}
+      onOpenChange={setLeftSidebarOpen}
+      style={{ "--sidebar-width": "288px", "--sidebar-width-icon": "272px" } as React.CSSProperties}
       className="h-screen min-h-0 flex-col"
     >
       <ProjectShell
@@ -789,6 +807,8 @@ export default function DashboardPage() {
                 onUnlinkIdea={handleUnlinkIdeas}
                 onLinkPath={handleLinkIdeaToPath}
                 onOpenGraph={() => setView('graph')}
+                open={connectionsPanelOpen}
+                onToggleOpen={() => setConnectionsPanelOpen((o) => !o)}
               />
             </>
           ) : (

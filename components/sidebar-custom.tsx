@@ -6,13 +6,14 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,7 @@ export function SidebarCustom({
   onDeletePath,
   onUnlinkIdeaFromPath,
 }: SidebarCustomProps) {
+  const { state } = useSidebar();
   const [isCreating, setIsCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [creatingIdeaPathId, setCreatingIdeaPathId] = useState<string | null>(null);
@@ -155,23 +157,34 @@ export function SidebarCustom({
   return (
     <Sidebar
       variant="floating"
+      collapsible="icon"
       className="top-16 h-[calc(100svh-64px)] pt-0 px-3 pb-3"
     >
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              My Paths
+          <div className="flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-sidebar-foreground/70">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <SidebarTrigger className="h-5 w-5" />
+              {state !== "collapsed" && "My Paths"}
             </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5"
-              onClick={() => setIsCreating(true)}
+            {state !== "collapsed" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5"
+                onClick={() => setIsCreating(true)}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <div className="overflow-hidden">
+            <div
+              className={`transition-transform duration-200 ease-linear ${
+                state === "collapsed" ? "-translate-x-full pointer-events-none" : "translate-x-0"
+              }`}
+              aria-hidden={state === "collapsed"}
             >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </SidebarGroupLabel>
           {isCreating && (
             <div className="px-2 pb-2">
               <Input
@@ -395,6 +408,8 @@ export function SidebarCustom({
               })}
             </SidebarMenu>
           </SidebarGroupContent>
+            </div>
+          </div>
         </SidebarGroup>
       </SidebarContent>
       <ConfirmDialog

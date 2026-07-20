@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Link2, Plus, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Link2, Plus, X } from "lucide-react"
 
 import { Idea, Path } from "@/app/editor/types"
 
@@ -14,6 +14,8 @@ interface ConnectionsPanelProps {
   onUnlinkIdea: (ideaId: string, otherIdeaId: string) => void;
   onLinkPath: (pathId: string, ideaId: string) => void;
   onOpenGraph: () => void;
+  open: boolean;
+  onToggleOpen: () => void;
 }
 
 const MAX_GRAPH_NODES_PER_SIDE = 3;
@@ -166,6 +168,8 @@ export function ConnectionsPanel({
   onUnlinkIdea,
   onLinkPath,
   onOpenGraph,
+  open,
+  onToggleOpen,
 }: ConnectionsPanelProps) {
   const [isAddingIdea, setIsAddingIdea] = useState(false);
   const [ideaSelection, setIdeaSelection] = useState("");
@@ -197,19 +201,42 @@ export function ConnectionsPanel({
   };
 
   return (
-    <div className="flex w-72 shrink-0 flex-col gap-[22px] overflow-hidden rounded-2xl bg-card py-5 px-4">
-      <div>
-        <div className="mb-2.5 flex items-center justify-between">
-          <span className={SECTION_LABEL_CLASSES}>Linked ideas</span>
+    <div
+      className={`flex w-72 shrink-0 flex-col transition-all duration-200 ease-linear ${
+        open ? "overflow-hidden rounded-2xl bg-card py-5 px-4" : "pt-5 px-4"
+      }`}
+    >
+      <div className="mb-2.5 flex items-center justify-between">
+        {open && <span className={SECTION_LABEL_CLASSES}>Linked ideas</span>}
+        <div className="ml-auto flex items-center gap-1.5">
+          {open && (
+            <button
+              type="button"
+              aria-label="Link an idea"
+              onClick={() => setIsAddingIdea(true)}
+              className="cursor-pointer"
+            >
+              <Plus className="h-[15px] w-[15px]" />
+            </button>
+          )}
           <button
             type="button"
-            aria-label="Link an idea"
-            onClick={() => setIsAddingIdea(true)}
-            className="cursor-pointer"
+            aria-label={open ? "Collapse connections panel" : "Expand connections panel"}
+            onClick={onToggleOpen}
+            className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <Plus className="h-[15px] w-[15px]" />
+            {open ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
         </div>
+      </div>
+      <div className="overflow-hidden">
+        <div
+          className={`flex flex-col gap-[22px] transition-transform duration-200 ease-linear ${
+            open ? "translate-x-0" : "translate-x-full pointer-events-none"
+          }`}
+          aria-hidden={!open}
+        >
+      <div>
         <div className="flex flex-col gap-2">
           {linkedIdeas.map((linked) => (
             <div
@@ -341,6 +368,8 @@ export function ConnectionsPanel({
           </button>
         </div>
         <NeighborhoodGraph idea={idea} ideas={ideas} paths={paths} />
+      </div>
+        </div>
       </div>
     </div>
   );
