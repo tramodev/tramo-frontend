@@ -10,10 +10,10 @@ import {
   COMMAND_PRIORITY_LOW,
   FORMAT_ELEMENT_COMMAND,
   FORMAT_TEXT_COMMAND,
+  KEY_MODIFIER_COMMAND,
   REDO_COMMAND,
   SELECTION_CHANGE_COMMAND,
   UNDO_COMMAND,
-  LexicalEditor,
   $createParagraphNode,
 } from 'lexical';
 import {
@@ -29,12 +29,7 @@ import {
   $isListNode,
   ListNode,
 } from '@lexical/list';
-import {
-  $createCodeNode,
-  $isCodeNode,
-  getDefaultCodeLanguage,
-  getCodeLanguages,
-} from '@lexical/code';
+import { $createCodeNode } from '@lexical/code';
 import {
   $isLinkNode,
   TOGGLE_LINK_COMMAND,
@@ -65,6 +60,7 @@ import {
   ListOrdered,
   CheckSquare,
   Code,
+  SquareCode,
   Quote,
   Link as LinkIcon,
   Image as ImageIcon,
@@ -88,29 +84,15 @@ const ALIGN_OPTIONS: { value: ElementFormat; label: string; Icon: typeof AlignLe
   { value: 'justify', label: 'Justify', Icon: AlignJustify },
 ];
 
-type HeadingOption = 'paragraph' | 'h1' | 'h2' | 'h3';
+type HeadingOption = 'paragraph' | 'h1' | 'h2' | 'h3' | 'code';
 
 const HEADING_OPTIONS: { value: HeadingOption; label: string; Icon: typeof Type }[] = [
   { value: 'paragraph', label: 'Normal', Icon: Type },
   { value: 'h1', label: 'Heading 1', Icon: Heading1 },
   { value: 'h2', label: 'Heading 2', Icon: Heading2 },
   { value: 'h3', label: 'Heading 3', Icon: Heading3 },
+  { value: 'code', label: 'Code Block', Icon: SquareCode },
 ];
-
-const blockTypeToBlockName = {
-  bullet: 'Bulleted List',
-  check: 'Check List',
-  code: 'Code Block',
-  h1: 'Heading 1',
-  h2: 'Heading 2',
-  h3: 'Heading 3',
-  h4: 'Heading 4',
-  h5: 'Heading 5',
-  h6: 'Heading 6',
-  number: 'Numbered List',
-  paragraph: 'Normal',
-  quote: 'Quote',
-};
 
 const FONT_FAMILY_OPTIONS: Array<[string, string]> = [
   ['Arial', 'Arial'],
@@ -143,7 +125,6 @@ export default function ToolbarPlugin({
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [blockType, setBlockType] = useState('paragraph');
-  const [selectedElementKey, setSelectedElementKey] = useState<string | null>(null);
   const [isLink, setIsLink] = useState(false);
 
   const [isBold, setIsBold] = useState(false);
@@ -166,7 +147,6 @@ export default function ToolbarPlugin({
       const elementKey = element.getKey();
       const elementDOM = editor.getElementByKey(elementKey);
       if (elementDOM !== null) {
-        setSelectedElementKey(elementKey);
         if ($isListNode(element)) {
           const parentList = $getNearestNodeOfType<ListNode>(anchorNode, ListNode);
           const type = parentList ? parentList.getListType() : element.getListType();
@@ -176,12 +156,6 @@ export default function ToolbarPlugin({
             ? element.getTag()
             : element.getType();
           setBlockType(type);
-
-          if ($isCodeNode(element)) {
-            setIsCode(true);
-          } else {
-            setIsCode(false);
-          }
         }
         if ($isElementNode(element)) {
           const format = element.getFormatType();
@@ -248,6 +222,17 @@ export default function ToolbarPlugin({
     [applyStyleText, fontSize],
   );
 
+  const insertLink = useCallback(() => {
+    if (!isLink) {
+      const url = window.prompt('Enter URL');
+      if (!url) return;
+      const normalizedUrl = /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`;
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, normalizedUrl);
+    } else {
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+    }
+  }, [editor, isLink]);
+
   useEffect(() => {
     return mergeRegister(
       editor.registerUpdateListener(({ editorState }) => {
@@ -279,8 +264,20 @@ export default function ToolbarPlugin({
         },
         COMMAND_PRIORITY_LOW,
       ),
+      editor.registerCommand(
+        KEY_MODIFIER_COMMAND,
+        (event) => {
+          if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+            event.preventDefault();
+            insertLink();
+            return true;
+          }
+          return false;
+        },
+        COMMAND_PRIORITY_LOW,
+      ),
     );
-  }, [editor, updateToolbar]);
+  }, [editor, updateToolbar, insertLink]);
 
   const formatParagraph = () => {
     if (blockType !== 'paragraph') {
@@ -355,17 +352,6 @@ export default function ToolbarPlugin({
       });
     }
   };
-
-  const insertLink = useCallback(() => {
-    if (!isLink) {
-      const url = window.prompt('Enter URL');
-      if (!url) return;
-      const normalizedUrl = /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`;
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, normalizedUrl);
-    } else {
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
-    }
-  }, [editor, isLink]);
 
   const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -456,7 +442,13 @@ export default function ToolbarPlugin({
           {HEADING_OPTIONS.map(({ value, label, Icon }) => (
             <DropdownMenuItem
               key={value}
-              onSelect={() => (value === 'paragraph' ? formatParagraph() : formatHeading(value))}
+              onSelect={() =>
+                value === 'paragraph'
+                  ? formatParagraph()
+                  : value === 'code'
+                    ? formatCode()
+                    : formatHeading(value)
+              }
             >
               <Icon className="h-4 w-4" />
               {label}
@@ -499,6 +491,7 @@ export default function ToolbarPlugin({
           editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
         }}
         className={'toolbar-item spaced ' + (isBold ? 'active' : '')}
+        aria-pressed={isBold}
         aria-label="Format Bold">
         <Bold size={18} />
       </button>
@@ -507,6 +500,7 @@ export default function ToolbarPlugin({
           editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
         }}
         className={'toolbar-item spaced ' + (isItalic ? 'active' : '')}
+        aria-pressed={isItalic}
         aria-label="Format Italics">
         <Italic size={18} />
       </button>
@@ -515,6 +509,7 @@ export default function ToolbarPlugin({
           editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
         }}
         className={'toolbar-item spaced ' + (isUnderline ? 'active' : '')}
+        aria-pressed={isUnderline}
         aria-label="Format Underline">
         <Underline size={18} />
       </button>
@@ -523,6 +518,7 @@ export default function ToolbarPlugin({
           editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
         }}
         className={'toolbar-item spaced ' + (isStrikethrough ? 'active' : '')}
+        aria-pressed={isStrikethrough}
         aria-label="Format Strikethrough">
         <Strikethrough size={18} />
       </button>
@@ -531,12 +527,14 @@ export default function ToolbarPlugin({
           editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
         }}
         className={'toolbar-item spaced ' + (isCode ? 'active' : '')}
+        aria-pressed={isCode}
         aria-label="Format Code">
         <Code size={18} />
       </button>
       <button
         onClick={insertLink}
         className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
+        aria-pressed={isLink}
         aria-label="Insert Link">
         <LinkIcon size={18} />
       </button>

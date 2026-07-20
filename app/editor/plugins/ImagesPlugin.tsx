@@ -83,12 +83,14 @@ export function insertImageWithUpload(
           node.setSrc(src);
         }
       });
+      URL.revokeObjectURL(previewUrl);
     } catch (err) {
       console.error('Failed to upload image', err);
       editor.update(() => {
         if (key === null) return;
         $getNodeByKey(key)?.remove();
       });
+      URL.revokeObjectURL(previewUrl);
     }
   })();
 }

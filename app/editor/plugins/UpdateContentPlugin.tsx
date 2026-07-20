@@ -1,6 +1,6 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { useEffect, useRef } from 'react';
-import { CLEAR_EDITOR_COMMAND } from 'lexical';
+import { CLEAR_EDITOR_COMMAND, CLEAR_HISTORY_COMMAND } from 'lexical';
 
 export default function UpdateContentPlugin({
     content,
@@ -27,6 +27,7 @@ export default function UpdateContentPlugin({
                 editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
             }
         });
+        editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
 
         if (ideaId) onContentApplied?.(ideaId);
     }, [editor, ideaId, content, onContentApplied]);

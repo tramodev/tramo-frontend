@@ -16,7 +16,7 @@ import * as React from 'react';
 import ImageComponent from '../plugins/ImageComponent';
 import { R2_PUBLIC_BASE_URL } from '@/lib/config';
 
-const ALLOWED_SRC_PREFIXES = [R2_PUBLIC_BASE_URL, 'blob:'];
+const ALLOWED_SRC_PREFIXES = [R2_PUBLIC_BASE_URL];
 
 function isAllowedImageSrc(src: string): boolean {
   return ALLOWED_SRC_PREFIXES.some((prefix) => prefix && src.startsWith(prefix));

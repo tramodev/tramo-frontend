@@ -39,6 +39,8 @@ import ToolbarPlugin from '../plugins/ToolbarPlugin';
 import UpdateContentPlugin from '../plugins/UpdateContentPlugin';
 import ImagesPlugin from '../plugins/ImagesPlugin';
 import PastePlugin from '../plugins/PastePlugin';
+import CodeHighlightPlugin from '../plugins/CodeHighlightPlugin';
+import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
 import IdeaMentionPlugin from '../plugins/IdeaMentionPlugin';
 import IdeaLinkClickPlugin from '../plugins/IdeaLinkClickPlugin';
 import { ImageNode } from '../nodes/ImageNode';
@@ -76,7 +78,7 @@ import { uploadImage } from '@/lib/upload-image';
 import { ShareDialog } from '@/components/share-dialog';
 import { ThumbnailCapture } from '@/components/thumbnail-capture';
 
-const placeholder = 'Enter some rich text...';
+const placeholder = 'Start writing...';
 
 
 const removeStylesExportDOM = (
@@ -170,7 +172,7 @@ const editorConfig = {
     export: exportMap,
     import: constructImportMap(),
   },
-  namespace: 'React.js Demo',
+  namespace: 'tramo-editor',
   nodes: [
     ParagraphNode,
     TextNode,
@@ -188,7 +190,7 @@ const editorConfig = {
     ImageNode,
   ],
   onError(error: Error) {
-    throw error;
+    console.error(error);
   },
   theme: ExampleTheme,
 };
@@ -534,6 +536,9 @@ export default function DashboardPage() {
       .catch((err) => {
         console.error(err);
         setSaveStatus('error');
+        if (!pendingContentRef.current) {
+          pendingContentRef.current = pending;
+        }
       });
   }, []);
 
@@ -541,6 +546,17 @@ export default function DashboardPage() {
     // capture the thumbnail only when actually leaving the idea, not on every autosave tick
     return () => flushPendingContent(true);
   }, [selectedIdeaId, flushPendingContent]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!pendingContentRef.current) return;
+      flushPendingContent(false);
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [flushPendingContent]);
 
   const onChange = useCallback((editorState: EditorState) => {
     editorState.read(() => {
@@ -633,7 +649,7 @@ export default function DashboardPage() {
                   Saving
                 </>
               )}
-              {(saveStatus === 'saved' || saveStatus === 'idle') && (
+              {saveStatus === 'saved' && (
                 <>
                   <Check className="h-3.5 w-3.5 text-primary" />
                   Saved
@@ -738,6 +754,8 @@ export default function DashboardPage() {
                         <ClickableLinkPlugin newTab />
                         <ImagesPlugin />
                         <PastePlugin />
+                        <CodeHighlightPlugin />
+                        <TabIndentationPlugin />
                         <IdeaMentionPlugin
                           ideas={ideas}
                           currentIdeaId={selectedIdea.id}

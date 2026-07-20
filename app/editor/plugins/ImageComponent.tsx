@@ -38,6 +38,9 @@ export default function ImageComponent({
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => () => resizeCleanupRef.current?.(), []);
 
   const onDelete = useCallback(
     (event: KeyboardEvent) => {
@@ -134,10 +137,15 @@ export default function ImageComponent({
     const onPointerUp = () => {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
+      resizeCleanupRef.current = null;
     };
 
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    resizeCleanupRef.current = () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
   };
 
   return (
