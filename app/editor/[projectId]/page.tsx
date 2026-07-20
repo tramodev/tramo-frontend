@@ -38,6 +38,7 @@ import ExampleTheme from '../ExampleTheme';
 import ToolbarPlugin from '../plugins/ToolbarPlugin';
 import UpdateContentPlugin from '../plugins/UpdateContentPlugin';
 import ImagesPlugin from '../plugins/ImagesPlugin';
+import PastePlugin from '../plugins/PastePlugin';
 import IdeaMentionPlugin from '../plugins/IdeaMentionPlugin';
 import IdeaLinkClickPlugin from '../plugins/IdeaLinkClickPlugin';
 import { ImageNode } from '../nodes/ImageNode';
@@ -736,6 +737,7 @@ export default function DashboardPage() {
                         }} />
                         <ClickableLinkPlugin newTab />
                         <ImagesPlugin />
+                        <PastePlugin />
                         <IdeaMentionPlugin
                           ideas={ideas}
                           currentIdeaId={selectedIdea.id}
