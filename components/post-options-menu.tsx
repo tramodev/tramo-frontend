@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { MoreHorizontal, Flag, Share2, UserPlus, UserCheck } from "lucide-react"
+import { MoreHorizontal, Flag, Share2, UserPlus, UserCheck, Ban } from "lucide-react"
 
 import {
   DropdownMenu,
@@ -22,6 +22,7 @@ import {
 import { reportProject } from "@/lib/moderation"
 import { toggleFollow, getPublicProfile } from "@/lib/public-profile"
 import { shareProjectToFollowers } from "@/lib/projects-store"
+import { toggleBlock } from "@/lib/blocked-users"
 
 export function PostOptionsMenu({
   projectId,
@@ -42,6 +43,7 @@ export function PostOptionsMenu({
   const [submitted, setSubmitted] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [following, setFollowing] = useState(false)
+  const [blocked, setBlocked] = useState(false)
   const [followKnown, setFollowKnown] = useState(false)
 
   function requireLogin(): boolean {
@@ -58,11 +60,18 @@ export function PostOptionsMenu({
     setFollowing(result.following)
   }
 
+  async function handleBlock() {
+    if (!requireLogin()) return
+    const result = await toggleBlock(ownerUsername)
+    setBlocked(result.blocked)
+  }
+
   async function handleMenuOpenChange(open: boolean) {
     if (!open || followKnown || isOwnPost || !isLoggedIn) return
     setFollowKnown(true)
     const profile = await getPublicProfile(ownerUsername)
     setFollowing(profile?.following ?? false)
+    setBlocked(profile?.blocked ?? false)
   }
 
   async function handleShare() {
@@ -132,6 +141,10 @@ export function PostOptionsMenu({
               <DropdownMenuItem onSelect={handleReportSelect}>
                 <Flag className="h-3.5 w-3.5" />
                 Report post
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleBlock}>
+                <Ban className="h-3.5 w-3.5" />
+                {blocked ? `Unblock ${ownerUsername}` : `Block ${ownerUsername}`}
               </DropdownMenuItem>
             </>
           )}

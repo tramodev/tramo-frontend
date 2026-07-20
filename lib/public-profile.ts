@@ -38,6 +38,7 @@ interface PublicProfileDTO {
   badges: Badge[];
   following: boolean;
   self: boolean;
+  blocked: boolean;
 }
 
 export interface PublicProfile {
@@ -49,6 +50,7 @@ export interface PublicProfile {
   badges: Badge[];
   following: boolean;
   self: boolean;
+  blocked: boolean;
 }
 
 function parseTags(tags: string | null): string[] {

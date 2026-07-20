@@ -6,6 +6,10 @@ import { PrivacySettings } from "@/components/privacy-settings"
 import { getMyProfile } from "@/lib/profile"
 import { getSubscriptionStatus } from "@/lib/subscription"
 import { getUsername } from "@/lib/auth"
+import { getEmailDigestFrequency } from "@/lib/notifications-prefs"
+import { getPrivacySettings } from "@/lib/privacy"
+import { getBlockedUsersPage } from "@/lib/blocked-users"
+import { PAGE_SIZE } from "@/lib/config"
 
 type Tab = "account" | "plan" | "privacy"
 
@@ -27,22 +31,24 @@ export default async function SettingsPage({
   const [fetchedProfile, cookieUsername] = await Promise.all([getMyProfile(), getUsername()])
   const profile = fetchedProfile ?? { username: cookieUsername ?? "", email: "", bio: null, imageUrl: null, createdAt: null }
 
+  const [privacy, blockedUsers] = tab === "privacy"
+    ? await Promise.all([getPrivacySettings(), getBlockedUsersPage(0, PAGE_SIZE)])
+    : [null, null]
+
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
       <div className="pt-9 px-18 pb-16">
-        <h1 className="font-display text-[36px] font-normal leading-[1.1] mb-8">Settings</h1>
-
         <div className="grid grid-cols-[216px_minmax(0,1fr)] gap-14 items-start">
           <nav className="sticky top-6 flex flex-col gap-1">
+            <h1 className="font-display text-[36px] font-normal leading-[1.1] mb-8">Settings</h1>
             {TABS.map(({ key, label, icon: Icon }) => (
               <Link
                 key={key}
                 href={`/settings?tab=${key}`}
-                className={`flex items-center gap-3 h-10 rounded-full px-4 text-sm font-medium transition-colors ${
-                  tab === key
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                className={`flex items-center gap-3 h-10 rounded-full px-4 text-sm font-medium transition-colors ${tab === key
+                  ? "bg-secondary text-secondary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
               >
                 <Icon className="size-[18px]" />
                 {label}
@@ -78,13 +84,21 @@ export default async function SettingsPage({
                     )}
                   </dl>
                 </section>
-                <SettingsView />
+                <SettingsView initialDigest={await getEmailDigestFrequency()} />
               </>
             )}
-
             {tab === "plan" && <PlanPanel initialStatus={await getSubscriptionStatus()} />}
-
-            {tab === "privacy" && <PrivacySettings />}
+            {tab === "privacy" && privacy && blockedUsers && (
+              <PrivacySettings
+                initialVisibility={privacy.profileVisibility}
+                initialShowUpvotes={privacy.showUpvotes}
+                initialAllowForks={privacy.allowForks}
+                initialCommentsPolicy={privacy.commentsPolicy}
+                initialBlockedUsers={blockedUsers.items}
+                initialBlockedUsersHasMore={blockedUsers.hasMore}
+                pageSize={PAGE_SIZE}
+              />
+            )}
           </div>
         </div>
       </div>

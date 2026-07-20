@@ -4,6 +4,7 @@ import { ArrowUpRight, Calendar, Users } from "lucide-react"
 import { BadgesPanel } from "@/components/badges-panel"
 import { PublishedPanel } from "@/components/profile/published-panel"
 import { FollowButton } from "@/components/follow-button"
+import { BlockButton } from "@/components/block-button"
 import { isLoggedIn } from "@/lib/auth"
 import { getPublicProfile, getPublicUserPublishedPage } from "@/lib/public-profile"
 import { PAGE_SIZE } from "@/lib/config"
@@ -53,6 +54,7 @@ export default async function PublicProfilePage({
                   {profile.username}
                 </h1>
                 <FollowButton username={profile.username} initialFollowing={profile.following} isLoggedIn={loggedIn} />
+                <BlockButton username={profile.username} initialBlocked={profile.blocked} isLoggedIn={loggedIn} />
               </div>
               <div className="flex items-center gap-4 text-[13px] mb-3.5 text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
