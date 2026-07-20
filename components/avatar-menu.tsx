@@ -96,13 +96,9 @@ export function AvatarMenu({ username, imageUrl }: { username: string; imageUrl?
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild variant="destructive">
-          <form action={handleLogout} className="w-full">
-            <button type="submit" className="flex w-full items-center gap-2">
-              <LogOut />
-              Log Out
-            </button>
-          </form>
+        <DropdownMenuItem variant="destructive" onSelect={() => { void handleLogout(); }}>
+          <LogOut />
+          Log Out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

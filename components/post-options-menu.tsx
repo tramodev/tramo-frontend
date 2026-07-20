@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { MoreHorizontal, Flag, Share2, UserPlus, UserCheck, Ban } from "lucide-react"
+import { MoreHorizontal, Flag, Share2, UserPlus, UserCheck, Ban, GitFork } from "lucide-react"
 
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { reportProject } from "@/lib/moderation"
 import { toggleFollow, getPublicProfile } from "@/lib/public-profile"
-import { shareProjectToFollowers } from "@/lib/projects-store"
+import { shareProjectToFollowers, forkProject } from "@/lib/projects-store"
 import { toggleBlock } from "@/lib/blocked-users"
 
 export function PostOptionsMenu({
@@ -77,6 +77,12 @@ export function PostOptionsMenu({
   async function handleShare() {
     if (!requireLogin()) return
     await shareProjectToFollowers(projectId)
+  }
+
+  async function handleFork() {
+    if (!requireLogin()) return
+    const forked = await forkProject(projectId)
+    router.push(`/editor/${forked.id}`)
   }
 
   function handleReportSelect() {
@@ -137,6 +143,10 @@ export function PostOptionsMenu({
                     Follow {ownerUsername}
                   </>
                 )}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleFork}>
+                <GitFork className="h-3.5 w-3.5" />
+                Fork this project
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={handleReportSelect}>
                 <Flag className="h-3.5 w-3.5" />
