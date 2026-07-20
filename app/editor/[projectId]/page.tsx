@@ -710,7 +710,7 @@ export default function DashboardPage() {
                             className="w-full border-0 bg-transparent font-display text-[28px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40"
                           />
                         </div>
-                        <div className="relative flex flex-1 min-h-0 flex-col">
+                        <div className="relative grid flex-1 min-h-0">
                           <RichTextPlugin
                             contentEditable={
                               <ContentEditable
