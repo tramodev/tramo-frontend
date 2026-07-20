@@ -42,6 +42,7 @@ import {
 
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Baseline,
   Bold,
   Italic,
   Underline,
@@ -61,6 +62,7 @@ import {
   CheckSquare,
   Code,
   SquareCode,
+  Minus,
   Quote,
   Link as LinkIcon,
   Image as ImageIcon,
@@ -74,6 +76,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { insertImageWithUpload } from './ImagesPlugin';
+import { OPEN_LINK_EDITOR_COMMAND } from './FloatingLinkEditorPlugin';
+import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
+
+const COLOR_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'Default' },
+  { value: 'var(--ed-red)', label: 'Red' },
+  { value: 'var(--ed-orange)', label: 'Orange' },
+  { value: 'var(--ed-green)', label: 'Green' },
+  { value: 'var(--ed-blue)', label: 'Blue' },
+  { value: 'var(--ed-purple)', label: 'Purple' },
+  { value: 'var(--ed-gray)', label: 'Gray' },
+];
 
 type ElementFormat = 'left' | 'center' | 'right' | 'justify';
 
@@ -134,6 +148,7 @@ export default function ToolbarPlugin({
   const [isCode, setIsCode] = useState(false);
   const [fontFamily, setFontFamily] = useState('Arial');
   const [fontSize, setFontSize] = useState('15');
+  const [textColor, setTextColor] = useState('');
   const [elementFormat, setElementFormat] = useState<ElementFormat>('left');
 
   const updateToolbar = useCallback(() => {
@@ -177,6 +192,7 @@ export default function ToolbarPlugin({
         setIsLink(false);
       }
 
+      setTextColor($getSelectionStyleValueForProperty(selection, 'color', ''));
       setFontFamily($getSelectionStyleValueForProperty(selection, 'font-family', 'Arial'));
       setFontSize(
         $getSelectionStyleValueForProperty(selection, 'font-size', `${MIN_FONT_SIZE + 7}px`).replace('px', ''),
@@ -185,7 +201,7 @@ export default function ToolbarPlugin({
   }, [editor]);
 
   const applyStyleText = useCallback(
-    (styles: Record<string, string>) => {
+    (styles: Record<string, string | null>) => {
       editor.update(() => {
         const selection = $getSelection();
         if ($isRangeSelection(selection)) {
@@ -224,10 +240,8 @@ export default function ToolbarPlugin({
 
   const insertLink = useCallback(() => {
     if (!isLink) {
-      const url = window.prompt('Enter URL');
-      if (!url) return;
-      const normalizedUrl = /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`;
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, normalizedUrl);
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, 'https://');
+      editor.dispatchCommand(OPEN_LINK_EDITOR_COMMAND, undefined);
     } else {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }
@@ -531,6 +545,24 @@ export default function ToolbarPlugin({
         aria-label="Format Code">
         <Code size={18} />
       </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="toolbar-item spaced" aria-label="Text color">
+            <Baseline size={18} style={textColor ? { color: textColor } : undefined} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {COLOR_OPTIONS.map(({ value, label }) => (
+            <DropdownMenuItem key={label} onSelect={() => applyStyleText({ color: value || null })}>
+              <span
+                className="toolbar-color-swatch"
+                style={{ background: value || 'var(--foreground)' }}
+              />
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <button
         onClick={insertLink}
         className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
@@ -576,6 +608,12 @@ export default function ToolbarPlugin({
         className={'toolbar-item spaced ' + (blockType === 'quote' ? 'active' : '')}
         aria-label="Quote">
         <Quote size={18} />
+      </button>
+      <button
+        onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
+        className="toolbar-item spaced"
+        aria-label="Insert Divider">
+        <Minus size={18} />
       </button>
     </div>
   );

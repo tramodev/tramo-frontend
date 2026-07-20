@@ -13,6 +13,7 @@ import { ListItemNode, ListNode } from "@lexical/list"
 import { CodeHighlightNode, CodeNode } from "@lexical/code"
 import { AutoLinkNode, LinkNode } from "@lexical/link"
 
+import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode"
 import ExampleTheme from "@/app/editor/ExampleTheme"
 import { ImageNode } from "@/app/editor/nodes/ImageNode"
 import IdeaLinkClickPlugin from "@/app/editor/plugins/IdeaLinkClickPlugin"
@@ -33,6 +34,7 @@ const nodes = [
   AutoLinkNode,
   LinkNode,
   ImageNode,
+  HorizontalRuleNode,
 ]
 
 export function LexicalReadOnly({

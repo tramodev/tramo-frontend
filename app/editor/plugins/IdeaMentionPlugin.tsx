@@ -76,6 +76,9 @@ export default function IdeaMentionPlugin({
                 {options.map((option, index) => (
                   <li
                     key={option.key}
+                    ref={(el) => {
+                      if (selectedIndex === index) el?.scrollIntoView({ block: 'nearest' });
+                    }}
                     className={'idea-mention-menu-item' + (selectedIndex === index ? ' selected' : '')}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => selectOptionAndCleanUp(option)}

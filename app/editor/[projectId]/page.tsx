@@ -11,7 +11,9 @@ import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ClickableLinkPlugin } from '@lexical/react/LexicalClickableLinkPlugin';
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
-import { TRANSFORMERS } from '@lexical/markdown';
+import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin';
+import { EDITOR_TRANSFORMERS } from '../plugins/markdownTransformers';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 
 import {
@@ -40,6 +42,8 @@ import UpdateContentPlugin from '../plugins/UpdateContentPlugin';
 import ImagesPlugin from '../plugins/ImagesPlugin';
 import PastePlugin from '../plugins/PastePlugin';
 import CodeHighlightPlugin from '../plugins/CodeHighlightPlugin';
+import SlashMenuPlugin from '../plugins/SlashMenuPlugin';
+import FloatingLinkEditorPlugin from '../plugins/FloatingLinkEditorPlugin';
 import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
 import IdeaMentionPlugin from '../plugins/IdeaMentionPlugin';
 import IdeaLinkClickPlugin from '../plugins/IdeaLinkClickPlugin';
@@ -188,6 +192,7 @@ const editorConfig = {
     AutoLinkNode,
     LinkNode,
     ImageNode,
+    HorizontalRuleNode,
   ],
   onError(error: Error) {
     console.error(error);
@@ -758,12 +763,15 @@ export default function DashboardPage() {
                         <PastePlugin />
                         <CodeHighlightPlugin />
                         <TabIndentationPlugin />
+                        <HorizontalRulePlugin />
+                        <SlashMenuPlugin />
+                        <FloatingLinkEditorPlugin />
                         <IdeaMentionPlugin
                           ideas={ideas}
                           currentIdeaId={selectedIdea.id}
                           onLinkIdea={handleLinkIdeas}
                         />
-                        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+                        <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
 
                         <UpdateContentPlugin content={selectedIdea.content} ideaId={selectedIdea.id} onContentApplied={handleContentApplied} />
                         <OnChangePlugin onChange={onChange} ignoreSelectionChange />
