@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowBigUp } from "lucide-react"
 import { toggleProjectVote } from "@/lib/projects-store"
+import { BurstParticles } from "@/components/burst-particles"
 
 export function VoteButton({
   projectId,
@@ -18,6 +19,7 @@ export function VoteButton({
 }) {
   const [voted, setVoted] = useState(initialVoted)
   const [count, setCount] = useState(initialCount)
+  const [burstId, setBurstId] = useState(0)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -35,6 +37,7 @@ export function VoteButton({
     const nextVoted = !voted
     setVoted(nextVoted)
     setCount(prevCount + (nextVoted ? 1 : -1))
+    if (nextVoted) setBurstId((n) => n + 1)
 
     startTransition(async () => {
       try {
@@ -60,7 +63,13 @@ export function VoteButton({
           : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
       }`}
     >
-      <ArrowBigUp className="h-[15px] w-[15px]" fill={voted ? "currentColor" : "none"} />
+      <span key={burstId} className="relative inline-flex">
+        <ArrowBigUp
+          className={burstId > 0 ? "h-[15px] w-[15px] burst-pop" : "h-[15px] w-[15px]"}
+          fill={voted ? "currentColor" : "none"}
+        />
+        {burstId > 0 && <BurstParticles />}
+      </span>
       <span className="text-[13px]">{count}</span>
     </button>
   )

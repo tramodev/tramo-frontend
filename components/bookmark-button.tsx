@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Bookmark } from "lucide-react"
 import { toggleProjectBookmark } from "@/lib/projects-store"
+import { BurstParticles } from "@/components/burst-particles"
 
 export function BookmarkButton({
   projectId,
@@ -15,6 +16,7 @@ export function BookmarkButton({
   isLoggedIn: boolean
 }) {
   const [bookmarked, setBookmarked] = useState(initialBookmarked)
+  const [burstId, setBurstId] = useState(0)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -29,6 +31,7 @@ export function BookmarkButton({
 
     const prevBookmarked = bookmarked
     setBookmarked(!prevBookmarked)
+    if (!prevBookmarked) setBurstId((n) => n + 1)
 
     startTransition(async () => {
       try {
@@ -51,7 +54,13 @@ export function BookmarkButton({
         bookmarked ? "text-primary" : "text-muted-foreground"
       }`}
     >
-      <Bookmark className="h-4 w-4" fill={bookmarked ? "currentColor" : "none"} />
+      <span key={burstId} className="relative inline-flex">
+        <Bookmark
+          className={burstId > 0 ? "h-4 w-4 burst-pop" : "h-4 w-4"}
+          fill={bookmarked ? "currentColor" : "none"}
+        />
+        {burstId > 0 && <BurstParticles />}
+      </span>
     </button>
   )
 }

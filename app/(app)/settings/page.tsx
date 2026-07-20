@@ -1,19 +1,19 @@
 import Link from "next/link"
-import { Calendar } from "lucide-react"
+import { Calendar, User, CreditCard, Shield } from "lucide-react"
 import { SettingsView } from "@/components/settings-view"
 import { PlanPanel } from "@/components/plan-panel"
+import { PrivacySettings } from "@/components/privacy-settings"
 import { getMyProfile } from "@/lib/profile"
 import { getSubscriptionStatus } from "@/lib/subscription"
 import { getUsername } from "@/lib/auth"
 
-type Tab = "account" | "plan" | "notifications" | "privacy"
+type Tab = "account" | "plan" | "privacy"
 
-const TAB_KEYS: Tab[] = ["account", "plan", "notifications", "privacy"]
-const TABS: { key: Tab; label: string }[] = [
-  { key: "account", label: "Account" },
-  { key: "plan", label: "Plan" },
-  { key: "notifications", label: "Notifications" },
-  { key: "privacy", label: "Privacy" },
+const TAB_KEYS: Tab[] = ["account", "plan", "privacy"]
+const TABS: { key: Tab; label: string; icon: typeof User }[] = [
+  { key: "account", label: "Account", icon: User },
+  { key: "plan", label: "Plan", icon: CreditCard },
+  { key: "privacy", label: "Privacy", icon: Shield },
 ]
 
 export default async function SettingsPage({
@@ -29,68 +29,64 @@ export default async function SettingsPage({
 
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
-      <div className="pt-9 px-18 pb-14">
-        <span className="block text-[13px] font-medium text-primary mb-1.5">Settings</span>
-        <h1 className="font-display text-[36px] font-normal leading-[1.1] mb-6">Account</h1>
+      <div className="pt-9 px-18 pb-16">
+        <h1 className="font-display text-[36px] font-normal leading-[1.1] mb-8">Settings</h1>
 
-        <div className="flex gap-1 border-b border-border mb-8">
-          {TABS.map(({ key, label }) => (
-            <Link
-              key={key}
-              href={`/settings?tab=${key}`}
-              className={`relative inline-flex items-center px-4 py-3 text-sm font-medium transition-colors ${
-                tab === key ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {label}
-              {tab === key && (
-                <span className="absolute inset-x-4 -bottom-px h-[3px] rounded-t-[3px] bg-primary" />
-              )}
-            </Link>
-          ))}
-        </div>
+        <div className="grid grid-cols-[216px_minmax(0,1fr)] gap-14 items-start">
+          <nav className="sticky top-6 flex flex-col gap-1">
+            {TABS.map(({ key, label, icon: Icon }) => (
+              <Link
+                key={key}
+                href={`/settings?tab=${key}`}
+                className={`flex items-center gap-3 h-10 rounded-full px-4 text-sm font-medium transition-colors ${
+                  tab === key
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <Icon className="size-[18px]" />
+                {label}
+              </Link>
+            ))}
+          </nav>
 
-        {tab === "account" && (
-          <div className="flex flex-col gap-10 max-w-[480px]">
-            <section>
-              <h2 className="mb-4 text-lg font-medium">Account information</h2>
-              <dl className="flex flex-col gap-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">Username</dt>
-                  <dd className="font-medium">{profile.username}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">Email</dt>
-                  <dd className="font-medium">{profile.email || "—"}</dd>
-                </div>
-                {profile.createdAt && (
-                  <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Joined</dt>
-                    <dd className="inline-flex items-center gap-1.5 font-medium">
-                      <Calendar className="h-[14px] w-[14px]" />
-                      {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </section>
-            <SettingsView />
+          <div className="max-w-[560px] flex flex-col gap-11">
+            {tab === "account" && (
+              <>
+                <section>
+                  <h2 className="mb-1 text-lg font-medium">Account information</h2>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Your username and email are used to sign in and can&apos;t be changed here.
+                  </p>
+                  <dl className="flex flex-col">
+                    <div className="flex items-center justify-between py-3 text-sm border-t border-border">
+                      <dt className="text-muted-foreground">Username</dt>
+                      <dd className="font-medium">{profile.username}</dd>
+                    </div>
+                    <div className="flex items-center justify-between py-3 text-sm border-t border-border">
+                      <dt className="text-muted-foreground">Email</dt>
+                      <dd className="font-medium">{profile.email || "—"}</dd>
+                    </div>
+                    {profile.createdAt && (
+                      <div className="flex items-center justify-between py-3 text-sm border-t border-b border-border">
+                        <dt className="text-muted-foreground">Joined</dt>
+                        <dd className="inline-flex items-center gap-1.5 font-medium">
+                          <Calendar className="h-[14px] w-[14px]" />
+                          {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                </section>
+                <SettingsView />
+              </>
+            )}
+
+            {tab === "plan" && <PlanPanel initialStatus={await getSubscriptionStatus()} />}
+
+            {tab === "privacy" && <PrivacySettings />}
           </div>
-        )}
-
-        {tab === "plan" && <PlanPanel initialStatus={await getSubscriptionStatus()} />}
-
-        {tab === "notifications" && (
-          <p className="max-w-[480px] text-sm text-muted-foreground">
-            Notification preferences are coming soon.
-          </p>
-        )}
-
-        {tab === "privacy" && (
-          <p className="max-w-[480px] text-sm text-muted-foreground">
-            Privacy settings are coming soon.
-          </p>
-        )}
+        </div>
       </div>
     </main>
   )

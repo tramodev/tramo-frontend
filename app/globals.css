@@ -212,3 +212,23 @@
 .field-outlined input:focus::placeholder {
   opacity: 1;
 }
+
+@keyframes burst-pop {
+  0%, 100% { scale: 1; }
+  40% { scale: 1.35; }
+}
+@keyframes burst-particle-fly {
+  0% { scale: 1; opacity: 1; translate: 0 0; }
+  100% { scale: 0.4; opacity: 0; translate: calc(cos(var(--burst-angle)) * 14px) calc(sin(var(--burst-angle)) * 14px); }
+}
+.burst-pop {
+  animation: burst-pop 0.35s ease-out;
+}
+.burst-particle {
+  animation: burst-particle-fly 0.4s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .burst-pop, .burst-particle {
+    animation: none;
+  }
+}

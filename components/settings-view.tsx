@@ -7,18 +7,42 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { SegmentedControl } from "@/components/ui/segmented-control"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { changePassword, deleteAccount } from "@/lib/account"
 import { getPasswordStrength } from "@/lib/password-strength"
 
 const PASSWORD_COMPLEXITY_PATTERN = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
+const DIGEST_OPTIONS = [
+  { value: "off", label: "Off" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+] as const
+
 export function SettingsView() {
   return (
-    <div className="flex flex-col gap-10 max-w-[480px]">
+    <>
+      <EmailDigestSection />
       <ChangePasswordSection />
       <DangerZoneSection />
-    </div>
+    </>
+  )
+}
+
+// ponytail: local-only state, there's no notification-prefs API yet — wire this up to a
+// server action (lib/notifications-prefs.ts) once the backend exposes one.
+function EmailDigestSection() {
+  const [digest, setDigest] = useState<(typeof DIGEST_OPTIONS)[number]["value"]>("weekly")
+
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-medium">Email digest</h2>
+      <p className="mb-4 text-sm text-muted-foreground">
+        A summary of activity across your projects, bundled into one email.
+      </p>
+      <SegmentedControl options={DIGEST_OPTIONS} value={digest} onChange={setDigest} />
+    </section>
   )
 }
 
@@ -173,7 +197,13 @@ function DangerZoneSection() {
         Deleting your account permanently removes your projects, votes, bookmarks, and follows. This can&apos;t be undone.
       </p>
       {error && <div className="mb-3 text-sm text-destructive">{error}</div>}
-      <Button type="button" variant="destructive" disabled={isPending} onClick={() => setConfirmOpen(true)}>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={isPending}
+        onClick={() => setConfirmOpen(true)}
+        className="border-destructive text-destructive hover:bg-destructive/8"
+      >
         {isPending ? "Deleting..." : "Delete account"}
       </Button>
       <ConfirmDialog
