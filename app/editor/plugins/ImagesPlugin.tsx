@@ -4,9 +4,14 @@ import { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { mergeRegister } from '@lexical/utils';
 import {
+  $createParagraphNode,
   $getNodeByKey,
+  $getRoot,
   $insertNodes,
+  $isElementNode,
+  CLICK_COMMAND,
   COMMAND_PRIORITY_HIGH,
+  COMMAND_PRIORITY_LOW,
   createCommand,
   DRAGOVER_COMMAND,
   DROP_COMMAND,
@@ -25,6 +30,20 @@ export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> =
 
 export const EDITOR_IMAGE_MAX_DIMENSION = 1600;
 export const EDITOR_IMAGE_QUALITY = 0.85;
+
+function $placeCaretBelowImage(imageNode: ImageNode): void {
+  const block = imageNode.getTopLevelElement();
+  if (block === null) return;
+  let next = block.getNextSibling();
+  if (next === null) {
+    const paragraph = $createParagraphNode();
+    block.insertAfter(paragraph);
+    next = paragraph;
+  }
+  if ($isElementNode(next)) {
+    next.selectStart();
+  }
+}
 
 function getImageFiles(dataTransfer: DataTransfer): File[] {
   const files: File[] = [];
@@ -50,6 +69,7 @@ export function insertImageWithUpload(
     const imageNode = $createImageNode({ altText: file.name, src: previewUrl });
     $insertNodes([imageNode]);
     key = imageNode.getKey();
+    $placeCaretBelowImage(imageNode);
   });
 
   (async () => {
@@ -96,9 +116,25 @@ export default function ImagesPlugin(): null {
         (payload) => {
           const imageNode = $createImageNode(payload);
           $insertNodes([imageNode]);
+          $placeCaretBelowImage(imageNode);
           return true;
         },
         COMMAND_PRIORITY_HIGH,
+      ),
+      editor.registerCommand(
+        CLICK_COMMAND,
+        (event: MouseEvent) => {
+          if (event.target !== editor.getRootElement()) return false;
+          const last = $getRoot().getLastChild();
+          if ($isElementNode(last) && $isImageNode(last.getLastChild())) {
+            const paragraph = $createParagraphNode();
+            last.insertAfter(paragraph);
+            paragraph.select();
+            return true;
+          }
+          return false;
+        },
+        COMMAND_PRIORITY_LOW,
       ),
       editor.registerCommand(
         PASTE_COMMAND,
