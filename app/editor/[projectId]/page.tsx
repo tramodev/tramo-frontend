@@ -615,13 +615,37 @@ export default function DashboardPage() {
               onBlur={submitEditTitle}
             />
           ) : (
-            <span
-              className="text-[15px] font-medium"
-              onDoubleClick={startEditTitle}
-              title="Double-click to rename"
-            >
-              {projectTitle}
-            </span>
+            <div className="flex gap-4">
+              <span
+                className="text-[15px] font-medium"
+                onDoubleClick={startEditTitle}
+                title="Double-click to rename"
+              >
+                {projectTitle}
+              </span>
+              <span
+                className="flex items-center gap-1.5 text-xs text-muted-foreground w-[60px]"
+              >
+                {saveStatus === 'saving' && (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Saving
+                  </>
+                )}
+                {saveStatus === 'saved' && (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-primary" />
+                    Saved
+                  </>
+                )}
+                {saveStatus === 'error' && (
+                  <>
+                    <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                    Save failed
+                  </>
+                )}
+              </span>
+            </div>
           )
         }
         actions={
@@ -640,28 +664,6 @@ export default function DashboardPage() {
               tags={tags}
               onTagsChange={setTags}
             />
-            <span
-              className="flex items-center gap-1.5 text-xs text-muted-foreground w-[60px]"
-            >
-              {saveStatus === 'saving' && (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Saving
-                </>
-              )}
-              {saveStatus === 'saved' && (
-                <>
-                  <Check className="h-3.5 w-3.5 text-primary" />
-                  Saved
-                </>
-              )}
-              {saveStatus === 'error' && (
-                <>
-                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-                  Save failed
-                </>
-              )}
-            </span>
             <UserMenu loggedIn={!!profile} username={profile?.username ?? null} imageUrl={profile?.imageUrl ?? null} />
           </>
         }
