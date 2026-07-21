@@ -36,6 +36,51 @@
   flex-direction: column;
 }
 
+/* Gutter lives inside the contenteditable so dragging straight down the
+   handle stays over the editable and Lexical still fires dragover/drop. */
+.editor-content-column .editor-input {
+  padding-left: 28px;
+}
+
+.editor-content-column .editor-placeholder {
+  left: 28px;
+}
+
+.draggable-block-menu {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  border-radius: 4px;
+  color: var(--muted-foreground);
+  cursor: grab;
+  opacity: 0;
+  will-change: transform;
+}
+
+.draggable-block-menu:hover {
+  background-color: var(--muted);
+}
+
+.draggable-block-menu:active {
+  cursor: grabbing;
+}
+
+.draggable-block-target-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 3px;
+  border-radius: 2px;
+  background-color: var(--primary);
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
 .editor-input {
   resize: none;
   font-size: 15px;

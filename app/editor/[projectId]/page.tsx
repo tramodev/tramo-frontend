@@ -44,6 +44,7 @@ import CodeHighlightPlugin from '../plugins/CodeHighlightPlugin';
 import SlashMenuPlugin from '../plugins/SlashMenuPlugin';
 import FloatingLinkEditorPlugin from '../plugins/FloatingLinkEditorPlugin';
 import FindReplacePlugin from '../plugins/FindReplacePlugin';
+import DraggableBlockPlugin from '../plugins/DraggableBlockPlugin';
 import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
 import IdeaMentionPlugin from '../plugins/IdeaMentionPlugin';
 import WikiLinkPlugin from '../plugins/WikiLinkPlugin';
@@ -323,6 +324,7 @@ export default function DashboardPage() {
 
   const [activeAlignTarget, setActiveAlignTarget] = useState<'title' | 'body'>('body');
 
+  const [blockAnchor, setBlockAnchor] = useState<HTMLDivElement | null>(null);
   const editorInnerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = editorInnerRef.current;
@@ -732,8 +734,8 @@ export default function DashboardPage() {
                       onSetTitleAlign={(align) => handleSetIdeaTitleAlign(selectedIdea.id, align)}
                     />
                     <div className="editor-inner" ref={editorInnerRef}>
-                      <div className="editor-content-column">
-                        <div className="pt-9">
+                      <div className="editor-content-column" ref={setBlockAnchor}>
+                        <div className="pt-9 pl-7">
                           <input
                             key={`${selectedIdea.id}-${selectedIdea.title}`}
                             defaultValue={selectedIdea.title}
@@ -783,6 +785,7 @@ export default function DashboardPage() {
                         <SlashMenuPlugin />
                         <FloatingLinkEditorPlugin />
                         <FindReplacePlugin />
+                        {blockAnchor && <DraggableBlockPlugin anchorElem={blockAnchor} />}
                         <IdeaMentionPlugin
                           ideas={ideas}
                           currentIdeaId={selectedIdea.id}
