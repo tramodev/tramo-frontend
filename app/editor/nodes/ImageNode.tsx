@@ -27,6 +27,7 @@ export interface ImagePayload {
   src: string;
   width?: number;
   height?: number;
+  caption?: string;
   key?: NodeKey;
 }
 
@@ -45,6 +46,7 @@ export type SerializedImageNode = Spread<
     src: string;
     width?: number;
     height?: number;
+    caption?: string;
   },
   SerializedLexicalNode
 >;
@@ -54,6 +56,7 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
   __altText: string;
   __width: 'inherit' | number;
   __height: 'inherit' | number;
+  __caption: string;
 
   static getType(): string {
     return 'image';
@@ -65,14 +68,15 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
       node.__altText,
       node.__width,
       node.__height,
+      node.__caption,
       node.__key,
     );
   }
 
   static importJSON(serializedNode: SerializedImageNode): ImageNode {
-    const { altText, height, width, src } = serializedNode;
+    const { altText, height, width, src, caption } = serializedNode;
     const safeSrc = isAllowedImageSrc(src) ? src : '';
-    return $createImageNode({ altText, height, src: safeSrc, width });
+    return $createImageNode({ altText, height, src: safeSrc, width, caption });
   }
 
   exportDOM(): DOMExportOutput {
@@ -102,6 +106,7 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     altText: string,
     width?: 'inherit' | number,
     height?: 'inherit' | number,
+    caption?: string,
     key?: NodeKey,
   ) {
     super(key);
@@ -109,6 +114,7 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     this.__altText = altText;
     this.__width = width || 'inherit';
     this.__height = height || 'inherit';
+    this.__caption = caption || '';
   }
 
   exportJSON(): SerializedImageNode {
@@ -117,6 +123,7 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
       height: this.__height === 'inherit' ? undefined : this.__height,
       src: this.getSrc(),
       width: this.__width === 'inherit' ? undefined : this.__width,
+      caption: this.getCaption(),
       type: 'image',
       version: 1,
     };
@@ -134,6 +141,16 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
   setSrc(src: string): void {
     const writable = this.getWritable();
     writable.__src = src;
+  }
+
+  setAltText(altText: string): void {
+    const writable = this.getWritable();
+    writable.__altText = altText;
+  }
+
+  setCaption(caption: string): void {
+    const writable = this.getWritable();
+    writable.__caption = caption;
   }
 
   createDOM(config: EditorConfig): HTMLElement {
@@ -157,6 +174,10 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     return this.__altText;
   }
 
+  getCaption(): string {
+    return this.__caption;
+  }
+
   decorate(): React.ReactElement {
     return (
       <ImageComponent
@@ -164,6 +185,7 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
         altText={this.__altText}
         width={this.__width}
         height={this.__height}
+        caption={this.__caption}
         nodeKey={this.getKey()}
         resizable={true}
       />
@@ -176,9 +198,10 @@ export function $createImageNode({
   height,
   src,
   width,
+  caption,
   key,
 }: ImagePayload): ImageNode {
-  return $applyNodeReplacement(new ImageNode(src, altText, width, height, key));
+  return $applyNodeReplacement(new ImageNode(src, altText, width, height, caption, key));
 }
 
 export function $isImageNode(

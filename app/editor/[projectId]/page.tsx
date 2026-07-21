@@ -31,7 +31,6 @@ import {
 } from 'lexical';
 
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
-import { TableNode, TableCellNode, TableRowNode } from '@lexical/table';
 import { ListItemNode, ListNode } from '@lexical/list';
 import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
@@ -44,8 +43,10 @@ import PastePlugin from '../plugins/PastePlugin';
 import CodeHighlightPlugin from '../plugins/CodeHighlightPlugin';
 import SlashMenuPlugin from '../plugins/SlashMenuPlugin';
 import FloatingLinkEditorPlugin from '../plugins/FloatingLinkEditorPlugin';
+import FindReplacePlugin from '../plugins/FindReplacePlugin';
 import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
 import IdeaMentionPlugin from '../plugins/IdeaMentionPlugin';
+import WikiLinkPlugin from '../plugins/WikiLinkPlugin';
 import IdeaLinkClickPlugin from '../plugins/IdeaLinkClickPlugin';
 import { ImageNode } from '../nodes/ImageNode';
 import { parseAllowedColor, parseAllowedFontSize } from '../styleConfig';
@@ -186,9 +187,6 @@ const editorConfig = {
     ListItemNode,
     CodeNode,
     CodeHighlightNode,
-    TableNode,
-    TableCellNode,
-    TableRowNode,
     AutoLinkNode,
     LinkNode,
     ImageNode,
@@ -784,7 +782,13 @@ export default function DashboardPage() {
                         <HorizontalRulePlugin />
                         <SlashMenuPlugin />
                         <FloatingLinkEditorPlugin />
+                        <FindReplacePlugin />
                         <IdeaMentionPlugin
+                          ideas={ideas}
+                          currentIdeaId={selectedIdea.id}
+                          onLinkIdea={handleLinkIdeas}
+                        />
+                        <WikiLinkPlugin
                           ideas={ideas}
                           currentIdeaId={selectedIdea.id}
                           onLinkIdea={handleLinkIdeas}

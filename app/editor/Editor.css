@@ -212,6 +212,78 @@ a[rel^="mypath-idea:"] {
   color: var(--foreground);
 }
 
+/* ::highlight(find-match) styling for the CSS Custom Highlight API is injected at runtime
+   from FindReplacePlugin.tsx — Next's build-time CSS parser doesn't yet recognize the
+   ::highlight() functional pseudo-element syntax and fails the whole stylesheet on it. */
+
+.find-replace-bar {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+  font-size: 13px;
+  color: var(--foreground);
+}
+
+.find-replace-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.find-replace-icon {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.find-replace-bar input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: var(--foreground);
+  width: 180px;
+}
+
+.find-replace-count {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  min-width: 36px;
+}
+
+.find-replace-bar button {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.find-replace-bar button:hover:not(:disabled) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.find-replace-bar button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.find-replace-text-button {
+  width: auto;
+  padding: 4px 8px !important;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .toolbar-color-swatch {
   display: inline-block;
   width: 14px;
@@ -298,6 +370,54 @@ a[rel^="mypath-idea:"] {
   left: -4px;
   transform: translateY(-50%);
   cursor: ew-resize;
+}
+
+.editor-image-caption {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.editor-image-caption-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+}
+
+.editor-image-alt-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.editor-image-alt-badge:hover {
+  background: rgb(0 0 0 / 0.7);
+}
+
+.editor-image-alt-input {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: calc(100% - 12px);
+  max-width: 260px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--popover);
+  color: var(--foreground);
+  font-size: 12px;
+  outline: none;
 }
 
 .editor-code {

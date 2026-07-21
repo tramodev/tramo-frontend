@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { useLexicalNodeSelection } from '@lexical/react/useLexicalNodeSelection';
 import { mergeRegister } from '@lexical/utils';
@@ -22,6 +22,7 @@ interface ImageComponentProps {
   altText: string;
   width: 'inherit' | number;
   height: 'inherit' | number;
+  caption: string;
   nodeKey: NodeKey;
   resizable?: boolean;
 }
@@ -31,6 +32,7 @@ export default function ImageComponent({
   altText,
   width,
   height,
+  caption,
   nodeKey,
   resizable,
 }: ImageComponentProps) {
@@ -39,6 +41,31 @@ export default function ImageComponent({
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
+  const [editingAlt, setEditingAlt] = useState(false);
+
+  const commitCaption = useCallback(
+    (value: string) => {
+      if (value === caption) return;
+      editor.update(() => {
+        const node = $getNodeByKey(nodeKey);
+        if ($isImageNode(node)) node.setCaption(value);
+      });
+    },
+    [editor, nodeKey, caption],
+  );
+
+  const commitAltText = useCallback(
+    (value: string) => {
+      if (value !== altText) {
+        editor.update(() => {
+          const node = $getNodeByKey(nodeKey);
+          if ($isImageNode(node)) node.setAltText(value);
+        });
+      }
+      setEditingAlt(false);
+    },
+    [editor, nodeKey, altText],
+  );
 
   useEffect(() => () => resizeCleanupRef.current?.(), []);
 
@@ -149,6 +176,7 @@ export default function ImageComponent({
   };
 
   return (
+    <>
     <span
       className={`editor-image-wrapper${isSelected ? ' selected' : ''}`}
       draggable={false}
@@ -163,6 +191,31 @@ export default function ImageComponent({
           height: height === 'inherit' ? undefined : `${height}px`,
         }}
       />
+      {isEditable && isSelected && (
+        editingAlt ? (
+          <input
+            autoFocus
+            defaultValue={altText}
+            placeholder="Describe this image..."
+            className="editor-image-alt-input"
+            onMouseDown={(event) => event.stopPropagation()}
+            onBlur={(event) => commitAltText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+              if (event.key === 'Escape') setEditingAlt(false);
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="editor-image-alt-badge"
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={() => setEditingAlt(true)}
+          >
+            Alt text
+          </button>
+        )
+      )}
       {resizable && isEditable && isSelected && (
         <>
           <div
@@ -200,5 +253,20 @@ export default function ImageComponent({
         </>
       )}
     </span>
+    {isEditable ? (
+      <input
+        key={`${nodeKey}-${caption}`}
+        defaultValue={caption}
+        placeholder="Add a caption..."
+        className="editor-image-caption editor-image-caption-input"
+        onBlur={(event) => commitCaption(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
+        }}
+      />
+    ) : (
+      caption && <div className="editor-image-caption">{caption}</div>
+    )}
+    </>
   );
 }

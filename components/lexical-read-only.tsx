@@ -8,7 +8,6 @@ import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin"
 
 import { ParagraphNode, TextNode } from "lexical"
 import { HeadingNode, QuoteNode } from "@lexical/rich-text"
-import { TableNode, TableCellNode, TableRowNode } from "@lexical/table"
 import { ListItemNode, ListNode } from "@lexical/list"
 import { CodeHighlightNode, CodeNode } from "@lexical/code"
 import { AutoLinkNode, LinkNode } from "@lexical/link"
@@ -28,9 +27,6 @@ const nodes = [
   ListItemNode,
   CodeNode,
   CodeHighlightNode,
-  TableNode,
-  TableCellNode,
-  TableRowNode,
   AutoLinkNode,
   LinkNode,
   ImageNode,

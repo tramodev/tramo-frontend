@@ -68,6 +68,7 @@ import {
   Image as ImageIcon,
   ChevronUp,
   ChevronDown,
+  Search,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -78,6 +79,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { insertImageWithUpload } from './ImagesPlugin';
 import { OPEN_LINK_EDITOR_COMMAND } from './FloatingLinkEditorPlugin';
+import { OPEN_FIND_REPLACE_COMMAND } from './FindReplacePlugin';
 import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
 
 const COLOR_OPTIONS: { value: string; label: string }[] = [
@@ -404,6 +406,17 @@ export default function ToolbarPlugin({
           </button>
         </TooltipTrigger>
         <TooltipContent>Redo</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => editor.dispatchCommand(OPEN_FIND_REPLACE_COMMAND, undefined)}
+            className="toolbar-item spaced"
+            aria-label="Find and replace">
+            <Search size={18} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Find and replace</TooltipContent>
       </Tooltip>
       <Divider />
       <select
