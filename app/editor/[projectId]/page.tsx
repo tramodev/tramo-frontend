@@ -707,7 +707,7 @@ export default function DashboardPage() {
         }
         content={
           view === 'graph' ? (
-            <div className="relative flex-1 overflow-hidden rounded-2xl bg-popover">
+            <div className="relative flex-1 overflow-hidden rounded-2xl">
               <button
                 type="button"
                 onClick={() => setView('editor')}
@@ -725,7 +725,7 @@ export default function DashboardPage() {
             </div>
           ) : selectedIdea ? (
             <>
-              <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-popover">
+              <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl">
                 <LexicalComposer initialConfig={editorConfig}>
                   <div className="editor-container flex flex-1 min-h-0 flex-col">
                     <ToolbarPlugin

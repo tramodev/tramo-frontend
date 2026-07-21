@@ -17,7 +17,7 @@
 }
 
 .editor-inner {
-  background: var(--popover);
+  background: var(--sidebar);
   position: relative;
   padding: 0 48px;
   flex: 1;
@@ -661,11 +661,11 @@ pre::-webkit-scrollbar-thumb {
 
 /* — toolbar — */
 .toolbar {
+  background: var(--sidebar);
   display: flex;
   align-items: center;
   gap: 4px;
   flex: none;
-  background: var(--popover);
   padding: 8px 24px;
   flex-wrap: wrap;
 }
