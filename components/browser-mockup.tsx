@@ -45,7 +45,14 @@ const GRAPH_NODES = [
 
 export const BrowserMockup: React.FC = () => {
   return (
-    <div className="w-full aspect-[16/9] flex flex-col overflow-hidden rounded-[28px] border border-border bg-background shadow-elevation-2">
+    <div className="relative w-full aspect-[16/9] overflow-hidden rounded-[28px] border border-border bg-background shadow-elevation-2 [container-type:inline-size]">
+      {/* Below md the middle column (side panels are `hidden md:flex`/`hidden lg:flex`) still doesn't
+          fit a phone-width card, so instead of reflowing every row we render this at a fixed desktop-ish
+          "design" width and scale the whole thing down to fit — `100cqw` is the outer card's own live
+          width (container query unit), so the scale stays fluid across any phone width, no breakpoint steps. */}
+      <div
+        className="absolute top-1/2 left-1/2 flex h-[383px] w-[680px] flex-col overflow-hidden [transform:translate(-50%,-50%)_scale(calc(100cqw/680px))] md:static md:h-full md:w-full md:[transform:none]"
+      >
       <div className="h-12 flex items-center gap-3 px-5 shrink-0 bg-card border-b border-border">
         <span className="font-display font-semibold text-[14px]">
           Tramo<span className="text-primary"> ●</span>
@@ -228,6 +235,7 @@ export const BrowserMockup: React.FC = () => {
             ))}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

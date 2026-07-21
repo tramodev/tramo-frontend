@@ -18,7 +18,7 @@ export default async function Home() {
     <LandingMotionConfig>
       <div className="min-h-screen">
         <Navbar />
-        <div className="max-w-[1216px] mx-auto px-[72px]">
+        <div className="max-w-[1216px] mx-auto px-6 md:px-[72px]">
           <Hero />
           <FadeUp scaleIn className="pt-16 pb-[84px]">
             <BrowserMockup />

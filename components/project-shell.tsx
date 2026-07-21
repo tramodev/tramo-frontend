@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Wordmark } from "@/components/logo"
-import { SidebarInset } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 
 export function ProjectShell({
   homeHref,
@@ -17,13 +17,14 @@ export function ProjectShell({
 }) {
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center gap-4 px-8">
+      <header className="flex h-16 shrink-0 items-center gap-4 px-4 md:px-8">
+        <SidebarTrigger className="md:hidden" />
         <Link href={homeHref} title="Back to projects">
           <Wordmark />
         </Link>
-        <span className="h-[18px] w-px bg-border" />
-        {titleSlot}
-        <div className="ml-auto flex items-center gap-3">
+        <span className="h-[18px] w-px bg-border shrink-0" />
+        <div className="min-w-0 flex-1">{titleSlot}</div>
+        <div className="ml-auto flex shrink-0 items-center gap-3 overflow-x-auto">
           {actions}
         </div>
       </header>

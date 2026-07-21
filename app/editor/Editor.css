@@ -7,9 +7,9 @@
  */
 
 .editor-container {
+  border: 1px;
   margin: 0;
   max-width: none;
-  color: var(--foreground);
   position: relative;
   line-height: 20px;
   font-weight: 400;
@@ -17,7 +17,6 @@
 }
 
 .editor-inner {
-  background: var(--sidebar);
   position: relative;
   padding: 0 48px;
   flex: 1;
@@ -62,7 +61,7 @@
 }
 
 .draggable-block-menu:hover {
-  background-color: var(--muted);
+  background-color: var(--surface-container-highest);
 }
 
 .draggable-block-menu:active {
@@ -253,7 +252,7 @@ a[rel^="mypath-idea:"] {
 }
 
 .floating-link-editor button:hover {
-  background: var(--muted);
+  background: var(--surface-container-highest);
   color: var(--foreground);
 }
 
@@ -313,7 +312,7 @@ a[rel^="mypath-idea:"] {
 }
 
 .find-replace-bar button:hover:not(:disabled) {
-  background: var(--muted);
+  background: var(--surface-container-highest);
   color: var(--foreground);
 }
 
@@ -661,7 +660,6 @@ pre::-webkit-scrollbar-thumb {
 
 /* — toolbar — */
 .toolbar {
-  background: var(--sidebar);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -676,7 +674,7 @@ pre::-webkit-scrollbar-thumb {
   align-items: center;
   justify-content: center;
   background: none;
-  border-radius: 999px;
+  border-radius: 8px;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -699,7 +697,7 @@ pre::-webkit-scrollbar-thumb {
 }
 
 .toolbar .toolbar-item:hover:not([disabled]) {
-  background-color: var(--muted);
+  background-color: var(--surface-container-highest);
 }
 
 .toolbar .divider {

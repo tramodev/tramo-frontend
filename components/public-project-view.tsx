@@ -44,15 +44,15 @@ export function PublicProjectView({
     <ProjectShell
       homeHref={homeHref}
       titleSlot={
-        <div className="flex items-center gap-3">
-          <span className="text-[15px] font-medium">{project.title}</span>
-          <span className="text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="min-w-0 truncate text-[15px] font-medium">{project.title}</span>
+          <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
             by{" "}
             <Link href={`/u/${encodeURIComponent(project.ownerUsername)}`} className="font-medium hover:text-primary">
               {project.ownerUsername}
             </Link>
           </span>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:flex">
             <Eye className="h-3.5 w-3.5" />
             {project.viewCount} views
           </span>

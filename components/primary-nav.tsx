@@ -2,12 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-
-const NAV_ITEMS = [
-  { key: "projects", href: "/projects", label: "My Projects" },
-  { key: "explore", href: "/explore", label: "Explore" },
-  { key: "admin", href: "/admin", label: "Admin" },
-] as const
+import { getNavItems } from "@/lib/nav-items"
 
 export function PrimaryNav({
   loggedIn = true,
@@ -17,12 +12,7 @@ export function PrimaryNav({
   isAdmin?: boolean
 }) {
   const pathname = usePathname()
-
-  const items = NAV_ITEMS.filter((item) => {
-    if (item.key === "projects") return loggedIn && !isAdmin
-    if (item.key === "admin") return isAdmin
-    return true
-  })
+  const items = getNavItems(loggedIn, isAdmin)
 
   return (
     <nav className="flex items-center gap-2">

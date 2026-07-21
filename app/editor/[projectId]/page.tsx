@@ -733,6 +733,7 @@ export default function DashboardPage() {
                       titleAlign={selectedIdea.titleAlign}
                       onSetTitleAlign={(align) => handleSetIdeaTitleAlign(selectedIdea.id, align)}
                     />
+                    <hr/>
                     <div className="editor-inner" ref={editorInnerRef}>
                       <div className="editor-content-column" ref={setBlockAnchor}>
                         <div className="pt-9 pl-7">

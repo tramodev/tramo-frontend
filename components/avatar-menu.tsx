@@ -17,8 +17,17 @@ import {
 } from './ui/dropdown-menu';
 import { LogOut, Moon, Settings, Sun, SunMoon } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
+import type { NavItem } from '@/lib/nav-items';
 
-export function AvatarMenu({ username, imageUrl }: { username: string; imageUrl?: string | null }) {
+export function AvatarMenu({
+  username,
+  imageUrl,
+  navItems,
+}: {
+  username: string;
+  imageUrl?: string | null;
+  navItems?: NavItem[];
+}) {
   const initials = username.slice(0, 2).toUpperCase();
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
@@ -65,6 +74,16 @@ export function AvatarMenu({ username, imageUrl }: { username: string; imageUrl?
               <span className="text-xs text-muted-foreground">My profile</span>
             </Link>
           </DropdownMenuItem>
+        )}
+        {navItems && navItems.length > 0 && (
+          <>
+            <DropdownMenuSeparator className="md:hidden" />
+            {navItems.map((item) => (
+              <DropdownMenuItem key={item.key} asChild className="md:hidden">
+                <Link href={item.href}>{item.label}</Link>
+              </DropdownMenuItem>
+            ))}
+          </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>

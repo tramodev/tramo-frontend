@@ -32,7 +32,7 @@ export default async function FollowersPage({
     tab === "followers" ? await getFollowersPage(username, 0, PAGE_SIZE) : await getFollowingPage(username, 0, PAGE_SIZE)
 
   return (
-    <main className="mx-auto w-full flex-1 max-w-[720px] px-8 py-9">
+    <main className="mx-auto w-full flex-1 max-w-[720px] px-4 sm:px-8 py-9">
       <h1 className="mb-6 font-display text-2xl font-medium">{profile.username}</h1>
       <div className="flex gap-1 border-b border-border mb-4">
         {(["followers", "following"] as Tab[]).map((key) => (

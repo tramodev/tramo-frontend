@@ -19,7 +19,7 @@ export function PublishedGrid({
     return <p className="text-sm text-muted-foreground">{emptyMessage}</p>
   }
   return (
-    <div className="grid gap-4 grid-cols-2">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
       {items.map((item) => (
         <Link
           key={item.id}

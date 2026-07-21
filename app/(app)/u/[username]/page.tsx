@@ -36,10 +36,10 @@ export default async function PublicProfilePage({
 
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
-        <div className="pt-9 px-18 pb-14">
-          <div className="flex items-start gap-7 rounded-[28px] bg-card p-8">
+        <div className="pt-9 px-6 md:px-18 pb-14">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-7 rounded-[28px] bg-card p-5 sm:p-8">
             <span
-              className="flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-[46px] font-medium w-[140px] h-[140px] bg-primary text-primary-foreground"
+              className="flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-[32px] sm:text-[46px] font-medium w-[100px] h-[100px] sm:w-[140px] sm:h-[140px] bg-primary text-primary-foreground"
             >
               {profile.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -48,15 +48,15 @@ export default async function PublicProfilePage({
                 initial(profile.username)
               )}
             </span>
-            <div className="min-w-0 flex-1">
-              <div className="mb-2 flex items-center gap-4">
-                <h1 className="font-display text-[36px] font-normal leading-[1.1]">
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <div className="mb-2 flex flex-wrap items-center justify-center sm:justify-start gap-4">
+                <h1 className="font-display text-[28px] sm:text-[36px] font-normal leading-[1.1]">
                   {profile.username}
                 </h1>
                 <FollowButton username={profile.username} initialFollowing={profile.following} isLoggedIn={loggedIn} />
                 <BlockButton username={profile.username} initialBlocked={profile.blocked} isLoggedIn={loggedIn} />
               </div>
-              <div className="flex items-center gap-4 text-[13px] mb-3.5 text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-[13px] mb-3.5 text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
                   <Calendar className="h-[14px] w-[14px]" />
                   Joined {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
@@ -71,7 +71,7 @@ export default async function PublicProfilePage({
                 </Link>
               </div>
               {profile.bio && (
-                <p className="mb-3.5 w-3/4 text-sm leading-[1.6] text-foreground">
+                <p className="mb-3.5 w-full sm:w-3/4 text-sm leading-[1.6] text-foreground">
                   {profile.bio}
                 </p>
               )}
@@ -79,7 +79,7 @@ export default async function PublicProfilePage({
             </div>
           </div>
 
-          <div className="grid gap-3 mt-3 grid-cols-4 text-center">
+          <div className="grid gap-3 mt-3 grid-cols-2 sm:grid-cols-4 text-center">
             <div className="rounded-2xl bg-card py-[18px]">
               <div className="font-display text-[28px] font-medium text-primary">{stats.pathsPublished}</div>
               <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-0.5">

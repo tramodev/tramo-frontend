@@ -61,7 +61,7 @@ export function ExploreFeed({
         {items.map((project) => (
           <div
             key={project.id}
-            className="relative flex justify-between gap-5 rounded-lg border border-border bg-popover p-6 transition-shadow hover:shadow-elevation-1"
+            className="relative flex flex-col sm:flex-row sm:justify-between gap-5 rounded-lg border border-border bg-popover p-6 transition-shadow hover:shadow-elevation-1"
           >
             <Link href={`/p/${project.id}`} className="absolute inset-0 z-0" aria-label={project.title} />
 
@@ -82,7 +82,7 @@ export function ExploreFeed({
               )}
 
               {project.tags.length > 0 && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag) => (
                     <span
                       key={tag}
@@ -125,8 +125,8 @@ export function ExploreFeed({
                 </div>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-4 self-center">
-              <div className="grid place-items-center overflow-hidden rounded-lg w-[156px] h-[128px] bg-surface-container-high">
+            <div className="flex items-center gap-4 sm:shrink-0 sm:self-center">
+              <div className="grid place-items-center overflow-hidden rounded-lg w-full h-[180px] sm:w-[156px] sm:h-[128px] bg-surface-container-high">
                 {project.thumbnail ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
