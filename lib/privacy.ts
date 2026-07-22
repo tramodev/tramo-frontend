@@ -1,6 +1,7 @@
 'use server';
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
+import { parseResponse } from "./http";
 
 export type ProfileVisibility = "public" | "private";
 export type CommentsPolicy = "everyone" | "following" | "noone";
@@ -14,10 +15,7 @@ export interface PrivacySettings {
 
 export async function getPrivacySettings(): Promise<PrivacySettings> {
   const response = await authenticatedFetch(`${API_BASE_URL}/user/preferences`);
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-  return response.json();
+  return parseResponse<PrivacySettings>(response);
 }
 
 export async function updatePrivacySettings(partial: Partial<PrivacySettings>): Promise<{ error: string | null }> {

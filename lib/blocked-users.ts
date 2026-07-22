@@ -1,6 +1,7 @@
 'use server';
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
+import { parseResponse } from "./http";
 
 export interface BlockedUser {
   username: string;
@@ -28,8 +29,7 @@ export async function toggleBlock(username: string): Promise<{ blocked: boolean 
   const response = await authenticatedFetch(`${API_BASE_URL}/api/users/${encodeURIComponent(username)}/block`, {
     method: "POST",
   });
-  if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
-  return response.json();
+  return parseResponse<{ blocked: boolean }>(response);
 }
 
 export async function getBlockedUsersPage(page: number, size: number): Promise<BlockedUsersPage> {

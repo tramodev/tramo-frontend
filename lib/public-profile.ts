@@ -1,33 +1,11 @@
 'use server';
 
 import { API_BASE_URL } from "./config";
-import { getAccessToken } from "./auth";
+import { authHeaders } from "./auth";
 import { authenticatedFetch } from "./api";
+import { parseResponse } from "./http";
+import { toFeedItem, type ProjectFeedItem, type ProjectFeedItemDTO } from "./feed";
 import type { ProfileStats, Badge } from "./profile";
-import type { ProjectFeedItem } from "./public-project";
-
-async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
-  const token = await getAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
-
-interface ProjectFeedItemDTO {
-  id: number;
-  title: string;
-  description: string | null;
-  ownerUsername: string;
-  ownerAvatar: string | null;
-  thumbnail: string | null;
-  tags: string | null;
-  modifiedDate: string;
-  voteCount: number;
-  votedByRequester: boolean;
-  bookmarkedByRequester: boolean;
-  viewCount: number;
-  forkCount: number;
-  commentCount: number;
-  featured: boolean;
-}
 
 interface PublicProfileDTO {
   username: string;
@@ -53,35 +31,10 @@ export interface PublicProfile {
   blocked: boolean;
 }
 
-function parseTags(tags: string | null): string[] {
-  if (!tags) return [];
-  return tags.split(",").map((tag) => tag.trim()).filter(Boolean);
-}
-
-function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
-  return {
-    id: String(item.id),
-    title: item.title,
-    description: item.description,
-    ownerUsername: item.ownerUsername,
-    ownerAvatar: item.ownerAvatar,
-    thumbnail: item.thumbnail,
-    tags: parseTags(item.tags),
-    modifiedDate: item.modifiedDate,
-    voteCount: item.voteCount,
-    votedByRequester: item.votedByRequester,
-    bookmarkedByRequester: item.bookmarkedByRequester,
-    viewCount: item.viewCount,
-    forkCount: item.forkCount,
-    commentCount: item.commentCount,
-    featured: item.featured,
-  };
-}
-
 export async function getPublicProfile(username: string): Promise<PublicProfile | null> {
   const response = await fetch(`${API_BASE_URL}/api/public/users/${encodeURIComponent(username)}`, {
     cache: "no-store",
-    headers: await optionalAuthHeaders(),
+    headers: await authHeaders(),
   });
   if (!response.ok) return null;
   const data: PublicProfileDTO = await response.json();
@@ -92,8 +45,7 @@ export async function toggleFollow(username: string): Promise<{ following: boole
   const response = await authenticatedFetch(`${API_BASE_URL}/api/users/${encodeURIComponent(username)}/follow`, {
     method: "POST",
   });
-  if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
-  return response.json();
+  return parseResponse<{ following: boolean; followersCount: number }>(response);
 }
 
 interface FollowUserDTO {
@@ -127,7 +79,7 @@ function toFollowUser(item: FollowUserDTO): FollowUser {
 async function fetchFollowPage(kind: "followers" | "following", username: string, page: number, size: number): Promise<ProfilePage<FollowUser>> {
   const response = await fetch(`${API_BASE_URL}/api/public/users/${encodeURIComponent(username)}/${kind}?page=${page}&size=${size}`, {
     cache: "no-store",
-    headers: await optionalAuthHeaders(),
+    headers: await authHeaders(),
   });
   if (!response.ok) return { items: [], hasMore: false };
   const data: PageResponseDTO<FollowUserDTO> = await response.json();
@@ -145,7 +97,7 @@ export async function getFollowingPage(username: string, page: number, size: num
 export async function getPublicUserPublishedPage(username: string, page: number, size: number): Promise<ProfilePage<ProjectFeedItem>> {
   const response = await fetch(`${API_BASE_URL}/api/public/users/${encodeURIComponent(username)}/published?page=${page}&size=${size}`, {
     cache: "no-store",
-    headers: await optionalAuthHeaders(),
+    headers: await authHeaders(),
   });
   if (!response.ok) return { items: [], hasMore: false };
   const data: PageResponseDTO<ProjectFeedItemDTO> = await response.json();

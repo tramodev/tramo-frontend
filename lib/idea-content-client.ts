@@ -1,10 +1,8 @@
+import { parseResponse, expectOk } from "./http";
 
 export async function getIdeaContent(ideaId: string): Promise<string> {
   const response = await fetch(`/api/idea/${ideaId}/content`);
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-  const data = await response.json();
+  const data = await parseResponse<{ content?: string }>(response);
   return data.content ?? "";
 }
 
@@ -14,7 +12,5 @@ export async function saveIdeaContent(ideaId: string, content: string): Promise<
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content }),
   });
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
+  await expectOk(response);
 }

@@ -1,12 +1,13 @@
 'use server';
 import { cookies } from 'next/headers';
+import { API_BASE_URL } from './config';
 
 export type GoogleAuthResult =
   | { success: true }
   | { success: false; error: string };
 
 export async function googleAuthHandler(idToken: string): Promise<GoogleAuthResult> {
-  const response = await fetch('http://localhost:8080/api/auth/google', {
+  const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken }),

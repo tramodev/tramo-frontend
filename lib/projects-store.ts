@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { Idea, Path, TitleAlign } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
+import { parseResponse, expectOk } from "./http";
 import { anonIdHeader } from "./public-project";
 
 export type ProjectVisibility = "private" | "unlisted" | "published";
@@ -52,19 +53,6 @@ interface IdeaDTO {
 }
 
 const jsonHeaders = { "Content-Type": "application/json" };
-
-async function parseResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-  return response.json();
-}
-
-async function expectOk(response: Response): Promise<void> {
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-}
 
 function toProjectSummary(dto: ProjectDTO): Project {
   return {

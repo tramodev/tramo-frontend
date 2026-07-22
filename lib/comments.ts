@@ -2,6 +2,7 @@
 
 import { API_BASE_URL } from "./config";
 import { authenticatedFetch } from "./api";
+import { expectOk } from "./http";
 
 export interface Comment {
   id: string;
@@ -44,7 +45,7 @@ export async function postComment(projectId: string, content: string, parentId?:
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content, parentId: parentId ? Number(parentId) : undefined }),
   });
-  if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+  await expectOk(response);
 }
 
 export async function deleteComment(id: string): Promise<void> {

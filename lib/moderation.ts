@@ -2,6 +2,7 @@
 
 import { API_BASE_URL } from "./config";
 import { authenticatedFetch } from "./api";
+import { expectOk } from "./http";
 
 export interface Report {
   id: string;
@@ -51,7 +52,7 @@ export async function reportProject(projectId: string, reason: string): Promise<
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reason }),
   });
-  if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+  await expectOk(response);
 }
 
 export async function reportComment(commentId: string, reason: string): Promise<void> {
@@ -60,7 +61,7 @@ export async function reportComment(commentId: string, reason: string): Promise<
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reason }),
   });
-  if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+  await expectOk(response);
 }
 
 export async function listReports(): Promise<Report[]> {

@@ -2,13 +2,11 @@
 
 import { cookies } from "next/headers";
 import { API_BASE_URL, EXPLORE_PAGE_SIZE } from "./config";
-import { getAccessToken } from "./auth";
+import { authHeaders } from "./auth";
+import { toFeedItem, type ProjectFeedItem, type ProjectFeedItemDTO } from "./feed";
 import type { TitleAlign } from "@/app/editor/types";
 
-async function optionalAuthHeaders(): Promise<HeadersInit | undefined> {
-  const token = await getAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
+export type { ProjectFeedItem } from "./feed";
 
 export async function anonIdHeader(): Promise<HeadersInit | undefined> {
   const anonId = (await cookies()).get("tramo_anon_id")?.value;
@@ -71,68 +69,7 @@ interface PublicProjectDTO {
   commentCount: number;
 }
 
-export interface ProjectFeedItem {
-  id: string;
-  title: string;
-  description: string | null;
-  ownerUsername: string;
-  ownerAvatar: string | null;
-  thumbnail: string | null;
-  tags: string[];
-  modifiedDate: string;
-  voteCount: number;
-  votedByRequester: boolean;
-  bookmarkedByRequester: boolean;
-  viewCount: number;
-  forkCount: number;
-  commentCount: number;
-  featured: boolean;
-}
-
-interface ProjectFeedItemDTO {
-  id: number;
-  title: string;
-  description: string | null;
-  ownerUsername: string;
-  ownerAvatar: string | null;
-  thumbnail: string | null;
-  tags: string | null;
-  modifiedDate: string;
-  voteCount: number;
-  votedByRequester: boolean;
-  bookmarkedByRequester: boolean;
-  viewCount: number;
-  forkCount: number;
-  commentCount: number;
-  featured: boolean;
-}
-
 export type FeedSort = "recent" | "hot" | "following";
-
-function parseTags(tags: string | null): string[] {
-  if (!tags) return [];
-  return tags.split(",").map((tag) => tag.trim()).filter(Boolean);
-}
-
-function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
-  return {
-    id: String(item.id),
-    title: item.title,
-    description: item.description,
-    ownerUsername: item.ownerUsername,
-    ownerAvatar: item.ownerAvatar,
-    thumbnail: item.thumbnail,
-    tags: parseTags(item.tags),
-    modifiedDate: item.modifiedDate,
-    voteCount: item.voteCount,
-    votedByRequester: item.votedByRequester,
-    bookmarkedByRequester: item.bookmarkedByRequester,
-    viewCount: item.viewCount,
-    forkCount: item.forkCount,
-    commentCount: item.commentCount,
-    featured: item.featured,
-  };
-}
 
 export interface AuthorCount {
   username: string;
@@ -168,7 +105,7 @@ export async function getExploreBundle(
   url.searchParams.set("page", String(page));
   url.searchParams.set("size", String(size));
 
-  const response = await fetch(url, { cache: "no-store", headers: await optionalAuthHeaders() });
+  const response = await fetch(url, { cache: "no-store", headers: await authHeaders() });
 
   if (!response.ok) return { feed: [], hasMore: false, featured: null, hotTopics: [], activeAuthors: [] };
 
@@ -190,7 +127,7 @@ export interface TagCount {
 export async function getPublicProject(projectId: string): Promise<PublicProject | null> {
   const response = await fetch(`${API_BASE_URL}/api/public/project/${projectId}`, {
     cache: "no-store",
-    headers: { ...(await optionalAuthHeaders()), ...(await anonIdHeader()) },
+    headers: { ...(await authHeaders()), ...(await anonIdHeader()) },
   });
 
   if (!response.ok) return null;

@@ -1,32 +1,12 @@
 'use server';
 
 import { API_BASE_URL } from "./config";
-import { getAccessToken } from "./auth";
+import { authHeaders } from "./auth";
 import { authenticatedFetch } from "./api";
-import type { ProjectFeedItem } from "./public-project";
+import { parseResponse } from "./http";
+import { toFeedItem, type ProjectFeedItem, type ProjectFeedItemDTO } from "./feed";
 
-async function authHeaders(): Promise<HeadersInit | undefined> {
-  const token = await getAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
-
-interface ProjectFeedItemDTO {
-  id: number;
-  title: string;
-  description: string | null;
-  ownerUsername: string;
-  ownerAvatar: string | null;
-  thumbnail: string | null;
-  tags: string | null;
-  modifiedDate: string;
-  voteCount: number;
-  votedByRequester: boolean;
-  bookmarkedByRequester: boolean;
-  viewCount: number;
-  forkCount: number;
-  commentCount: number;
-  featured: boolean;
-}
+export type { ProjectFeedItem } from "./feed";
 
 interface ForkFeedItemDTO extends ProjectFeedItemDTO {
   forkedFromProjectId: number | null;
@@ -92,31 +72,6 @@ export interface ActivityItem {
   otherUsername: string | null;
 }
 
-function parseTags(tags: string | null): string[] {
-  if (!tags) return [];
-  return tags.split(",").map((tag) => tag.trim()).filter(Boolean);
-}
-
-function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
-  return {
-    id: String(item.id),
-    title: item.title,
-    description: item.description,
-    ownerUsername: item.ownerUsername,
-    ownerAvatar: item.ownerAvatar,
-    thumbnail: item.thumbnail,
-    tags: parseTags(item.tags),
-    modifiedDate: item.modifiedDate,
-    voteCount: item.voteCount,
-    votedByRequester: item.votedByRequester,
-    bookmarkedByRequester: item.bookmarkedByRequester,
-    viewCount: item.viewCount,
-    forkCount: item.forkCount,
-    commentCount: item.commentCount,
-    featured: item.featured,
-  };
-}
-
 export async function getMyProfile(): Promise<UserProfile | null> {
   const response = await fetch(`${API_BASE_URL}/api/profile/me`, { cache: "no-store", headers: await authHeaders() });
   if (!response.ok) return null;
@@ -129,8 +84,7 @@ export async function updateMyProfile(fields: { bio?: string; imageUrl?: string 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fields),
   });
-  if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
-  return response.json();
+  return parseResponse<UserProfile>(response);
 }
 
 interface ProfileStatsBundleDTO {

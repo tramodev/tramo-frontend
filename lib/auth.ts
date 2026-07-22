@@ -7,6 +7,11 @@ export async function getAccessToken(): Promise<string | null> {
   return cookieStore.get('accessToken')?.value || null;
 }
 
+export async function authHeaders(): Promise<HeadersInit | undefined> {
+  const token = await getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : undefined;
+}
+
 export async function isLoggedIn(): Promise<boolean> {
   const cookieStore = await cookies();
   return !!(cookieStore.get('accessToken') || cookieStore.get('refreshToken'));
@@ -29,6 +34,13 @@ export async function getUsername(): Promise<string | null> {
   return cookieStore.get('username')?.value || null;
 }
 
+// ponytail: in-flight refresh dedup keyed by refresh token. Collapses the burst
+// of parallel 401s from getProject (which fires ~10 fetches at once) into one
+// refresh call, so backend refresh-token rotation doesn't invalidate the rest.
+// Edge left uncovered: two tabs of the same user racing may do one extra
+// refresh — no session loss, upgrade to a shared store only if it matters.
+const inflightRefresh = new Map<string, Promise<boolean>>();
+
 export async function refreshAccessToken(): Promise<boolean> {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get('refreshToken')?.value;
@@ -37,34 +49,44 @@ export async function refreshAccessToken(): Promise<boolean> {
     return false;
   }
 
-  try {
-    const response = await fetch('http://localhost:8080/api/auth/refresh', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refreshToken }), 
-    });
+  const existing = inflightRefresh.get(refreshToken);
+  if (existing) return existing;
 
-    if (!response.ok) {
+  const promise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+
+      cookieStore.set('accessToken', data.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 15,
+        path: '/',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
       return false;
     }
+  })().finally(() => {
+    inflightRefresh.delete(refreshToken);
+  });
 
-    const data = await response.json();
-
-    cookieStore.set('accessToken', data.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 15,
-      path: '/',
-    });
-
-    return true;
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-    return false;
-  }
+  inflightRefresh.set(refreshToken, promise);
+  return promise;
 }
 
 export async function logout() {
