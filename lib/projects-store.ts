@@ -1,7 +1,7 @@
 'use server';
 
 import { headers } from "next/headers";
-import { Idea, Path, TitleAlign } from "@/app/editor/types";
+import { Item, Trail, TitleAlign } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 import { parseResponse, expectOk } from "./http";
@@ -13,8 +13,8 @@ export interface Project {
   id: string;
   title: string;
   description: string;
-  paths: Path[];
-  ideas: Record<string, Idea>;
+  trails: Trail[];
+  items: Record<string, Item>;
   visibility: ProjectVisibility;
   thumbnail: string | null;
   tags: string;
@@ -34,7 +34,7 @@ interface ProjectDTO {
   modifiedDate: string;
 }
 
-interface PathDTO {
+interface TrailDTO {
   id: number;
   title: string;
   visibility: string | null;
@@ -43,7 +43,7 @@ interface PathDTO {
   projectId: number;
 }
 
-interface IdeaDTO {
+interface ItemDTO {
   id: number;
   title: string;
   type: string | null;
@@ -59,8 +59,8 @@ function toProjectSummary(dto: ProjectDTO): Project {
     id: String(dto.id),
     title: dto.title,
     description: dto.description ?? "",
-    paths: [],
-    ideas: {},
+    trails: [],
+    items: {},
     visibility: dto.visibility ?? "private",
     thumbnail: dto.thumbnail,
     tags: dto.tags ?? "",
@@ -82,55 +82,55 @@ export async function getProject(id: string): Promise<Project | null> {
   if (projectResponse.status === 404) return null;
   const projectDto = await parseResponse<ProjectDTO>(projectResponse);
 
-  const pathsResponse = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/path`);
-  const pathDtos = await parseResponse<PathDTO[]>(pathsResponse);
+  const trailsResponse = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/trail`);
+  const trailDtos = await parseResponse<TrailDTO[]>(trailsResponse);
 
-  const pathIdeaLists = await Promise.all(
-    pathDtos.map((path) =>
-      authenticatedFetch(`${API_BASE_URL}/api/path/${path.id}/idea`).then((r) =>
-        parseResponse<IdeaDTO[]>(r)
+  const trailItemLists = await Promise.all(
+    trailDtos.map((trail) =>
+      authenticatedFetch(`${API_BASE_URL}/api/trail/${trail.id}/item`).then((r) =>
+        parseResponse<ItemDTO[]>(r)
       )
     )
   );
 
-  const ideaMap = new Map<number, IdeaDTO>();
-  pathIdeaLists.forEach((ideaDtos) => {
-    ideaDtos.forEach((idea) => ideaMap.set(idea.id, idea));
+  const itemMap = new Map<number, ItemDTO>();
+  trailItemLists.forEach((itemDtos) => {
+    itemDtos.forEach((item) => itemMap.set(item.id, item));
   });
-  const uniqueIdeaIds = Array.from(ideaMap.keys());
+  const uniqueItemIds = Array.from(itemMap.keys());
 
   const linkLists = await Promise.all(
-    uniqueIdeaIds.map((ideaId) =>
-      authenticatedFetch(`${API_BASE_URL}/api/idea/${ideaId}/link`).then((r) =>
-        parseResponse<IdeaDTO[]>(r)
+    uniqueItemIds.map((itemId) =>
+      authenticatedFetch(`${API_BASE_URL}/api/item/${itemId}/link`).then((r) =>
+        parseResponse<ItemDTO[]>(r)
       )
     )
   );
 
-  const ideas: Record<string, Idea> = {};
-  uniqueIdeaIds.forEach((ideaId, index) => {
-    const dto = ideaMap.get(ideaId)!;
-    ideas[String(ideaId)] = {
-      id: String(ideaId),
+  const items: Record<string, Item> = {};
+  uniqueItemIds.forEach((itemId, index) => {
+    const dto = itemMap.get(itemId)!;
+    items[String(itemId)] = {
+      id: String(itemId),
       title: dto.title,
       titleAlign: (dto.titleAlign as TitleAlign) ?? "center",
       content: null,
-      linkedIdeaIds: linkLists[index].map((linked) => String(linked.id)),
+      linkedItemIds: linkLists[index].map((linked) => String(linked.id)),
     };
   });
 
-  const paths: Path[] = pathDtos.map((path, index) => ({
-    id: String(path.id),
-    title: path.title,
-    ideaIds: pathIdeaLists[index].map((idea) => String(idea.id)),
+  const trails: Trail[] = trailDtos.map((trail, index) => ({
+    id: String(trail.id),
+    title: trail.title,
+    itemIds: trailItemLists[index].map((item) => String(item.id)),
   }));
 
   return {
     id: String(projectDto.id),
     title: projectDto.title,
     description: projectDto.description ?? "",
-    paths,
-    ideas,
+    trails,
+    items,
     visibility: projectDto.visibility ?? "private",
     thumbnail: projectDto.thumbnail,
     tags: projectDto.tags ?? "",
@@ -255,18 +255,18 @@ export async function toggleProjectBookmark(id: string): Promise<boolean> {
   return (await parseResponse<BookmarkResponseDTO>(response)).bookmarked;
 }
 
-export async function createPath(projectId: string, title: string): Promise<Path> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${projectId}/path`, {
+export async function createTrail(projectId: string, title: string): Promise<Trail> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${projectId}/trail`, {
     method: "POST",
     headers: jsonHeaders,
     body: JSON.stringify({ title }),
   });
-  const dto = await parseResponse<PathDTO>(response);
-  return { id: String(dto.id), title: dto.title, ideaIds: [] };
+  const dto = await parseResponse<TrailDTO>(response);
+  return { id: String(dto.id), title: dto.title, itemIds: [] };
 }
 
-export async function renamePath(pathId: string, title: string): Promise<void> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/path/${pathId}`, {
+export async function renameTrail(trailId: string, title: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/trail/${trailId}`, {
     method: "PUT",
     headers: jsonHeaders,
     body: JSON.stringify({ title }),
@@ -274,25 +274,25 @@ export async function renamePath(pathId: string, title: string): Promise<void> {
   await expectOk(response);
 }
 
-export async function deletePath(pathId: string): Promise<void> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/path/${pathId}`, {
+export async function deleteTrail(trailId: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/trail/${trailId}`, {
     method: "DELETE",
   });
   await expectOk(response);
 }
 
-export async function createIdea(pathId: string, title: string): Promise<Idea> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/path/${pathId}/idea`, {
+export async function createItem(trailId: string, title: string): Promise<Item> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/trail/${trailId}/item`, {
     method: "POST",
     headers: jsonHeaders,
     body: JSON.stringify({ title }),
   });
-  const dto = await parseResponse<IdeaDTO>(response);
-  return { id: String(dto.id), title: dto.title, titleAlign: (dto.titleAlign as TitleAlign) ?? "center", content: "", linkedIdeaIds: [] };
+  const dto = await parseResponse<ItemDTO>(response);
+  return { id: String(dto.id), title: dto.title, titleAlign: (dto.titleAlign as TitleAlign) ?? "center", content: "", linkedItemIds: [] };
 }
 
-export async function renameIdea(ideaId: string, title: string): Promise<void> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/idea/${ideaId}`, {
+export async function renameItem(itemId: string, title: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/item/${itemId}`, {
     method: "PUT",
     headers: jsonHeaders,
     body: JSON.stringify({ title }),
@@ -300,8 +300,8 @@ export async function renameIdea(ideaId: string, title: string): Promise<void> {
   await expectOk(response);
 }
 
-export async function setIdeaTitleAlign(ideaId: string, titleAlign: TitleAlign): Promise<void> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/idea/${ideaId}`, {
+export async function setItemTitleAlign(itemId: string, titleAlign: TitleAlign): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/item/${itemId}`, {
     method: "PUT",
     headers: jsonHeaders,
     body: JSON.stringify({ titleAlign }),
@@ -309,31 +309,31 @@ export async function setIdeaTitleAlign(ideaId: string, titleAlign: TitleAlign):
   await expectOk(response);
 }
 
-export async function attachIdeaToPath(pathId: string, ideaId: string): Promise<void> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/path/${pathId}/idea/${ideaId}`, {
+export async function attachItemToTrail(trailId: string, itemId: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/trail/${trailId}/item/${itemId}`, {
     method: "POST",
   });
   await expectOk(response);
 }
 
-export async function detachIdeaFromPath(pathId: string, ideaId: string): Promise<void> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/path/${pathId}/idea/${ideaId}`, {
+export async function detachItemFromTrail(trailId: string, itemId: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/trail/${trailId}/item/${itemId}`, {
     method: "DELETE",
   });
   await expectOk(response);
 }
 
-export async function linkIdeas(ideaId: string, otherIdeaId: string): Promise<void> {
+export async function linkItems(itemId: string, otherItemId: string): Promise<void> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/idea/${ideaId}/link/${otherIdeaId}`,
+    `${API_BASE_URL}/api/item/${itemId}/link/${otherItemId}`,
     { method: "POST" }
   );
   await expectOk(response);
 }
 
-export async function unlinkIdeas(ideaId: string, otherIdeaId: string): Promise<void> {
+export async function unlinkItems(itemId: string, otherItemId: string): Promise<void> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/idea/${ideaId}/link/${otherIdeaId}`,
+    `${API_BASE_URL}/api/item/${itemId}/link/${otherItemId}`,
     { method: "DELETE" }
   );
   await expectOk(response);

@@ -15,14 +15,14 @@ import {
 import { $findMatchingParent } from '@lexical/utils';
 import { Check, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ideaIdFromRel } from './ideaLink';
+import { itemIdFromRel } from './itemLink';
 
 export const OPEN_LINK_EDITOR_COMMAND: LexicalCommand<void> = createCommand('OPEN_LINK_EDITOR_COMMAND');
 
 export const PLACEHOLDER_URL = 'https://';
 
-function isIdeaMentionLink(node: LinkNode): boolean {
-  return ideaIdFromRel(node.getRel() ?? '') !== null;
+function isItemMentionLink(node: LinkNode): boolean {
+  return itemIdFromRel(node.getRel() ?? '') !== null;
 }
 
 export default function FloatingLinkEditorPlugin() {
@@ -68,7 +68,7 @@ export default function FloatingLinkEditorPlugin() {
         if (!$isRangeSelection(selection)) return;
         const node = selection.anchor.getNode();
         const linkNode = $findMatchingParent(node, $isLinkNode) as LinkNode | null;
-        if (linkNode && !isIdeaMentionLink(linkNode)) {
+        if (linkNode && !isItemMentionLink(linkNode)) {
           const nativeSelection = window.getSelection();
           if (nativeSelection && nativeSelection.rangeCount > 0) {
             const rect = nativeSelection.getRangeAt(0).getBoundingClientRect();

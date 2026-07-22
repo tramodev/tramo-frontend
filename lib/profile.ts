@@ -30,7 +30,7 @@ export interface UserProfile {
 }
 
 export interface ProfileStats {
-  pathsPublished: number;
+  trailsPublished: number;
   upvotesReceived: number;
   totalViews: number;
   forksCount: number;

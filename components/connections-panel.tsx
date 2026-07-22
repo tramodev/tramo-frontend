@@ -3,16 +3,16 @@
 import { useState } from "react"
 import { ChevronLeft, ChevronRight, Link2, Plus, X } from "lucide-react"
 
-import { Idea, Path } from "@/app/editor/types"
+import { Item, Trail } from "@/app/editor/types"
 
 interface ConnectionsPanelProps {
-  idea: Idea;
-  ideas: Record<string, Idea>;
-  paths: Path[];
-  onSelectIdea: (idea: Idea) => void;
-  onLinkIdea: (ideaId: string, otherIdeaId: string) => void;
-  onUnlinkIdea: (ideaId: string, otherIdeaId: string) => void;
-  onLinkPath: (pathId: string, ideaId: string) => void;
+  item: Item;
+  items: Record<string, Item>;
+  trails: Trail[];
+  onSelectItem: (item: Item) => void;
+  onLinkItem: (itemId: string, otherItemId: string) => void;
+  onUnlinkItem: (itemId: string, otherItemId: string) => void;
+  onLinkTrail: (trailId: string, itemId: string) => void;
   onOpenGraph: () => void;
   open: boolean;
   onToggleOpen: () => void;
@@ -45,27 +45,27 @@ function layoutArc(count: number, startDeg: number, endDeg: number, cx: number, 
   return positions;
 }
 
-function NeighborhoodGraph({ idea, ideas, paths }: { idea: Idea; ideas: Record<string, Idea>; paths: Path[] }) {
-  const linked: GraphNode[] = idea.linkedIdeaIds
-    .map((id) => ideas[id])
-    .filter((linkedIdea): linkedIdea is Idea => Boolean(linkedIdea))
+function NeighborhoodGraph({ item, items, trails }: { item: Item; items: Record<string, Item>; trails: Trail[] }) {
+  const linked: GraphNode[] = item.linkedItemIds
+    .map((id) => items[id])
+    .filter((linkedItem): linkedItem is Item => Boolean(linkedItem))
     .slice(0, MAX_GRAPH_NODES_PER_SIDE)
-    .map((linkedIdea) => ({ id: linkedIdea.id, title: linkedIdea.title, x: 0, y: 0 }));
+    .map((linkedItem) => ({ id: linkedItem.id, title: linkedItem.title, x: 0, y: 0 }));
 
   const siblingIds = new Set<string>();
-  for (const path of paths) {
-    if (!path.ideaIds.includes(idea.id)) continue;
-    for (const siblingId of path.ideaIds) {
-      if (siblingId === idea.id) continue;
-      if (idea.linkedIdeaIds.includes(siblingId)) continue;
+  for (const trail of trails) {
+    if (!trail.itemIds.includes(item.id)) continue;
+    for (const siblingId of trail.itemIds) {
+      if (siblingId === item.id) continue;
+      if (item.linkedItemIds.includes(siblingId)) continue;
       siblingIds.add(siblingId);
     }
   }
   const siblings: GraphNode[] = Array.from(siblingIds)
-    .map((id) => ideas[id])
-    .filter((siblingIdea): siblingIdea is Idea => Boolean(siblingIdea))
+    .map((id) => items[id])
+    .filter((siblingItem): siblingItem is Item => Boolean(siblingItem))
     .slice(0, MAX_GRAPH_NODES_PER_SIDE)
-    .map((siblingIdea) => ({ id: siblingIdea.id, title: siblingIdea.title, x: 0, y: 0 }));
+    .map((siblingItem) => ({ id: siblingItem.id, title: siblingItem.title, x: 0, y: 0 }));
 
   const cx = 122;
   const cy = 78;
@@ -129,7 +129,7 @@ function NeighborhoodGraph({ idea, ideas, paths }: { idea: Idea; ideas: Record<s
       ))}
       <circle cx={cx} cy={cy} r={8} fill="var(--primary)" />
       <text x={cx} y={cy + 32} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)">
-        this idea
+        this item
       </text>
       {siblings.map((node) => (
         <text
@@ -160,44 +160,44 @@ function NeighborhoodGraph({ idea, ideas, paths }: { idea: Idea; ideas: Record<s
 }
 
 export function ConnectionsPanel({
-  idea,
-  ideas,
-  paths,
-  onSelectIdea,
-  onLinkIdea,
-  onUnlinkIdea,
-  onLinkPath,
+  item,
+  items,
+  trails,
+  onSelectItem,
+  onLinkItem,
+  onUnlinkItem,
+  onLinkTrail,
   onOpenGraph,
   open,
   onToggleOpen,
 }: ConnectionsPanelProps) {
-  const [isAddingIdea, setIsAddingIdea] = useState(false);
-  const [ideaSelection, setIdeaSelection] = useState("");
-  const [isAddingPath, setIsAddingPath] = useState(false);
-  const [pathSelection, setPathSelection] = useState("");
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [itemSelection, setItemSelection] = useState("");
+  const [isAddingTrail, setIsAddingTrail] = useState(false);
+  const [trailSelection, setTrailSelection] = useState("");
 
-  const linkedIdeas = idea.linkedIdeaIds
-    .map((id) => ideas[id])
-    .filter((linked): linked is Idea => Boolean(linked));
-  const linkableIdeas = Object.values(ideas).filter(
-    (other) => other.id !== idea.id && !idea.linkedIdeaIds.includes(other.id)
+  const linkedItems = item.linkedItemIds
+    .map((id) => items[id])
+    .filter((linked): linked is Item => Boolean(linked));
+  const linkableItems = Object.values(items).filter(
+    (other) => other.id !== item.id && !item.linkedItemIds.includes(other.id)
   );
 
-  const memberPaths = paths.filter((path) => path.ideaIds.includes(idea.id));
-  const linkablePaths = paths.filter((path) => !path.ideaIds.includes(idea.id));
+  const memberTrails = trails.filter((trail) => trail.itemIds.includes(item.id));
+  const linkableTrails = trails.filter((trail) => !trail.itemIds.includes(item.id));
 
-  const submitLinkIdea = () => {
-    if (!ideaSelection) return;
-    onLinkIdea(idea.id, ideaSelection);
-    setIsAddingIdea(false);
-    setIdeaSelection("");
+  const submitLinkItem = () => {
+    if (!itemSelection) return;
+    onLinkItem(item.id, itemSelection);
+    setIsAddingItem(false);
+    setItemSelection("");
   };
 
-  const submitLinkPath = () => {
-    if (!pathSelection) return;
-    onLinkPath(pathSelection, idea.id);
-    setIsAddingPath(false);
-    setPathSelection("");
+  const submitLinkTrail = () => {
+    if (!trailSelection) return;
+    onLinkTrail(trailSelection, item.id);
+    setIsAddingTrail(false);
+    setTrailSelection("");
   };
 
   return (
@@ -207,13 +207,13 @@ export function ConnectionsPanel({
       }`}
     >
       <div className="mb-2.5 flex items-center justify-between">
-        {open && <span className={SECTION_LABEL_CLASSES}>Linked ideas</span>}
+        {open && <span className={SECTION_LABEL_CLASSES}>Linked items</span>}
         <div className="ml-auto flex items-center gap-1.5">
           {open && (
             <button
               type="button"
-              aria-label="Link an idea"
-              onClick={() => setIsAddingIdea(true)}
+              aria-label="Link an item"
+              onClick={() => setIsAddingItem(true)}
               className="cursor-pointer"
             >
               <Plus className="h-[15px] w-[15px]" />
@@ -238,14 +238,14 @@ export function ConnectionsPanel({
         >
       <div>
         <div className="flex flex-col gap-2">
-          {linkedIdeas.map((linked) => (
+          {linkedItems.map((linked) => (
             <div
               key={linked.id}
               className="group/linked flex items-center gap-2 rounded-sm border border-border bg-popover py-[9px] px-2.5 transition-colors hover:border-primary"
             >
               <button
                 type="button"
-                onClick={() => onSelectIdea(linked)}
+                onClick={() => onSelectItem(linked)}
                 className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
               >
                 <Link2 className="h-[13px] w-[13px] shrink-0 text-primary" />
@@ -255,29 +255,29 @@ export function ConnectionsPanel({
                 type="button"
                 aria-label={`Unlink ${linked.title}`}
                 className="shrink-0 cursor-pointer opacity-0 hover:opacity-70 group-hover/linked:opacity-100"
-                onClick={() => onUnlinkIdea(idea.id, linked.id)}
+                onClick={() => onUnlinkItem(item.id, linked.id)}
               >
                 <X className="h-3 w-3" />
               </button>
             </div>
           ))}
-          {linkedIdeas.length === 0 && !isAddingIdea && (
+          {linkedItems.length === 0 && !isAddingItem && (
             <span className="text-xs italic text-muted-foreground">
               None yet
             </span>
           )}
-          {isAddingIdea && (
+          {isAddingItem && (
             <div className="flex items-center gap-1">
               <select
                 autoFocus
                 className="h-7 flex-1 rounded-md border border-input bg-background px-1 text-xs"
-                value={ideaSelection}
-                onChange={(e) => setIdeaSelection(e.target.value)}
+                value={itemSelection}
+                onChange={(e) => setItemSelection(e.target.value)}
               >
                 <option value="" disabled>
-                  Choose an idea...
+                  Choose an item...
                 </option>
-                {linkableIdeas.map((other) => (
+                {linkableItems.map((other) => (
                   <option key={other.id} value={other.id}>
                     {other.title}
                   </option>
@@ -286,12 +286,12 @@ export function ConnectionsPanel({
               <button
                 type="button"
                 className="h-7 px-2 text-xs font-semibold disabled:opacity-40"
-                disabled={!ideaSelection}
-                onClick={submitLinkIdea}
+                disabled={!itemSelection}
+                onClick={submitLinkItem}
               >
                 Link
               </button>
-              <button type="button" className="h-7 px-2 text-xs" onClick={() => setIsAddingIdea(false)}>
+              <button type="button" className="h-7 px-2 text-xs" onClick={() => setIsAddingItem(false)}>
                 Cancel
               </button>
             </div>
@@ -301,51 +301,51 @@ export function ConnectionsPanel({
 
       <div>
         <div className={`mb-2.5 ${SECTION_LABEL_CLASSES}`}>
-          In paths
+          In trails
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          {memberPaths.map((path) => (
+          {memberTrails.map((trail) => (
             <span
-              key={path.id}
+              key={trail.id}
               className="rounded-sm text-[11px] font-medium bg-secondary text-secondary-foreground py-1 px-2.5"
             >
-              {path.title}
+              {trail.title}
             </span>
           ))}
-          {isAddingPath ? (
+          {isAddingTrail ? (
             <div className="flex items-center gap-1">
               <select
                 autoFocus
                 className="h-7 rounded-md border border-input bg-background px-1 text-xs"
-                value={pathSelection}
-                onChange={(e) => setPathSelection(e.target.value)}
+                value={trailSelection}
+                onChange={(e) => setTrailSelection(e.target.value)}
               >
                 <option value="" disabled>
-                  Choose a path...
+                  Choose a trail...
                 </option>
-                {linkablePaths.map((path) => (
-                  <option key={path.id} value={path.id}>
-                    {path.title}
+                {linkableTrails.map((trail) => (
+                  <option key={trail.id} value={trail.id}>
+                    {trail.title}
                   </option>
                 ))}
               </select>
               <button
                 type="button"
                 className="h-7 px-2 text-xs font-semibold disabled:opacity-40"
-                disabled={!pathSelection}
-                onClick={submitLinkPath}
+                disabled={!trailSelection}
+                onClick={submitLinkTrail}
               >
                 Link
               </button>
-              <button type="button" className="h-7 px-2 text-xs" onClick={() => setIsAddingPath(false)}>
+              <button type="button" className="h-7 px-2 text-xs" onClick={() => setIsAddingTrail(false)}>
                 Cancel
               </button>
             </div>
           ) : (
-            linkablePaths.length > 0 && (
+            linkableTrails.length > 0 && (
               <button
                 type="button"
-                onClick={() => setIsAddingPath(true)}
+                onClick={() => setIsAddingTrail(true)}
                 className="flex items-center gap-1 rounded-sm border border-dashed border-input py-1 px-2.5 text-[11px] font-medium text-muted-foreground hover:border-primary hover:text-primary"
               >
                 <Plus className="h-2.5 w-2.5" />
@@ -367,7 +367,7 @@ export function ConnectionsPanel({
             Open graph
           </button>
         </div>
-        <NeighborhoodGraph idea={idea} ideas={ideas} paths={paths} />
+        <NeighborhoodGraph item={item} items={items} trails={trails} />
       </div>
         </div>
       </div>

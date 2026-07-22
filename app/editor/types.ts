@@ -1,15 +1,15 @@
 export type TitleAlign = "left" | "center" | "right";
 
-export interface Idea {
+export interface Item {
     id: string;
     title: string;
     titleAlign: TitleAlign;
     content: string | null;
-    linkedIdeaIds: string[];
+    linkedItemIds: string[];
 }
 
-export interface Path {
+export interface Trail {
     id: string;
     title: string;
-    ideaIds: string[];
+    itemIds: string[];
 }

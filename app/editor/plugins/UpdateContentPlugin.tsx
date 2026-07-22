@@ -4,20 +4,20 @@ import { CLEAR_EDITOR_COMMAND, CLEAR_HISTORY_COMMAND } from 'lexical';
 
 export default function UpdateContentPlugin({
     content,
-    ideaId,
+    itemId,
     onContentApplied,
 }: {
     content: string | null;
-    ideaId?: string;
-    onContentApplied?: (ideaId: string) => void;
+    itemId?: string;
+    onContentApplied?: (itemId: string) => void;
 }) {
     const [editor] = useLexicalComposerContext();
-    const lastIdeaId = useRef<string | undefined>(undefined);
+    const lastItemId = useRef<string | undefined>(undefined);
 
     useEffect(() => {
-        if (ideaId === lastIdeaId.current) return;
+        if (itemId === lastItemId.current) return;
         if (content === null) return;
-        lastIdeaId.current = ideaId;
+        lastItemId.current = itemId;
 
         editor.update(() => {
             if (content) {
@@ -29,8 +29,8 @@ export default function UpdateContentPlugin({
         });
         editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
 
-        if (ideaId) onContentApplied?.(ideaId);
-    }, [editor, ideaId, content, onContentApplied]);
+        if (itemId) onContentApplied?.(itemId);
+    }, [editor, itemId, content, onContentApplied]);
 
     return null;
 }

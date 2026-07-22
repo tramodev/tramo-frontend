@@ -89,7 +89,7 @@ export default async function ProfilePage({
 
           <div className="grid grid-cols-4 gap-3 pt-3 text-center">
             <Link href="/projects" className="group rounded-2xl bg-card py-[18px] transition-colors hover:bg-muted">
-              <div className="font-display text-[28px] font-medium text-primary">{stats?.pathsPublished ?? 0}</div>
+              <div className="font-display text-[28px] font-medium text-primary">{stats?.trailsPublished ?? 0}</div>
               <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-0.5">
                 Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />

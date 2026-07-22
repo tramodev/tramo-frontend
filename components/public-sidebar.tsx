@@ -16,51 +16,51 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import type { PublicIdea, PublicPath } from "@/lib/public-project"
+import type { PublicItem, PublicTrail } from "@/lib/public-project"
 
 interface PublicSidebarProps {
-  paths: PublicPath[];
-  selectedIdeaId?: string;
-  onSelectIdea: (idea: PublicIdea) => void;
+  trails: PublicTrail[];
+  selectedItemId?: string;
+  onSelectItem: (item: PublicItem) => void;
 }
 
-export function PublicSidebar({ paths, selectedIdeaId, onSelectIdea }: PublicSidebarProps) {
+export function PublicSidebar({ trails, selectedItemId, onSelectItem }: PublicSidebarProps) {
   return (
     <Sidebar variant="floating" className="top-16 h-[calc(100svh-64px)] pt-0 px-3 pb-3">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
             <span className="text-xs font-medium text-muted-foreground">
-              Paths
+              Trails
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {paths.map((path) => (
-                <Collapsible key={path.id} defaultOpen className="group/collapsible">
+              {trails.map((trail) => (
+                <Collapsible key={trail.id} defaultOpen className="group/collapsible">
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton className="font-semibold">
                         <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                        <span>{path.title}</span>
+                        <span>{trail.title}</span>
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {path.ideas.map((idea) => (
-                          <SidebarMenuSubItem key={idea.id}>
+                        {trail.items.map((item) => (
+                          <SidebarMenuSubItem key={item.id}>
                             <SidebarMenuSubButton
-                              isActive={selectedIdeaId === idea.id}
-                              onClick={() => onSelectIdea(idea)}
+                              isActive={selectedItemId === item.id}
+                              onClick={() => onSelectItem(item)}
                             >
                               <span
                                 className={
-                                  selectedIdeaId === idea.id
+                                  selectedItemId === item.id
                                     ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary"
                                     : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"
                                 }
                               />
-                              <span className="truncate">{idea.title}</span>
+                              <span className="truncate">{item.title}</span>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}

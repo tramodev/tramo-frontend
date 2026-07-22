@@ -13,7 +13,7 @@ export async function anonIdHeader(): Promise<HeadersInit | undefined> {
   return anonId ? { "X-Anon-Id": anonId } : undefined;
 }
 
-export interface PublicIdea {
+export interface PublicItem {
   id: string;
   title: string;
   type: string | null;
@@ -21,10 +21,10 @@ export interface PublicIdea {
   titleAlign: TitleAlign;
 }
 
-export interface PublicPath {
+export interface PublicTrail {
   id: string;
   title: string;
-  ideas: PublicIdea[];
+  items: PublicItem[];
 }
 
 export interface PublicProject {
@@ -33,7 +33,7 @@ export interface PublicProject {
   description: string | null;
   ownerUsername: string;
   modifiedDate: string;
-  paths: PublicPath[];
+  trails: PublicTrail[];
   voteCount: number;
   votedByRequester: boolean;
   bookmarkedByRequester: boolean;
@@ -41,7 +41,7 @@ export interface PublicProject {
   commentCount: number;
 }
 
-interface PublicIdeaDTO {
+interface PublicItemDTO {
   id: number;
   title: string;
   type: string | null;
@@ -49,10 +49,10 @@ interface PublicIdeaDTO {
   titleAlign: TitleAlign | null;
 }
 
-interface PublicPathDTO {
+interface PublicTrailDTO {
   id: number;
   title: string;
-  ideas: PublicIdeaDTO[];
+  items: PublicItemDTO[];
 }
 
 interface PublicProjectDTO {
@@ -61,7 +61,7 @@ interface PublicProjectDTO {
   description: string | null;
   ownerUsername: string;
   modifiedDate: string;
-  paths: PublicPathDTO[];
+  trails: PublicTrailDTO[];
   voteCount: number;
   votedByRequester: boolean;
   bookmarkedByRequester: boolean;
@@ -145,15 +145,15 @@ export async function getPublicProject(projectId: string): Promise<PublicProject
     bookmarkedByRequester: data.bookmarkedByRequester,
     viewCount: data.viewCount,
     commentCount: data.commentCount,
-    paths: data.paths.map((path) => ({
-      id: String(path.id),
-      title: path.title,
-      ideas: path.ideas.map((idea) => ({
-        id: String(idea.id),
-        title: idea.title,
-        type: idea.type,
-        content: idea.content,
-        titleAlign: idea.titleAlign ?? "center",
+    trails: data.trails.map((trail) => ({
+      id: String(trail.id),
+      title: trail.title,
+      items: trail.items.map((item) => ({
+        id: String(item.id),
+        title: item.title,
+        type: item.type,
+        content: item.content,
+        titleAlign: item.titleAlign ?? "center",
       })),
     })),
   };

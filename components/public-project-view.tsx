@@ -15,7 +15,7 @@ import { ReportButton } from "@/components/report-button"
 import { ShareToFollowersButton } from "@/components/share-to-followers-button"
 import { CommentsSection } from "@/components/comments-section"
 import { UserMenu } from "@/components/user-menu"
-import type { PublicIdea, PublicProject } from "@/lib/public-project"
+import type { PublicItem, PublicProject } from "@/lib/public-project"
 
 export function PublicProjectView({
   project,
@@ -32,12 +32,12 @@ export function PublicProjectView({
   username: string | null
   imageUrl: string | null
 }) {
-  const allIdeas = project.paths.flatMap((path) => path.ideas)
-  const [selectedIdea, setSelectedIdea] = useState<PublicIdea | undefined>(allIdeas[0])
+  const allItems = project.trails.flatMap((trail) => trail.items)
+  const [selectedItem, setSelectedItem] = useState<PublicItem | undefined>(allItems[0])
 
-  const handleIdeaLinkClick = (ideaId: string) => {
-    const idea = allIdeas.find((candidate) => candidate.id === ideaId)
-    if (idea) setSelectedIdea(idea)
+  const handleItemLinkClick = (itemId: string) => {
+    const item = allItems.find((candidate) => candidate.id === itemId)
+    if (item) setSelectedItem(item)
   }
 
   return (
@@ -93,20 +93,20 @@ export function PublicProjectView({
       }
       sidebar={
         <PublicSidebar
-          paths={project.paths}
-          selectedIdeaId={selectedIdea?.id}
-          onSelectIdea={setSelectedIdea}
+          trails={project.trails}
+          selectedItemId={selectedItem?.id}
+          onSelectItem={setSelectedItem}
         />
       }
       content={
         <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-auto">
-          {selectedIdea ? (
+          {selectedItem ? (
             <div className="rounded-2xl bg-popover">
               <div className="mx-auto flex w-full max-w-[820px] flex-col gap-4 px-6 py-8">
-                <h1 className="font-display text-[28px] font-medium" style={{ textAlign: selectedIdea.titleAlign }}>
-                  {selectedIdea.title}
+                <h1 className="font-display text-[28px] font-medium" style={{ textAlign: selectedItem.titleAlign }}>
+                  {selectedItem.title}
                 </h1>
-                <LexicalReadOnly key={selectedIdea.id} content={selectedIdea.content} onIdeaClick={handleIdeaLinkClick} />
+                <LexicalReadOnly key={selectedItem.id} content={selectedItem.content} onItemClick={handleItemLinkClick} />
               </div>
             </div>
           ) : (

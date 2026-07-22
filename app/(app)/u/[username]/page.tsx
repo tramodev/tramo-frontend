@@ -81,7 +81,7 @@ export default async function PublicProfilePage({
 
           <div className="grid gap-3 mt-3 grid-cols-2 sm:grid-cols-4 text-center">
             <div className="rounded-2xl bg-card py-[18px]">
-              <div className="font-display text-[28px] font-medium text-primary">{stats.pathsPublished}</div>
+              <div className="font-display text-[28px] font-medium text-primary">{stats.trailsPublished}</div>
               <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-0.5">
                 Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />

@@ -6,13 +6,13 @@ import { useTheme } from "next-themes"
 import { Minus, Plus } from "lucide-react"
 import type { NodeObject, LinkObject } from "react-force-graph-2d"
 
-import { Idea, Path } from "@/app/editor/types"
+import { Item, Trail } from "@/app/editor/types"
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
 
 const PATH_HUES = [222, 280, 20, 155, 340, 45, 190];
 
-function pathColor(index: number, alpha = 1): string {
+function trailColor(index: number, alpha = 1): string {
   const hue = PATH_HUES[index % PATH_HUES.length];
   return `hsla(${hue}, 62%, 45%, ${alpha})`;
 }
@@ -30,10 +30,10 @@ interface GraphLink extends LinkObject {
 }
 
 interface KnowledgeGraphProps {
-  paths: Path[];
-  ideas: Record<string, Idea>;
-  selectedIdeaId?: string;
-  onSelectIdea: (idea: Idea) => void;
+  trails: Trail[];
+  items: Record<string, Item>;
+  selectedItemId?: string;
+  onSelectItem: (item: Item) => void;
 }
 
 interface GraphColors {
@@ -68,31 +68,31 @@ function readColors(el: HTMLElement | null): GraphColors {
   };
 }
 
-function buildGraphData(ideas: Record<string, Idea>) {
+function buildGraphData(items: Record<string, Item>) {
   const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
 
-  for (const idea of Object.values(ideas)) {
-    nodes.push({ id: idea.id, name: idea.title });
+  for (const item of Object.values(items)) {
+    nodes.push({ id: item.id, name: item.title });
   }
 
   const seenPairs = new Set<string>();
-  for (const idea of Object.values(ideas)) {
-    for (const otherId of idea.linkedIdeaIds) {
-      if (!ideas[otherId]) continue;
-      const key = [idea.id, otherId].sort().join("::");
+  for (const item of Object.values(items)) {
+    for (const otherId of item.linkedItemIds) {
+      if (!items[otherId]) continue;
+      const key = [item.id, otherId].sort().join("::");
       if (seenPairs.has(key)) continue;
       seenPairs.add(key);
-      links.push({ source: idea.id, target: otherId });
+      links.push({ source: item.id, target: otherId });
     }
   }
 
   return { nodes, links };
 }
 
-export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: KnowledgeGraphProps) {
+export function KnowledgeGraph({ trails, items, selectedItemId, onSelectItem }: KnowledgeGraphProps) {
   const { resolvedTheme } = useTheme();
-  const graphData = useMemo(() => buildGraphData(ideas), [ideas]);
+  const graphData = useMemo(() => buildGraphData(items), [items]);
 
   const nodeById = useMemo(() => {
     const map = new Map<string, GraphNode>();
@@ -106,20 +106,20 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [colors, setColors] = useState<GraphColors>(FALLBACK_COLORS);
 
-  const drawPathHulls = useCallback(
+  const drawTrailHulls = useCallback(
     (ctx: CanvasRenderingContext2D, globalScale: number) => {
-      paths.forEach((path, index) => {
+      trails.forEach((trail, index) => {
         const memberPoints: Point[] = [];
-        path.ideaIds.forEach((ideaId) => {
-          const ideaNode = nodeById.get(ideaId);
-          if (ideaNode && typeof ideaNode.x === "number" && typeof ideaNode.y === "number") {
-            memberPoints.push([ideaNode.x, ideaNode.y]);
+        trail.itemIds.forEach((itemId) => {
+          const itemNode = nodeById.get(itemId);
+          if (itemNode && typeof itemNode.x === "number" && typeof itemNode.y === "number") {
+            memberPoints.push([itemNode.x, itemNode.y]);
           }
         });
         if (memberPoints.length === 0) return;
 
-        const strokeColor = pathColor(index);
-        const fillColor = pathColor(index, 0.16);
+        const strokeColor = trailColor(index);
+        const fillColor = trailColor(index, 0.16);
 
         const cx = memberPoints.reduce((sum, p) => sum + p[0], 0) / memberPoints.length;
         const cy = memberPoints.reduce((sum, p) => sum + p[1], 0) / memberPoints.length;
@@ -139,7 +139,7 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
 
         const fontSize = 11 / globalScale;
         ctx.font = `500 ${fontSize}px "Roboto Flex", system-ui, sans-serif`;
-        const textWidth = ctx.measureText(path.title).width;
+        const textWidth = ctx.measureText(trail.title).width;
         const padX = 6 / globalScale;
         const padY = 3 / globalScale;
         const boxY = labelTopY - fontSize - padY * 2 - 4 / globalScale;
@@ -156,10 +156,10 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         ctx.fillStyle = strokeColor;
-        ctx.fillText(path.title, labelX, boxY + padY);
+        ctx.fillText(trail.title, labelX, boxY + padY);
       });
     },
-    [paths, nodeById, colors.bg]
+    [trails, nodeById, colors.bg]
   );
 
   useEffect(() => {
@@ -205,15 +205,15 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
           linkWidth={2}
           linkColor={() => colors.ink}
           linkDirectionalArrowLength={0}
-          onRenderFramePre={drawPathHulls}
+          onRenderFramePre={drawTrailHulls}
           onNodeClick={(node) => {
             const graphNode = node as GraphNode;
-            const idea = ideas[graphNode.id];
-            if (idea) onSelectIdea(idea);
+            const item = items[graphNode.id];
+            if (item) onSelectItem(item);
           }}
           nodeCanvasObject={(node, ctx, globalScale) => {
             const graphNode = node as GraphNode;
-            const isSelected = graphNode.id === selectedIdeaId;
+            const isSelected = graphNode.id === selectedItemId;
             const size = isSelected ? 15 : 6;
             const x = graphNode.x ?? 0;
             const y = graphNode.y ?? 0;
@@ -289,11 +289,11 @@ export function KnowledgeGraph({ paths, ideas, selectedIdeaId, onSelectIdea }: K
         </span>
         <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <span className="h-2.5 w-2.5 rounded-full border border-muted-foreground box-border" />
-          Idea
+          Item
         </span>
         <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <span className="h-2.5 w-2.5 rounded-full bg-[hsla(222,62%,45%,0.3)] border-[1.5px] border-[hsl(222,62%,45%)]" />
-          Path (region contains its ideas)
+          Trail (region contains its items)
         </span>
       </div>
     </div>

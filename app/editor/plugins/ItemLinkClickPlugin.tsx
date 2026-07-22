@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { IDEA_LINK_REL_PREFIX, ideaIdFromRel } from './ideaLink';
+import { ITEM_LINK_REL_PREFIX, itemIdFromRel } from './itemLink';
 
-export default function IdeaLinkClickPlugin({ onNavigate }: { onNavigate: (ideaId: string) => void }) {
+export default function ItemLinkClickPlugin({ onNavigate }: { onNavigate: (itemId: string) => void }) {
   const [editor] = useLexicalComposerContext();
   const onNavigateRef = useRef(onNavigate);
 
@@ -15,13 +15,13 @@ export default function IdeaLinkClickPlugin({ onNavigate }: { onNavigate: (ideaI
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
-      const anchor = target?.closest?.(`a[rel^="${IDEA_LINK_REL_PREFIX}"], a[rel^="mypath-idea:"]`) as HTMLAnchorElement | null;
+      const anchor = target?.closest?.(`a[rel^="${ITEM_LINK_REL_PREFIX}"], a[rel^="mypath-idea:"]`) as HTMLAnchorElement | null;
       if (!anchor) return;
-      const ideaId = ideaIdFromRel(anchor.getAttribute('rel') ?? '');
-      if (!ideaId) return;
+      const itemId = itemIdFromRel(anchor.getAttribute('rel') ?? '');
+      if (!itemId) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      onNavigateRef.current(ideaId);
+      onNavigateRef.current(itemId);
     };
     return editor.registerRootListener((rootElement, prevRootElement) => {
       prevRootElement?.removeEventListener('click', handleClick, true);

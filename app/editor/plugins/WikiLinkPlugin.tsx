@@ -10,8 +10,8 @@ import {
 } from '@lexical/react/LexicalTypeaheadMenuPlugin';
 import { $createTextNode, $getSelection, $isRangeSelection, TextNode } from 'lexical';
 import { $createLinkNode } from '@lexical/link';
-import { Idea } from '../types';
-import { ideaLinkRel } from './ideaLink';
+import { Item } from '../types';
+import { itemLinkRel } from './itemLink';
 
 // `[[` isn't a single character, so the built-in useBasicTypeaheadTriggerMatch
 // (which only matches a one-char trigger) doesn't apply — match it directly.
@@ -29,40 +29,40 @@ function checkForWikiLinkTriggerMatch(text: string): MenuTextMatch | null {
 }
 
 class WikiLinkOption extends MenuOption {
-  idea: Idea;
-  constructor(idea: Idea) {
-    super(idea.id);
-    this.idea = idea;
+  item: Item;
+  constructor(item: Item) {
+    super(item.id);
+    this.item = item;
   }
 }
 
 export default function WikiLinkPlugin({
-  ideas,
-  currentIdeaId,
-  onLinkIdea,
+  items,
+  currentItemId,
+  onLinkItem,
 }: {
-  ideas: Record<string, Idea>;
-  currentIdeaId: string;
-  onLinkIdea: (ideaId: string, otherIdeaId: string) => void;
+  items: Record<string, Item>;
+  currentItemId: string;
+  onLinkItem: (itemId: string, otherItemId: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const [queryString, setQueryString] = useState<string | null>(null);
 
   const options = useMemo(() => {
     const query = (queryString ?? '').toLowerCase();
-    return Object.values(ideas)
-      .filter((idea) => idea.id !== currentIdeaId && idea.title.toLowerCase().includes(query))
+    return Object.values(items)
+      .filter((item) => item.id !== currentItemId && item.title.toLowerCase().includes(query))
       .slice(0, 8)
-      .map((idea) => new WikiLinkOption(idea));
-  }, [ideas, currentIdeaId, queryString]);
+      .map((item) => new WikiLinkOption(item));
+  }, [items, currentItemId, queryString]);
 
   const onSelectOption = useCallback(
     (option: WikiLinkOption, textNodeContainingQuery: TextNode | null, closeMenu: () => void) => {
       editor.update(() => {
         const selection = $getSelection();
         if (!$isRangeSelection(selection)) return;
-        const linkNode = $createLinkNode('#', { rel: ideaLinkRel(option.idea.id) });
-        linkNode.append($createTextNode(option.idea.title));
+        const linkNode = $createLinkNode('#', { rel: itemLinkRel(option.item.id) });
+        linkNode.append($createTextNode(option.item.title));
         if (textNodeContainingQuery) {
           textNodeContainingQuery.replace(linkNode);
         } else {
@@ -70,10 +70,10 @@ export default function WikiLinkPlugin({
         }
         linkNode.selectEnd();
       });
-      onLinkIdea(currentIdeaId, option.idea.id);
+      onLinkItem(currentItemId, option.item.id);
       closeMenu();
     },
-    [editor, currentIdeaId, onLinkIdea],
+    [editor, currentItemId, onLinkItem],
   );
 
   return (
@@ -85,18 +85,18 @@ export default function WikiLinkPlugin({
       menuRenderFn={(anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) =>
         anchorElementRef.current && options.length > 0
           ? createPortal(
-              <ul className="idea-mention-menu">
+              <ul className="item-mention-menu">
                 {options.map((option, index) => (
                   <li
                     key={option.key}
                     ref={(el) => {
                       if (selectedIndex === index) el?.scrollIntoView({ block: 'nearest' });
                     }}
-                    className={'idea-mention-menu-item' + (selectedIndex === index ? ' selected' : '')}
+                    className={'item-mention-menu-item' + (selectedIndex === index ? ' selected' : '')}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => selectOptionAndCleanUp(option)}
                   >
-                    {option.idea.title}
+                    {option.item.title}
                   </li>
                 ))}
               </ul>,

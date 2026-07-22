@@ -15,7 +15,7 @@ import { AutoLinkNode, LinkNode } from "@lexical/link"
 import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode"
 import ExampleTheme from "@/app/editor/ExampleTheme"
 import { ImageNode } from "@/app/editor/nodes/ImageNode"
-import IdeaLinkClickPlugin from "@/app/editor/plugins/IdeaLinkClickPlugin"
+import ItemLinkClickPlugin from "@/app/editor/plugins/ItemLinkClickPlugin"
 import "@/app/editor/Editor.css"
 
 const nodes = [
@@ -35,10 +35,10 @@ const nodes = [
 
 export function LexicalReadOnly({
   content,
-  onIdeaClick,
+  onItemClick,
 }: {
   content: string
-  onIdeaClick?: (ideaId: string) => void
+  onItemClick?: (itemId: string) => void
 }) {
   if (!content) return null
 
@@ -60,7 +60,7 @@ export function LexicalReadOnly({
         placeholder={null}
         ErrorBoundary={LexicalErrorBoundary}
       />
-      {onIdeaClick && <IdeaLinkClickPlugin onNavigate={onIdeaClick} />}
+      {onItemClick && <ItemLinkClickPlugin onNavigate={onItemClick} />}
       <ClickableLinkPlugin newTab />
     </LexicalComposer>
   )

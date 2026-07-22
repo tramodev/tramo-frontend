@@ -10,25 +10,25 @@ import {
 } from '@lexical/react/LexicalTypeaheadMenuPlugin';
 import { $createTextNode, $getSelection, $isRangeSelection, TextNode } from 'lexical';
 import { $createLinkNode } from '@lexical/link';
-import { Idea } from '../types';
-import { ideaLinkRel } from './ideaLink';
+import { Item } from '../types';
+import { itemLinkRel } from './itemLink';
 
-class IdeaMentionOption extends MenuOption {
-  idea: Idea;
-  constructor(idea: Idea) {
-    super(idea.id);
-    this.idea = idea;
+class ItemMentionOption extends MenuOption {
+  item: Item;
+  constructor(item: Item) {
+    super(item.id);
+    this.item = item;
   }
 }
 
-export default function IdeaMentionPlugin({
-  ideas,
-  currentIdeaId,
-  onLinkIdea,
+export default function ItemMentionPlugin({
+  items,
+  currentItemId,
+  onLinkItem,
 }: {
-  ideas: Record<string, Idea>;
-  currentIdeaId: string;
-  onLinkIdea: (ideaId: string, otherIdeaId: string) => void;
+  items: Record<string, Item>;
+  currentItemId: string;
+  onLinkItem: (itemId: string, otherItemId: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const [queryString, setQueryString] = useState<string | null>(null);
@@ -37,19 +37,19 @@ export default function IdeaMentionPlugin({
 
   const options = useMemo(() => {
     const query = (queryString ?? '').toLowerCase();
-    return Object.values(ideas)
-      .filter((idea) => idea.id !== currentIdeaId && idea.title.toLowerCase().includes(query))
+    return Object.values(items)
+      .filter((item) => item.id !== currentItemId && item.title.toLowerCase().includes(query))
       .slice(0, 8)
-      .map((idea) => new IdeaMentionOption(idea));
-  }, [ideas, currentIdeaId, queryString]);
+      .map((item) => new ItemMentionOption(item));
+  }, [items, currentItemId, queryString]);
 
   const onSelectOption = useCallback(
-    (option: IdeaMentionOption, textNodeContainingQuery: TextNode | null, closeMenu: () => void) => {
+    (option: ItemMentionOption, textNodeContainingQuery: TextNode | null, closeMenu: () => void) => {
       editor.update(() => {
         const selection = $getSelection();
         if (!$isRangeSelection(selection)) return;
-        const linkNode = $createLinkNode('#', { rel: ideaLinkRel(option.idea.id) });
-        linkNode.append($createTextNode(option.idea.title));
+        const linkNode = $createLinkNode('#', { rel: itemLinkRel(option.item.id) });
+        linkNode.append($createTextNode(option.item.title));
         if (textNodeContainingQuery) {
           textNodeContainingQuery.replace(linkNode);
         } else {
@@ -57,14 +57,14 @@ export default function IdeaMentionPlugin({
         }
         linkNode.selectEnd();
       });
-      onLinkIdea(currentIdeaId, option.idea.id);
+      onLinkItem(currentItemId, option.item.id);
       closeMenu();
     },
-    [editor, currentIdeaId, onLinkIdea],
+    [editor, currentItemId, onLinkItem],
   );
 
   return (
-    <LexicalTypeaheadMenuPlugin<IdeaMentionOption>
+    <LexicalTypeaheadMenuPlugin<ItemMentionOption>
       onQueryChange={setQueryString}
       onSelectOption={onSelectOption}
       triggerFn={checkForTriggerMatch}
@@ -72,18 +72,18 @@ export default function IdeaMentionPlugin({
       menuRenderFn={(anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) =>
         anchorElementRef.current && options.length > 0
           ? createPortal(
-              <ul className="idea-mention-menu">
+              <ul className="item-mention-menu">
                 {options.map((option, index) => (
                   <li
                     key={option.key}
                     ref={(el) => {
                       if (selectedIndex === index) el?.scrollIntoView({ block: 'nearest' });
                     }}
-                    className={'idea-mention-menu-item' + (selectedIndex === index ? ' selected' : '')}
+                    className={'item-mention-menu-item' + (selectedIndex === index ? ' selected' : '')}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => selectOptionAndCleanUp(option)}
                   >
-                    {option.idea.title}
+                    {option.item.title}
                   </li>
                 ))}
               </ul>,

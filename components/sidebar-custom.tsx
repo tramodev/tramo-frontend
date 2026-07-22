@@ -20,47 +20,47 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ConfirmDialog } from "@/components/confirm-dialog"
-import { Path, Idea } from "@/app/editor/types"
+import { Trail, Item } from "@/app/editor/types"
 
 interface SidebarCustomProps {
-  paths: Path[];
-  ideas: Record<string, Idea>;
-  selectedIdeaId?: string;
-  onSelectIdea: (idea: Idea) => void;
-  onCreatePath: (title: string) => void;
-  onCreateIdea: (pathId: string, title: string) => void;
-  onLinkIdeaToPath: (pathId: string, ideaId: string) => void;
-  onRenamePath: (pathId: string, title: string) => void;
-  onRenameIdea: (ideaId: string, title: string) => void;
-  onDeletePath: (pathId: string) => void;
-  onUnlinkIdeaFromPath: (pathId: string, ideaId: string) => void;
+  trails: Trail[];
+  items: Record<string, Item>;
+  selectedItemId?: string;
+  onSelectItem: (item: Item) => void;
+  onCreateTrail: (title: string) => void;
+  onCreateItem: (trailId: string, title: string) => void;
+  onLinkItemToTrail: (trailId: string, itemId: string) => void;
+  onRenameTrail: (trailId: string, title: string) => void;
+  onRenameItem: (itemId: string, title: string) => void;
+  onDeleteTrail: (trailId: string) => void;
+  onUnlinkItemFromTrail: (trailId: string, itemId: string) => void;
 }
 
 export function SidebarCustom({
-  paths,
-  ideas,
-  selectedIdeaId,
-  onSelectIdea,
-  onCreatePath,
-  onCreateIdea,
-  onLinkIdeaToPath,
-  onRenamePath,
-  onRenameIdea,
-  onDeletePath,
-  onUnlinkIdeaFromPath,
+  trails,
+  items,
+  selectedItemId,
+  onSelectItem,
+  onCreateTrail,
+  onCreateItem,
+  onLinkItemToTrail,
+  onRenameTrail,
+  onRenameItem,
+  onDeleteTrail,
+  onUnlinkItemFromTrail,
 }: SidebarCustomProps) {
   const { state } = useSidebar();
   const [isCreating, setIsCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-  const [creatingIdeaPathId, setCreatingIdeaPathId] = useState<string | null>(null);
-  const [newIdeaTitle, setNewIdeaTitle] = useState("");
-  const [linkingPathId, setLinkingPathId] = useState<string | null>(null);
+  const [creatingItemTrailId, setCreatingItemTrailId] = useState<string | null>(null);
+  const [newItemTitle, setNewItemTitle] = useState("");
+  const [linkingTrailId, setLinkingTrailId] = useState<string | null>(null);
   const [linkSelection, setLinkSelection] = useState("");
 
-  const [editingPathId, setEditingPathId] = useState<string | null>(null);
-  const [editingPathTitle, setEditingPathTitle] = useState("");
-  const [editingIdeaId, setEditingIdeaId] = useState<string | null>(null);
-  const [editingIdeaTitle, setEditingIdeaTitle] = useState("");
+  const [editingTrailId, setEditingTrailId] = useState<string | null>(null);
+  const [editingTrailTitle, setEditingTrailTitle] = useState("");
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemTitle, setEditingItemTitle] = useState("");
 
   const [pendingConfirm, setPendingConfirm] = useState<{
     title: string;
@@ -68,89 +68,89 @@ export function SidebarCustom({
     onConfirm: () => void;
   } | null>(null);
 
-  const pathsForIdea = (ideaId: string) => paths.filter(path => path.ideaIds.includes(ideaId));
+  const trailsForItem = (itemId: string) => trails.filter(trail => trail.itemIds.includes(itemId));
 
-  const submitNewPath = () => {
+  const submitNewTrail = () => {
     if (!isCreating) return;
     const title = newTitle.trim();
     if (title) {
-      onCreatePath(title);
+      onCreateTrail(title);
     }
     setNewTitle("");
     setIsCreating(false);
   };
 
-  const submitNewIdea = (pathId: string) => {
-    if (creatingIdeaPathId !== pathId) return;
-    const title = newIdeaTitle.trim();
+  const submitNewItem = (trailId: string) => {
+    if (creatingItemTrailId !== trailId) return;
+    const title = newItemTitle.trim();
     if (title) {
-      onCreateIdea(pathId, title);
+      onCreateItem(trailId, title);
     }
-    setNewIdeaTitle("");
-    setCreatingIdeaPathId(null);
+    setNewItemTitle("");
+    setCreatingItemTrailId(null);
   };
 
-  const startLinkingIdea = (pathId: string) => {
-    setLinkingPathId(pathId);
+  const startLinkingItem = (trailId: string) => {
+    setLinkingTrailId(trailId);
     setLinkSelection("");
   };
 
-  const submitLinkIdea = (pathId: string) => {
-    if (linkingPathId !== pathId || !linkSelection) return;
-    onLinkIdeaToPath(pathId, linkSelection);
-    setLinkingPathId(null);
+  const submitLinkItem = (trailId: string) => {
+    if (linkingTrailId !== trailId || !linkSelection) return;
+    onLinkItemToTrail(trailId, linkSelection);
+    setLinkingTrailId(null);
     setLinkSelection("");
   };
 
-  const startEditPath = (path: Path) => {
-    setEditingPathId(path.id);
-    setEditingPathTitle(path.title);
+  const startEditTrail = (trail: Trail) => {
+    setEditingTrailId(trail.id);
+    setEditingTrailTitle(trail.title);
   };
 
-  const submitEditPath = (pathId: string) => {
-    if (editingPathId !== pathId) return;
-    const title = editingPathTitle.trim();
+  const submitEditTrail = (trailId: string) => {
+    if (editingTrailId !== trailId) return;
+    const title = editingTrailTitle.trim();
     if (title) {
-      onRenamePath(pathId, title);
+      onRenameTrail(trailId, title);
     }
-    setEditingPathId(null);
-    setEditingPathTitle("");
+    setEditingTrailId(null);
+    setEditingTrailTitle("");
   };
 
-  const startEditIdea = (idea: Idea) => {
-    setEditingIdeaId(idea.id);
-    setEditingIdeaTitle(idea.title);
+  const startEditItem = (item: Item) => {
+    setEditingItemId(item.id);
+    setEditingItemTitle(item.title);
   };
 
-  const submitEditIdea = (ideaId: string) => {
-    if (editingIdeaId !== ideaId) return;
-    const title = editingIdeaTitle.trim();
+  const submitEditItem = (itemId: string) => {
+    if (editingItemId !== itemId) return;
+    const title = editingItemTitle.trim();
     if (title) {
-      onRenameIdea(ideaId, title);
+      onRenameItem(itemId, title);
     }
-    setEditingIdeaId(null);
-    setEditingIdeaTitle("");
+    setEditingItemId(null);
+    setEditingItemTitle("");
   };
 
-  const confirmDeletePath = (path: Path) => {
+  const confirmDeleteTrail = (trail: Trail) => {
     setPendingConfirm({
-      title: `Delete path "${path.title}"?`,
-      description: "Any ideas that only belong to it will be deleted too. This can't be undone.",
-      onConfirm: () => onDeletePath(path.id),
+      title: `Delete trail "${trail.title}"?`,
+      description: "Any items that only belong to it will be deleted too. This can't be undone.",
+      onConfirm: () => onDeleteTrail(trail.id),
     });
   };
 
-  const confirmUnlinkIdea = (path: Path, idea: Idea) => {
-    const memberPaths = pathsForIdea(idea.id);
-    const isLastPath = memberPaths.length <= 1;
+  const confirmUnlinkItem = (trail: Trail, item: Item) => {
+    const memberTrails = trailsForItem(item.id);
+    const isLastTrail = memberTrails.length <= 1;
     setPendingConfirm({
-      title: isLastPath
-        ? `Delete idea "${idea.title}"?`
-        : `Remove idea "${idea.title}" from path "${path.title}"?`,
-      description: isLastPath
+      title: isLastTrail
+        ? `Delete item "${item.title}"?`
+        : `Remove item "${item.title}" from trail "${trail.title}"?`,
+      description: isLastTrail
         ? "This can't be undone."
-        : `It will remain in ${memberPaths.length - 1} other path(s).`,
-      onConfirm: () => onUnlinkIdeaFromPath(path.id, idea.id),
+        : `It will remain in ${memberTrails.length - 1} other trail(s).`,
+      onConfirm: () => onUnlinkItemFromTrail(trail.id, item.id),
     });
   };
 
@@ -165,7 +165,7 @@ export function SidebarCustom({
           <div className="flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-sidebar-foreground/70">
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <SidebarTrigger className="h-5 w-5" />
-              {state !== "collapsed" && "My Paths"}
+              {state !== "collapsed" && "My Trails"}
             </span>
             {state !== "collapsed" && (
               <Button
@@ -190,56 +190,56 @@ export function SidebarCustom({
               <Input
                 autoFocus
                 value={newTitle}
-                placeholder="Path title..."
+                placeholder="Trail title..."
                 onChange={(e) => setNewTitle(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") submitNewPath();
+                  if (e.key === "Enter") submitNewTrail();
                   if (e.key === "Escape") {
                     setNewTitle("");
                     setIsCreating(false);
                   }
                 }}
-                onBlur={submitNewPath}
+                onBlur={submitNewTrail}
               />
             </div>
           )}
           <SidebarGroupContent>
             <SidebarMenu>
-              {paths.map((path) => {
-                const pathIdeas = path.ideaIds
-                  .map((ideaId) => ideas[ideaId])
-                  .filter((idea): idea is Idea => Boolean(idea));
-                const linkableIdeas = Object.values(ideas).filter(
-                  (idea) => !path.ideaIds.includes(idea.id)
+              {trails.map((trail) => {
+                const trailItems = trail.itemIds
+                  .map((itemId) => items[itemId])
+                  .filter((item): item is Item => Boolean(item));
+                const linkableItems = Object.values(items).filter(
+                  (item) => !trail.itemIds.includes(item.id)
                 );
 
                 return (
-                  <Collapsible key={path.id} defaultOpen className="group/collapsible">
+                  <Collapsible key={trail.id} defaultOpen className="group/collapsible">
                     <SidebarMenuItem>
-                      <div className="group/path flex items-center">
-                        {editingPathId === path.id ? (
+                      <div className="group/trail flex items-center">
+                        {editingTrailId === trail.id ? (
                           <Input
                             autoFocus
-                            value={editingPathTitle}
+                            value={editingTrailTitle}
                             className="h-7"
-                            onChange={(e) => setEditingPathTitle(e.target.value)}
+                            onChange={(e) => setEditingTrailTitle(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") submitEditPath(path.id);
+                              if (e.key === "Enter") submitEditTrail(trail.id);
                               if (e.key === "Escape") {
-                                setEditingPathId(null);
-                                setEditingPathTitle("");
+                                setEditingTrailId(null);
+                                setEditingTrailTitle("");
                               }
                             }}
-                            onBlur={() => submitEditPath(path.id)}
+                            onBlur={() => submitEditTrail(trail.id)}
                           />
                         ) : (
                           <>
                             <CollapsibleTrigger asChild>
-                              <SidebarMenuButton onDoubleClick={() => startEditPath(path)} className="font-semibold">
+                              <SidebarMenuButton onDoubleClick={() => startEditTrail(trail)} className="font-semibold">
                                 <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                                <span className="flex-1 truncate">{path.title}</span>
+                                <span className="flex-1 truncate">{trail.title}</span>
                                 <span className="text-[11px] font-normal text-muted-foreground">
-                                  {pathIdeas.length}
+                                  {trailItems.length}
                                 </span>
                               </SidebarMenuButton>
                             </CollapsibleTrigger>
@@ -247,18 +247,18 @@ export function SidebarCustom({
                               variant="ghost"
                               size="icon"
                               className="h-5 w-5 shrink-0"
-                              title="New idea"
-                              onClick={() => setCreatingIdeaPathId(path.id)}
+                              title="New item"
+                              onClick={() => setCreatingItemTrailId(trail.id)}
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
-                            {linkableIdeas.length > 0 && (
+                            {linkableItems.length > 0 && (
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 shrink-0 opacity-0 group-hover/path:opacity-100"
-                                title="Link an existing idea into this path"
-                                onClick={() => startLinkingIdea(path.id)}
+                                className="h-5 w-5 shrink-0 opacity-0 group-hover/trail:opacity-100"
+                                title="Link an existing item into this trail"
+                                onClick={() => startLinkingItem(trail.id)}
                               >
                                 <Link2 className="h-3 w-3" />
                               </Button>
@@ -266,15 +266,15 @@ export function SidebarCustom({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-5 w-5 shrink-0 opacity-0 group-hover/path:opacity-100"
-                              onClick={() => confirmDeletePath(path)}
+                              className="h-5 w-5 shrink-0 opacity-0 group-hover/trail:opacity-100"
+                              onClick={() => confirmDeleteTrail(trail)}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </>
                         )}
                       </div>
-                      {linkingPathId === path.id && (
+                      {linkingTrailId === trail.id && (
                         <div className="flex items-center gap-1 px-2 py-1">
                           <select
                             autoFocus
@@ -283,11 +283,11 @@ export function SidebarCustom({
                             onChange={(e) => setLinkSelection(e.target.value)}
                           >
                             <option value="" disabled>
-                              Choose an idea...
+                              Choose an item...
                             </option>
-                            {linkableIdeas.map((idea) => (
-                              <option key={idea.id} value={idea.id}>
-                                {idea.title}
+                            {linkableItems.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.title}
                               </option>
                             ))}
                           </select>
@@ -295,7 +295,7 @@ export function SidebarCustom({
                             size="sm"
                             className="h-7 px-2"
                             disabled={!linkSelection}
-                            onClick={() => submitLinkIdea(path.id)}
+                            onClick={() => submitLinkItem(trail.id)}
                           >
                             Link
                           </Button>
@@ -303,7 +303,7 @@ export function SidebarCustom({
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2"
-                            onClick={() => setLinkingPathId(null)}
+                            onClick={() => setLinkingTrailId(null)}
                           >
                             Cancel
                           </Button>
@@ -311,47 +311,47 @@ export function SidebarCustom({
                       )}
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {pathIdeas.map((idea) => {
-                            const memberPaths = pathsForIdea(idea.id);
-                            const isShared = memberPaths.length > 1;
+                          {trailItems.map((item) => {
+                            const memberTrails = trailsForItem(item.id);
+                            const isShared = memberTrails.length > 1;
 
                             return (
-                              <SidebarMenuSubItem key={idea.id} className="group/idea">
-                                {editingIdeaId === idea.id ? (
+                              <SidebarMenuSubItem key={item.id} className="group/item">
+                                {editingItemId === item.id ? (
                                   <Input
                                     autoFocus
-                                    value={editingIdeaTitle}
+                                    value={editingItemTitle}
                                     className="h-7"
-                                    onChange={(e) => setEditingIdeaTitle(e.target.value)}
+                                    onChange={(e) => setEditingItemTitle(e.target.value)}
                                     onKeyDown={(e) => {
-                                      if (e.key === "Enter") submitEditIdea(idea.id);
+                                      if (e.key === "Enter") submitEditItem(item.id);
                                       if (e.key === "Escape") {
-                                        setEditingIdeaId(null);
-                                        setEditingIdeaTitle("");
+                                        setEditingItemId(null);
+                                        setEditingItemTitle("");
                                       }
                                     }}
-                                    onBlur={() => submitEditIdea(idea.id)}
+                                    onBlur={() => submitEditItem(item.id)}
                                   />
                                 ) : (
                                   <div className="flex items-center">
                                     <SidebarMenuSubButton
-                                      isActive={selectedIdeaId === idea.id}
-                                      onClick={() => onSelectIdea(idea)}
-                                      onDoubleClick={() => startEditIdea(idea)}
+                                      isActive={selectedItemId === item.id}
+                                      onClick={() => onSelectItem(item)}
+                                      onDoubleClick={() => startEditItem(item)}
                                       className={
-                                        selectedIdeaId === idea.id
+                                        selectedItemId === item.id
                                           ? "bg-secondary text-secondary-foreground"
                                           : undefined
                                       }
                                     >
                                       <span
                                         className={
-                                          selectedIdeaId === idea.id
+                                          selectedItemId === item.id
                                             ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary"
                                             : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"
                                         }
                                       />
-                                      <span className="truncate">{idea.title}</span>
+                                      <span className="truncate">{item.title}</span>
                                       {isShared && (
                                         <Tooltip>
                                           <TooltipTrigger asChild>
@@ -360,8 +360,8 @@ export function SidebarCustom({
                                             />
                                           </TooltipTrigger>
                                           <TooltipContent>
-                                            Also in: {memberPaths
-                                              .filter((p) => p.id !== path.id)
+                                            Also in: {memberTrails
+                                              .filter((p) => p.id !== trail.id)
                                               .map((p) => p.title)
                                               .join(", ")}
                                           </TooltipContent>
@@ -371,8 +371,8 @@ export function SidebarCustom({
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-5 w-5 shrink-0 opacity-0 group-hover/idea:opacity-100"
-                                      onClick={() => confirmUnlinkIdea(path, idea)}
+                                      className="h-5 w-5 shrink-0 opacity-0 group-hover/item:opacity-100"
+                                      onClick={() => confirmUnlinkItem(trail, item)}
                                     >
                                       <Trash2 className="h-3 w-3" />
                                     </Button>
@@ -381,22 +381,22 @@ export function SidebarCustom({
                               </SidebarMenuSubItem>
                             );
                           })}
-                          {creatingIdeaPathId === path.id && (
+                          {creatingItemTrailId === trail.id && (
                             <SidebarMenuSubItem>
                               <Input
                                 autoFocus
-                                value={newIdeaTitle}
-                                placeholder="Idea title..."
+                                value={newItemTitle}
+                                placeholder="Item title..."
                                 className="h-7"
-                                onChange={(e) => setNewIdeaTitle(e.target.value)}
+                                onChange={(e) => setNewItemTitle(e.target.value)}
                                 onKeyDown={(e) => {
-                                  if (e.key === "Enter") submitNewIdea(path.id);
+                                  if (e.key === "Enter") submitNewItem(trail.id);
                                   if (e.key === "Escape") {
-                                    setNewIdeaTitle("");
-                                    setCreatingIdeaPathId(null);
+                                    setNewItemTitle("");
+                                    setCreatingItemTrailId(null);
                                   }
                                 }}
-                                onBlur={() => submitNewIdea(path.id)}
+                                onBlur={() => submitNewItem(trail.id)}
                               />
                             </SidebarMenuSubItem>
                           )}
