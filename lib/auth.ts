@@ -76,6 +76,18 @@ export async function refreshAccessToken(): Promise<boolean> {
         path: '/',
       });
 
+      // Backend rotates the refresh token on every refresh — persist the new one,
+      // or the next refresh presents a revoked token and logs the user out.
+      if (data.refreshToken) {
+        cookieStore.set('refreshToken', data.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7,
+          path: '/',
+        });
+      }
+
       return true;
     } catch (error) {
       console.error('Token refresh failed:', error);
