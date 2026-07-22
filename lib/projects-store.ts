@@ -1,7 +1,7 @@
 'use server';
 
 import { headers } from "next/headers";
-import { Item, Trail, TitleAlign } from "@/app/editor/types";
+import { Item, Trail, TitleAlign, Association, AssociationType, AssociationTargetType } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 import { parseResponse, expectOk } from "./http";
@@ -41,6 +41,8 @@ interface TrailDTO {
   creationDate: string;
   modifiedDate: string;
   projectId: number;
+  version: number;
+  forkedFromId: number | null;
 }
 
 interface ItemDTO {
@@ -50,6 +52,20 @@ interface ItemDTO {
   titleAlign: string | null;
   createdDate: string;
   modifiedDate: string;
+}
+
+// A trail step: item fields + per-step metadata (GET /trail/{id}/item).
+interface TrailStepDTO extends ItemDTO {
+  annotation: string | null;
+  associationId: string | null;
+}
+
+interface AssociationDTO {
+  id: string;
+  type: string;
+  targetType: string;
+  targetId: string;
+  targetTitle: string;
 }
 
 const jsonHeaders = { "Content-Type": "application/json" };
@@ -88,21 +104,21 @@ export async function getProject(id: string): Promise<Project | null> {
   const trailItemLists = await Promise.all(
     trailDtos.map((trail) =>
       authenticatedFetch(`${API_BASE_URL}/api/trail/${trail.id}/item`).then((r) =>
-        parseResponse<ItemDTO[]>(r)
+        parseResponse<TrailStepDTO[]>(r)
       )
     )
   );
 
-  const itemMap = new Map<number, ItemDTO>();
-  trailItemLists.forEach((itemDtos) => {
-    itemDtos.forEach((item) => itemMap.set(item.id, item));
+  const itemMap = new Map<number, TrailStepDTO>();
+  trailItemLists.forEach((steps) => {
+    steps.forEach((step) => itemMap.set(step.id, step));
   });
   const uniqueItemIds = Array.from(itemMap.keys());
 
-  const linkLists = await Promise.all(
+  const associationLists = await Promise.all(
     uniqueItemIds.map((itemId) =>
-      authenticatedFetch(`${API_BASE_URL}/api/item/${itemId}/link`).then((r) =>
-        parseResponse<ItemDTO[]>(r)
+      authenticatedFetch(`${API_BASE_URL}/api/item/${itemId}/association`).then((r) =>
+        parseResponse<AssociationDTO[]>(r)
       )
     )
   );
@@ -110,19 +126,35 @@ export async function getProject(id: string): Promise<Project | null> {
   const items: Record<string, Item> = {};
   uniqueItemIds.forEach((itemId, index) => {
     const dto = itemMap.get(itemId)!;
+    const associations: Association[] = associationLists[index].map((a) => ({
+      type: a.type as AssociationType,
+      targetType: a.targetType as AssociationTargetType,
+      targetId: a.targetId,
+      targetTitle: a.targetTitle,
+    }));
     items[String(itemId)] = {
       id: String(itemId),
       title: dto.title,
       titleAlign: (dto.titleAlign as TitleAlign) ?? "center",
       content: null,
-      linkedItemIds: linkLists[index].map((linked) => String(linked.id)),
+      associations,
+      linkedItemIds: associations
+        .filter((a) => a.targetType === "ITEM")
+        .map((a) => a.targetId),
     };
   });
 
   const trails: Trail[] = trailDtos.map((trail, index) => ({
     id: String(trail.id),
     title: trail.title,
-    itemIds: trailItemLists[index].map((item) => String(item.id)),
+    itemIds: trailItemLists[index].map((step) => String(step.id)),
+    steps: trailItemLists[index].map((step) => ({
+      itemId: String(step.id),
+      annotation: step.annotation,
+      associationId: step.associationId,
+    })),
+    version: trail.version,
+    forkedFrom: trail.forkedFromId != null ? String(trail.forkedFromId) : null,
   }));
 
   return {
@@ -262,7 +294,31 @@ export async function createTrail(projectId: string, title: string): Promise<Tra
     body: JSON.stringify({ title }),
   });
   const dto = await parseResponse<TrailDTO>(response);
-  return { id: String(dto.id), title: dto.title, itemIds: [] };
+  return {
+    id: String(dto.id),
+    title: dto.title,
+    itemIds: [],
+    steps: [],
+    version: dto.version,
+    forkedFrom: dto.forkedFromId != null ? String(dto.forkedFromId) : null,
+  };
+}
+
+// "blaze": set a step's annotation and/or the association used to reach it.
+export async function updateStep(
+  trailId: string,
+  itemId: string,
+  fields: { annotation?: string | null; associationId?: string | null },
+): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/trail/${trailId}/item/${itemId}`, {
+    method: "PUT",
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      annotation: fields.annotation ?? null,
+      associationId: fields.associationId != null ? Number(fields.associationId) : null,
+    }),
+  });
+  await expectOk(response);
 }
 
 export async function renameTrail(trailId: string, title: string): Promise<void> {
@@ -288,7 +344,7 @@ export async function createItem(trailId: string, title: string): Promise<Item> 
     body: JSON.stringify({ title }),
   });
   const dto = await parseResponse<ItemDTO>(response);
-  return { id: String(dto.id), title: dto.title, titleAlign: (dto.titleAlign as TitleAlign) ?? "center", content: "", linkedItemIds: [] };
+  return { id: String(dto.id), title: dto.title, titleAlign: (dto.titleAlign as TitleAlign) ?? "center", content: "", associations: [], linkedItemIds: [] };
 }
 
 export async function renameItem(itemId: string, title: string): Promise<void> {
@@ -323,18 +379,38 @@ export async function detachItemFromTrail(trailId: string, itemId: string): Prom
   await expectOk(response);
 }
 
-export async function linkItems(itemId: string, otherItemId: string): Promise<void> {
+// Create a typed association ("tie") from an item to another item or a whole trail.
+export async function tie(
+  itemId: string,
+  targetId: string,
+  targetType: AssociationTargetType = "ITEM",
+  type: AssociationType = "RELATED",
+): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/item/${itemId}/tie`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ type, targetType, targetId: Number(targetId) }),
+  });
+  await expectOk(response);
+}
+
+export async function untie(
+  itemId: string,
+  targetId: string,
+  targetType: AssociationTargetType = "ITEM",
+): Promise<void> {
   const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/item/${itemId}/link/${otherItemId}`,
-    { method: "POST" }
+    `${API_BASE_URL}/api/item/${itemId}/tie?targetType=${targetType}&targetId=${targetId}`,
+    { method: "DELETE" }
   );
   await expectOk(response);
 }
 
+// Back-compat helpers for the editor's untyped item↔item links.
+export async function linkItems(itemId: string, otherItemId: string): Promise<void> {
+  await tie(itemId, otherItemId, "ITEM", "RELATED");
+}
+
 export async function unlinkItems(itemId: string, otherItemId: string): Promise<void> {
-  const response = await authenticatedFetch(
-    `${API_BASE_URL}/api/item/${itemId}/link/${otherItemId}`,
-    { method: "DELETE" }
-  );
-  await expectOk(response);
+  await untie(itemId, otherItemId, "ITEM");
 }
