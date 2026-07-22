@@ -245,7 +245,7 @@ function Sidebar({
           data-slot="sidebar-inner"
           className={cn(
             "flex h-full w-full flex-col transition-all duration-200 ease-linear",
-            state !== "collapsed" && "bg-sidebar group-data-[variant=floating]:rounded-2xl"
+            state !== "collapsed" && "group-data-[variant=floating]:rounded-2xl"
           )}
         >
           {children}
@@ -376,7 +376,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1  sidebar flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
         className
       )}
       {...props}

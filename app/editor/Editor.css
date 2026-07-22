@@ -6,8 +6,17 @@
  *
  */
 
+ .sidebar{
+  border-style: var(--tw-border-style);
+  border-width: 1.5px;
+  border-radius: 20;
+  background-color: var(--card);
+ }
+
 .editor-container {
-  border: 1px;
+  border-style: var(--tw-border-style);
+  border-width: 1.5px;
+  border-radius: 20;
   margin: 0;
   max-width: none;
   position: relative;
@@ -761,4 +770,3 @@ pre::-webkit-scrollbar-thumb {
   -webkit-appearance: none;
   margin: 0;
 }
-

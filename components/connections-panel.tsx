@@ -203,7 +203,7 @@ export function ConnectionsPanel({
   return (
     <div
       className={`flex w-72 shrink-0 flex-col transition-all duration-200 ease-linear ${
-        open ? "overflow-hidden rounded-2xl bg-card py-5 px-4" : "pt-5 px-4"
+        open ? "overflow-hidden rounded-2xl sidebar py-5 px-4" : "pt-5 px-4"
       }`}
     >
       <div className="mb-2.5 flex items-center justify-between">
