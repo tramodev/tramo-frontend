@@ -61,12 +61,12 @@ export function ConnectionsPanel({
       }`}
     >
       <div className="mb-2.5 flex items-center justify-between">
-        {open && <span className={`truncate ${SECTION_LABEL_CLASSES}`}>Ties from “{item.title}”</span>}
+        {open && <span className={`truncate ${SECTION_LABEL_CLASSES}`}>Connections from “{item.title}”</span>}
         <div className="ml-auto flex items-center gap-1.5">
           {open && (
             <button
               type="button"
-              aria-label="Tie a new association"
+              aria-label="Add a connection"
               onClick={() => setIsAddingTie(true)}
               className="cursor-pointer"
             >
@@ -107,7 +107,7 @@ export function ConnectionsPanel({
                   <span>{meta.label}</span>
                   <button
                     type="button"
-                    aria-label="Remove tie"
+                    aria-label="Remove connection"
                     className="ml-auto shrink-0 cursor-pointer opacity-0 hover:opacity-70 group-hover/tie:opacity-100"
                     onClick={() => onUntie(item.id, a.targetId, a.targetType)}
                   >
@@ -172,7 +172,7 @@ export function ConnectionsPanel({
                   disabled={!tieTarget}
                   onClick={submitTie}
                 >
-                  Tie
+                  Connect
                 </button>
                 <button type="button" className="h-7 px-2 text-xs" onClick={() => setIsAddingTie(false)}>
                   Cancel

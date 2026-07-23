@@ -63,6 +63,7 @@ import { UserMenu } from '@/components/layout/user-menu';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Check, FolderPlus, Loader2, Route, X } from 'lucide-react';
 import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../types';
+import { bridgeTie } from '../associations';
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -366,14 +367,21 @@ export default function EditorPage() {
     const idx = activeTrail.steps.findIndex((s) => s.itemId === selectedItemId);
     if (idx <= 0) return null;
     const step = activeTrail.steps[idx];
+    const prevItemId = activeTrail.steps[idx - 1].itemId;
+    // Prefer the step's explicit associationId; otherwise fall back to the
+    // item's own tie (instead of "deliberate jump").
+    const conn = step.associationId
+      ? associationById.get(step.associationId) ?? null
+      : bridgeTie(items, prevItemId, selectedItemId);
     return {
       trailId: activeTrail.id,
       itemId: selectedItemId,
       trailTitle: activeTrail.title,
       annotation: step.annotation,
-      associationType: step.associationId ? associationById.get(step.associationId)?.type ?? null : null,
+      associationType: conn?.type ?? null,
+      connectionTitle: conn?.targetTitle ?? null,
     };
-  }, [activeTrail, selectedItemId, associationById]);
+  }, [activeTrail, selectedItemId, associationById, items]);
 
   const handleUpdateAnnotation = async (trailId: string, itemId: string, annotation: string) => {
     const step = trails.find((t) => t.id === trailId)?.steps.find((s) => s.itemId === itemId);
@@ -456,6 +464,10 @@ export default function EditorPage() {
           }
         : trail
     ));
+    // Focus the trail we created in (so the incoming-annotation banner resolves)
+    // and open the new item in Write.
+    setActiveTrailId(trailId);
+    setView('write');
     setSelectedItemId(newItem.id);
   };
 
@@ -893,6 +905,7 @@ export default function EditorPage() {
                               key={`${incomingStep.trailId}-${incomingStep.itemId}`}
                               annotation={incomingStep.annotation}
                               associationType={incomingStep.associationType}
+                              connectionTitle={incomingStep.connectionTitle}
                               trailTitle={incomingStep.trailTitle}
                               onSave={(text) => handleUpdateAnnotation(incomingStep.trailId, incomingStep.itemId, text)}
                             />

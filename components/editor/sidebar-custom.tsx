@@ -57,7 +57,6 @@ export function SidebarCustom({
   const [linkingTrailId, setLinkingTrailId] = useState<string | null>(null);
   const [linkSelection, setLinkSelection] = useState("");
   const [addToTrailItemId, setAddToTrailItemId] = useState<string | null>(null);
-  const [addTrailSelection, setAddTrailSelection] = useState("");
 
   const [editingTrailId, setEditingTrailId] = useState<string | null>(null);
   const [editingTrailTitle, setEditingTrailTitle] = useState("");
@@ -106,14 +105,6 @@ export function SidebarCustom({
 
   const startAddToTrail = (itemId: string) => {
     setAddToTrailItemId(itemId);
-    setAddTrailSelection("");
-  };
-
-  const submitAddToTrail = (itemId: string) => {
-    if (addToTrailItemId !== itemId || !addTrailSelection) return;
-    onLinkItemToTrail(addTrailSelection, itemId);
-    setAddToTrailItemId(null);
-    setAddTrailSelection("");
   };
 
   const startEditTrail = (trail: Trail) => {
@@ -425,8 +416,12 @@ export function SidebarCustom({
                                     <select
                                       autoFocus
                                       className="h-7 flex-1 rounded-md border border-input bg-background px-1 text-xs"
-                                      value={addTrailSelection}
-                                      onChange={(e) => setAddTrailSelection(e.target.value)}
+                                      defaultValue=""
+                                      onChange={(e) => {
+                                        const trailId = e.target.value;
+                                        if (trailId) onLinkItemToTrail(trailId, item.id);
+                                        setAddToTrailItemId(null);
+                                      }}
                                     >
                                       <option value="" disabled>
                                         Add to trail...
@@ -437,14 +432,6 @@ export function SidebarCustom({
                                         </option>
                                       ))}
                                     </select>
-                                    <Button
-                                      size="sm"
-                                      className="h-7 px-2"
-                                      disabled={!addTrailSelection}
-                                      onClick={() => submitAddToTrail(item.id)}
-                                    >
-                                      Add
-                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
