@@ -1,18 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, Link2, Plus, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, ListTree, Plus, Square, X } from "lucide-react"
 
-import { Item, Trail } from "@/app/editor/types"
+import { Item, Trail, AssociationType, AssociationTargetType } from "@/app/editor/types"
+import { ASSOCIATION_META, ASSOCIATION_TYPES } from "@/app/editor/associations"
 
 interface ConnectionsPanelProps {
   item: Item;
   items: Record<string, Item>;
   trails: Trail[];
   onSelectItem: (item: Item) => void;
-  onLinkItem: (itemId: string, otherItemId: string) => void;
-  onUnlinkItem: (itemId: string, otherItemId: string) => void;
-  onLinkTrail: (trailId: string, itemId: string) => void;
+  onTie: (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => void;
+  onUntie: (itemId: string, targetId: string, targetType: AssociationTargetType) => void;
   onOpenGraph: () => void;
   open: boolean;
   onToggleOpen: () => void;
@@ -164,40 +164,30 @@ export function ConnectionsPanel({
   items,
   trails,
   onSelectItem,
-  onLinkItem,
-  onUnlinkItem,
-  onLinkTrail,
+  onTie,
+  onUntie,
   onOpenGraph,
   open,
   onToggleOpen,
 }: ConnectionsPanelProps) {
-  const [isAddingItem, setIsAddingItem] = useState(false);
-  const [itemSelection, setItemSelection] = useState("");
-  const [isAddingTrail, setIsAddingTrail] = useState(false);
-  const [trailSelection, setTrailSelection] = useState("");
+  const [isAddingTie, setIsAddingTie] = useState(false);
+  const [tieType, setTieType] = useState<AssociationType>("RELATED");
+  const [tieTarget, setTieTarget] = useState(""); // encoded "ITEM:id" | "TRAIL:id"
 
-  const linkedItems = item.linkedItemIds
-    .map((id) => items[id])
-    .filter((linked): linked is Item => Boolean(linked));
-  const linkableItems = Object.values(items).filter(
-    (other) => other.id !== item.id && !item.linkedItemIds.includes(other.id)
+  // Targets already tied, so we don't offer duplicates.
+  const tiedKeys = new Set(item.associations.map((a) => `${a.targetType}:${a.targetId}`));
+  const tieableItems = Object.values(items).filter(
+    (other) => other.id !== item.id && !tiedKeys.has(`ITEM:${other.id}`)
   );
+  const tieableTrails = trails.filter((trail) => !tiedKeys.has(`TRAIL:${trail.id}`));
 
-  const memberTrails = trails.filter((trail) => trail.itemIds.includes(item.id));
-  const linkableTrails = trails.filter((trail) => !trail.itemIds.includes(item.id));
-
-  const submitLinkItem = () => {
-    if (!itemSelection) return;
-    onLinkItem(item.id, itemSelection);
-    setIsAddingItem(false);
-    setItemSelection("");
-  };
-
-  const submitLinkTrail = () => {
-    if (!trailSelection) return;
-    onLinkTrail(trailSelection, item.id);
-    setIsAddingTrail(false);
-    setTrailSelection("");
+  const submitTie = () => {
+    if (!tieTarget) return;
+    const [targetType, targetId] = tieTarget.split(":") as [AssociationTargetType, string];
+    onTie(item.id, targetId, targetType, tieType);
+    setIsAddingTie(false);
+    setTieTarget("");
+    setTieType("RELATED");
   };
 
   return (
@@ -207,13 +197,13 @@ export function ConnectionsPanel({
       }`}
     >
       <div className="mb-2.5 flex items-center justify-between">
-        {open && <span className={SECTION_LABEL_CLASSES}>Linked items</span>}
+        {open && <span className={`truncate ${SECTION_LABEL_CLASSES}`}>Ties from “{item.title}”</span>}
         <div className="ml-auto flex items-center gap-1.5">
           {open && (
             <button
               type="button"
-              aria-label="Link an item"
-              onClick={() => setIsAddingItem(true)}
+              aria-label="Tie a new association"
+              onClick={() => setIsAddingTie(true)}
               className="cursor-pointer"
             >
               <Plus className="h-[15px] w-[15px]" />
@@ -238,120 +228,93 @@ export function ConnectionsPanel({
         >
       <div>
         <div className="flex flex-col gap-2">
-          {linkedItems.map((linked) => (
-            <div
-              key={linked.id}
-              className="group/linked flex items-center gap-2 rounded-sm border border-border bg-popover py-[9px] px-2.5 transition-colors hover:border-primary"
-            >
-              <button
-                type="button"
-                onClick={() => onSelectItem(linked)}
-                className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
+          {item.associations.map((a) => {
+            const meta = ASSOCIATION_META[a.type];
+            const TypeIcon = meta.Icon;
+            const isTrail = a.targetType === "TRAIL";
+            const targetItem = !isTrail ? items[a.targetId] : undefined;
+            return (
+              <div
+                key={`${a.targetType}:${a.targetId}`}
+                className="group/tie flex flex-col gap-1.5 rounded-sm border border-border bg-popover py-2 px-2.5 transition-colors hover:border-primary"
               >
-                <Link2 className="h-[13px] w-[13px] shrink-0 text-primary" />
-                <span className="truncate text-[13px] font-medium">{linked.title}</span>
-              </button>
-              <button
-                type="button"
-                aria-label={`Unlink ${linked.title}`}
-                className="shrink-0 cursor-pointer opacity-0 hover:opacity-70 group-hover/linked:opacity-100"
-                onClick={() => onUnlinkItem(item.id, linked.id)}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-          {linkedItems.length === 0 && !isAddingItem && (
-            <span className="text-xs italic text-muted-foreground">
-              None yet
-            </span>
+                <div className="flex items-center gap-1.5 text-[9.5px] font-medium uppercase tracking-[0.08em] text-foreground">
+                  <TypeIcon className="h-3 w-3" />
+                  <span>{meta.label}</span>
+                  <button
+                    type="button"
+                    aria-label="Remove tie"
+                    className="ml-auto shrink-0 cursor-pointer opacity-0 hover:opacity-70 group-hover/tie:opacity-100"
+                    onClick={() => onUntie(item.id, a.targetId, a.targetType)}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  disabled={!targetItem}
+                  onClick={() => targetItem && onSelectItem(targetItem)}
+                  className="flex min-w-0 items-center gap-2 text-left enabled:cursor-pointer disabled:cursor-default"
+                >
+                  {isTrail ? <ListTree className="h-[13px] w-[13px] shrink-0 text-muted-foreground" /> : <Square className="h-[13px] w-[13px] shrink-0 text-muted-foreground" />}
+                  <span className="truncate text-[13.5px] font-medium">{a.targetTitle}</span>
+                  <span className="ml-auto shrink-0 rounded-sm bg-secondary px-1.5 py-0.5 text-[8.5px] text-secondary-foreground">
+                    {isTrail ? "trail" : "item"}
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+          {item.associations.length === 0 && !isAddingTie && (
+            <span className="text-xs italic text-muted-foreground">None yet</span>
           )}
-          {isAddingItem && (
-            <div className="flex items-center gap-1">
+          {isAddingTie && (
+            <div className="flex flex-col gap-1 rounded-sm border border-border p-2">
               <select
-                autoFocus
-                className="h-7 flex-1 rounded-md border border-input bg-background px-1 text-xs"
-                value={itemSelection}
-                onChange={(e) => setItemSelection(e.target.value)}
+                className="h-7 rounded-md border border-input bg-background px-1 text-xs"
+                value={tieType}
+                onChange={(e) => setTieType(e.target.value as AssociationType)}
               >
-                <option value="" disabled>
-                  Choose an item...
-                </option>
-                {linkableItems.map((other) => (
-                  <option key={other.id} value={other.id}>
-                    {other.title}
-                  </option>
+                {ASSOCIATION_TYPES.map((t) => (
+                  <option key={t} value={t}>{ASSOCIATION_META[t].label}</option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="h-7 px-2 text-xs font-semibold disabled:opacity-40"
-                disabled={!itemSelection}
-                onClick={submitLinkItem}
-              >
-                Link
-              </button>
-              <button type="button" className="h-7 px-2 text-xs" onClick={() => setIsAddingItem(false)}>
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <div className={`mb-2.5 ${SECTION_LABEL_CLASSES}`}>
-          In trails
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {memberTrails.map((trail) => (
-            <span
-              key={trail.id}
-              className="rounded-sm text-[11px] font-medium bg-secondary text-secondary-foreground py-1 px-2.5"
-            >
-              {trail.title}
-            </span>
-          ))}
-          {isAddingTrail ? (
-            <div className="flex items-center gap-1">
               <select
                 autoFocus
                 className="h-7 rounded-md border border-input bg-background px-1 text-xs"
-                value={trailSelection}
-                onChange={(e) => setTrailSelection(e.target.value)}
+                value={tieTarget}
+                onChange={(e) => setTieTarget(e.target.value)}
               >
-                <option value="" disabled>
-                  Choose a trail...
-                </option>
-                {linkableTrails.map((trail) => (
-                  <option key={trail.id} value={trail.id}>
-                    {trail.title}
-                  </option>
-                ))}
+                <option value="" disabled>Choose a target…</option>
+                {tieableItems.length > 0 && (
+                  <optgroup label="Items">
+                    {tieableItems.map((other) => (
+                      <option key={`ITEM:${other.id}`} value={`ITEM:${other.id}`}>{other.title}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {tieableTrails.length > 0 && (
+                  <optgroup label="Trails">
+                    {tieableTrails.map((trail) => (
+                      <option key={`TRAIL:${trail.id}`} value={`TRAIL:${trail.id}`}>{trail.title}</option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
-              <button
-                type="button"
-                className="h-7 px-2 text-xs font-semibold disabled:opacity-40"
-                disabled={!trailSelection}
-                onClick={submitLinkTrail}
-              >
-                Link
-              </button>
-              <button type="button" className="h-7 px-2 text-xs" onClick={() => setIsAddingTrail(false)}>
-                Cancel
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="h-7 flex-1 rounded-md bg-primary text-xs font-semibold text-primary-foreground disabled:opacity-40"
+                  disabled={!tieTarget}
+                  onClick={submitTie}
+                >
+                  Tie
+                </button>
+                <button type="button" className="h-7 px-2 text-xs" onClick={() => setIsAddingTie(false)}>
+                  Cancel
+                </button>
+              </div>
             </div>
-          ) : (
-            linkableTrails.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsAddingTrail(true)}
-                className="flex items-center gap-1 rounded-sm border border-dashed border-input py-1 px-2.5 text-[11px] font-medium text-muted-foreground hover:border-primary hover:text-primary"
-              >
-                <Plus className="h-2.5 w-2.5" />
-                Add
-              </button>
-            )
           )}
         </div>
       </div>

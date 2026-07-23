@@ -55,11 +55,14 @@ import { ProjectShell } from '@/components/project-shell';
 import { SidebarCustom } from '@/components/sidebar-custom';
 import { ConnectionsPanel } from '@/components/connections-panel';
 import { KnowledgeGraph } from '@/components/knowledge-graph';
+import { TrailReader } from '@/components/trail-reader';
+import { AnnotationBanner } from '@/components/annotation-banner';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/user-menu';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Check, FolderPlus, Loader2, X } from 'lucide-react';
-import { Trail, Item, TitleAlign } from '../types';
+import { AlertCircle, Check, FolderPlus, Loader2, Route, X } from 'lucide-react';
+import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../types';
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -73,8 +76,10 @@ import {
   setItemTitleAlign,
   attachItemToTrail,
   detachItemFromTrail,
+  updateStep,
+  tie,
+  untie,
   linkItems as linkItemsRequest,
-  unlinkItems as unlinkItemsRequest,
   setProjectThumbnail,
   type ProjectVisibility,
 } from '@/lib/projects-store';
@@ -224,9 +229,22 @@ function countTextStats(content: string): { words: number; characters: number } 
   }
 }
 
-export default function DashboardPage() {
+function isAuthError(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('401');
+}
+
+export default function EditorPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const router = useRouter();
+
+  // Session died with the editor open — bounce to login once. Middleware
+  // self-corrects if the session is actually fine (redirects back).
+  const authRedirectedRef = useRef(false);
+  const redirectToLogin = useCallback(() => {
+    if (authRedirectedRef.current) return;
+    authRedirectedRef.current = true;
+    router.replace('/login');
+  }, [router]);
 
   const [loaded, setLoaded] = useState(false);
   const [projectTitle, setProjectTitle] = useState('');
@@ -243,7 +261,8 @@ export default function DashboardPage() {
     itemsRef.current = items;
   }, [items]);
   const [selectedItemId, setSelectedItemId] = useState<string | undefined>(undefined);
-  const [view, setView] = useState<'editor' | 'graph'>('editor');
+  const [activeTrailId, setActiveTrailId] = useState<string | undefined>(undefined);
+  const [view, setView] = useState<'write' | 'trail' | 'graph'>('write');
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(
     () => typeof window === 'undefined' || localStorage.getItem(SIDEBAR_OPEN_STORAGE_KEY) !== 'false'
   );
@@ -290,6 +309,9 @@ export default function DashboardPage() {
 
       const savedItemId = localStorage.getItem(lastItemStorageKey(projectId));
       const savedItem = savedItemId ? project.items[savedItemId] : undefined;
+      // Focus the trail that holds the restored item, else the first trail.
+      const host = savedItem ? project.trails.find((t) => t.itemIds.includes(savedItem.id)) : undefined;
+      setActiveTrailId((host ?? project.trails[0])?.id);
       if (!savedItem) return;
 
       try {
@@ -304,11 +326,15 @@ export default function DashboardPage() {
         console.error(err);
       }
       if (!cancelled) setSelectedItemId(savedItem.id);
+    }).catch(() => {
+      // getProject threw (terminal 401 after a failed refresh, or a dead
+      // session) — otherwise we'd sit on a blank screen forever.
+      if (!cancelled) redirectToLogin();
     });
     return () => {
       cancelled = true;
     };
-  }, [projectId, router]);
+  }, [projectId, router, redirectToLogin]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -321,6 +347,42 @@ export default function DashboardPage() {
 
   const selectedItem = selectedItemId ? items[selectedItemId] : undefined;
   const textStats = useMemo(() => countTextStats(selectedItem?.content ?? ''), [selectedItem?.content]);
+
+  const activeTrail = useMemo(() => trails.find((t) => t.id === activeTrailId), [trails, activeTrailId]);
+
+  // Resolve a step's associationId back to the association it used to get here.
+  const associationById = useMemo(() => {
+    const map = new Map<string, Association>();
+    Object.values(items).forEach((it) => it.associations.forEach((a) => map.set(a.id, a)));
+    return map;
+  }, [items]);
+
+  // The step by which the selected item was reached inside the active trail
+  // (idx > 0). Drives the incoming-annotation banner in Write mode.
+  const incomingStep = useMemo(() => {
+    if (!activeTrail || !selectedItemId) return null;
+    const idx = activeTrail.steps.findIndex((s) => s.itemId === selectedItemId);
+    if (idx <= 0) return null;
+    const step = activeTrail.steps[idx];
+    return {
+      trailId: activeTrail.id,
+      itemId: selectedItemId,
+      trailTitle: activeTrail.title,
+      annotation: step.annotation,
+      associationType: step.associationId ? associationById.get(step.associationId)?.type ?? null : null,
+    };
+  }, [activeTrail, selectedItemId, associationById]);
+
+  const handleUpdateAnnotation = async (trailId: string, itemId: string, annotation: string) => {
+    const step = trails.find((t) => t.id === trailId)?.steps.find((s) => s.itemId === itemId);
+    setTrails((prev) => prev.map((t) =>
+      t.id === trailId
+        ? { ...t, steps: t.steps.map((s) => (s.itemId === itemId ? { ...s, annotation } : s)) }
+        : t
+    ));
+    // Send the existing associationId too — the endpoint rewrites both fields.
+    await updateStep(trailId, itemId, { annotation, associationId: step?.associationId ?? null });
+  };
 
   const [activeAlignTarget, setActiveAlignTarget] = useState<'title' | 'body'>('body');
 
@@ -352,7 +414,13 @@ export default function DashboardPage() {
   const selectItemRequestRef = useRef(0);
 
   const handleSelectItem = async (item: Item) => {
-    setView('editor');
+    setView('write');
+    // Keep the current trail if it contains the item, else jump to a trail that does.
+    setActiveTrailId((prev) => {
+      const current = trails.find((t) => t.id === prev);
+      if (current?.itemIds.includes(item.id)) return prev;
+      return trails.find((t) => t.itemIds.includes(item.id))?.id ?? prev;
+    });
     const requestId = ++selectItemRequestRef.current;
     try {
       const content = await getItemContent(item.id);
@@ -379,7 +447,11 @@ export default function DashboardPage() {
     setItems(prevItems => ({ ...prevItems, [newItem.id]: newItem }));
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId
-        ? { ...trail, itemIds: [...trail.itemIds, newItem.id] }
+        ? {
+            ...trail,
+            itemIds: [...trail.itemIds, newItem.id],
+            steps: [...trail.steps, { itemId: newItem.id, annotation: null, associationId: null }],
+          }
         : trail
     ));
     setSelectedItemId(newItem.id);
@@ -389,7 +461,11 @@ export default function DashboardPage() {
     await attachItemToTrail(trailId, itemId);
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId && !trail.itemIds.includes(itemId)
-        ? { ...trail, itemIds: [...trail.itemIds, itemId] }
+        ? {
+            ...trail,
+            itemIds: [...trail.itemIds, itemId],
+            steps: [...trail.steps, { itemId, annotation: null, associationId: null }],
+          }
         : trail
     ));
   };
@@ -398,7 +474,11 @@ export default function DashboardPage() {
     await detachItemFromTrail(trailId, itemId);
     const nextTrails = trails.map(trail =>
       trail.id === trailId
-        ? { ...trail, itemIds: trail.itemIds.filter(id => id !== itemId) }
+        ? {
+            ...trail,
+            itemIds: trail.itemIds.filter(id => id !== itemId),
+            steps: trail.steps.filter(s => s.itemId !== itemId),
+          }
         : trail
     );
     setTrails(nextTrails);
@@ -474,16 +554,36 @@ export default function DashboardPage() {
     });
   };
 
-  const handleUnlinkItems = async (itemId: string, otherItemId: string) => {
-    await unlinkItemsRequest(itemId, otherItemId);
-    setItems(prevItems => {
-      const a = prevItems[itemId];
-      const b = prevItems[otherItemId];
-      if (!a || !b) return prevItems;
+  // Typed associations (ties). Directional source→target, item→item or item→trail.
+  const handleTie = async (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => {
+    await tie(itemId, targetId, targetType, type);
+    const targetTitle = targetType === 'ITEM'
+      ? items[targetId]?.title ?? ''
+      : trails.find((t) => t.id === targetId)?.title ?? '';
+    setItems((prev) => {
+      const it = prev[itemId];
+      if (!it) return prev;
+      // Temp id until the next full load hands back the real association id.
+      const association: Association = { id: `tmp:${targetType}:${targetId}`, type, targetType, targetId, targetTitle };
+      const linkedItemIds = targetType === 'ITEM' && !it.linkedItemIds.includes(targetId)
+        ? [...it.linkedItemIds, targetId]
+        : it.linkedItemIds;
+      return { ...prev, [itemId]: { ...it, associations: [...it.associations, association], linkedItemIds } };
+    });
+  };
+
+  const handleUntie = async (itemId: string, targetId: string, targetType: AssociationTargetType) => {
+    await untie(itemId, targetId, targetType);
+    setItems((prev) => {
+      const it = prev[itemId];
+      if (!it) return prev;
       return {
-        ...prevItems,
-        [itemId]: { ...a, linkedItemIds: a.linkedItemIds.filter(id => id !== otherItemId) },
-        [otherItemId]: { ...b, linkedItemIds: b.linkedItemIds.filter(id => id !== itemId) },
+        ...prev,
+        [itemId]: {
+          ...it,
+          associations: it.associations.filter((a) => !(a.targetId === targetId && a.targetType === targetType)),
+          linkedItemIds: targetType === 'ITEM' ? it.linkedItemIds.filter((id) => id !== targetId) : it.linkedItemIds,
+        },
       };
     });
   };
@@ -560,8 +660,10 @@ export default function DashboardPage() {
         if (!pendingContentRef.current) {
           pendingContentRef.current = pending;
         }
+        // Terminal 401 (dead session) — stop looping "Save failed" and go to login.
+        if (isAuthError(err)) redirectToLogin();
       });
-  }, []);
+  }, [redirectToLogin]);
 
   useEffect(() => {
     // capture the thumbnail only when actually leaving the item, not on every autosave tick
@@ -614,6 +716,20 @@ export default function DashboardPage() {
   if (!loaded) {
     return null;
   }
+
+  const emptyState = (
+    <div className="flex h-full w-full min-h-[60vh] flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
+      <FolderPlus className="h-12 w-12 opacity-40" />
+      <p className="text-lg font-medium">
+        {trails.length === 0 ? "No trails yet" : "No item selected"}
+      </p>
+      <p className="max-w-sm text-sm">
+        {trails.length === 0
+          ? 'Create a trail from the sidebar (the "+" next to "My Trails") to get started.'
+          : "Select an item from the sidebar, or create a new one inside a trail."}
+      </p>
+    </div>
+  );
 
   return (
     <SidebarProvider
@@ -673,10 +789,21 @@ export default function DashboardPage() {
         }
         actions={
           <>
-            {view === 'editor' && selectedItem && (
+            {view === 'write' && selectedItem && (
               <span className="text-xs text-muted-foreground">
                 {textStats.words} words · {textStats.characters} characters
               </span>
+            )}
+            {activeTrail && (
+              <Button
+                variant={view === 'trail' ? 'secondary' : 'ghost'}
+                size="lg"
+                onClick={() => setView((v) => (v === 'trail' ? 'write' : 'trail'))}
+                title="Read this trail as a narrated sequence"
+              >
+                <Route className="h-[15px] w-[15px]" />
+                Trail
+              </Button>
             )}
             <ShareDialog
               projectId={projectId}
@@ -706,13 +833,14 @@ export default function DashboardPage() {
           />
         }
         content={
-          view === 'graph' ? (
+          <div className="flex min-w-0 flex-1 gap-3 overflow-hidden">
+          {view === 'graph' ? (
             <div className="relative flex-1 overflow-hidden rounded-2xl">
               <button
                 type="button"
-                onClick={() => setView('editor')}
-                title="Close graph view"
-                className="absolute top-6 right-6 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-card hover:bg-muted"
+                onClick={() => setView('write')}
+                title="Close graph"
+                className="absolute top-6 right-6 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-elevation-1 hover:bg-muted"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -723,6 +851,26 @@ export default function DashboardPage() {
                 onSelectItem={handleSelectItem}
               />
             </div>
+          ) : view === 'trail' ? (
+            activeTrail && activeTrail.itemIds.length > 0 ? (
+              <div className="relative flex min-w-0 flex-1 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setView('write')}
+                  title="Close trail"
+                  className="absolute top-6 right-6 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-elevation-1 hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <TrailReader
+                  trail={activeTrail}
+                  items={items}
+                  associationById={associationById}
+                  selectedItemId={selectedItemId}
+                  onSelectItem={handleSelectItem}
+                />
+              </div>
+            ) : emptyState
           ) : selectedItem ? (
             <>
               <div className="flex min-w-0 flex-1 flex-col overflow-hidden ">
@@ -736,6 +884,17 @@ export default function DashboardPage() {
                     <hr/>
                     <div className="editor-inner" ref={editorInnerRef}>
                       <div className="editor-content-column" ref={setBlockAnchor}>
+                        {incomingStep && (
+                          <div className="px-7 pt-6">
+                            <AnnotationBanner
+                              key={`${incomingStep.trailId}-${incomingStep.itemId}`}
+                              annotation={incomingStep.annotation}
+                              associationType={incomingStep.associationType}
+                              trailTitle={incomingStep.trailTitle}
+                              onSave={(text) => handleUpdateAnnotation(incomingStep.trailId, incomingStep.itemId, text)}
+                            />
+                          </div>
+                        )}
                         <div className="pt-9 pl-7">
                           <input
                             key={`${selectedItem.id}-${selectedItem.title}`}
@@ -811,27 +970,15 @@ export default function DashboardPage() {
                 items={items}
                 trails={trails}
                 onSelectItem={handleSelectItem}
-                onLinkItem={handleLinkItems}
-                onUnlinkItem={handleUnlinkItems}
-                onLinkTrail={handleLinkItemToTrail}
+                onTie={handleTie}
+                onUntie={handleUntie}
                 onOpenGraph={() => setView('graph')}
                 open={connectionsPanelOpen}
                 onToggleOpen={() => setConnectionsPanelOpen((o) => !o)}
               />
             </>
-          ) : (
-            <div className="flex h-full w-full min-h-[60vh] flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
-              <FolderPlus className="h-12 w-12 opacity-40" />
-              <p className="text-lg font-medium">
-                {trails.length === 0 ? "No trails yet" : "No item selected"}
-              </p>
-              <p className="max-w-sm text-sm">
-                {trails.length === 0
-                  ? 'Create a trail from the sidebar (the "+" next to "My Trails") to get started.'
-                  : "Select an item from the sidebar, or create a new one inside a trail."}
-              </p>
-            </div>
-          )
+          ) : emptyState}
+          </div>
         }
       />
       {thumbnailCapture && (

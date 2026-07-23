@@ -127,6 +127,7 @@ export async function getProject(id: string): Promise<Project | null> {
   uniqueItemIds.forEach((itemId, index) => {
     const dto = itemMap.get(itemId)!;
     const associations: Association[] = associationLists[index].map((a) => ({
+      id: String(a.id),
       type: a.type as AssociationType,
       targetType: a.targetType as AssociationTargetType,
       targetId: a.targetId,

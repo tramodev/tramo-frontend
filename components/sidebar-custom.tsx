@@ -1,4 +1,4 @@
-import { ChevronRight, Link2, Plus, Trash2 } from "lucide-react"
+import { ChevronRight, GitBranch, Link2, ListPlus, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 
 import {
@@ -56,6 +56,8 @@ export function SidebarCustom({
   const [newItemTitle, setNewItemTitle] = useState("");
   const [linkingTrailId, setLinkingTrailId] = useState<string | null>(null);
   const [linkSelection, setLinkSelection] = useState("");
+  const [addToTrailItemId, setAddToTrailItemId] = useState<string | null>(null);
+  const [addTrailSelection, setAddTrailSelection] = useState("");
 
   const [editingTrailId, setEditingTrailId] = useState<string | null>(null);
   const [editingTrailTitle, setEditingTrailTitle] = useState("");
@@ -100,6 +102,18 @@ export function SidebarCustom({
     onLinkItemToTrail(trailId, linkSelection);
     setLinkingTrailId(null);
     setLinkSelection("");
+  };
+
+  const startAddToTrail = (itemId: string) => {
+    setAddToTrailItemId(itemId);
+    setAddTrailSelection("");
+  };
+
+  const submitAddToTrail = (itemId: string) => {
+    if (addToTrailItemId !== itemId || !addTrailSelection) return;
+    onLinkItemToTrail(addTrailSelection, itemId);
+    setAddToTrailItemId(null);
+    setAddTrailSelection("");
   };
 
   const startEditTrail = (trail: Trail) => {
@@ -238,6 +252,9 @@ export function SidebarCustom({
                               <SidebarMenuButton onDoubleClick={() => startEditTrail(trail)} className="font-semibold">
                                 <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
                                 <span className="flex-1 truncate">{trail.title}</span>
+                                <span className="rounded-sm border border-border px-1 text-[9px] font-normal leading-tight text-muted-foreground">
+                                  v{trail.version}
+                                </span>
                                 <span className="text-[11px] font-normal text-muted-foreground">
                                   {trailItems.length}
                                 </span>
@@ -274,6 +291,12 @@ export function SidebarCustom({
                           </>
                         )}
                       </div>
+                      {trail.forkedFrom && (
+                        <div className="flex items-center gap-1 px-2 pb-0.5 text-[10.5px] italic text-muted-foreground">
+                          <GitBranch className="h-3 w-3 shrink-0" />
+                          forked from {trails.find((t) => t.id === trail.forkedFrom)?.title ?? "another trail"}
+                        </div>
+                      )}
                       {linkingTrailId === trail.id && (
                         <div className="flex items-center gap-1 px-2 py-1">
                           <select
@@ -314,6 +337,7 @@ export function SidebarCustom({
                           {trailItems.map((item) => {
                             const memberTrails = trailsForItem(item.id);
                             const isShared = memberTrails.length > 1;
+                            const addableTrails = trails.filter((t) => !t.itemIds.includes(item.id));
 
                             return (
                               <SidebarMenuSubItem key={item.id} className="group/item">
@@ -359,15 +383,33 @@ export function SidebarCustom({
                                               className="ml-1 h-3 w-3 shrink-0 text-primary"
                                             />
                                           </TooltipTrigger>
-                                          <TooltipContent>
-                                            Also in: {memberTrails
-                                              .filter((p) => p.id !== trail.id)
-                                              .map((p) => p.title)
-                                              .join(", ")}
+                                          <TooltipContent className="max-w-56">
+                                            <p className="font-medium">
+                                              Also in: {memberTrails
+                                                .filter((p) => p.id !== trail.id)
+                                                .map((p) => p.title)
+                                                .join(", ")}
+                                            </p>
+                                            <p className="mt-1 text-muted-foreground">
+                                              Live in {memberTrails.length} of your own trails — edit once and every
+                                              trail updates. A fork by another trailblazer would take a frozen
+                                              snapshot instead.
+                                            </p>
                                           </TooltipContent>
                                         </Tooltip>
                                       )}
                                     </SidebarMenuSubButton>
+                                    {addableTrails.length > 0 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 shrink-0 opacity-0 group-hover/item:opacity-100"
+                                        title="Add this item to another trail"
+                                        onClick={() => startAddToTrail(item.id)}
+                                      >
+                                        <ListPlus className="h-3 w-3" />
+                                      </Button>
+                                    )}
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -375,6 +417,41 @@ export function SidebarCustom({
                                       onClick={() => confirmUnlinkItem(trail, item)}
                                     >
                                       <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                                {addToTrailItemId === item.id && (
+                                  <div className="flex items-center gap-1 px-2 py-1">
+                                    <select
+                                      autoFocus
+                                      className="h-7 flex-1 rounded-md border border-input bg-background px-1 text-xs"
+                                      value={addTrailSelection}
+                                      onChange={(e) => setAddTrailSelection(e.target.value)}
+                                    >
+                                      <option value="" disabled>
+                                        Add to trail...
+                                      </option>
+                                      {addableTrails.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                          {t.title}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <Button
+                                      size="sm"
+                                      className="h-7 px-2"
+                                      disabled={!addTrailSelection}
+                                      onClick={() => submitAddToTrail(item.id)}
+                                    >
+                                      Add
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2"
+                                      onClick={() => setAddToTrailItemId(null)}
+                                    >
+                                      Cancel
                                     </Button>
                                   </div>
                                 )}

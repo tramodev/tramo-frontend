@@ -49,6 +49,19 @@ export async function refreshAccessToken(): Promise<boolean> {
     return false;
   }
 
+  // The backend rotates (and revokes) the refresh token on every refresh. If we
+  // can't persist the new pair — i.e. we're running inside a Server Component
+  // render where cookies() is read-only — we must NOT hit the endpoint: it would
+  // rotate on the backend, we'd fail to save the new tokens, and the next
+  // request would present a revoked token and get the whole session nuked. Probe
+  // writability first; if it throws we're read-only, so defer to the middleware's
+  // proactive refresh instead of rotating-and-losing.
+  try {
+    cookieStore.set('__rt_probe', '', { maxAge: 0, path: '/' });
+  } catch {
+    return false;
+  }
+
   const existing = inflightRefresh.get(refreshToken);
   if (existing) return existing;
 

@@ -10,6 +10,8 @@ export type AssociationType =
 export type AssociationTargetType = "ITEM" | "TRAIL";
 
 export interface Association {
+    // The association's own id — lets a TrailStep.associationId resolve back to it.
+    id: string;
     type: AssociationType;
     targetType: AssociationTargetType;
     targetId: string;

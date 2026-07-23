@@ -9,14 +9,16 @@ import { API_BASE_URL } from '@/lib/config';
 const ANON_ID_COOKIE = 'tramo_anon_id';
 
 const ACCESS_TOKEN_MAX_AGE = 60 * 15;
+const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7;
 const REFRESH_MARGIN_SECONDS = 60;
 
 // Server Components can't refresh the access token mid-render (cookies() is
-// read-only there — see the comment in lib/profile.ts), so every profile/
-// stats/bookmarks/etc read on a page like /profile just silently 401s once
-// the 15-minute access token expires, and the page falls back to an empty
-// state instead of erroring. Refreshing here, before the page renders at all,
-// is what actually fixes that instead of papering over it downstream.
+// read-only there), so every protected page read would silently 401 once the
+// 15-minute access token expires. Refreshing here, before the page renders at
+// all, is what actually fixes that. Critically the backend ROTATES the refresh
+// token on every refresh (and treats a re-presented revoked token as theft,
+// nuking the whole session), so we must persist BOTH new tokens — dropping the
+// rotated refresh token would log the user out on the next refresh.
 function isExpiringSoon(token: string): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -27,7 +29,9 @@ function isExpiringSoon(token: string): boolean {
   }
 }
 
-async function refreshAccessToken(refreshToken: string): Promise<string | null> {
+async function refreshAccessToken(
+  refreshToken: string,
+): Promise<{ accessToken: string; refreshToken: string } | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
@@ -36,7 +40,10 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
     });
     if (!response.ok) return null;
     const data = await response.json();
-    return data.accessToken ?? null;
+    if (!data.accessToken) return null;
+    // The backend rotates the refresh token; fall back to the presented one only
+    // if the response omits it (older backends), never drop it.
+    return { accessToken: data.accessToken, refreshToken: data.refreshToken ?? refreshToken };
   } catch {
     return null;
   }
@@ -62,22 +69,31 @@ export async function middleware(request: NextRequest) {
 
   let accessToken = request.cookies.get('accessToken')?.value ?? null;
   const refreshToken = request.cookies.get('refreshToken')?.value ?? null;
-  let refreshedAccessToken: string | null = null;
+  let refreshed: { accessToken: string; refreshToken: string } | null = null;
 
+  // Server actions can write cookies themselves (lib/api.ts refresh-on-401), so
+  // we don't refresh or gate them here — that would break the action POST.
   const isServerAction = request.headers.has('next-action');
+  const accessValid = !!accessToken && !isExpiringSoon(accessToken);
 
-  if (isProtected && !isServerAction && refreshToken && (!accessToken || isExpiringSoon(accessToken))) {
-    refreshedAccessToken = await refreshAccessToken(refreshToken);
-    if (refreshedAccessToken) {
-      accessToken = refreshedAccessToken;
-    }
+  if (isProtected && !isServerAction && !accessValid && refreshToken) {
+    refreshed = await refreshAccessToken(refreshToken);
+    if (refreshed) accessToken = refreshed.accessToken;
+  }
+
+  // Terminal auth failure on a protected navigation: no usable access token and
+  // no way to mint one. Clear the stale cookies and send them to login. Only
+  // fires when a refresh actually failed (or there was no refresh token) — not
+  // on mere cookie presence — so a still-valid session is never bounced.
+  if (isProtected && !isServerAction && !accessValid && !refreshed) {
+    const res = NextResponse.redirect(new URL('/login', request.url));
+    res.cookies.delete('accessToken');
+    res.cookies.delete('refreshToken');
+    res.cookies.delete('username');
+    return res;
   }
 
   const isLoggedIn = !!(accessToken || refreshToken);
-
-  if (isProtected && !isLoggedIn) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
 
   const needsAdminCheck = isLoggedIn && !!accessToken && (path.startsWith('/projects') || path === '/login' || path === '/signup');
   const admin = needsAdminCheck && accessToken ? await isAdminUser(accessToken) : false;
@@ -93,10 +109,13 @@ export async function middleware(request: NextRequest) {
   const needsAnonId = path.startsWith('/p/') && !request.cookies.get(ANON_ID_COOKIE);
   const anonId = needsAnonId ? crypto.randomUUID() : null;
 
-  // Forwarded on the request too, so this same first-visit render can already
-  // read it via cookies() instead of only the next navigation.
+  // Forwarded on the request too, so this same render already sees the fresh
+  // values via cookies() instead of only the next navigation.
   if (anonId) request.cookies.set(ANON_ID_COOKIE, anonId);
-  if (refreshedAccessToken) request.cookies.set('accessToken', refreshedAccessToken);
+  if (refreshed) {
+    request.cookies.set('accessToken', refreshed.accessToken);
+    request.cookies.set('refreshToken', refreshed.refreshToken);
+  }
 
   const response = NextResponse.next({ request });
 
@@ -108,12 +127,20 @@ export async function middleware(request: NextRequest) {
       path: '/',
     });
   }
-  if (refreshedAccessToken) {
-    response.cookies.set('accessToken', refreshedAccessToken, {
+  if (refreshed) {
+    const secure = process.env.NODE_ENV === 'production';
+    response.cookies.set('accessToken', refreshed.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure,
       sameSite: 'lax',
       maxAge: ACCESS_TOKEN_MAX_AGE,
+      path: '/',
+    });
+    response.cookies.set('refreshToken', refreshed.refreshToken, {
+      httpOnly: true,
+      secure,
+      sameSite: 'lax',
+      maxAge: REFRESH_TOKEN_MAX_AGE,
       path: '/',
     });
   }
