@@ -37,6 +37,7 @@ interface ProjectDTO {
 interface TrailDTO {
   id: number;
   title: string;
+  description: string | null;
   visibility: string | null;
   creationDate: string;
   modifiedDate: string;
@@ -52,6 +53,8 @@ interface ItemDTO {
   titleAlign: string | null;
   createdDate: string;
   modifiedDate: string;
+  // Only present on /api/project/{id}/item responses (sticky Unfiled flag).
+  unfiled?: boolean;
 }
 
 // A trail step: item fields + per-step metadata (GET /trail/{id}/item).
@@ -101,19 +104,24 @@ export async function getProject(id: string): Promise<Project | null> {
   const trailsResponse = await authenticatedFetch(`${API_BASE_URL}/api/project/${id}/trail`);
   const trailDtos = await parseResponse<TrailDTO[]>(trailsResponse);
 
-  const trailItemLists = await Promise.all(
-    trailDtos.map((trail) =>
-      authenticatedFetch(`${API_BASE_URL}/api/trail/${trail.id}/item`).then((r) =>
-        parseResponse<TrailStepDTO[]>(r)
+  const [trailItemLists, looseDtos] = await Promise.all([
+    Promise.all(
+      trailDtos.map((trail) =>
+        authenticatedFetch(`${API_BASE_URL}/api/trail/${trail.id}/item`).then((r) =>
+          parseResponse<TrailStepDTO[]>(r)
+        )
       )
-    )
-  );
+    ),
+    authenticatedFetch(`${API_BASE_URL}/api/project/${id}/item`).then((r) => parseResponse<ItemDTO[]>(r)),
+  ]);
 
-  const itemMap = new Map<number, TrailStepDTO>();
-  trailItemLists.forEach((steps) => {
-    steps.forEach((step) => itemMap.set(step.id, step));
-  });
+  // All items (trail members + loose), keyed by id, for title/titleAlign + associations.
+  const itemMap = new Map<number, ItemDTO>();
+  trailItemLists.forEach((steps) => steps.forEach((step) => itemMap.set(step.id, step)));
+  looseDtos.forEach((it) => { if (!itemMap.has(it.id)) itemMap.set(it.id, it); });
   const uniqueItemIds = Array.from(itemMap.keys());
+  // The project-items endpoint carries the sticky Unfiled flag for every item.
+  const unfiledIds = new Set(looseDtos.filter((it) => it.unfiled).map((it) => it.id));
 
   const associationLists = await Promise.all(
     uniqueItemIds.map((itemId) =>
@@ -137,6 +145,7 @@ export async function getProject(id: string): Promise<Project | null> {
       id: String(itemId),
       title: dto.title,
       titleAlign: (dto.titleAlign as TitleAlign) ?? "center",
+      unfiled: unfiledIds.has(itemId),
       content: null,
       associations,
       linkedItemIds: associations
@@ -148,6 +157,7 @@ export async function getProject(id: string): Promise<Project | null> {
   const trails: Trail[] = trailDtos.map((trail, index) => ({
     id: String(trail.id),
     title: trail.title,
+    description: trail.description ?? "",
     itemIds: trailItemLists[index].map((step) => String(step.id)),
     steps: trailItemLists[index].map((step) => ({
       itemId: String(step.id),
@@ -298,6 +308,7 @@ export async function createTrail(projectId: string, title: string): Promise<Tra
   return {
     id: String(dto.id),
     title: dto.title,
+    description: dto.description ?? "",
     itemIds: [],
     steps: [],
     version: dto.version,
@@ -331,6 +342,15 @@ export async function renameTrail(trailId: string, title: string): Promise<void>
   await expectOk(response);
 }
 
+export async function setTrailDescription(trailId: string, description: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/trail/${trailId}`, {
+    method: "PUT",
+    headers: jsonHeaders,
+    body: JSON.stringify({ description }),
+  });
+  await expectOk(response);
+}
+
 export async function deleteTrail(trailId: string): Promise<void> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/trail/${trailId}`, {
     method: "DELETE",
@@ -345,7 +365,25 @@ export async function createItem(trailId: string, title: string): Promise<Item> 
     body: JSON.stringify({ title }),
   });
   const dto = await parseResponse<ItemDTO>(response);
-  return { id: String(dto.id), title: dto.title, titleAlign: (dto.titleAlign as TitleAlign) ?? "center", content: "", associations: [], linkedItemIds: [] };
+  return { id: String(dto.id), title: dto.title, titleAlign: (dto.titleAlign as TitleAlign) ?? "center", unfiled: false, content: "", associations: [], linkedItemIds: [] };
+}
+
+// A loose item — belongs to the project and (stickily) to Unfiled.
+export async function createLooseItem(projectId: string, title: string): Promise<Item> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${projectId}/item`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ title }),
+  });
+  const dto = await parseResponse<ItemDTO>(response);
+  return { id: String(dto.id), title: dto.title, titleAlign: (dto.titleAlign as TitleAlign) ?? "center", unfiled: true, content: "", associations: [], linkedItemIds: [] };
+}
+
+export async function deleteItem(itemId: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/item/${itemId}`, {
+    method: "DELETE",
+  });
+  await expectOk(response);
 }
 
 export async function renameItem(itemId: string, title: string): Promise<void> {

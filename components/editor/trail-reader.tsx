@@ -1,6 +1,7 @@
 "use client"
 
-import { ArrowDown } from "lucide-react"
+import { useState } from "react"
+import { ArrowDown, Plus } from "lucide-react"
 
 import { Association, Item, Trail } from "@/app/editor/types"
 import { ASSOCIATION_META, ASSOCIATION_COLOR_VAR, bridgeTie } from "@/app/editor/associations"
@@ -11,6 +12,47 @@ interface TrailReaderProps {
   associationById: Map<string, Association>;
   selectedItemId?: string;
   onSelectItem: (item: Item) => void;
+  onSetDescription: (trailId: string, description: string) => void;
+}
+
+// Optional trail description under the header; click to edit, blur/Esc to close.
+function TrailDescriptionEditor({ trailId, description, onSave }: { trailId: string; description: string; onSave: (trailId: string, description: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(description);
+  const save = () => {
+    setEditing(false);
+    const next = draft.trim();
+    if (next !== description) onSave(trailId, next);
+  };
+  if (editing) {
+    return (
+      <textarea
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") { setDraft(description); setEditing(false); }
+        }}
+        rows={2}
+        placeholder="Describe this trail…"
+        className="mt-3 w-full resize-none rounded-sm border border-input bg-background px-2 py-1.5 text-[15px] leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+    );
+  }
+  if (!description.trim()) {
+    return (
+      <button type="button" onClick={() => setEditing(true)} className="mt-3 flex items-center gap-1 text-[13px] text-muted-foreground transition-colors hover:text-foreground">
+        <Plus className="h-3.5 w-3.5" />
+        Add description
+      </button>
+    );
+  }
+  return (
+    <p onClick={() => setEditing(true)} className="mt-3 cursor-text whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/80">
+      {description}
+    </p>
+  );
 }
 
 // Pull a short plain-text excerpt out of a Lexical content JSON blob.
@@ -35,7 +77,7 @@ function excerpt(content: string | null): string {
 // Read the active trail as a narrated sequence: each step (past the first) is
 // prefaced by a "bridge" — the typed association + the human annotation that
 // connects it to the previous step.
-export function TrailReader({ trail, items, associationById, selectedItemId, onSelectItem }: TrailReaderProps) {
+export function TrailReader({ trail, items, associationById, selectedItemId, onSelectItem, onSetDescription }: TrailReaderProps) {
   return (
     <div className="flex-1 overflow-y-auto rounded-2xl bg-popover">
       <div className="mx-auto max-w-[640px] px-5 py-10">
@@ -47,6 +89,8 @@ export function TrailReader({ trail, items, associationById, selectedItemId, onS
           {trail.forkedFrom && <span className="italic">forked · </span>}
           version {trail.version} · {trail.itemIds.length} items
         </p>
+        <TrailDescriptionEditor key={trail.id} trailId={trail.id} description={trail.description} onSave={onSetDescription} />
+
 
         <div className="mt-8 flex flex-col">
           {trail.steps.map((step, i) => {

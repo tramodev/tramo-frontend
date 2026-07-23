@@ -38,6 +38,15 @@ export function ConnectionsPanel({
   const [tieType, setTieType] = useState<AssociationType>("RELATED");
   const [tieTarget, setTieTarget] = useState(""); // encoded "ITEM:id" | "TRAIL:id"
 
+  // Associations are directional; the item also wants to know who points AT it.
+  const incoming = Object.values(items).flatMap((other) =>
+    other.id === item.id
+      ? []
+      : other.associations
+          .filter((a) => a.targetType === "ITEM" && a.targetId === item.id)
+          .map((a) => ({ source: other, type: a.type }))
+  );
+
   // Targets already tied, so we don't offer duplicates.
   const tiedKeys = new Set(item.associations.map((a) => `${a.targetType}:${a.targetId}`));
   const tieableItems = Object.values(items).filter(
@@ -56,8 +65,8 @@ export function ConnectionsPanel({
 
   return (
     <div
-      className={`flex shrink-0 flex-col transition-all duration-200 ease-linear ${
-        open ? "w-72 overflow-hidden rounded-2xl sidebar py-5 px-4" : "w-9 pt-5"
+      className={`mb-3 flex shrink-0 flex-col transition-all duration-200 ease-linear ${
+        open ? "w-72 overflow-hidden rounded-2xl sidebar sidebar-right py-5 px-4" : "w-9 pt-5"
       }`}
     >
       <div className="mb-2.5 flex items-center justify-between">
@@ -182,6 +191,45 @@ export function ConnectionsPanel({
           )}
         </div>
       </div>
+
+      {incoming.length > 0 && (
+        <div>
+          <div className={`mb-2.5 truncate ${SECTION_LABEL_CLASSES}`}>Connections to “{item.title}”</div>
+          <div className="flex flex-col gap-2">
+            {incoming.map(({ source, type }) => {
+              const meta = ASSOCIATION_META[type];
+              const TypeIcon = meta.Icon;
+              return (
+                <div
+                  key={`in-${source.id}-${type}`}
+                  className="group/tie flex flex-col gap-1.5 rounded-sm border border-border bg-popover py-2 px-2.5 transition-colors hover:border-primary"
+                >
+                  <div className="flex items-center gap-1.5 text-[9.5px] font-medium uppercase tracking-[0.08em] text-foreground">
+                    <TypeIcon className="h-3 w-3" />
+                    <span>{meta.label}</span>
+                    <button
+                      type="button"
+                      aria-label="Remove connection"
+                      className="ml-auto shrink-0 cursor-pointer opacity-0 hover:opacity-70 group-hover/tie:opacity-100"
+                      onClick={() => onUntie(source.id, item.id, "ITEM")}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSelectItem(source)}
+                    className="flex min-w-0 cursor-pointer items-center gap-2 text-left"
+                  >
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-muted-foreground" />
+                    <span className="truncate text-[13.5px] font-medium">{source.title}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="border-t border-border pt-4">
         <div className="mb-2.5 flex items-center justify-between">

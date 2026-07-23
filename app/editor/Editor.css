@@ -7,16 +7,22 @@
  */
 
  .sidebar{
+  background-color: var(--card);
+  
+ }
+ .sidebar-right{
   border-style: var(--tw-border-style);
   border-width: 1.5px;
   border-radius: 20;
-  background-color: var(--card);
  }
 
 .editor-container {
   border-style: var(--tw-border-style);
   border-width: 1.5px;
   border-radius: 20;
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
   margin: 0;
   max-width: none;
   position: relative;
@@ -28,6 +34,7 @@
 .editor-inner {
   position: relative;
   padding: 0 48px;
+  padding-bottom: 0;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -153,7 +160,7 @@
 }
 
 .editor-link {
-  color: var(--primary);
+  color: var(--ed-blue);
   text-decoration: none;
   cursor: pointer;
 }
@@ -164,7 +171,7 @@
 
 a[rel^="tramo-idea:"],
 a[rel^="mypath-idea:"] {
-  color: var(--primary);
+  color: var(--ed-blue);
   text-decoration: underline;
   font-weight: 500;
 }
@@ -725,6 +732,7 @@ pre::-webkit-scrollbar-thumb {
 .toolbar .font-family-select {
   background: none;
   border: none;
+  border-radius: 8px;
   color: var(--foreground);
   font-size: 13px;
   padding: 4px 6px;
@@ -744,15 +752,13 @@ pre::-webkit-scrollbar-thumb {
   align-items: center;
   height: 32px;
   margin-right: 4px;
-  border-radius: 999px;
-  overflow: hidden;
 }
 
 .toolbar .font-size-control button.toolbar-item {
-  width: 20px;
-  height: 100%;
-  padding: 4px;
-  border-radius: 0;
+  width: 22px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
 }
 
 .toolbar .font-size-input {

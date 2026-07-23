@@ -71,8 +71,11 @@ import {
   renameProject,
   createTrail,
   renameTrail,
+  setTrailDescription,
   deleteTrail as deleteTrailRequest,
   createItem,
+  createLooseItem,
+  deleteItem,
   renameItem,
   setItemTitleAlign,
   attachItemToTrail,
@@ -484,6 +487,8 @@ export default function EditorPage() {
     ));
   };
 
+  // Remove an item from a trail. It stays in the project — and if that was its
+  // last trail, it surfaces in Unfiled (mirrors the backend's sticky flag).
   const handleUnlinkItemFromTrail = async (trailId: string, itemId: string) => {
     await detachItemFromTrail(trailId, itemId);
     const nextTrails = trails.map(trail =>
@@ -496,18 +501,36 @@ export default function EditorPage() {
         : trail
     );
     setTrails(nextTrails);
-
-    const stillReferenced = nextTrails.some(trail => trail.itemIds.includes(itemId));
-    if (!stillReferenced) {
-      setItems(prevItems => {
-        const next = { ...prevItems };
-        delete next[itemId];
-        return next;
+    if (!nextTrails.some(trail => trail.itemIds.includes(itemId))) {
+      setItems(prev => {
+        const it = prev[itemId];
+        return it && !it.unfiled ? { ...prev, [itemId]: { ...it, unfiled: true } } : prev;
       });
-      if (selectedItemId === itemId) {
-        setSelectedItemId(undefined);
-      }
     }
+  };
+
+  // Loose item: belongs to the project, no trail. Shows in the "Unfiled" section.
+  const handleCreateLooseItem = async (title: string) => {
+    const newItem = await createLooseItem(projectId, title);
+    setItems(prevItems => ({ ...prevItems, [newItem.id]: newItem }));
+    setView('write');
+    setSelectedItemId(newItem.id);
+  };
+
+  // Permanently delete an item (from every trail + the project).
+  const handleDeleteItem = async (itemId: string) => {
+    await deleteItem(itemId);
+    setTrails(prevTrails => prevTrails.map(trail => ({
+      ...trail,
+      itemIds: trail.itemIds.filter(id => id !== itemId),
+      steps: trail.steps.filter(s => s.itemId !== itemId),
+    })));
+    setItems(prevItems => {
+      const next = { ...prevItems };
+      delete next[itemId];
+      return next;
+    });
+    if (selectedItemId === itemId) setSelectedItemId(undefined);
   };
 
   const handleRenameTrail = async (trailId: string, title: string) => {
@@ -515,6 +538,13 @@ export default function EditorPage() {
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId ? { ...trail, title } : trail
     ));
+  };
+
+  const handleSetTrailDescription = async (trailId: string, description: string) => {
+    setTrails(prevTrails => prevTrails.map(trail =>
+      trail.id === trailId ? { ...trail, description } : trail
+    ));
+    await setTrailDescription(trailId, description);
   };
 
   const handleRenameItem = async (itemId: string, title: string) => {
@@ -531,22 +561,20 @@ export default function EditorPage() {
     if (!target) return;
 
     await deleteTrailRequest(trailId);
-
+    // Items that only lived in this trail surface in Unfiled, not deleted.
     const remainingTrails = trails.filter(trail => trail.id !== trailId);
+    setTrails(remainingTrails);
     const orphanIds = target.itemIds.filter(
       itemId => !remainingTrails.some(trail => trail.itemIds.includes(itemId))
     );
-
-    setTrails(remainingTrails);
     if (orphanIds.length > 0) {
-      setItems(prevItems => {
-        const next = { ...prevItems };
-        orphanIds.forEach(id => delete next[id]);
+      setItems(prev => {
+        const next = { ...prev };
+        orphanIds.forEach(id => {
+          if (next[id] && !next[id].unfiled) next[id] = { ...next[id], unfiled: true };
+        });
         return next;
       });
-      if (selectedItemId && orphanIds.includes(selectedItemId)) {
-        setSelectedItemId(undefined);
-      }
     }
   };
 
@@ -739,7 +767,7 @@ export default function EditorPage() {
       </p>
       <p className="max-w-sm text-sm">
         {trails.length === 0
-          ? 'Create a trail from the sidebar (the "+" next to "My Trails") to get started.'
+          ? 'Create a trail from the sidebar (the "+" next to "Trails") to get started.'
           : "Select an item from the sidebar, or create a new one inside a trail."}
       </p>
     </div>
@@ -750,7 +778,7 @@ export default function EditorPage() {
       open={leftSidebarOpen}
       onOpenChange={setLeftSidebarOpen}
       style={{ "--sidebar-width": "288px", "--sidebar-width-icon": "272px" } as React.CSSProperties}
-      className="h-screen min-h-0 flex-col"
+      className="h-screen min-h-0"
     >
       <ProjectShell
         homeHref="/projects"
@@ -839,11 +867,13 @@ export default function EditorPage() {
             onSelectItem={handleSelectItem}
             onCreateTrail={handleCreateTrail}
             onCreateItem={handleCreateItem}
+            onCreateLooseItem={handleCreateLooseItem}
             onLinkItemToTrail={handleLinkItemToTrail}
             onRenameTrail={handleRenameTrail}
             onRenameItem={handleRenameItem}
             onDeleteTrail={handleDeleteTrail}
             onUnlinkItemFromTrail={handleUnlinkItemFromTrail}
+            onDeleteItem={handleDeleteItem}
           />
         }
         content={
@@ -883,6 +913,7 @@ export default function EditorPage() {
                   associationById={associationById}
                   selectedItemId={selectedItemId}
                   onSelectItem={handleSelectItem}
+                  onSetDescription={handleSetTrailDescription}
                 />
               </div>
             ) : emptyState

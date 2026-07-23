@@ -22,6 +22,9 @@ export interface Item {
     id: string;
     title: string;
     titleAlign: TitleAlign;
+    // Sticky Unfiled membership — set when created loose or detached from its
+    // last trail; adding the item to a trail does NOT clear it.
+    unfiled: boolean;
     content: string | null;
     // Outgoing typed associations (item→item or item→trail).
     associations: Association[];
@@ -40,6 +43,7 @@ export interface TrailStep {
 export interface Trail {
     id: string;
     title: string;
+    description: string;
     itemIds: string[];
     // Per-step metadata (annotation + association), aligned with itemIds order.
     steps: TrailStep[];
