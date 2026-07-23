@@ -9,9 +9,13 @@ import {
   Handle,
   Position,
   MarkerType,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
   type Node,
   type Edge,
   type NodeProps,
+  type EdgeProps,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 
@@ -52,27 +56,29 @@ const FALLBACK: Record<string, string> = {
 // Twitter-blue selection accent — graph-only (the rest of the app stays mono).
 const ACCENT = "#1D9BF0";
 
-const NODE_R = 28;
-const X_GAP = 200;
-const MARGIN_X = 70;
-const TOP_Y = 130;
-const BOTTOM_Y = 340;
+const NODE_W = 168;
+const NODE_H = 52;
+const X_GAP = 210;
+const MARGIN_X = 60;
+const TOP_Y = 150;
+const BOTTOM_Y = 380;
+const BASE_ARC = 46;
+const ARC_STEP = 34;
 
-function truncate(s: string): string {
-  return s.length > 18 ? `${s.slice(0, 17)}…` : s;
-}
-
-// ── Custom node: a circle (--primary) with the label below it ────────────────
-type ItemNodeData = { title: string; selected: boolean };
+// ── Custom node: rounded rect with the title inside; spine vs loose distinct ──
+type ItemNodeData = { title: string; selected: boolean; kind: "spine" | "loose" };
 type ItemNode = Node<ItemNodeData, "item">;
 
 const ItemNodeComp = memo(function ItemNodeComp({ data }: NodeProps<ItemNode>) {
+  const spine = data.kind === "spine";
   return (
     <div
-      className="relative flex items-center justify-center rounded-full bg-primary"
+      className={`flex items-center justify-center rounded-lg px-3 text-center text-[12.5px] font-medium leading-tight ${
+        spine ? "bg-primary text-primary-foreground" : "border border-border bg-card text-foreground"
+      }`}
       style={{
-        width: NODE_R * 2,
-        height: NODE_R * 2,
+        width: NODE_W,
+        height: NODE_H,
         boxShadow: data.selected ? `0 0 0 2px var(--background), 0 0 0 4px ${ACCENT}` : undefined,
       }}
     >
@@ -81,14 +87,86 @@ const ItemNodeComp = memo(function ItemNodeComp({ data }: NodeProps<ItemNode>) {
       <Handle type="source" position={Position.Top} id="ts" style={{ opacity: 0 }} />
       <Handle type="target" position={Position.Top} id="tt" style={{ opacity: 0 }} />
       <Handle type="source" position={Position.Bottom} id="bs" style={{ opacity: 0 }} />
-      <span className="pointer-events-none absolute left-1/2 top-full mt-1.5 -translate-x-1/2 whitespace-nowrap font-display text-[13px] font-medium text-foreground">
-        {data.title}
-      </span>
+      <span className="pointer-events-none line-clamp-2 font-display">{data.title}</span>
     </div>
   );
 });
 
 const nodeTypes = { item: ItemNodeComp };
+
+// ── Custom edge: arc height scales with jump span; label only on hover/focus ──
+type AssocEdgeData = { label: string; color: string; incident: boolean; span: number };
+
+const AssocEdge = memo(function AssocEdge({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  markerEnd,
+  data,
+}: EdgeProps) {
+  const [hovered, setHovered] = useState(false);
+  const d = data as AssocEdgeData;
+  const sameRow = Math.abs(sourceY - targetY) < 20;
+
+  let path: string;
+  let labelX: number;
+  let labelY: number;
+  if (sameRow) {
+    // Arc over the spine; taller for longer jumps so parallel arcs nest.
+    const apexY = Math.min(sourceY, targetY) - (BASE_ARC + Math.max(d.span - 1, 0) * ARC_STEP);
+    path = `M ${sourceX} ${sourceY} C ${sourceX} ${apexY}, ${targetX} ${apexY}, ${targetX} ${targetY}`;
+    labelX = (sourceX + targetX) / 2;
+    labelY = apexY + 6;
+  } else {
+    const [p, lx, ly] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
+    path = p;
+    labelX = lx;
+    labelY = ly;
+  }
+
+  const showLabel = d.incident || hovered;
+
+  return (
+    <>
+      <BaseEdge
+        id={id}
+        path={path}
+        markerEnd={markerEnd}
+        style={{ stroke: d.color, strokeWidth: d.incident || hovered ? 3 : 1.75 }}
+      />
+      {/* Wide invisible hit area for hover */}
+      <path
+        d={path}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={20}
+        style={{ pointerEvents: "stroke" }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      />
+      {showLabel && (
+        <EdgeLabelRenderer>
+          <div
+            className="pointer-events-none absolute rounded-sm px-1.5 py-0.5 text-[11px] font-medium"
+            style={{
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              color: d.color,
+              background: "var(--popover)",
+            }}
+          >
+            {d.label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
+    </>
+  );
+});
+
+const edgeTypes = { assoc: AssocEdge };
 
 interface Pos { x: number; y: number }
 interface Assoc { from: string; to: string; type: AssociationType }
@@ -98,7 +176,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
   const { resolvedTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Resolve the CSS custom properties to literal hex (edges/markers/minimap).
+  // Resolve the CSS custom properties to literal hex (edges/markers).
   const [colors, setColors] = useState<Record<string, string>>(FALLBACK);
   useEffect(() => {
     const el = containerRef.current;
@@ -123,9 +201,15 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     const activeTrail = trails.find((t) => t.id === activeTrailId) ?? trails[0];
     const spineIds = (activeTrail?.itemIds ?? Object.keys(items)).filter((id) => items[id]);
     const spineSet = new Set(spineIds);
+    const col = new Map<string, number>(); // column index (for arc span)
+    spineIds.forEach((id, i) => col.set(id, i));
 
     const pos = new Map<string, Pos>();
-    spineIds.forEach((id, i) => pos.set(id, { x: MARGIN_X + NODE_R + i * X_GAP, y: TOP_Y }));
+    const kind = new Map<string, "spine" | "loose">();
+    spineIds.forEach((id, i) => {
+      pos.set(id, { x: MARGIN_X + NODE_W / 2 + i * X_GAP, y: TOP_Y });
+      kind.set(id, "spine");
+    });
 
     const assocs: Assoc[] = [];
     let offCount = 0;
@@ -134,7 +218,9 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
         if (a.targetType !== "ITEM" || !items[a.targetId]) continue;
         assocs.push({ from: id, to: a.targetId, type: a.type });
         if (!spineSet.has(a.targetId) && !pos.has(a.targetId)) {
-          pos.set(a.targetId, { x: MARGIN_X + NODE_R + offCount * X_GAP, y: BOTTOM_Y });
+          pos.set(a.targetId, { x: MARGIN_X + NODE_W / 2 + offCount * X_GAP, y: BOTTOM_Y });
+          kind.set(a.targetId, "loose");
+          col.set(a.targetId, offCount);
           offCount++;
         }
       }
@@ -144,21 +230,21 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     const typesPresent = (Object.keys(TYPE_VAR) as AssociationType[]).filter((t) =>
       assocs.some((a) => a.type === t)
     );
-    return { pos, assocs, spineEdges, typesPresent };
+    return { pos, kind, col, assocs, spineEdges, typesPresent };
   }, [trails, items, activeTrailId]);
 
-  const { pos, assocs, spineEdges, typesPresent } = layout;
+  const { pos, kind, col, assocs, spineEdges, typesPresent } = layout;
 
   const nodes: ItemNode[] = useMemo(
     () =>
       [...pos.entries()].map(([id, p]) => ({
         id,
         type: "item" as const,
-        position: { x: p.x - NODE_R, y: p.y - NODE_R },
-        data: { title: truncate(items[id]?.title ?? ""), selected: id === selectedItemId },
+        position: { x: p.x - NODE_W / 2, y: p.y - NODE_H / 2 },
+        data: { title: items[id]?.title ?? "", selected: id === selectedItemId, kind: kind.get(id) ?? "spine" },
         draggable: false,
       })),
-    [pos, items, selectedItemId]
+    [pos, kind, items, selectedItemId]
   );
 
   const edges: Edge[] = useMemo(() => {
@@ -178,24 +264,21 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     assocs.forEach(({ from, to, type }, i) => {
       const color = typeColor(type);
       const sameRow = pos.get(from)!.y === pos.get(to)!.y;
+      const span = Math.abs((col.get(to) ?? 0) - (col.get(from) ?? 0));
       es.push({
         id: `assoc-${from}-${to}-${i}`,
         source: from,
         target: to,
+        type: "assoc",
         sourceHandle: sameRow ? "ts" : "bs",
         targetHandle: "tt",
-        label: ASSOCIATION_META[type].label,
-        labelStyle: { fill: color, fontSize: 11, fontWeight: 500 },
-        labelBgStyle: { fill: colors["--popover"] },
-        labelBgPadding: [4, 2],
-        labelBgBorderRadius: 3,
-        style: { stroke: color, strokeWidth: incident(from, to) ? 3 : 1.75 },
+        data: { label: ASSOCIATION_META[type].label, color, incident: incident(from, to), span },
         markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
       });
     });
     return es;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spineEdges, assocs, pos, colors, selectedItemId]);
+  }, [spineEdges, assocs, pos, col, colors, selectedItemId]);
 
   const flow = (
     <ReactFlow
@@ -203,6 +286,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       colorMode={resolvedTheme === "dark" ? "dark" : "light"}
       fitView
       fitViewOptions={{ padding: 0.2 }}
