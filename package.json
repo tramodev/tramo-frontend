@@ -17,6 +17,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-oauth/google": "^0.13.5",
+    "@xyflow/react": "^12.11.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html2canvas": "^1.4.1",
@@ -28,7 +29,6 @@
     "radix-ui": "^1.6.2",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "react-force-graph-2d": "^1.29.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

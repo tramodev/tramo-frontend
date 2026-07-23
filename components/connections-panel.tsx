@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, ListTree, Plus, Square, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, ListTree, Plus, X } from "lucide-react"
 
 import { Item, Trail, AssociationType, AssociationTargetType } from "@/app/editor/types"
 import { ASSOCIATION_META, ASSOCIATION_TYPES } from "@/app/editor/associations"
@@ -120,7 +120,7 @@ export function ConnectionsPanel({
                   onClick={() => targetItem && onSelectItem(targetItem)}
                   className="flex min-w-0 items-center gap-2 text-left enabled:cursor-pointer disabled:cursor-default"
                 >
-                  {isTrail ? <ListTree className="h-[13px] w-[13px] shrink-0 text-muted-foreground" /> : <Square className="h-[13px] w-[13px] shrink-0 text-muted-foreground" />}
+                  {isTrail ? <ListTree className="h-[13px] w-[13px] shrink-0 text-muted-foreground" /> : <span className="h-2 w-2 shrink-0 rounded-full bg-muted-foreground" />}
                   <span className="truncate text-[13.5px] font-medium">{a.targetTitle}</span>
                   <span className="ml-auto shrink-0 rounded-sm bg-secondary px-1.5 py-0.5 text-[8.5px] text-secondary-foreground">
                     {isTrail ? "trail" : "item"}
