@@ -266,8 +266,10 @@ export default function EditorPage() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(
     () => typeof window === 'undefined' || localStorage.getItem(SIDEBAR_OPEN_STORAGE_KEY) !== 'false'
   );
+  // Hidden by default (it's dense info used a small fraction of the time); only
+  // shown if the user has explicitly opened it before.
   const [connectionsPanelOpen, setConnectionsPanelOpen] = useState(
-    () => typeof window === 'undefined' || localStorage.getItem(CONNECTIONS_OPEN_STORAGE_KEY) !== 'false'
+    () => typeof window !== 'undefined' && localStorage.getItem(CONNECTIONS_OPEN_STORAGE_KEY) === 'true'
   );
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [thumbnailCapture, setThumbnailCapture] = useState<{ title: string; titleAlign: TitleAlign; content: string } | null>(null);
@@ -847,6 +849,7 @@ export default function EditorPage() {
               <KnowledgeGraph
                 trails={trails}
                 items={items}
+                activeTrailId={activeTrailId}
                 selectedItemId={selectedItemId}
                 onSelectItem={handleSelectItem}
               />
@@ -969,6 +972,7 @@ export default function EditorPage() {
                 item={selectedItem}
                 items={items}
                 trails={trails}
+                activeTrailId={activeTrailId}
                 onSelectItem={handleSelectItem}
                 onTie={handleTie}
                 onUntie={handleUntie}

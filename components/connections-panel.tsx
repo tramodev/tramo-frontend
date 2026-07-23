@@ -5,11 +5,13 @@ import { ChevronLeft, ChevronRight, ListTree, Plus, Square, X } from "lucide-rea
 
 import { Item, Trail, AssociationType, AssociationTargetType } from "@/app/editor/types"
 import { ASSOCIATION_META, ASSOCIATION_TYPES } from "@/app/editor/associations"
+import { KnowledgeGraph } from "@/components/knowledge-graph"
 
 interface ConnectionsPanelProps {
   item: Item;
   items: Record<string, Item>;
   trails: Trail[];
+  activeTrailId?: string;
   onSelectItem: (item: Item) => void;
   onTie: (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => void;
   onUntie: (itemId: string, targetId: string, targetType: AssociationTargetType) => void;
@@ -18,151 +20,13 @@ interface ConnectionsPanelProps {
   onToggleOpen: () => void;
 }
 
-const MAX_GRAPH_NODES_PER_SIDE = 3;
-
 const SECTION_LABEL_CLASSES = "text-xs font-medium text-muted-foreground";
-
-function truncateLabel(title: string): string {
-  return title.length > 14 ? `${title.slice(0, 13)}…` : title;
-}
-
-interface GraphNode {
-  id: string;
-  title: string;
-  x: number;
-  y: number;
-}
-
-function layoutArc(count: number, startDeg: number, endDeg: number, cx: number, cy: number, radius: number): { x: number; y: number }[] {
-  if (count === 0) return [];
-  const positions: { x: number; y: number }[] = [];
-  for (let i = 0; i < count; i++) {
-    const t = count === 1 ? 0.5 : i / (count - 1);
-    const deg = startDeg + (endDeg - startDeg) * t;
-    const rad = (deg * Math.PI) / 180;
-    positions.push({ x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) });
-  }
-  return positions;
-}
-
-function NeighborhoodGraph({ item, items, trails }: { item: Item; items: Record<string, Item>; trails: Trail[] }) {
-  const linked: GraphNode[] = item.linkedItemIds
-    .map((id) => items[id])
-    .filter((linkedItem): linkedItem is Item => Boolean(linkedItem))
-    .slice(0, MAX_GRAPH_NODES_PER_SIDE)
-    .map((linkedItem) => ({ id: linkedItem.id, title: linkedItem.title, x: 0, y: 0 }));
-
-  const siblingIds = new Set<string>();
-  for (const trail of trails) {
-    if (!trail.itemIds.includes(item.id)) continue;
-    for (const siblingId of trail.itemIds) {
-      if (siblingId === item.id) continue;
-      if (item.linkedItemIds.includes(siblingId)) continue;
-      siblingIds.add(siblingId);
-    }
-  }
-  const siblings: GraphNode[] = Array.from(siblingIds)
-    .map((id) => items[id])
-    .filter((siblingItem): siblingItem is Item => Boolean(siblingItem))
-    .slice(0, MAX_GRAPH_NODES_PER_SIDE)
-    .map((siblingItem) => ({ id: siblingItem.id, title: siblingItem.title, x: 0, y: 0 }));
-
-  const cx = 122;
-  const cy = 78;
-  const linkedPositions = layoutArc(linked.length, 45, 135, cx, cy, 56);
-  const siblingPositions = layoutArc(siblings.length, -135, -45, cx, cy, 50);
-
-  linked.forEach((node, i) => {
-    node.x = linkedPositions[i].x;
-    node.y = linkedPositions[i].y;
-  });
-  siblings.forEach((node, i) => {
-    node.x = siblingPositions[i].x;
-    node.y = siblingPositions[i].y;
-  });
-
-  return (
-    <svg width="244" height="170" viewBox="0 0 244 170" className="block">
-      {siblings.map((node) => (
-        <line
-          key={`edge-sibling-${node.id}`}
-          x1={cx}
-          y1={cy}
-          x2={node.x}
-          y2={node.y}
-          stroke="var(--border)"
-          strokeWidth={1.5}
-        />
-      ))}
-      {linked.map((node) => (
-        <line
-          key={`edge-linked-${node.id}`}
-          x1={cx}
-          y1={cy}
-          x2={node.x}
-          y2={node.y}
-          stroke="var(--primary)"
-          strokeWidth={1.5}
-        />
-      ))}
-      {siblings.map((node) => (
-        <circle
-          key={`node-sibling-${node.id}`}
-          cx={node.x}
-          cy={node.y}
-          r={5}
-          fill="none"
-          stroke="var(--muted-foreground)"
-          strokeWidth={1.5}
-        />
-      ))}
-      {linked.map((node) => (
-        <circle
-          key={`node-linked-${node.id}`}
-          cx={node.x}
-          cy={node.y}
-          r={6}
-          fill="none"
-          stroke="var(--primary)"
-          strokeWidth={1.5}
-        />
-      ))}
-      <circle cx={cx} cy={cy} r={8} fill="var(--primary)" />
-      <text x={cx} y={cy + 32} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)">
-        this item
-      </text>
-      {siblings.map((node) => (
-        <text
-          key={`label-sibling-${node.id}`}
-          x={node.x}
-          y={node.y + (node.y < cy ? -10 : 20)}
-          textAnchor="middle"
-          fontSize={9}
-          fill="var(--muted-foreground)"
-        >
-          {truncateLabel(node.title)}
-        </text>
-      ))}
-      {linked.map((node) => (
-        <text
-          key={`label-linked-${node.id}`}
-          x={node.x}
-          y={node.y + (node.y < cy ? -10 : 20)}
-          textAnchor="middle"
-          fontSize={9}
-          fill="var(--muted-foreground)"
-        >
-          {truncateLabel(node.title)}
-        </text>
-      ))}
-    </svg>
-  );
-}
 
 export function ConnectionsPanel({
   item,
   items,
   trails,
+  activeTrailId,
   onSelectItem,
   onTie,
   onUntie,
@@ -192,8 +56,8 @@ export function ConnectionsPanel({
 
   return (
     <div
-      className={`flex w-72 shrink-0 flex-col transition-all duration-200 ease-linear ${
-        open ? "overflow-hidden rounded-2xl sidebar py-5 px-4" : "pt-5 px-4"
+      className={`flex shrink-0 flex-col transition-all duration-200 ease-linear ${
+        open ? "w-72 overflow-hidden rounded-2xl sidebar py-5 px-4" : "w-9 pt-5"
       }`}
     >
       <div className="mb-2.5 flex items-center justify-between">
@@ -330,7 +194,16 @@ export function ConnectionsPanel({
             Open graph
           </button>
         </div>
-        <NeighborhoodGraph item={item} items={items} trails={trails} />
+        <div className="h-44 overflow-hidden rounded-lg border border-border">
+          <KnowledgeGraph
+            trails={trails}
+            items={items}
+            activeTrailId={activeTrailId}
+            selectedItemId={item.id}
+            onSelectItem={onSelectItem}
+            variant="preview"
+          />
+        </div>
       </div>
         </div>
       </div>
