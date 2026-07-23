@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowBigUp } from "lucide-react"
 import { toggleProjectVote } from "@/lib/projects-store"
-import { BurstParticles } from "@/components/burst-particles"
+import { BurstParticles } from "@/components/social/burst-particles"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function VoteButton({

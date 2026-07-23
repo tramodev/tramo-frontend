@@ -1,7 +1,7 @@
 import { MailCheck } from "lucide-react"
-import { Wordmark } from "@/components/logo"
-import { AuthPoster } from "@/components/auth-poster"
-import { ResendVerificationButton } from "@/components/resend-verification-button"
+import { Wordmark } from "@/components/layout/logo"
+import { AuthPoster } from "@/components/auth/auth-poster"
+import { ResendVerificationButton } from "@/components/auth/resend-verification-button"
 
 export default async function CheckEmailPage({
   searchParams,

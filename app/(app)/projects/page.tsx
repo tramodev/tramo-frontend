@@ -23,8 +23,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ConfirmDialog } from "@/components/confirm-dialog"
-import { PlanUsageChip } from "@/components/plan-usage-chip"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
 import {
   createProject,
   deleteProject,

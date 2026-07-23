@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { PublishedGrid } from "@/components/published-grid"
+import { PublishedGrid } from "@/components/project/published-grid"
 import { getMyPublishedPage } from "@/lib/profile"
 import { getPublicUserPublishedPage } from "@/lib/public-profile"
 import type { ProjectFeedItem } from "@/lib/public-project"

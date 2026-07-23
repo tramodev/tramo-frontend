@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
-import { BrowserMockup } from "@/components/browser-mockup";
-import { Hero } from "@/components/hero";
-import { Navbar } from "@/components/navbar";
-import { FeaturesSection } from "@/components/features-section";
-import { PricingSection } from "@/components/pricing-section";
-import { PosterCta } from "@/components/poster-cta";
-import { Footer } from "@/components/footer";
-import { FadeUp, LandingMotionConfig } from "@/components/landing-motion";
+import { BrowserMockup } from "@/components/landing/browser-mockup";
+import { Hero } from "@/components/landing/hero";
+import { Navbar } from "@/components/layout/navbar";
+import { FeaturesSection } from "@/components/landing/features-section";
+import { PricingSection } from "@/components/landing/pricing-section";
+import { PosterCta } from "@/components/landing/poster-cta";
+import { Footer } from "@/components/layout/footer";
+import { FadeUp, LandingMotionConfig } from "@/components/landing/landing-motion";
 import { isLoggedIn } from "@/lib/auth";
 
 export default async function Home() {

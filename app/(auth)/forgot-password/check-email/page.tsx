@@ -1,6 +1,6 @@
 import { MailCheck } from "lucide-react"
-import { Wordmark } from "@/components/logo"
-import { AuthPoster } from "@/components/auth-poster"
+import { Wordmark } from "@/components/layout/logo"
+import { AuthPoster } from "@/components/auth/auth-poster"
 
 export default async function ForgotPasswordCheckEmailPage({
   searchParams,

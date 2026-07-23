@@ -72,4 +72,4 @@ export function LandingMotionConfig({ children }: { children: React.ReactNode })
   return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }
 
-export { motion, EASE };
+export { EASE };

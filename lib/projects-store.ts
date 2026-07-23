@@ -407,11 +407,7 @@ export async function untie(
   await expectOk(response);
 }
 
-// Back-compat helpers for the editor's untyped item↔item links.
+// Back-compat helper for the editor's untyped item↔item links (mention/wiki plugins).
 export async function linkItems(itemId: string, otherItemId: string): Promise<void> {
   await tie(itemId, otherItemId, "ITEM", "RELATED");
-}
-
-export async function unlinkItems(itemId: string, otherItemId: string): Promise<void> {
-  await untie(itemId, otherItemId, "ITEM");
 }

@@ -46,7 +46,6 @@ const FALLBACK: Record<string, string> = {
   "--ed-orange": "#9A5B00",
   "--ed-gray": "#5F6368",
   "--popover": "#FFFFFF",
-  "--primary": "#1A1A1A",
   "--border": "#E4E4E4",
 };
 

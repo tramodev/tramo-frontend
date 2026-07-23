@@ -1,7 +1,7 @@
 import Link from "next/link"
-import { LoginForm } from "@/components/login-form"
-import { AuthPoster } from "@/components/auth-poster"
-import { Wordmark } from "@/components/logo"
+import { LoginForm } from "@/components/auth/login-form"
+import { AuthPoster } from "@/components/auth/auth-poster"
+import { Wordmark } from "@/components/layout/logo"
 
 export default function LoginPage() {
   return (

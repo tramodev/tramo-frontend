@@ -1,6 +1,6 @@
 import { Suspense } from "react"
-import { Wordmark } from "@/components/logo"
-import { AuthPoster } from "@/components/auth-poster"
+import { Wordmark } from "@/components/layout/logo"
+import { AuthPoster } from "@/components/auth/auth-poster"
 import { ResetPasswordClient } from "./reset-password-client"
 
 export default function ResetPasswordPage() {

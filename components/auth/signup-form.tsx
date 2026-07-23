@@ -14,7 +14,7 @@ import { CheckCircle2, Loader2 } from "lucide-react"
 import { useActionState, useEffect, useState } from "react"
 import { registerHandler } from "@/app/(auth)/signup/actions"
 import { getPasswordStrength } from "@/lib/password-strength"
-import { GoogleAuthButton } from "@/components/google-auth-button"
+import { GoogleAuthButton } from "@/components/auth/google-auth-button"
 
 type Availability = "idle" | "checking" | "available" | "taken"
 

@@ -1,5 +1,5 @@
-import { AppHeader } from "@/components/app-header"
-import { Footer } from "@/components/footer"
+import { AppHeader } from "@/components/layout/app-header"
+import { Footer } from "@/components/layout/footer"
 import { isLoggedIn } from "@/lib/auth"
 import { getMyProfile } from "@/lib/profile"
 import { getHomeHref } from "@/lib/nav"

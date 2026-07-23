@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import { PublicProjectView } from "@/components/public-project-view"
+import { PublicProjectView } from "@/components/project/public-project-view"
 import { getPublicProject } from "@/lib/public-project"
 import { getHomeHref } from "@/lib/nav"
 import { isLoggedIn, getUsername } from "@/lib/auth"

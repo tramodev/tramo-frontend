@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { LexicalReadOnly } from "./lexical-read-only"
+import { LexicalReadOnly } from "@/components/project/lexical-read-only"
 import type { TitleAlign } from "@/app/editor/types"
 
 const CAPTURE_WIDTH = 832;

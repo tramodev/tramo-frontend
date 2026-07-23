@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { isAdmin } from "@/lib/session"
-import { AdminDashboard } from "@/components/admin-dashboard"
+import { AdminDashboard } from "@/components/admin/admin-dashboard"
 
 export default async function AdminPage() {
   if (!(await isAdmin())) {

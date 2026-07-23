@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { VoteButton } from "@/components/vote-button"
+import { VoteButton } from "@/components/social/vote-button"
 import { Row, Thumbnail, EmptyState } from "@/components/profile/row"
 import { getMyUpvotedPage } from "@/lib/profile"
 import type { ProjectFeedItem } from "@/lib/public-project"

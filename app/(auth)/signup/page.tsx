@@ -1,7 +1,7 @@
 import Link from "next/link"
-import { SignupForm } from "@/components/signup-form"
-import { AuthPoster } from "@/components/auth-poster"
-import { Wordmark } from "@/components/logo"
+import { SignupForm } from "@/components/auth/signup-form"
+import { AuthPoster } from "@/components/auth/auth-poster"
+import { Wordmark } from "@/components/layout/logo"
 
 export default function SignupPage() {
   return (

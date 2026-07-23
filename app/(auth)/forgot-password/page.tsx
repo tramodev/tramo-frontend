@@ -1,6 +1,6 @@
-import { ForgotPasswordForm } from "@/components/forgot-password-form"
-import { AuthPoster } from "@/components/auth-poster"
-import { Wordmark } from "@/components/logo"
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
+import { AuthPoster } from "@/components/auth/auth-poster"
+import { Wordmark } from "@/components/layout/logo"
 
 export default function ForgotPasswordPage() {
   return (

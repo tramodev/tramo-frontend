@@ -6,7 +6,7 @@ import { Flag, Search, ShieldBan, ShieldCheck, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ConfirmDialog } from "@/components/confirm-dialog"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import {
   listReports,
   dismissReport,

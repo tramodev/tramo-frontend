@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { Heart, CircleCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ConfirmDialog } from "@/components/confirm-dialog"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { mockUpgrade, cancelSubscription, type SubscriptionStatus } from "@/lib/subscription"
 
 function formatBytes(bytes: number): string {

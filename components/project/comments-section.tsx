@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Flag, MessageCircle, Reply, Trash2 } from "lucide-react"
 
-import { AuthorAvatar } from "@/components/author-avatar"
+import { AuthorAvatar } from "@/components/shared/author-avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { ConfirmDialog } from "@/components/confirm-dialog"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import {
   Dialog,
   DialogContent,

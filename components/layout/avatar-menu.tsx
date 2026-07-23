@@ -14,7 +14,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { LogOut, Moon, Settings, Sun, SunMoon } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
 import type { NavItem } from '@/lib/nav-items';

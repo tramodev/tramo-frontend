@@ -148,14 +148,14 @@ export default function SlashMenuPlugin() {
         menuRenderFn={(anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) =>
           anchorElementRef.current && options.length > 0
             ? createPortal(
-                <ul className="idea-mention-menu">
+                <ul className="item-mention-menu">
                   {options.map((option, index) => (
                     <li
                       key={option.key}
                       ref={(el) => {
                         if (selectedIndex === index) el?.scrollIntoView({ block: 'nearest' });
                       }}
-                      className={'idea-mention-menu-item slash-menu-item' + (selectedIndex === index ? ' selected' : '')}
+                      className={'item-mention-menu-item slash-menu-item' + (selectedIndex === index ? ' selected' : '')}
                       onMouseEnter={() => setHighlightedIndex(index)}
                       onClick={() => selectOptionAndCleanUp(option)}
                     >

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { StaggerGroup, StaggerItem } from '@/components/landing-motion';
+import { StaggerGroup, StaggerItem } from '@/components/landing/landing-motion';
 
 export const Hero: React.FC = () => {
   return (

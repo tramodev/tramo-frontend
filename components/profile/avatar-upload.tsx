@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Camera } from "lucide-react"
 import { updateMyProfile } from "@/lib/profile"
 import { uploadImage } from "@/lib/upload-image"
-import { AvatarCropModal } from "@/components/avatar-crop-modal"
+import { AvatarCropModal } from "@/components/profile/avatar-crop-modal"
 
 function initial(username: string) {
   return username.charAt(0).toUpperCase()

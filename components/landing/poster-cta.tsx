@@ -3,8 +3,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { TRAIL_PATHS, TRAIL_CIRCLES } from '@/components/auth-poster';
-import { EASE } from '@/components/landing-motion';
+import { TRAIL_PATHS, TRAIL_CIRCLES } from '@/components/auth/auth-poster';
+import { EASE } from '@/components/landing/landing-motion';
 
 // One continuous stroke: main trail eases in, both fork branches take over the
 // instant its tip reaches the fork (0.9s) already at speed, the faint spur

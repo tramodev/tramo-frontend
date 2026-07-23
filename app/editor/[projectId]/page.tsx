@@ -51,15 +51,15 @@ import WikiLinkPlugin from '../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../plugins/ItemLinkClickPlugin';
 import { ImageNode } from '../nodes/ImageNode';
 import { parseAllowedColor, parseAllowedFontSize } from '../styleConfig';
-import { ProjectShell } from '@/components/project-shell';
-import { SidebarCustom } from '@/components/sidebar-custom';
-import { ConnectionsPanel } from '@/components/connections-panel';
-import { KnowledgeGraph } from '@/components/knowledge-graph';
-import { TrailReader } from '@/components/trail-reader';
-import { AnnotationBanner } from '@/components/annotation-banner';
+import { ProjectShell } from '@/components/editor/project-shell';
+import { SidebarCustom } from '@/components/editor/sidebar-custom';
+import { ConnectionsPanel } from '@/components/editor/connections-panel';
+import { KnowledgeGraph } from '@/components/editor/knowledge-graph';
+import { TrailReader } from '@/components/editor/trail-reader';
+import { AnnotationBanner } from '@/components/editor/annotation-banner';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { UserMenu } from '@/components/user-menu';
+import { UserMenu } from '@/components/layout/user-menu';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Check, FolderPlus, Loader2, Route, X } from 'lucide-react';
 import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../types';
@@ -86,8 +86,8 @@ import {
 import { getItemContent, saveItemContent } from '@/lib/item-content-client';
 import { getMyProfile } from '@/lib/profile';
 import { uploadImage } from '@/lib/upload-image';
-import { ShareDialog } from '@/components/share-dialog';
-import { ThumbnailCapture } from '@/components/thumbnail-capture';
+import { ShareDialog } from '@/components/editor/share-dialog';
+import { ThumbnailCapture } from '@/components/editor/thumbnail-capture';
 
 const placeholder = 'Start writing...';
 

@@ -24,14 +24,3 @@ export function Wordmark({ className }: { className?: string }) {
     </span>
   )
 }
-
-export function Glyph({ size = 32, className }: { size?: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" className={className}>
-      <path d="M16 29 L16 16 Q16 10 21.5 8.5" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
-      <path d="M16 21 Q16 16.5 11 15.5" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
-      <circle cx="25" cy="7.5" r="3.8" fill="currentColor" />
-      <circle cx="7.5" cy="14.5" r="3" fill="none" stroke="currentColor" strokeWidth="3" />
-    </svg>
-  )
-}

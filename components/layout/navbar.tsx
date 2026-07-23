@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AvatarMenu } from './avatar-menu';
 import { NavMobileMenu } from './nav-mobile-menu';
 import { Wordmark } from './logo';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import { cookies } from 'next/headers';
 import { getMyProfile } from '@/lib/profile';
 

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Bookmark } from "lucide-react"
 import { toggleProjectBookmark } from "@/lib/projects-store"
-import { BurstParticles } from "@/components/burst-particles"
+import { BurstParticles } from "@/components/social/burst-particles"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function BookmarkButton({

@@ -6,7 +6,7 @@ import "./globals.css";
 
 import "./editor/Editor.css";
 
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/layout/theme-provider";
 import { robotoFlex, roboto, robotoMono } from "@/lib/fonts";
 
 export const metadata: Metadata = {

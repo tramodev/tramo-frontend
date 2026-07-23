@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Wordmark } from "@/components/logo"
+import { Wordmark } from "@/components/layout/logo"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 
 export function ProjectShell({

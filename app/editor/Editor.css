@@ -169,7 +169,7 @@ a[rel^="mypath-idea:"] {
   font-weight: 500;
 }
 
-.idea-mention-menu {
+.item-mention-menu {
   list-style: none;
   margin: 0;
   padding: 4px;
@@ -182,7 +182,7 @@ a[rel^="mypath-idea:"] {
   box-shadow: var(--shadow-elevation-2);
 }
 
-.idea-mention-menu-item {
+.item-mention-menu-item {
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 13px;
@@ -190,7 +190,7 @@ a[rel^="mypath-idea:"] {
   cursor: pointer;
 }
 
-.idea-mention-menu-item.selected {
+.item-mention-menu-item.selected {
   background: var(--secondary);
   color: var(--secondary-foreground);
 }

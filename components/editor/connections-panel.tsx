@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, ListTree, Plus, X } from "lucide-react"
 
 import { Item, Trail, AssociationType, AssociationTargetType } from "@/app/editor/types"
 import { ASSOCIATION_META, ASSOCIATION_TYPES } from "@/app/editor/associations"
-import { KnowledgeGraph } from "@/components/knowledge-graph"
+import { KnowledgeGraph } from "@/components/editor/knowledge-graph"
 
 interface ConnectionsPanelProps {
   item: Item;

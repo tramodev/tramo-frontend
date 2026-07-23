@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { FollowButton } from "@/components/follow-button"
+import { FollowButton } from "@/components/social/follow-button"
 import { getFollowersPage, getFollowingPage, type FollowUser } from "@/lib/public-profile"
 
 function initial(username: string) {

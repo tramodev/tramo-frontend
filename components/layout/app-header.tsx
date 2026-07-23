@@ -1,10 +1,10 @@
 import Link from "next/link"
 
-import { Wordmark } from "@/components/logo"
-import { PrimaryNav } from "@/components/primary-nav"
+import { Wordmark } from "@/components/layout/logo"
+import { PrimaryNav } from "@/components/layout/primary-nav"
 import { getNavItems } from "@/lib/nav-items"
-import { UserMenu } from "@/components/user-menu"
-import { NotificationButton } from "@/components/notification-button"
+import { UserMenu } from "@/components/layout/user-menu"
+import { NotificationButton } from "@/components/layout/notification-button"
 
 export function AppHeader({
   homeHref,

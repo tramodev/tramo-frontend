@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { FollowListPanel } from "@/components/follow-list-panel"
+import { FollowListPanel } from "@/components/profile/follow-list-panel"
 import { getUsername, isLoggedIn } from "@/lib/auth"
 import { getPublicProfile, getFollowersPage, getFollowingPage } from "@/lib/public-profile"
 import { PAGE_SIZE } from "@/lib/config"

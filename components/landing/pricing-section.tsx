@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FadeUp } from '@/components/landing-motion';
+import { FadeUp } from '@/components/landing/landing-motion';
 
 const FREE_FEATURES = [
   'Unlimited public paths',
