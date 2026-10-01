@@ -67,7 +67,7 @@ export async function getUsername(): Promise<string | null> {
   return cookieStore.get('username')?.value || null;
 }
 
-const inflightRefresh = new Map<string, Promise<boolean>>();
+const inflightRefresh = new Map<string, Promise<AuthTokens | null>>();
 
 export async function refreshAccessToken(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -83,54 +83,31 @@ export async function refreshAccessToken(): Promise<boolean> {
     return false;
   }
 
-  const existing = inflightRefresh.get(refreshToken);
-  if (existing) return existing;
-
-  const promise = (async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      if (!response.ok) {
-        return false;
-      }
-
-      const data = await response.json();
-
-      cookieStore.set('accessToken', data.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 15,
-        path: '/',
-      });
-
-      if (data.refreshToken) {
-        cookieStore.set('refreshToken', data.refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: REFRESH_TOKEN_MAX_AGE,
-          path: '/',
+  let promise = inflightRefresh.get(refreshToken);
+  if (!promise) {
+    promise = (async (): Promise<AuthTokens | null> => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
         });
+        if (!response.ok) return null;
+        return await response.json();
+      } catch (error) {
+        console.error('Token refresh failed:', error);
+        return null;
       }
+    })().finally(() => {
+      inflightRefresh.delete(refreshToken);
+    });
+    inflightRefresh.set(refreshToken, promise);
+  }
 
-      return true;
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      return false;
-    }
-  })().finally(() => {
-    inflightRefresh.delete(refreshToken);
-  });
-
-  inflightRefresh.set(refreshToken, promise);
-  return promise;
+  const tokens = await promise;
+  if (!tokens) return false;
+  await setAuthCookies(tokens);
+  return true;
 }
 
 export async function logout() {
