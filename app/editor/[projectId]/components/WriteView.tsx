@@ -208,6 +208,7 @@ function ItemTitle({ item, onCommitTitle, onFocus }: {
 export function WriteView(props: WriteViewProps) {
   const { item, items, trail, associationById, navigationRequest, onVisibleItem } = props;
   const [focusedItemId, setFocusedItemId] = useState(item.id);
+  const [positionedContext, setPositionedContext] = useState<string | null>(null);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   const editorInnerRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef(new Map<string, HTMLElement>());
@@ -218,7 +219,9 @@ export function WriteView(props: WriteViewProps) {
   const ids = useMemo(() => inTrail && trail ? trail.itemIds : [item.id], [inTrail, trail, item.id]);
   const focusedId = ids.includes(focusedItemId) ? focusedItemId : item.id;
   const contentReady = ids.every((id) => items[id]?.content != null);
-  useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: contentReady, onVisible: (id) => {
+  const context = inTrail ? `trail:${trail!.id}` : `item:${item.id}`;
+  const revealed = contentReady && positionedContext === context;
+  useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: revealed, onVisible: (id) => {
     if (!navigationRequest || handledRequest.current === navigationRequest.sequence) onVisibleItem(id);
   } });
 
@@ -243,17 +246,20 @@ export function WriteView(props: WriteViewProps) {
 
   useEffect(() => {
     const request = navigationRequest;
-    if (!request || !contentReady || handledRequest.current === request.sequence) return;
+    if (!contentReady || (positionedContext === context && (!request || handledRequest.current === request.sequence))) return;
     const frame = requestAnimationFrame(() => {
-      const editor = editors.current.get(request.itemId);
+      const targetId = request?.itemId ?? item.id;
+      const editor = editors.current.get(targetId);
       if (!editor) return;
-      handledRequest.current = request.sequence;
-      slotRefs.current.get(request.itemId)?.scrollIntoView({ block: 'start' });
-      if (request.focus) focusEditor(editor);
-      onVisibleItem(request.itemId);
+      handledRequest.current = request?.sequence ?? null;
+      slotRefs.current.get(targetId)?.scrollIntoView({ block: 'start' });
+      setFocusedItemId(targetId);
+      onVisibleItem(targetId);
+      setPositionedContext(context);
+      if (request?.focus) requestAnimationFrame(() => focusEditor(editor));
     });
     return () => cancelAnimationFrame(frame);
-  }, [navigationRequest, contentReady, onVisibleItem]);
+  }, [navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -277,10 +283,13 @@ export function WriteView(props: WriteViewProps) {
 
   return <>
     <div data-tour="write-panel" className="flex min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="editor-container flex flex-1 min-h-0 flex-col">
-        <div ref={setToolbar} data-editor-toolbar />
+      <div className="editor-container relative flex flex-1 min-h-0 flex-col" aria-busy={!revealed}>
+        {!revealed && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background text-sm text-muted-foreground" role="status">
+          {props.contentLoadError ? <><p>Could not load the editor.</p><button type="button" className="text-foreground underline" onClick={props.onRetryContent}>Retry</button></> : 'Loading editor…'}
+        </div>}
+        <div ref={setToolbar} data-editor-toolbar className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
         <hr />
-        <div className="editor-inner" ref={editorInnerRef}>
+        <div className="editor-inner" ref={editorInnerRef} style={{ visibility: revealed ? undefined : 'hidden' }} inert={!revealed}>
           <div className="editor-content-column">
             {steps.map((step, index) => {
               const stepItem = items[step.itemId];
@@ -297,11 +306,8 @@ export function WriteView(props: WriteViewProps) {
                 <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                   Step {index + 1}
                 </div>
-                {stepItem.content != null ? <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
-                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} />
-                  : <div className="pl-7 py-6" role="status">
-                    {props.contentLoadError ? <><p>Could not load this item.</p><button type="button" onClick={props.onRetryContent}>Retry</button></> : 'Loading…'}
-                  </div>}
+                {stepItem.content != null && <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
+                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} />}
               </section>;
             })}
             {inTrail && trail && <div className="mt-16 flex justify-center pb-4">
@@ -314,7 +320,7 @@ export function WriteView(props: WriteViewProps) {
         </div>
       </div>
     </div>
-    <ConnectionsPanel item={item} items={items} trails={props.trails} activeTrailId={props.activeTrailId}
+    <ConnectionsPanel key={focusedId} item={items[focusedId]} items={items} trails={props.trails} activeTrailId={props.activeTrailId}
       onSelectItem={props.onSelectItem} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
   </>;

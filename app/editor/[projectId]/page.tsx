@@ -6,7 +6,7 @@ import { FolderPlus } from 'lucide-react';
 import { ProjectShell } from '@/components/editor/project-shell';
 import { SidebarCustom } from '@/components/editor/sidebar-custom';
 import { ShortcutsDialog } from '@/components/editor/shortcuts-dialog';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sidebar';
 import { countTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '../editor-utils';
 import { useProjectEditorState } from './hooks/useProjectEditorState';
 import { useAutoSave } from './hooks/useAutoSave';
@@ -46,10 +46,6 @@ export default function EditorPage() {
 
   useEditorTour(project.loaded && !!project.selectedItem);
 
-  if (!project.loaded) {
-    return null;
-  }
-
   const emptyState = (
     <div className="flex h-full w-full min-h-[60vh] flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
       <FolderPlus className="h-12 w-12 opacity-40" />
@@ -75,14 +71,14 @@ export default function EditorPage() {
         homeHref="/projects"
         showLogo={false}
         titleSlot={
-          <EditorTitleSlot
+          project.loaded ? <EditorTitleSlot
             projectTitle={project.projectTitle}
             onRenameProject={project.handleRenameProject}
             saveStatus={autoSave.saveStatus}
-          />
+          /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={
-          <EditorActions
+          project.loaded && <EditorActions
             showWordCount={project.view === 'write' && !!project.selectedItem}
             textStats={textStats}
             hasActiveTrail={!!project.activeTrail}
@@ -93,7 +89,7 @@ export default function EditorPage() {
           />
         }
         sidebar={
-          <SidebarCustom
+          project.loaded ? <SidebarCustom
             homeHref="/projects"
             projectId={projectId}
             trails={project.trails}
@@ -111,11 +107,11 @@ export default function EditorPage() {
             onUnlinkItemFromTrail={project.handleUnlinkItemFromTrail}
             onDeleteItem={async (itemId) => { await project.handleDeleteItem(itemId); autoSave.discardItem(itemId); }}
             onReorderTrailItems={project.handleReorderTrailItems}
-          />
+          /> : <Sidebar><SidebarContent><div className="m-6 h-5 w-32 animate-pulse rounded bg-muted" /></SidebarContent></Sidebar>
         }
         content={
           <div className="flex min-w-0 flex-1 gap-3 overflow-hidden">
-            {project.view === 'graph' ? (
+            {!project.loaded ? <div className="editor-container flex flex-1 items-center justify-center text-sm text-muted-foreground" role="status">Loading editor…</div> : project.view === 'graph' ? (
               <GraphView
                 trails={project.trails}
                 items={project.items}
