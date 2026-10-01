@@ -19,6 +19,7 @@ import {
 } from "@/lib/moderation"
 
 export function AdminDashboard() {
+  const [actionError, setActionError] = useState<string | null>(null)
   const [reports, setReports] = useState<Report[]>([])
   const [reportsLoading, setReportsLoading] = useState(true)
   const [unpublishTarget, setUnpublishTarget] = useState<Report | null>(null)
@@ -52,8 +53,13 @@ export function AdminDashboard() {
   }, [])
 
   async function handleDismiss(report: Report) {
-    setReports((current) => current.filter((r) => r.id !== report.id))
-    await dismissReport(report.id, report.type)
+    setActionError(null)
+    try {
+      await dismissReport(report.id, report.type)
+      setReports((current) => current.filter((r) => r.id !== report.id || r.type !== report.type))
+    } catch {
+      setActionError("Could not dismiss the report. Please try again.")
+    }
   }
 
   async function handleUnpublish() {
@@ -61,26 +67,42 @@ export function AdminDashboard() {
     if (!unpublishTarget || !projectId) return
     const target = unpublishTarget
     setUnpublishTarget(null)
-    setReports((current) => current.filter((r) => r.id !== target.id))
-    await unpublishProject(projectId, target.reason)
+    setActionError(null)
+    try {
+      await unpublishProject(projectId, target.reason)
+      setReports((current) => current.filter((r) => r.id !== target.id || r.type !== target.type))
+    } catch {
+      setActionError("Could not unpublish the project. Please try again.")
+    }
   }
 
   async function handleBanConfirm() {
     if (!banTarget) return
     const target = banTarget
     setBanTarget(null)
-    setUsers((current) => current.map((u) => (u.id === target.id ? { ...u, banned: true } : u)))
-    await banUser(target.id, banReason || undefined)
-    setBanReason("")
+    setActionError(null)
+    try {
+      await banUser(target.id, banReason || undefined)
+      setUsers((current) => current.map((u) => (u.id === target.id ? { ...u, banned: true } : u)))
+      setBanReason("")
+    } catch {
+      setActionError("Could not ban the user. Please try again.")
+    }
   }
 
   async function handleUnban(user: AdminUser) {
-    setUsers((current) => current.map((u) => (u.id === user.id ? { ...u, banned: false } : u)))
-    await unbanUser(user.id)
+    setActionError(null)
+    try {
+      await unbanUser(user.id)
+      setUsers((current) => current.map((u) => (u.id === user.id ? { ...u, banned: false } : u)))
+    } catch {
+      setActionError("Could not unban the user. Please try again.")
+    }
   }
 
   return (
     <div className="flex flex-col gap-12">
+      {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
       <section>
         <h2 className="mb-4 font-display text-xl font-medium">Open reports</h2>
         {reportsLoading ? (

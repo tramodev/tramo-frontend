@@ -77,7 +77,8 @@ export async function listReports(): Promise<Report[]> {
 }
 
 export async function dismissReport(id: string, type: "PROJECT" | "COMMENT" = "PROJECT"): Promise<void> {
-  await authenticatedFetch(`${API_BASE_URL}/api/admin/reports/${id}/dismiss?type=${type}`, { method: "POST" });
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/reports/${id}/dismiss?type=${type}`, { method: "POST" });
+  await expectOk(response);
 }
 
 export async function searchAdminUsers(q: string): Promise<AdminUser[]> {
@@ -88,21 +89,24 @@ export async function searchAdminUsers(q: string): Promise<AdminUser[]> {
 }
 
 export async function banUser(id: string, reason?: string): Promise<void> {
-  await authenticatedFetch(`${API_BASE_URL}/api/admin/users/${id}/ban`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/users/${id}/ban`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reason }),
   });
+  await expectOk(response);
 }
 
 export async function unbanUser(id: string): Promise<void> {
-  await authenticatedFetch(`${API_BASE_URL}/api/admin/users/${id}/unban`, { method: "POST" });
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/users/${id}/unban`, { method: "POST" });
+  await expectOk(response);
 }
 
 export async function unpublishProject(id: string, reason?: string): Promise<void> {
-  await authenticatedFetch(`${API_BASE_URL}/api/admin/projects/${id}/unpublish`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/projects/${id}/unpublish`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reason }),
   });
+  await expectOk(response);
 }

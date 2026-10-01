@@ -34,13 +34,9 @@ export async function authenticatedFetch(
   }
 
   if (response.status === 403 && !BIRTH_DATE_GATE_EXEMPT_PATHS.some((path) => url.includes(path))) {
-    const clone = response.clone();
-    try {
-      const data = await clone.json();
-      if (data?.message === 'Please provide your birth date to continue.') {
-        redirect('/onboarding/birth-date');
-      }
-    } catch {
+    const data = await response.clone().json().catch(() => null);
+    if (data?.message === 'Please provide your birth date to continue.') {
+      redirect('/onboarding/birth-date');
     }
   }
 
