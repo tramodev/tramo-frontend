@@ -18,8 +18,8 @@ export function useAutoSave({
   redirectToLogin,
 }: UseAutoSaveParams) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  const pendingContentRef = useRef<{ itemId: string; content: string } | null>(null);
-  const inFlightRef = useRef(0);
+  const pendingContentRef = useRef(new Map<string, string>());
+  const inFlightRef = useRef(false);
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedItemContentRef = useRef<string | null>(null);
 
@@ -27,40 +27,43 @@ export function useAutoSave({
     loadedItemContentRef.current = itemId;
   }, []);
 
-  const flushPendingContent = useCallback(() => {
+  const flushPendingContent = useCallback(async () => {
     if (saveContentTimeoutRef.current) {
       clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = null;
     }
-    const pending = pendingContentRef.current;
-    if (!pending) return;
-    pendingContentRef.current = null;
+    if (inFlightRef.current || pendingContentRef.current.size === 0) return;
+    inFlightRef.current = true;
     setSaveStatus('saving');
-    inFlightRef.current += 1;
-    saveItemContent(pending.itemId, pending.content)
-      .then(() => {
-        if (!pendingContentRef.current) setSaveStatus('saved');
-      })
-      .catch((err) => {
-        console.error(err);
-        setSaveStatus('error');
-        if (!pendingContentRef.current) {
-          pendingContentRef.current = pending;
+    try {
+      while (pendingContentRef.current.size > 0) {
+        const [itemId, content] = pendingContentRef.current.entries().next().value!;
+        pendingContentRef.current.delete(itemId);
+        try {
+          await saveItemContent(itemId, content);
+        } catch (err) {
+          console.error(err);
+          if (!pendingContentRef.current.has(itemId)) {
+            pendingContentRef.current.set(itemId, content);
+          }
+          setSaveStatus('error');
+          if (isAuthError(err)) redirectToLogin();
+          return;
         }
-        if (isAuthError(err)) redirectToLogin();
-      })
-      .finally(() => {
-        inFlightRef.current -= 1;
-      });
+      }
+      setSaveStatus('saved');
+    } finally {
+      inFlightRef.current = false;
+    }
   }, [redirectToLogin]);
 
   useEffect(() => {
-    return () => flushPendingContent();
+    return () => { void flushPendingContent(); };
   }, [selectedItemId, flushPendingContent]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!pendingContentRef.current && inFlightRef.current === 0) return;
+      if (pendingContentRef.current.size === 0 && !inFlightRef.current) return;
       flushPendingContent();
       event.preventDefault();
       event.returnValue = '';
@@ -77,7 +80,7 @@ export function useAutoSave({
       onOptimisticUpdate(selectedItemId, json);
       if (json.includes('"src":"blob:')) return;
 
-      pendingContentRef.current = { itemId: selectedItemId, content: json };
+      pendingContentRef.current.set(selectedItemId, json);
       setSaveStatus('saving');
       if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = setTimeout(() => flushPendingContent(), 600);
