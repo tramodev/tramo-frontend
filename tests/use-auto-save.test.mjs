@@ -42,22 +42,25 @@ function setup() {
     console: { error: () => {} },
   });
   let hook;
+  let currentItemId;
   function select(itemId) {
+    currentItemId = itemId;
     for (const cleanup of cleanups) cleanup?.();
     cleanups = [];
     refIndex = 0;
     hook = exports.useAutoSave({
-      selectedItemId: itemId,
+      contextId: itemId,
       onOptimisticUpdate: () => {},
       redirectToLogin: () => {},
     });
-    hook.handleContentApplied(itemId);
   }
   return {
     requests, statuses, select,
-    edit: (content) => hook.onChange({ read: (fn) => fn(), toJSON: () => content }),
+    edit: (content) => hook.onChange(currentItemId, { read: (fn) => fn(), toJSON: () => content }),
     flush: () => { for (const [id, fn] of timers) { timers.delete(id); fn(); } },
     unload: (event) => beforeUnload(event),
+    discard: (id) => hook.discardItem(id),
+    editItem: (id, content) => hook.onChange(id, { read: (fn) => fn(), toJSON: () => content }),
   };
 }
 
@@ -124,4 +127,29 @@ test('a failed save preserves newer content and does not retry in a loop', async
   s.requests[1].resolve();
   await settle();
   assert.equal(s.statuses.at(-1), 'saved');
+});
+
+
+test('editing a non-visible item saves under its own id', async () => {
+  const s = setup();
+  s.select('visible');
+  s.editItem('focused', 'text');
+  s.flush();
+  assert.equal(s.requests[0].itemId, 'focused');
+  s.requests[0].resolve();
+  await settle();
+});
+
+test('deleted items never enqueue or restore pending writes', async () => {
+  const s = setup();
+  s.select('a');
+  s.edit('text');
+  s.flush();
+  s.edit('pending');
+  s.discard('a');
+  s.requests[0].reject(new Error('deleted'));
+  await settle();
+  s.editItem('a', 'late');
+  s.flush();
+  assert.equal(s.requests.length, 1);
 });

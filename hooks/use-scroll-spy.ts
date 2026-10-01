@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react"
+import { visibleItemAtLine } from "@/app/editor/trail-navigation"
 
 export function useScrollSpy({
   root,
@@ -30,13 +31,11 @@ export function useScrollSpy({
     const measure = () => {
       frame = 0
       const line = container.getBoundingClientRect().top + container.clientHeight * 0.3
-      let current = order[0]
-      for (const id of order) {
-        const element = slots.current.get(id)
-        if (!element) continue
-        if (element.getBoundingClientRect().top > line) break
-        current = id
-      }
+      const positions = order.flatMap((id) => {
+        const element = slots.current.get(id);
+        return element ? [{ id, top: element.getBoundingClientRect().top }] : [];
+      });
+      const current = visibleItemAtLine(positions, line);
       if (!current || current === last) return
       last = current
       onVisibleRef.current(current)
@@ -47,7 +46,12 @@ export function useScrollSpy({
     }
 
     container.addEventListener("scroll", onScroll, { passive: true })
+    const observer = new ResizeObserver(onScroll)
+    observer.observe(container)
+    for (const element of slots.current.values()) observer.observe(element)
+    onScroll()
     return () => {
+      observer.disconnect()
       container.removeEventListener("scroll", onScroll)
       if (frame) cancelAnimationFrame(frame)
     }

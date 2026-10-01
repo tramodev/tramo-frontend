@@ -1,5 +1,6 @@
 "use client"
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import type { HistoryState } from '@lexical/react/LexicalHistoryPlugin';
 import { mergeRegister, $getNearestNodeOfType } from '@lexical/utils';
 import {
   $getSelection,
@@ -275,17 +276,19 @@ export default function ToolbarPlugin({
   titleFocused,
   titleAlign,
   onSetTitleAlign,
+  history,
 }: {
   projectId?: string;
   titleFocused?: boolean;
   titleAlign?: 'left' | 'center' | 'right';
   onSetTitleAlign?: (align: 'left' | 'center' | 'right') => void;
+  history?: HistoryState;
 } = {}) {
   const [editor] = useLexicalComposerContext();
   const toolbarRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
+  const [canUndo, setCanUndo] = useState(() => !!history?.undoStack.length);
+  const [canRedo, setCanRedo] = useState(() => !!history?.redoStack.length);
   const [blockType, setBlockType] = useState('paragraph');
   const [isLink, setIsLink] = useState(false);
 
@@ -396,7 +399,8 @@ export default function ToolbarPlugin({
   }, [editor, isLink]);
 
   useEffect(() => {
-    return mergeRegister(
+    const frame = requestAnimationFrame(() => editor.getEditorState().read(updateToolbar));
+    const unregister = mergeRegister(
       editor.registerUpdateListener(({ editorState }) => {
         editorState.read(() => {
           updateToolbar();
@@ -460,6 +464,7 @@ export default function ToolbarPlugin({
         COMMAND_PRIORITY_LOW,
       ),
     );
+    return () => { cancelAnimationFrame(frame); unregister(); };
   }, [editor, updateToolbar, insertLink]);
 
   const setBlock = (create: () => ElementNode) => {

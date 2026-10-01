@@ -33,7 +33,8 @@ interface SidebarCustomProps {
   trails: Trail[];
   items: Record<string, Item>;
   selectedItemId?: string;
-  onSelectItem: (item: Item) => void;
+  activeTrailId?: string;
+  onSelectItem: (item: Item, trailId?: string) => void;
   onCreateTrail: (title: string) => void;
   onCreateItem: (trailId: string, title: string) => void;
   onCreateLooseItem: (title: string) => void;
@@ -116,6 +117,7 @@ export function SidebarCustom({
   trails,
   items,
   selectedItemId,
+  activeTrailId,
   onSelectItem,
   onCreateTrail,
   onCreateItem,
@@ -182,27 +184,6 @@ export function SidebarCustom({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [setOpen]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-      if (!event.altKey || (!event.metaKey && !event.ctrlKey)) return;
-      const trail = selectedItemId
-        ? trails.find((candidate) => candidate.itemIds.includes(selectedItemId))
-        : undefined;
-      const ordered = trail
-        ? trail.itemIds.map((id) => items[id]).filter((item): item is Item => Boolean(item))
-        : Object.values(items);
-      if (ordered.length === 0) return;
-      event.preventDefault();
-      const current = ordered.findIndex((item) => item.id === selectedItemId);
-      const next = current === -1 ? 0 : current + (event.key === "ArrowDown" ? 1 : -1);
-      if (next < 0 || next >= ordered.length) return;
-      onSelectItem(ordered[next]);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [items, trails, selectedItemId, onSelectItem]);
 
   const trailsForItem = (itemId: string) => trails.filter(trail => trail.itemIds.includes(itemId));
   const allItems = Object.values(items);
@@ -595,11 +576,11 @@ export function SidebarCustom({
                                         ) : (
                                           <div className="flex items-center">
                                             <SidebarMenuSubButton
-                                              isActive={selectedItemId === item.id}
-                                              onClick={() => onSelectItem(item)}
+                                              isActive={selectedItemId === item.id && activeTrailId === trail.id}
+                                              onClick={() => onSelectItem(item, trail.id)}
                                               onDoubleClick={() => startEditItem(item)}
                                               className={
-                                                selectedItemId === item.id
+                                                selectedItemId === item.id && activeTrailId === trail.id
                                                   ? "bg-secondary text-secondary-foreground"
                                                   : undefined
                                               }

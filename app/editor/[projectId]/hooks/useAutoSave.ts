@@ -6,14 +6,14 @@ import { isAuthError } from '../../editor-utils';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 interface UseAutoSaveParams {
-  selectedItemId: string | undefined;
+  contextId: string | undefined;
   onOptimisticUpdate: (itemId: string, content: string) => void;
   redirectToLogin: () => void;
 }
 
 
 export function useAutoSave({
-  selectedItemId,
+  contextId,
   onOptimisticUpdate,
   redirectToLogin,
 }: UseAutoSaveParams) {
@@ -21,10 +21,11 @@ export function useAutoSave({
   const pendingContentRef = useRef(new Map<string, string>());
   const inFlightRef = useRef(false);
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const loadedItemContentRef = useRef<string | null>(null);
+  const deletedItemsRef = useRef(new Set<string>());
 
-  const handleContentApplied = useCallback((itemId: string) => {
-    loadedItemContentRef.current = itemId;
+  const discardItem = useCallback((itemId: string) => {
+    deletedItemsRef.current.add(itemId);
+    pendingContentRef.current.delete(itemId);
   }, []);
 
   const flushPendingContent = useCallback(async () => {
@@ -43,7 +44,7 @@ export function useAutoSave({
           await saveItemContent(itemId, content);
         } catch (err) {
           console.error(err);
-          if (!pendingContentRef.current.has(itemId)) {
+          if (!deletedItemsRef.current.has(itemId) && !pendingContentRef.current.has(itemId)) {
             pendingContentRef.current.set(itemId, content);
           }
           setSaveStatus('error');
@@ -59,7 +60,7 @@ export function useAutoSave({
 
   useEffect(() => {
     return () => { void flushPendingContent(); };
-  }, [selectedItemId, flushPendingContent]);
+  }, [contextId, flushPendingContent]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -72,20 +73,19 @@ export function useAutoSave({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [flushPendingContent]);
 
-  const onChange = useCallback((editorState: EditorState) => {
+  const onChange = useCallback((itemId: string, editorState: EditorState) => {
     editorState.read(() => {
-      if (!selectedItemId) return;
-      if (loadedItemContentRef.current !== selectedItemId) return;
+      if (deletedItemsRef.current.has(itemId)) return;
       const json = JSON.stringify(editorState.toJSON());
-      onOptimisticUpdate(selectedItemId, json);
+      onOptimisticUpdate(itemId, json);
       if (json.includes('"src":"blob:')) return;
 
-      pendingContentRef.current.set(selectedItemId, json);
+      pendingContentRef.current.set(itemId, json);
       setSaveStatus('saving');
       if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = setTimeout(() => flushPendingContent(), 600);
     });
-  }, [selectedItemId, flushPendingContent, onOptimisticUpdate]);
+  }, [flushPendingContent, onOptimisticUpdate]);
 
-  return { saveStatus, onChange, handleContentApplied };
+  return { saveStatus, onChange, discardItem };
 }

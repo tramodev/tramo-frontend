@@ -22,6 +22,7 @@ import {
   untie,
   type ProjectVisibility,
 } from '@/lib/projects-store';
+import { resolveItemTrail } from '../../trail-navigation';
 import { getItemContent, getTrailContents } from '@/lib/item-content-client';
 import { getMyProfile } from '@/lib/profile';
 import type { GraphPreviewData } from '@/lib/feed';
@@ -46,8 +47,14 @@ export function useProjectEditorState(projectId: string) {
 
   const [trails, setTrails] = useState<Trail[]>([]);
   const [items, setItems] = useState<Record<string, Item>>({});
-  const [selectedItemId, setSelectedItemId] = useState<string | undefined>(undefined);
-  const [activeTrailId, setActiveTrailId] = useState<string | undefined>(undefined);
+  const [navigation, setNavigation] = useState<{
+    itemId?: string;
+    trailId?: string;
+    request?: { itemId: string; sequence: number; focus: boolean };
+  }>({});
+  const navigationSequence = useRef(0);
+  const selectedItemId = navigation.itemId;
+  const activeTrailId = navigation.trailId;
   const [view, setView] = useState<'write' | 'overview' | 'graph'>('write');
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
 
@@ -82,21 +89,11 @@ export function useProjectEditorState(projectId: string) {
       const savedItemId = localStorage.getItem(lastItemStorageKey(projectId));
       const savedItem = savedItemId ? project.items[savedItemId] : undefined;
       const host = savedItem ? project.trails.find((t) => t.itemIds.includes(savedItem.id)) : undefined;
-      setActiveTrailId((host ?? project.trails[0])?.id);
-      if (!savedItem) return;
+      const trail = host ?? project.trails[0];
+      const itemId = savedItem?.id ?? trail?.itemIds[0] ?? Object.values(project.items)[0]?.id;
+      setNavigation({ trailId: savedItem && !host ? undefined : trail?.id, itemId,
+        request: itemId ? { itemId, sequence: ++navigationSequence.current, focus: false } : undefined });
 
-      try {
-        const content = await getItemContent(savedItem.id);
-        if (cancelled) return;
-        setItems(prevItems => {
-          const existing = prevItems[savedItem.id];
-          if (!existing) return prevItems;
-          return { ...prevItems, [savedItem.id]: { ...existing, content } };
-        });
-      } catch (err) {
-        console.error(err);
-      }
-      if (!cancelled) setSelectedItemId(savedItem.id);
     }).catch(() => {
       if (!cancelled) redirectToLogin();
     });
@@ -149,54 +146,55 @@ export function useProjectEditorState(projectId: string) {
     await setItemTitleAlign(itemId, titleAlign);
   };
 
-  const selectItemRequestRef = useRef(0);
-  const trailContentRequestRef = useRef(0);
-  const [loadedContentTrailId, setLoadedContentTrailId] = useState<string | undefined>(undefined);
+  const [contentLoadError, setContentLoadError] = useState(false);
+  const [contentRetry, setContentRetry] = useState(0);
+  const retryContent = () => setContentRetry((n) => n + 1);
+  const trailContentIds = activeTrail?.itemIds.join('|');
 
   useEffect(() => {
+    let cancelled = false;
     if (!activeTrailId) return;
-    const requestId = ++trailContentRequestRef.current;
     getTrailContents(activeTrailId)
       .then((byId) => {
-        if (trailContentRequestRef.current !== requestId) return;
-        setItems((prevItems) => {
-          let changed = false;
-          const next = { ...prevItems };
+        if (cancelled) return;
+        setContentLoadError(false);
+        setItems((prev) => {
+          const next = { ...prev };
           for (const [itemId, content] of Object.entries(byId)) {
-            const existing = next[itemId];
-            if (!existing || existing.content != null) continue;
-            next[itemId] = { ...existing, content };
-            changed = true;
+            if (next[itemId] && next[itemId].content == null) next[itemId] = { ...next[itemId], content };
           }
-          return changed ? next : prevItems;
+          return next;
         });
-        setLoadedContentTrailId(activeTrailId);
       })
-      .catch((err) => console.error(err));
-  }, [activeTrailId]);
+      .catch(() => { if (!cancelled) setContentLoadError(true); });
+    return () => { cancelled = true; };
+  }, [activeTrailId, trailContentIds, contentRetry]);
 
-  const handleSelectItem = async (item: Item) => {
+  useEffect(() => {
+    let cancelled = false;
+    if (activeTrailId || !selectedItemId) return;
+    getItemContent(selectedItemId).then((content) => {
+      if (cancelled) return;
+      setContentLoadError(false);
+      setItems((prev) => prev[selectedItemId] && prev[selectedItemId].content == null
+        ? { ...prev, [selectedItemId]: { ...prev[selectedItemId], content } } : prev);
+    }).catch(() => { if (!cancelled) setContentLoadError(true); });
+    return () => { cancelled = true; };
+  }, [activeTrailId, selectedItemId, contentRetry]);
+
+  const handleVisibleItem = useCallback((itemId: string) => {
+    setNavigation((prev) => prev.itemId === itemId ? prev : { ...prev, itemId });
+  }, []);
+
+  const handleSelectItem = (item: Item, trailId?: string) => {
     setView('write');
-    setActiveTrailId((prev) => {
-      const current = trails.find((t) => t.id === prev);
-      if (current?.itemIds.includes(item.id)) return prev;
-      return trails.find((t) => t.itemIds.includes(item.id))?.id ?? prev;
-    });
-    if (items[item.id]?.content != null) setSelectedItemId(item.id);
-    const requestId = ++selectItemRequestRef.current;
-    try {
-      const content = await getItemContent(item.id);
-      if (selectItemRequestRef.current !== requestId) return;
-      setItems(prevItems => {
-        const existing = prevItems[item.id];
-        if (!existing) return prevItems;
-        return { ...prevItems, [item.id]: { ...existing, content } };
-      });
-    } catch (err) {
-      console.error(err);
-    }
-    if (selectItemRequestRef.current !== requestId) return;
-    setSelectedItemId(item.id);
+    setContentLoadError(false);
+    const request = { itemId: item.id, sequence: ++navigationSequence.current, focus: true };
+    setNavigation((prev) => ({
+      itemId: item.id,
+      trailId: resolveItemTrail(trails, item.id, prev.trailId, trailId),
+      request,
+    }));
   };
 
   const handleReorderTrailItems = async (trailId: string, itemIds: string[]) => {
@@ -239,9 +237,8 @@ export function useProjectEditorState(projectId: string) {
           }
         : trail
     ));
-    setActiveTrailId(trailId);
     setView('write');
-    setSelectedItemId(newItem.id);
+    setNavigation({ trailId, itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } });
   };
 
   const handleLinkItemToTrail = async (trailId: string, itemId: string) => {
@@ -269,6 +266,10 @@ export function useProjectEditorState(projectId: string) {
         : trail
     );
     setTrails(nextTrails);
+    if (activeTrailId === trailId && selectedItemId === itemId) {
+      const next = nextTrails.find((t) => t.id === trailId)?.itemIds[0];
+      setNavigation({ trailId: next ? trailId : undefined, itemId: next ?? itemId });
+    }
     if (!nextTrails.some(trail => trail.itemIds.includes(itemId))) {
       setItems(prev => {
         const it = prev[itemId];
@@ -281,7 +282,7 @@ export function useProjectEditorState(projectId: string) {
     const newItem = await createLooseItem(projectId, title);
     setItems(prevItems => ({ ...prevItems, [newItem.id]: newItem }));
     setView('write');
-    setSelectedItemId(newItem.id);
+    setNavigation({ itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } });
   };
 
   const handleDeleteItem = async (itemId: string) => {
@@ -296,7 +297,11 @@ export function useProjectEditorState(projectId: string) {
       delete next[itemId];
       return next;
     });
-    if (selectedItemId === itemId) setSelectedItemId(undefined);
+    setNavigation((prev) => {
+      if (prev.itemId !== itemId) return prev;
+      const next = trails.find((t) => t.id === prev.trailId)?.itemIds.find((id) => id !== itemId);
+      return { ...prev, itemId: next, request: undefined };
+    });
   };
 
   const handleRenameTrail = async (trailId: string, title: string) => {
@@ -329,6 +334,10 @@ export function useProjectEditorState(projectId: string) {
     await deleteTrailRequest(trailId);
     const remainingTrails = trails.filter(trail => trail.id !== trailId);
     setTrails(remainingTrails);
+    if (activeTrailId === trailId) {
+      const next = remainingTrails[0];
+      setNavigation({ trailId: next?.id, itemId: next?.itemIds[0] });
+    }
     const orphanIds = target.itemIds.filter(
       itemId => !remainingTrails.some(trail => trail.itemIds.includes(itemId))
     );
@@ -431,7 +440,10 @@ export function useProjectEditorState(projectId: string) {
     view,
     setView,
     associationById,
-    loadedContentTrailId,
+    contentLoadError,
+    retryContent,
+    navigationRequest: navigation.request,
+    handleVisibleItem,
     redirectToLogin,
     handleUpdateAnnotation,
     commitItemTitle,

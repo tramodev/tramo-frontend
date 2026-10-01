@@ -1089,3 +1089,10 @@ pre::-webkit-scrollbar-thumb {
   -webkit-appearance: none;
   margin: 0;
 }
+.trail-item-editor {
+  position: relative;
+}
+
+.trail-item-editor .editor-input {
+  min-height: 96px;
+}

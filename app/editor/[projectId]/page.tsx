@@ -34,7 +34,7 @@ export default function EditorPage() {
 
   const project = useProjectEditorState(projectId);
   const autoSave = useAutoSave({
-    selectedItemId: project.selectedItemId,
+    contextId: project.activeTrailId,
     onOptimisticUpdate: project.updateItemContentLocally,
     redirectToLogin: project.redirectToLogin,
   });
@@ -99,6 +99,7 @@ export default function EditorPage() {
             trails={project.trails}
             items={project.items}
             selectedItemId={project.selectedItemId}
+            activeTrailId={project.activeTrailId}
             onSelectItem={project.handleSelectItem}
             onCreateTrail={project.handleCreateTrail}
             onCreateItem={project.handleCreateItem}
@@ -108,7 +109,7 @@ export default function EditorPage() {
             onRenameItem={project.handleRenameItem}
             onDeleteTrail={project.handleDeleteTrail}
             onUnlinkItemFromTrail={project.handleUnlinkItemFromTrail}
-            onDeleteItem={project.handleDeleteItem}
+            onDeleteItem={async (itemId) => { await project.handleDeleteItem(itemId); autoSave.discardItem(itemId); }}
             onReorderTrailItems={project.handleReorderTrailItems}
           />
         }
@@ -143,7 +144,10 @@ export default function EditorPage() {
                 activeTrailId={project.activeTrailId}
                 trail={project.activeTrail}
                 associationById={project.associationById}
-                contentReady={project.loadedContentTrailId === project.activeTrailId}
+                contentLoadError={project.contentLoadError}
+                onRetryContent={project.retryContent}
+                navigationRequest={project.navigationRequest}
+                onVisibleItem={project.handleVisibleItem}
                 onUpdateAnnotation={project.handleUpdateAnnotation}
                 onCommitTitle={project.commitItemTitle}
                 onSetTitleAlign={project.handleSetItemTitleAlign}
@@ -154,7 +158,6 @@ export default function EditorPage() {
                 onUntie={project.handleUntie}
                 onOpenGraph={() => project.setView('graph')}
                 onChange={autoSave.onChange}
-                onContentApplied={autoSave.handleContentApplied}
                 connectionsPanelOpen={connectionsPanelOpen}
                 onToggleConnectionsPanelOpen={() => setConnectionsPanelOpen((o) => !o)}
               />

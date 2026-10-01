@@ -22,7 +22,7 @@ const TOUR_STEPS = [
     element: '[data-tour="write-panel"]',
     popover: {
       title: 'Write',
-      description: 'This is where you write and edit the content of the selected item.',
+      description: 'Edit each item directly in the trail. Scroll to explore, or use the arrow keys at the start and end of an item to move between steps.',
     },
   },
   {

@@ -14,6 +14,7 @@ const GROUPS: { title: string; shortcuts: [string, string][] }[] = [
     title: "Moverse",
     shortcuts: [
       ["⌘P", "Buscar un item en el memex"],
+      ["↑ / ↓ al inicio o final", "Pasar al item anterior / siguiente"],
       ["⌘⌥↑ / ⌘⌥↓", "Item anterior / siguiente del trail"],
       ["Esc", "Ir a la barra de herramientas y volver"],
       ["⌘F", "Buscar y reemplazar en el item"],

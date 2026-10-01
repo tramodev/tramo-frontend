@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { EditorState } from 'lexical';
-import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
+import { createPortal } from 'react-dom';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { $getRoot, $getSelection, $isRangeSelection, COMMAND_PRIORITY_HIGH, KEY_ARROW_UP_COMMAND, KEY_ARROW_DOWN_COMMAND, type LexicalEditor } from 'lexical';
+import { mergeRegister } from '@lexical/utils';
+import { useScrollSpy } from '@/hooks/use-scroll-spy';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { HistoryPlugin, createEmptyHistoryState } from '@lexical/react/LexicalHistoryPlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin';
@@ -18,7 +22,6 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { EDITOR_TRANSFORMERS } from '../../plugins/markdownTransformers';
 
 import ToolbarPlugin from '../../plugins/ToolbarPlugin';
-import UpdateContentPlugin from '../../plugins/UpdateContentPlugin';
 import ImagesPlugin from '../../plugins/ImagesPlugin';
 import EquationsPlugin from '../../plugins/EquationsPlugin';
 import MusicPlugin from '../../plugins/MusicPlugin';
@@ -39,7 +42,6 @@ import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
 import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
-import { LexicalReadOnly } from '@/components/project/lexical-read-only';
 import { bridgeTies } from '../../associations';
 import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../../types';
 
@@ -51,275 +53,269 @@ interface WriteViewProps {
   activeTrailId: string | undefined;
   trail: Trail | undefined;
   associationById: Map<string, Association>;
-  contentReady: boolean;
+  contentLoadError: boolean;
+  onRetryContent: () => void;
+  navigationRequest?: { itemId: string; sequence: number; focus: boolean };
+  onVisibleItem: (itemId: string) => void;
   onUpdateAnnotation: (trailId: string, itemId: string, annotation: string) => void;
   onCommitTitle: (itemId: string, currentTitle: string, nextValue: string) => void;
   onSetTitleAlign: (itemId: string, titleAlign: TitleAlign) => void;
-  onSelectItem: (item: Item) => void;
+  onSelectItem: (item: Item, trailId?: string) => void;
   onCreateItem: (trailId: string, title: string) => void;
   onLinkItems: (itemId: string, otherItemId: string) => void;
   onTie: (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => void;
   onUntie: (itemId: string, targetId: string, targetType: AssociationTargetType) => void;
   onOpenGraph: () => void;
-  onChange: (editorState: EditorState) => void;
-  onContentApplied: (itemId: string) => void;
+  onChange: (itemId: string, editorState: EditorState) => void;
   connectionsPanelOpen: boolean;
   onToggleConnectionsPanelOpen: () => void;
 }
 
-export function WriteView({
-  projectId,
-  item,
-  items,
-  trails,
-  activeTrailId,
-  trail,
-  associationById,
-  contentReady,
-  onUpdateAnnotation,
-  onCommitTitle,
-  onSetTitleAlign,
-  onSelectItem,
-  onCreateItem,
-  onLinkItems,
-  onTie,
-  onUntie,
-  onOpenGraph,
-  onChange,
-  onContentApplied,
-  connectionsPanelOpen,
-  onToggleConnectionsPanelOpen,
-}: WriteViewProps) {
-  const [activeAlignTarget, setActiveAlignTarget] = useState<'title' | 'body'>('body');
-  const [blockAnchor, setBlockAnchor] = useState<HTMLDivElement | null>(null);
-  const editorInnerRef = useRef<HTMLDivElement>(null);
-  const slotRefs = useRef(new Map<string, HTMLDivElement>());
-  const preserveScrollRef = useRef<number | null>(null);
+function focusEditor(editor: LexicalEditor, edge: 'start' | 'end' = 'start') {
+  editor.getRootElement()?.focus({ preventScroll: true });
+  editor.update(() => {
+    const root = $getRoot();
+    if (edge === 'start') root.selectStart();
+    else root.selectEnd();
+  }, { discrete: true });
+}
 
+function ItemNavigationPlugin({ itemId, register, move }: {
+  itemId: string;
+  register: (itemId: string, editor: LexicalEditor | null) => void;
+  move: (itemId: string, direction: -1 | 1) => boolean;
+}) {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    register(itemId, editor);
+    return () => register(itemId, null);
+  }, [editor, itemId, register]);
+  useEffect(() => {
+    const navigate = (event: KeyboardEvent, direction: -1 | 1) => {
+      if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.isComposing || editor.isComposing()) return false;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('table, pre, [role="dialog"], [role="menu"], [data-lexical-decorator="true"]')) return false;
+      if (document.querySelector('.item-mention-menu, [role="dialog"], [role="menu"]')) return false;
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+      const root = $getRoot();
+      const boundary = direction === -1 ? root.getFirstDescendant() : root.getLastDescendant();
+      const node = selection.anchor.getNode();
+      if (['table', 'code', 'image', 'equation', 'music'].includes(node.getTopLevelElement()?.getType() ?? '')) return false;
+      const offset = direction === -1 ? 0 : node.getTextContentSize();
+      const atBoundary = root.getTextContentSize() === 0 || (boundary?.is(node) && selection.anchor.offset === offset);
+      if (!atBoundary || !move(itemId, direction)) return false;
+      event.preventDefault();
+      return true;
+    };
+    return mergeRegister(
+      editor.registerCommand(KEY_ARROW_UP_COMMAND, (event) => navigate(event, -1), COMMAND_PRIORITY_HIGH),
+      editor.registerCommand(KEY_ARROW_DOWN_COMMAND, (event) => navigate(event, 1), COMMAND_PRIORITY_HIGH),
+    );
+  }, [editor, itemId, move]);
+  return null;
+}
+
+function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: {
+  item: Item;
+  props: WriteViewProps;
+  focused: boolean;
+  toolbar: HTMLDivElement | null;
+  onFocus: (itemId: string) => void;
+  register: (itemId: string, editor: LexicalEditor | null) => void;
+  move: (itemId: string, direction: -1 | 1) => boolean;
+}) {
+  const [titleFocused, setTitleFocused] = useState(false);
+  const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
+  const [initialContent] = useState(item.content);
+  const [history] = useState(createEmptyHistoryState);
+  return (
+    <LexicalComposer initialConfig={{ ...editorConfig, editorState: initialContent || undefined }}>
+      <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor}>
+        <ItemTitle item={item} onCommitTitle={props.onCommitTitle} onFocus={() => {
+          setTitleFocused(true);
+          onFocus(item.id);
+        }} />
+        <div className="relative">
+          <RichTextPlugin contentEditable={
+            <ContentEditable className="editor-input" aria-label={`Content of ${item.title}`} aria-placeholder={placeholder}
+              onFocus={() => { setTitleFocused(false); onFocus(item.id); }}
+              placeholder={<div className="editor-placeholder">{placeholder}</div>} />
+          } ErrorBoundary={LexicalErrorBoundary} />
+        </div>
+        <HistoryPlugin externalHistoryState={history} />
+        <ListPlugin />
+        <CheckListPlugin />
+        <LinkPlugin />
+        <ItemLinkClickPlugin onNavigate={(id) => { const target = props.items[id]; if (target) props.onSelectItem(target); }} />
+        <ClickableLinkPlugin newTab />
+        <ImagesPlugin projectId={props.projectId} />
+        <EquationsPlugin />
+        <MusicPlugin />
+        <TablePlugin hasHorizontalScroll />
+        <CodeBlockGuardPlugin />
+        <PastePlugin />
+        <CodeHighlightPlugin />
+        <CodeLanguagePlugin />
+        <TrailingParagraphPlugin />
+        <ListTabPlugin />
+        <TabIndentationPlugin />
+        <HorizontalRulePlugin />
+        <SlashMenuPlugin projectId={props.projectId} />
+        <ItemMentionPlugin items={props.items} currentItemId={item.id} onLinkItem={props.onLinkItems} />
+        <WikiLinkPlugin items={props.items} currentItemId={item.id} onLinkItem={props.onLinkItems} />
+        <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
+        <ItemNavigationPlugin itemId={item.id} register={register} move={move} />
+        <OnChangePlugin onChange={(state) => props.onChange(item.id, state)} ignoreSelectionChange />
+        {focused && <>
+          {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId}
+            history={history}
+            titleFocused={titleFocused} titleAlign={item.titleAlign}
+            onSetTitleAlign={(align) => props.onSetTitleAlign(item.id, align)} />, toolbar)}
+          <FloatingLinkEditorPlugin />
+          <FindReplacePlugin />
+          {anchor && <DraggableBlockPlugin anchorElem={anchor} />}
+        </>}
+      </div>
+    </LexicalComposer>
+  );
+}
+
+function ItemTitle({ item, onCommitTitle, onFocus }: {
+  item: Item;
+  onCommitTitle: WriteViewProps['onCommitTitle'];
+  onFocus: () => void;
+}) {
+  const [editor] = useLexicalComposerContext();
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const input = inputRef.current;
+    if (input && input !== document.activeElement) input.value = item.title;
+  }, [item.title]);
+  return <div className="pl-7 pt-2">
+    <input ref={inputRef} defaultValue={item.title} aria-label="Item title" onFocus={onFocus}
+      onBlur={(event) => onCommitTitle(item.id, item.title, event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' || event.metaKey || event.ctrlKey || event.nativeEvent.isComposing) return;
+        event.preventDefault();
+        event.currentTarget.blur();
+        requestAnimationFrame(() => focusEditor(editor));
+      }} placeholder="Untitled" style={{ textAlign: item.titleAlign }}
+      className="w-full border-0 bg-transparent font-display text-[28px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40" />
+  </div>;
+}
+
+export function WriteView(props: WriteViewProps) {
+  const { item, items, trail, associationById, navigationRequest, onVisibleItem } = props;
+  const [focusedItemId, setFocusedItemId] = useState(item.id);
+  const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
+  const editorInnerRef = useRef<HTMLDivElement>(null);
+  const slotRefs = useRef(new Map<string, HTMLElement>());
+  const editors = useRef(new Map<string, LexicalEditor>());
+  const handledRequest = useRef<number | null>(null);
   const inTrail = !!trail?.itemIds.includes(item.id);
-  const steps = inTrail && trail
-    ? trail.steps
-    : [{ itemId: item.id, annotation: null, associationId: null }];
-  const stacked = steps.length > 1;
+  const steps = inTrail && trail ? trail.steps : [{ itemId: item.id, annotation: null, associationId: null }];
+  const ids = useMemo(() => inTrail && trail ? trail.itemIds : [item.id], [inTrail, trail, item.id]);
+  const focusedId = ids.includes(focusedItemId) ? focusedItemId : item.id;
+  const contentReady = ids.every((id) => items[id]?.content != null);
+  useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: contentReady, onVisible: (id) => {
+    if (!navigationRequest || handledRequest.current === navigationRequest.sequence) onVisibleItem(id);
+  } });
+
+  const onFocus = useCallback((itemId: string) => {
+    setFocusedItemId(itemId);
+    onVisibleItem(itemId);
+  }, [onVisibleItem]);
+  const register = useCallback((id: string, editor: LexicalEditor | null) => {
+    if (editor) editors.current.set(id, editor);
+    else editors.current.delete(id);
+  }, []);
+  const move = useCallback((id: string, direction: -1 | 1) => {
+    const next = ids[ids.indexOf(id) + direction];
+    const editor = next && editors.current.get(next);
+    if (!editor) return false;
+    requestAnimationFrame(() => {
+      slotRefs.current.get(next)?.scrollIntoView({ block: 'nearest' });
+      focusEditor(editor, direction === -1 ? 'end' : 'start');
+    });
+    return true;
+  }, [ids]);
 
   useEffect(() => {
-    if (!inTrail || !trail) return;
+    const request = navigationRequest;
+    if (!request || !contentReady || handledRequest.current === request.sequence) return;
+    const frame = requestAnimationFrame(() => {
+      const editor = editors.current.get(request.itemId);
+      if (!editor) return;
+      handledRequest.current = request.sequence;
+      slotRefs.current.get(request.itemId)?.scrollIntoView({ block: 'start' });
+      if (request.focus) focusEditor(editor);
+      onVisibleItem(request.itemId);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [navigationRequest, contentReady, onVisibleItem]);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Enter' || !(event.metaKey || event.ctrlKey)) return;
-      if (!editorInnerRef.current?.contains(document.activeElement)) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('[role="dialog"], [role="menu"], [role="listbox"], .find-replace-bar')) return;
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && inTrail && trail
+          && target?.closest('.trail-item-editor')) {
+        event.preventDefault();
+        props.onCreateItem(trail.id, 'Untitled');
+      }
+      if (!event.altKey || (!event.metaKey && !event.ctrlKey) || event.shiftKey) return;
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+      if (target?.closest('input, textarea, [contenteditable="true"]') && !target.closest('.trail-item-editor')) return;
+      const origin = target?.closest<HTMLElement>('[data-item-id]')?.dataset.itemId ?? item.id;
       event.preventDefault();
-      onCreateItem(trail.id, 'Untitled');
+      move(origin, event.key === 'ArrowUp' ? -1 : 1);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [inTrail, trail, onCreateItem]);
+  });
 
-  useEffect(() => {
-    const el = editorInnerRef.current;
-    if (!el) return;
-    const preserved = preserveScrollRef.current;
-    preserveScrollRef.current = null;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (preserved != null) {
-        el.scrollTop = preserved;
-        return;
-      }
-      const slot = slotRefs.current.get(item.id);
-      if (slot && stacked) slot.scrollIntoView({ block: 'start' });
-      else el.scrollTop = 0;
-    }));
-  }, [item.id, stacked, contentReady]);
-
-  const activateItem = (target: Item) => {
-    if (target.id === item.id) return;
-    const el = editorInnerRef.current;
-    if (el) preserveScrollRef.current = el.scrollTop;
-    onSelectItem(target);
-  };
-
-  return (
-    <>
-      <div data-tour="write-panel" className="flex min-w-0 flex-1 flex-col overflow-hidden ">
-        <LexicalComposer initialConfig={editorConfig}>
-          <div className="editor-container flex flex-1 min-h-0 flex-col">
-            <ToolbarPlugin
-              projectId={projectId}
-              titleFocused={activeAlignTarget === 'title'}
-              titleAlign={item.titleAlign}
-              onSetTitleAlign={(align) => onSetTitleAlign(item.id, align)}
-            />
-            <hr/>
-            <div className="editor-inner" ref={editorInnerRef}>
-              <div className="editor-content-column" ref={setBlockAnchor}>
-                {steps.map((step, i) => {
-                  const stepItem = items[step.itemId];
-                  if (!stepItem) return null;
-                  const isActive = step.itemId === item.id;
-                  const ties = i > 0 && trail ? bridgeTies(items, trail.steps[i - 1].itemId, step.itemId) : [];
-                  const explicit = step.associationId ? associationById.get(step.associationId) : undefined;
-                  if (explicit && !ties.some((t) => t.association.id === explicit.id)) {
-                    ties.unshift({ association: explicit, forward: true });
-                  }
-
-                  return (
-                    <div
-                      key={step.itemId}
-                      ref={(el) => {
-                        if (el) slotRefs.current.set(step.itemId, el);
-                        else slotRefs.current.delete(step.itemId);
-                      }}
-                    >
-                      {i > 0 && trail && (
-                        <div className="trail-divider mt-4">
-                          <TrailConnector
-                            ties={ties}
-                            annotation={step.annotation}
-                            onSaveAnnotation={(text) => onUpdateAnnotation(trail.id, step.itemId, text)}
-                          />
-                        </div>
-                      )}
-                      <div
-                        onClick={(e) => {
-                          if (isActive) return;
-                          if ((e.target as HTMLElement).closest('a')) return;
-                          activateItem(stepItem);
-                        }}
-                        className={stacked && !isActive ? 'group cursor-pointer' : undefined}
-                      >
-                        {stacked && (
-                          <div
-                            className={`flex items-center gap-2 pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${
-                              isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                            }`}
-                          >
-                            <span
-                              className={
-                                isActive
-                                  ? 'h-[7px] w-[7px] shrink-0 rounded-full bg-primary'
-                                  : 'h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border group-hover:border-primary'
-                              }
-                            />
-                            Step {i + 1}
-                            {!isActive && (
-                              <span className="ml-1 font-normal normal-case tracking-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-                                — click to edit
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      <div className={stacked ? 'pl-7 pt-1' : 'pt-9 pl-7'}>
-                        <input
-                          key={`${stepItem.id}-${stepItem.title}`}
-                          defaultValue={stepItem.title}
-                          readOnly={!isActive}
-                          onFocus={() => setActiveAlignTarget('title')}
-                          onBlur={(e) => { if (isActive) onCommitTitle(stepItem.id, stepItem.title, e.target.value); }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              (e.target as HTMLInputElement).blur();
-                            }
-                          }}
-                          placeholder="Untitled"
-                          style={{ textAlign: stepItem.titleAlign }}
-                          className="w-full border-0 bg-transparent font-display text-[28px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40"
-                        />
-                      </div>
-                      {isActive ? (
-                        <div className={stacked ? 'relative' : 'relative grid flex-1 min-h-0'}>
-                          <RichTextPlugin
-                            contentEditable={
-                              <ContentEditable
-                                className="editor-input"
-                                aria-placeholder={placeholder}
-                                onFocus={() => setActiveAlignTarget('body')}
-                                placeholder={
-                                  <div className="editor-placeholder">{placeholder}</div>
-                                }
-                              />
-                            }
-                            ErrorBoundary={LexicalErrorBoundary}
-                          />
-                        </div>
-                      ) : (
-                        <LexicalReadOnly content={stepItem.content ?? ''} />
-                      )}
-                      </div>
-                    </div>
-                  );
-                })}
-                {inTrail && trail && (
-                  <div className="mt-32 flex justify-center pb-4">
-                    <button
-                      type="button"
-                      onClick={() => onCreateItem(trail.id, 'Untitled')}
-                      className="flex shrink-0 items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add next step
-                      <kbd className="ml-1 rounded border border-border px-1 font-sans text-[10px] normal-case tracking-normal">
-                        ⌘↵
-                      </kbd>
-                    </button>
-                  </div>
-                )}
-                <HistoryPlugin />
-                <AutoFocusPlugin key={item.id} />
-                <ListPlugin />
-                <CheckListPlugin />
-                <LinkPlugin />
-                <ItemLinkClickPlugin onNavigate={(itemId) => {
-                  const target = items[itemId];
-                  if (target) onSelectItem(target);
-                }} />
-                <ClickableLinkPlugin newTab />
-                <ImagesPlugin projectId={projectId} />
-                <EquationsPlugin />
-                <MusicPlugin />
-                <TablePlugin hasHorizontalScroll />
-                <CodeBlockGuardPlugin />
-                <PastePlugin />
-                <CodeHighlightPlugin />
-                <CodeLanguagePlugin />
-                <TrailingParagraphPlugin />
-                <ListTabPlugin />
-                <TabIndentationPlugin />
-                <HorizontalRulePlugin />
-                <SlashMenuPlugin projectId={projectId} />
-                <FloatingLinkEditorPlugin />
-                <FindReplacePlugin />
-                {blockAnchor && <DraggableBlockPlugin anchorElem={blockAnchor} />}
-                <ItemMentionPlugin
-                  items={items}
-                  currentItemId={item.id}
-                  onLinkItem={onLinkItems}
-                />
-                <WikiLinkPlugin
-                  items={items}
-                  currentItemId={item.id}
-                  onLinkItem={onLinkItems}
-                />
-                <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
-
-                <UpdateContentPlugin content={item.content} itemId={item.id} onContentApplied={onContentApplied} />
-                <OnChangePlugin onChange={onChange} ignoreSelectionChange />
-              </div>
-            </div>
+  return <>
+    <div data-tour="write-panel" className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="editor-container flex flex-1 min-h-0 flex-col">
+        <div ref={setToolbar} data-editor-toolbar />
+        <hr />
+        <div className="editor-inner" ref={editorInnerRef}>
+          <div className="editor-content-column">
+            {steps.map((step, index) => {
+              const stepItem = items[step.itemId];
+              if (!stepItem) return null;
+              const ties = index > 0 && trail ? bridgeTies(items, trail.steps[index - 1].itemId, step.itemId) : [];
+              const explicit = step.associationId ? associationById.get(step.associationId) : undefined;
+              if (explicit && !ties.some((tie) => tie.association.id === explicit.id)) ties.unshift({ association: explicit, forward: true });
+              return <section key={step.itemId} aria-label={`Step ${index + 1}: ${stepItem.title}`}
+                ref={(element) => { if (element) slotRefs.current.set(step.itemId, element); else slotRefs.current.delete(step.itemId); }}>
+                {index > 0 && trail && <div className="trail-divider mt-4">
+                  <TrailConnector ties={ties} annotation={step.annotation}
+                    onSaveAnnotation={(text) => props.onUpdateAnnotation(trail.id, step.itemId, text)} />
+                </div>}
+                <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  Step {index + 1}
+                </div>
+                {stepItem.content != null ? <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
+                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} />
+                  : <div className="pl-7 py-6" role="status">
+                    {props.contentLoadError ? <><p>Could not load this item.</p><button type="button" onClick={props.onRetryContent}>Retry</button></> : 'Loading…'}
+                  </div>}
+              </section>;
+            })}
+            {inTrail && trail && <div className="mt-16 flex justify-center pb-4">
+              <button type="button" onClick={() => props.onCreateItem(trail.id, 'Untitled')}
+                className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground">
+                <Plus className="h-3.5 w-3.5" /> Add next step <kbd>⌘↵</kbd>
+              </button>
+            </div>}
           </div>
-        </LexicalComposer>
+        </div>
       </div>
-      <ConnectionsPanel
-        item={item}
-        items={items}
-        trails={trails}
-        activeTrailId={activeTrailId}
-        onSelectItem={onSelectItem}
-        onTie={onTie}
-        onUntie={onUntie}
-        onOpenGraph={onOpenGraph}
-        open={connectionsPanelOpen}
-        onToggleOpen={onToggleConnectionsPanelOpen}
-      />
-    </>
-  );
+    </div>
+    <ConnectionsPanel item={item} items={items} trails={props.trails} activeTrailId={props.activeTrailId}
+      onSelectItem={props.onSelectItem} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
+      open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
+  </>;
 }
