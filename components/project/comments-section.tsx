@@ -172,16 +172,23 @@ export function CommentsSection({
             placeholder="Add a comment..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={2}
-            className="resize-none"
+            rows={3}
+            aria-label="Add a comment"
+            disabled={isPending}
+            className="min-h-24 resize-y rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
           />
-          <Button
-            onClick={handlePost}
-            disabled={!content.trim() || isPending}
-            className="self-end disabled:opacity-100 disabled:bg-primary/40"
-          >
-            {isPending ? "Posting..." : "Post"}
-          </Button>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setContent("")} disabled={!content || isPending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePost}
+              disabled={!content.trim() || isPending}
+              className="disabled:opacity-100 disabled:bg-primary/40"
+            >
+              {isPending ? "Commenting..." : "Comment"}
+            </Button>
+          </div>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">Comments are limited on this project.</p>
@@ -208,7 +215,7 @@ export function CommentsSection({
                     onChange={(e) => setReplyContent(e.target.value)}
                     rows={2}
                     autoFocus
-                    className="resize-none"
+                    className="resize-none rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
                   />
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={() => setReplyTo(null)}>
@@ -239,7 +246,7 @@ export function CommentsSection({
                         onChange={(e) => setReplyContent(e.target.value)}
                         rows={2}
                         autoFocus
-                        className="resize-none"
+                        className="resize-none rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
                       />
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => setReplyTo(null)}>
