@@ -172,10 +172,10 @@ export function CommentsSection({
             placeholder="Add a comment..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={3}
+            rows={1}
             aria-label="Add a comment"
             disabled={isPending}
-            className="min-h-24 resize-y rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
+            className="min-h-0 resize-none rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setContent("")} disabled={!content || isPending}>
@@ -213,9 +213,9 @@ export function CommentsSection({
                     placeholder="Write a reply..."
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
-                    rows={2}
+                    rows={1}
                     autoFocus
-                    className="resize-none rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
+                    className="min-h-0 resize-none rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
                   />
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={() => setReplyTo(null)}>
@@ -244,9 +244,9 @@ export function CommentsSection({
                         placeholder="Write a reply..."
                         value={replyContent}
                         onChange={(e) => setReplyContent(e.target.value)}
-                        rows={2}
+                        rows={1}
                         autoFocus
-                        className="resize-none rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
+                        className="min-h-0 resize-none rounded-none border-0 border-b px-0 shadow-none focus-visible:border-primary focus-visible:ring-0"
                       />
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => setReplyTo(null)}>
