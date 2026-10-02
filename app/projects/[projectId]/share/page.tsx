@@ -30,6 +30,7 @@ import {
 } from "@/lib/projects-store"
 import { getMyProfile } from "@/lib/profile"
 import type { ProjectFeedItem } from "@/lib/public-project"
+import { TaskHint } from "@/components/editor/task-hint"
 import { cn } from "@/lib/utils"
 
 const VISIBILITY_OPTIONS: {
@@ -194,6 +195,7 @@ export default function PublishPage() {
       </div>
 
       <div className="flex flex-col gap-6 overflow-y-auto border-l border-border p-6 pb-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:min-h-0 [&>*]:shrink-0">
+        <TaskHint id={`publish:${projectId}`}>Before publishing, check the description and read each trail from the editor. Readers see the published snapshot; later edits stay private until you publish an update.</TaskHint>
         <div className="flex flex-col gap-1.5">
           <Label>Visibility</Label>
           <div className="flex flex-col gap-2">

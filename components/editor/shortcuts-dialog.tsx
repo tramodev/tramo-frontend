@@ -11,35 +11,35 @@ import {
 
 const GROUPS: { title: string; shortcuts: [string, string][] }[] = [
   {
-    title: "Moverse",
+    title: "Navigate",
     shortcuts: [
-      ["⌘P", "Buscar un item en el memex"],
-      ["↑ / ↓ al inicio o final", "Pasar al item anterior / siguiente"],
-      ["⌘⌥↑ / ⌘⌥↓", "Item anterior / siguiente del trail"],
-      ["Esc", "Ir a la barra de herramientas y volver"],
-      ["⌘F", "Buscar y reemplazar en el item"],
+      ["⌘P", "Find a note in this project"],
+      ["↑ / ↓ at start or end", "Previous / next note"],
+      ["⌘⌥↑ / ⌘⌥↓", "Previous / next note in the trail"],
+      ["Esc", "Move to the toolbar and back"],
+      ["⌘F", "Find and replace in this note"],
     ],
   },
   {
-    title: "Insertar",
+    title: "Insert",
     shortcuts: [
-      ["/", "Menú de inserción"],
-      ["@", "Mencionar otro item"],
-      ["[[", "Enlazar otro item"],
-      ["⌘E", "Ecuación en línea"],
-      ["⌘⇧E", "Ecuación en bloque"],
-      ["⌘K", "Enlace"],
-      ["⌘↵", "Nuevo paso del trail"],
+      ["/", "Insert menu"],
+      ["@", "Insert a note reference"],
+      ["[[", "Insert a note reference"],
+      ["⌘E", "Inline equation"],
+      ["⌘⇧E", "Block equation"],
+      ["⌘K", "Link"],
+      ["⌘↵", "New note in the trail"],
     ],
   },
   {
-    title: "Escribir",
+    title: "Write",
     shortcuts: [
-      ["⌘B / ⌘I / ⌘U", "Negrita / itálica / subrayado"],
-      ["Tab / ⇧Tab", "Indentar / desindentar en listas"],
-      ["⌘Z / ⌘⇧Z", "Deshacer / rehacer"],
-      ["# ## ###", "Títulos (con espacio al final)"],
-      ["- / 1. / >", "Lista, lista numerada, cita"],
+      ["⌘B / ⌘I / ⌘U", "Bold / italic / underline"],
+      ["Tab / ⇧Tab", "Indent / outdent lists"],
+      ["⌘Z / ⌘⇧Z", "Undo / redo"],
+      ["# ## ###", "Headings (followed by a space)"],
+      ["- / 1. / >", "List, numbered list, quote"],
     ],
   },
 ]
@@ -71,8 +71,8 @@ export function ShortcutsDialog() {
         }}
       >
         <DialogHeader>
-          <DialogTitle>Atajos de teclado</DialogTitle>
-          <DialogDescription>⌘/ abre y cierra esta ventana.</DialogDescription>
+          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <DialogDescription>⌘/ opens and closes this dialog. Use Ctrl instead of ⌘ on Windows and Linux.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-5">
           {GROUPS.map((group) => (

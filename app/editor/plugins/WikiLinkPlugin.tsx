@@ -37,11 +37,9 @@ class WikiLinkOption extends MenuOption {
 export default function WikiLinkPlugin({
   items,
   currentItemId,
-  onLinkItem,
 }: {
   items: Record<string, Item>;
   currentItemId: string;
-  onLinkItem: (itemId: string, otherItemId: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const [queryString, setQueryString] = useState<string | null>(null);
@@ -68,10 +66,9 @@ export default function WikiLinkPlugin({
         }
         linkNode.selectEnd();
       });
-      onLinkItem(currentItemId, option.item.id);
       closeMenu();
     },
-    [editor, currentItemId, onLinkItem],
+    [editor],
   );
 
   return (

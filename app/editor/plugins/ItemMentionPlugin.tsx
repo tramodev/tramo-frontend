@@ -24,11 +24,9 @@ class ItemMentionOption extends MenuOption {
 export default function ItemMentionPlugin({
   items,
   currentItemId,
-  onLinkItem,
 }: {
   items: Record<string, Item>;
   currentItemId: string;
-  onLinkItem: (itemId: string, otherItemId: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const [queryString, setQueryString] = useState<string | null>(null);
@@ -57,10 +55,9 @@ export default function ItemMentionPlugin({
         }
         linkNode.selectEnd();
       });
-      onLinkItem(currentItemId, option.item.id);
       closeMenu();
     },
-    [editor, currentItemId, onLinkItem],
+    [editor],
   );
 
   return (

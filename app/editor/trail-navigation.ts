@@ -13,3 +13,7 @@ export function visibleItemAtLine(positions: { id: string; top: number }[], line
   }
   return current;
 }
+
+export function firstReadableTrail<T extends { id: string; items: unknown[] }>(trails: T[]): T | undefined {
+  return [...trails].sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true })).find(trail => trail.items.length > 0);
+}

@@ -86,14 +86,16 @@ export function useProjectEditorState(projectId: string) {
       setItems(project.items);
       setLoaded(true);
 
-      const savedItemId = localStorage.getItem(lastItemStorageKey(projectId));
+      const entry = new URLSearchParams(window.location.search);
+      const savedItemId = entry.get('note') ?? localStorage.getItem(lastItemStorageKey(projectId));
       const savedItem = savedItemId ? project.items[savedItemId] : undefined;
-      const host = savedItem ? project.trails.find((t) => t.itemIds.includes(savedItem.id)) : undefined;
+      const host = savedItem ? project.trails.find((t) => t.id === entry.get('trail') && t.itemIds.includes(savedItem.id)) ?? project.trails.find((t) => t.itemIds.includes(savedItem.id)) : undefined;
       const trail = host ?? project.trails[0];
       const itemId = savedItem?.id ?? trail?.itemIds[0] ?? Object.values(project.items)[0]?.id;
       setNavigation({ trailId: savedItem && !host ? undefined : trail?.id, itemId,
-        request: itemId ? { itemId, sequence: ++navigationSequence.current, focus: false } : undefined });
+        request: itemId ? { itemId, sequence: ++navigationSequence.current, focus: entry.get('write') === '1' } : undefined });
 
+      if (entry.has('note')) window.history.replaceState(window.history.state, '', window.location.pathname);
     }).catch(() => {
       if (!cancelled) redirectToLogin();
     });
@@ -195,6 +197,17 @@ export function useProjectEditorState(projectId: string) {
       trailId: resolveItemTrail(trails, item.id, prev.trailId, trailId),
       request,
     }));
+  };
+
+  const handleSelectTrail = (trailId: string) => {
+    const trail = trails.find((candidate) => candidate.id === trailId);
+    if (!trail) return;
+    const first = trail.itemIds.map((id) => items[id]).find(Boolean);
+    if (first) handleSelectItem(first, trailId);
+    else {
+      setView('write');
+      setNavigation({ trailId });
+    }
   };
 
   const handleReorderTrailItems = async (trailId: string, itemIds: string[]) => {
@@ -371,16 +384,6 @@ export function useProjectEditorState(projectId: string) {
     });
   };
 
-  const handleLinkItems = async (itemId: string, otherItemId: string) => {
-    if (itemId === otherItemId) return;
-    await handleTie(itemId, otherItemId, 'ITEM', 'RELATED');
-    setItems((prev) => {
-      const other = prev[otherItemId];
-      if (!other || other.linkedItemIds.includes(itemId)) return prev;
-      return { ...prev, [otherItemId]: { ...other, linkedItemIds: [...other.linkedItemIds, itemId] } };
-    });
-  };
-
   const handleUntie = async (itemId: string, targetId: string, targetType: AssociationTargetType) => {
     await untie(itemId, targetId, targetType);
     setItems((prev) => {
@@ -444,6 +447,7 @@ export function useProjectEditorState(projectId: string) {
     retryContent,
     navigationRequest: navigation.request,
     handleVisibleItem,
+    handleSelectTrail,
     redirectToLogin,
     handleUpdateAnnotation,
     commitItemTitle,
@@ -460,7 +464,6 @@ export function useProjectEditorState(projectId: string) {
     handleSetTrailDescription,
     handleRenameItem,
     handleDeleteTrail,
-    handleLinkItems,
     handleTie,
     handleUntie,
     handleVisibilityChange,

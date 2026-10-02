@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowDown, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 
-import { ASSOCIATION_META, ASSOCIATION_COLOR_VAR, type BridgeTie } from "@/app/editor/associations"
+import { ASSOCIATION_META, ASSOCIATION_COLOR_VAR, relationshipLabel, type BridgeTie } from "@/app/editor/associations"
 
 interface TrailConnectorProps {
   ties: BridgeTie[];
@@ -44,17 +44,17 @@ function AnnotationEditor({ annotation, onSave }: { annotation: string | null; o
         className="mx-auto flex items-center gap-1 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
       >
         <Plus className="h-3.5 w-3.5" />
-        Add annotation
+        Explain this transition
       </button>
     );
   }
   return (
-    <p
-      onClick={() => setEditing(true)}
+    <button type="button"
+      onClick={() => { setDraft(current); setEditing(true); }}
       className="cursor-text whitespace-pre-wrap text-[15px] italic leading-relaxed text-foreground/90"
     >
       {current}
-    </p>
+    </button>
   );
 }
 
@@ -63,14 +63,9 @@ export function TrailConnector({ ties, annotation, onSaveAnnotation }: TrailConn
     <div className="py-5">
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
-        <span className="flex shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] font-medium uppercase tracking-[0.1em]">
-          {ties.length === 0 ? (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <ArrowDown className="h-3.5 w-3.5" />
-              deliberate jump
-            </span>
-          ) : (
-            ties.map(({ association, forward }, index) => {
+        <span className="flex shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-medium">
+          {ties.length > 0 && (
+            ties.map(({ association, sourceTitle }, index) => {
               const meta = ASSOCIATION_META[association.type];
               const BridgeIcon = meta.Icon;
               const color = `var(${ASSOCIATION_COLOR_VAR[association.type]})`;
@@ -78,8 +73,8 @@ export function TrailConnector({ ties, annotation, onSaveAnnotation }: TrailConn
                 <span key={association.id} className="flex items-center gap-2">
                   {index > 0 && <span className="text-muted-foreground">·</span>}
                   <span className="flex items-center gap-1.5" style={{ color }}>
-                    <BridgeIcon className={`h-3.5 w-3.5 ${forward ? "" : "rotate-180"}`} />
-                    {forward ? `${meta.label} ${association.targetTitle}`.trim() : `${meta.label} back`}
+                    <BridgeIcon className="h-3.5 w-3.5" />
+                    {relationshipLabel(association.type, sourceTitle ?? 'This note', association.targetTitle)}
                   </span>
                 </span>
               );

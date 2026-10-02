@@ -20,7 +20,7 @@ function UploadThumbnailTab({ disabled, active, onFile }: { disabled: boolean; a
   return (
     <label
       className={cn(
-        "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
+        "flex flex-col notes-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
         active ? "border-foreground bg-foreground/5" : "border-border hover:bg-muted",
         disabled ? "pointer-events-none opacity-50" : "cursor-pointer"
       )}
@@ -121,7 +121,7 @@ export function ThumbnailPicker({
             type="button"
             onClick={() => setTab(key)}
             className={cn(
-              "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
+              "flex flex-col notes-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
               tab === key ? "border-foreground bg-foreground/5" : "border-border hover:bg-muted"
             )}
           >
@@ -164,7 +164,7 @@ export function ThumbnailPicker({
             );
           })}
           {project.trails.every((t) => t.itemIds.length === 0) && (
-            <p className="text-xs text-muted-foreground">No trails with items yet.</p>
+            <p className="text-xs text-muted-foreground">No trails with notes yet.</p>
           )}
         </div>
       )}

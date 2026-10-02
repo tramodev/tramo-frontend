@@ -209,8 +209,12 @@ export async function getProject(id: string): Promise<Project | null> {
   return { ...toProjectSummary(projectDto), trails, items };
 }
 
-export async function createProject(title: string): Promise<Project> {
-  return toProjectSummary(await apiJson<ProjectDTO>(`/api/project`, { method: "POST", json: { title } }));
+export async function startProject(requestId: string, example: boolean = false): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
+  return apiJson('/api/project/start', { method: 'POST', json: { requestId, example } });
+}
+
+export async function startExistingProject(projectId: string, trailId?: string): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
+  return apiJson(`/api/project/${projectId}/start${trailId ? `?trailId=${encodeURIComponent(trailId)}` : ''}`, { method: 'POST' });
 }
 
 export async function renameProject(id: string, title: string): Promise<void> {

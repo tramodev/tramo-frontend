@@ -29,10 +29,11 @@ interface PublicSidebarProps {
   trails: PublicTrail[];
   looseItems: PublicItem[];
   selectedItemId?: string;
-  onSelectItem: (item: PublicItem) => void;
+  activeTrailId?: string;
+  onSelectItem: (item: PublicItem, trailId?: string) => void;
 }
 
-export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, onSelectItem }: PublicSidebarProps) {
+export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, activeTrailId, onSelectItem }: PublicSidebarProps) {
   const { state } = useSidebar();
   const [query, setQuery] = useState("");
 
@@ -95,7 +96,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, on
                   </SidebarMenuItem>
                 ))}
                 {resultItems.length > 0 && (
-                  <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Items</p>
+                  <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Notes</p>
                 )}
                 {resultItems.map((item) => (
                   <SidebarMenuItem key={`result-item-${item.id}`}>
@@ -145,8 +146,8 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, on
                         {trail.items.map((item) => (
                           <SidebarMenuSubItem key={item.id}>
                             <SidebarMenuSubButton
-                              isActive={selectedItemId === item.id}
-                              onClick={() => onSelectItem(item)}
+                              isActive={selectedItemId === item.id && activeTrailId === trail.id}
+                              onClick={() => onSelectItem(item, trail.id)}
                             >
                               <span
                                 className={
@@ -171,7 +172,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, on
           <SidebarGroup>
             <SidebarGroupLabel>
               <span className="text-xs font-medium text-muted-foreground">
-                Items
+                Notes
               </span>
             </SidebarGroupLabel>
             <SidebarGroupContent>

@@ -10,13 +10,13 @@ export const Hero: React.FC = () => {
       <StaggerGroup className="relative pt-[88px] text-center">
         <StaggerItem>
           <h1 className="font-display font-normal leading-[1.12] text-[clamp(40px,5.6vw,64px)]">
-            <span className="block">Organize learning as interconnected ideas,</span>
-            <span className="block text-primary font-medium">not isolated notes.</span>
+            <span className="block">Turn connected, reusable notes</span>
+            <span className="block text-primary font-medium">into trails for learning and explaining.</span>
           </h1>
         </StaggerItem>
         <StaggerItem>
           <p className="text-[17px] leading-7 max-w-[58ch] mx-auto mt-8 text-muted-foreground">
-            — and share them when it matters.
+            Start writing now. Organize your notes as you go, reuse them in different trails, and share a clear explanation.
           </p>
         </StaggerItem>
         <StaggerItem>

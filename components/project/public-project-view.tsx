@@ -22,6 +22,7 @@ import { UserMenu } from "@/components/layout/user-menu"
 import { Button } from "@/components/ui/button"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Association, Item, Trail } from "@/app/editor/types"
+import { firstReadableTrail, resolveItemTrail } from "@/app/editor/trail-navigation"
 import { bridgeTies } from "@/app/editor/associations"
 import { useScrollSpy } from "@/hooks/use-scroll-spy"
 
@@ -74,8 +75,9 @@ export function PublicProjectView({
   imageUrl: string | null
 }) {
   const allItems = [...project.trails.flatMap((trail) => trail.items), ...project.looseItems]
-  const [selectedItem, setSelectedItem] = useState<PublicItem | undefined>(allItems[0])
-  const [activeTrailId, setActiveTrailId] = useState<string | undefined>(project.trails[0]?.id)
+  const firstTrail = firstReadableTrail(project.trails)
+  const [selectedItem, setSelectedItem] = useState<PublicItem | undefined>(firstTrail?.items[0] ?? project.looseItems[0])
+  const [activeTrailId, setActiveTrailId] = useState<string | undefined>(firstTrail?.id)
   const [view, setView] = useState<'content' | 'overview' | 'graph'>('content')
   const [commentCount, setCommentCount] = useState(project.commentCount)
 
@@ -124,15 +126,26 @@ export function PublicProjectView({
     },
   })
 
-  const handleSelectItem = (item: PublicItem) => {
+  const handleSelectItem = (item: PublicItem, trailId?: string) => {
     shouldScrollRef.current = true
     setSelectedItem(item)
     setView('content')
-    setActiveTrailId((prev) => {
-      const current = trails.find((t) => t.id === prev)
-      if (current?.itemIds.includes(item.id)) return prev
-      return trails.find((t) => t.itemIds.includes(item.id))?.id ?? prev
-    })
+    setActiveTrailId(prev => resolveItemTrail(trails, item.id, prev, trailId))
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const slot = slotRefs.current.get(item.id)
+      slot?.scrollIntoView({ block: 'start' })
+      slot?.focus({ preventScroll: true })
+    }))
+  }
+
+  const handleSelectTrail = (id: string) => {
+    const trail = project.trails.find(candidate => candidate.id === id)
+    if (!trail) return
+    setActiveTrailId(id)
+    setSelectedItem(trail.items[0])
+    setView('content')
+    shouldScrollRef.current = false
+    columnRef.current?.scrollTo({ top: 0 })
   }
 
   const handleSelectMappedItem = (item: Item) => {
@@ -148,7 +161,7 @@ export function PublicProjectView({
   const emptyState = (
     <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
       <FolderPlus className="h-12 w-12 opacity-40" />
-      <p className="text-lg font-medium">This project has no published content yet</p>
+      <p className="text-lg font-medium">{activeTrail ? 'This trail has no notes yet' : 'This project has no published notes yet'}</p>
     </div>
   )
 
@@ -261,6 +274,7 @@ export function PublicProjectView({
           looseItems={project.looseItems}
           selectedItemId={selectedItem?.id}
           onSelectItem={handleSelectItem}
+          activeTrailId={activeTrailId}
         />
       }
       content={
@@ -286,6 +300,18 @@ export function PublicProjectView({
             />
           ) : (
             <div ref={columnRef} className="flex min-w-0 flex-1 flex-col gap-3 overflow-auto">
+              <section aria-label="About this project" className="rounded-2xl bg-popover px-6 py-6">
+                <div className="mx-auto max-w-[820px]">
+                  <h1 className="font-display text-3xl font-medium">{project.title}</h1>
+                  {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
+                  {project.trails.length > 0 && <><p className="mt-5 text-xs text-muted-foreground">Trails are ordered sequences of notes. Choose where to begin.</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{project.trails.map(trail => <button type="button" key={trail.id} aria-pressed={activeTrailId === trail.id} onClick={() => handleSelectTrail(trail.id)} className={`rounded-lg border p-3 text-left ${activeTrailId === trail.id ? 'border-primary bg-muted' : 'border-border hover:bg-muted'}`}><span className="block text-sm font-medium">{trail.title}</span>{trail.description?.trim() && <span className="mt-1 block text-xs text-muted-foreground">{trail.description}</span>}<span className="mt-1 block text-xs text-muted-foreground">{trail.items.length} notes</span></button>)}</div></>}
+                  {project.looseItems.length > 0 && <button type="button" className="mt-3 text-sm underline" onClick={() => { setActiveTrailId(undefined); setSelectedItem(project.looseItems[0]); }}>Notes outside trails</button>}
+                  {selectedItem && <button type="button" onClick={() => {
+                    const first = activeTrail ? allItems.find(note => note.id === activeTrail.itemIds[0]) : selectedItem;
+                    if (first) handleSelectItem(first, activeTrailId);
+                  }} className="mt-4 block rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground">Start reading</button>}
+                </div>
+              </section>
               {selectedItem ? (
                 <div className="rounded-2xl bg-popover">
                   <div className="public-trail-column mx-auto w-full max-w-[820px] px-6 py-8">
@@ -296,12 +322,14 @@ export function PublicProjectView({
                       const ties = i > 0 ? bridgeTies(items, steps[i - 1].itemId, step.itemId) : []
                       const explicit = step.associationId ? associationById.get(step.associationId) : undefined
                       if (explicit && !ties.some((t) => t.association.id === explicit.id)) {
-                        ties.unshift({ association: explicit, forward: true })
+                        ties.unshift({ association: explicit, forward: true, sourceTitle: Object.values(items).find(note => note.associations.some(a => a.id === explicit.id))?.title })
                       }
 
                       return (
                         <div
                           key={step.itemId}
+                          tabIndex={-1}
+                          aria-label={stepItem.title}
                           ref={(el) => {
                             if (el) slotRefs.current.set(step.itemId, el)
                             else slotRefs.current.delete(step.itemId)

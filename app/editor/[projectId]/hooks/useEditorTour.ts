@@ -1,14 +1,13 @@
-import { useEffect } from 'react';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import { getEditorTourSeen, setEditorTourSeen } from '@/lib/editor-tour-prefs';
+import { setEditorTourSeen } from '@/lib/editor-tour-prefs';
 
 const TOUR_STEPS = [
   {
     element: '[data-tour="sidebar"]',
     popover: {
-      title: 'Trails & items',
-      description: 'Organize your project into trails, and add items to each one. Use the "+" buttons to create new ones.',
+      title: 'Trails & notes',
+      description: 'Organize your project into trails, and add notes to each one. A trail is an ordered sequence of notes. Add an existing note to reuse it.',
     },
   },
   {
@@ -22,21 +21,21 @@ const TOUR_STEPS = [
     element: '[data-tour="write-panel"]',
     popover: {
       title: 'Write',
-      description: 'Edit each item directly in the trail. Scroll to explore, or use the arrow keys at the start and end of an item to move between steps.',
+      description: 'Edit each note directly in the trail. Scroll to explore, or use the arrow keys at the start and end of a note to move between steps.',
     },
   },
   {
     element: '[data-tour="connections-toggle"]',
     popover: {
       title: 'Connections & graph',
-      description: 'Open this panel to link items together and preview them on the knowledge graph.',
+      description: 'Open this panel to connect notes and preview them on the knowledge graph.',
     },
   },
   {
     element: '[data-tour="overview-toggle"]',
     popover: {
-      title: 'Overview',
-      description: 'Switch to Overview to see the whole trail at a glance.',
+      title: 'Trail overview',
+      description: 'Switch to Trail overview to see the whole trail at a glance.',
     },
   },
   {
@@ -48,27 +47,8 @@ const TOUR_STEPS = [
   },
 ];
 
-export function useEditorTour(ready: boolean) {
-  useEffect(() => {
-    if (!ready) return;
-    let cancelled = false;
-
-    getEditorTourSeen()
-      .then((seen) => {
-        if (cancelled || seen) return;
-
-        const tour = driver({
-          showProgress: true,
-          skipMissingElement: true,
-          steps: TOUR_STEPS,
-          onDestroyed: () => setEditorTourSeen(),
-        });
-        tour.drive();
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ready]);
+export function startEditorTour() {
+  const steps = TOUR_STEPS.filter((step) => document.querySelector(step.element));
+  if (!steps.length) return;
+  driver({ showProgress: true, skipMissingElement: true, steps, onDestroyed: () => { void setEditorTourSeen(); } }).drive();
 }

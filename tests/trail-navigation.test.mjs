@@ -22,3 +22,12 @@ test('visible item follows the reading line including long and empty steps', () 
   assert.equal(exports.visibleItemAtLine(positions, -1500), 'a');
   assert.equal(exports.visibleItemAtLine([], 100), undefined);
 });
+
+test('public reading starts deterministically at the first nonempty trail without changing author order', () => {
+  const input = [{ id: '10', items: ['later'] }, { id: '1', items: [] }, { id: '2', items: ['first'] }];
+  assert.equal(exports.firstReadableTrail(input), input[2]);
+  assert.equal(input[0].id, '10');
+  assert.equal(exports.firstReadableTrail([input[0]]), input[0]);
+  assert.equal(exports.firstReadableTrail([input[1]]), undefined);
+  assert.equal(exports.firstReadableTrail([]), undefined);
+});

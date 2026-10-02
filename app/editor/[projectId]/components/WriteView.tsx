@@ -57,12 +57,12 @@ interface WriteViewProps {
   onRetryContent: () => void;
   navigationRequest?: { itemId: string; sequence: number; focus: boolean };
   onVisibleItem: (itemId: string) => void;
+  onSelectTrail: (trailId: string) => void;
   onUpdateAnnotation: (trailId: string, itemId: string, annotation: string) => void;
   onCommitTitle: (itemId: string, currentTitle: string, nextValue: string) => void;
   onSetTitleAlign: (itemId: string, titleAlign: TitleAlign) => void;
   onSelectItem: (item: Item, trailId?: string) => void;
   onCreateItem: (trailId: string, title: string) => void;
-  onLinkItems: (itemId: string, otherItemId: string) => void;
   onTie: (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => void;
   onUntie: (itemId: string, targetId: string, targetType: AssociationTargetType) => void;
   onOpenGraph: () => void;
@@ -136,6 +136,10 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
           setTitleFocused(true);
           onFocus(item.id);
         }} />
+        {props.trails.filter(trail => trail.itemIds.includes(item.id)).length > 1 && <div className="pl-7 py-2 text-xs text-muted-foreground">
+          <p>Used in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length} trails. Edits appear in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length === 2 ? 'both' : 'all of them'}.</p>
+          <div className="mt-1 flex flex-wrap gap-3">{props.trails.filter(trail => trail.itemIds.includes(item.id)).map(trail => <button type="button" key={trail.id} onClick={() => props.onSelectItem(item, trail.id)} className="underline">{trail.title}</button>)}</div>
+        </div>}
         <div className="relative">
           <RichTextPlugin contentEditable={
             <ContentEditable className="editor-input" aria-label={`Content of ${item.title}`} aria-placeholder={placeholder}
@@ -162,8 +166,8 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
         <TabIndentationPlugin />
         <HorizontalRulePlugin />
         <SlashMenuPlugin projectId={props.projectId} />
-        <ItemMentionPlugin items={props.items} currentItemId={item.id} onLinkItem={props.onLinkItems} />
-        <WikiLinkPlugin items={props.items} currentItemId={item.id} onLinkItem={props.onLinkItems} />
+        <ItemMentionPlugin items={props.items} currentItemId={item.id} />
+        <WikiLinkPlugin items={props.items} currentItemId={item.id} />
         <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         <ItemNavigationPlugin itemId={item.id} register={register} move={move} />
         <OnChangePlugin onChange={(state) => props.onChange(item.id, state)} ignoreSelectionChange />
@@ -193,7 +197,7 @@ function ItemTitle({ item, onCommitTitle, onFocus }: {
     if (input && input !== document.activeElement) input.value = item.title;
   }, [item.title]);
   return <div className="pl-7 pt-2">
-    <input ref={inputRef} defaultValue={item.title} aria-label="Item title" onFocus={onFocus}
+    <input ref={inputRef} defaultValue={item.title} aria-label="Note title" onFocus={onFocus}
       onBlur={(event) => onCommitTitle(item.id, item.title, event.target.value)}
       onKeyDown={(event) => {
         if (event.key !== 'Enter' || event.metaKey || event.ctrlKey || event.nativeEvent.isComposing) return;
@@ -296,7 +300,7 @@ export function WriteView(props: WriteViewProps) {
               if (!stepItem) return null;
               const ties = index > 0 && trail ? bridgeTies(items, trail.steps[index - 1].itemId, step.itemId) : [];
               const explicit = step.associationId ? associationById.get(step.associationId) : undefined;
-              if (explicit && !ties.some((tie) => tie.association.id === explicit.id)) ties.unshift({ association: explicit, forward: true });
+              if (explicit && !ties.some((tie) => tie.association.id === explicit.id)) ties.unshift({ association: explicit, forward: true, sourceTitle: Object.values(items).find(note => note.associations.some(a => a.id === explicit.id))?.title });
               return <section key={step.itemId} aria-label={`Step ${index + 1}: ${stepItem.title}`}
                 ref={(element) => { if (element) slotRefs.current.set(step.itemId, element); else slotRefs.current.delete(step.itemId); }}>
                 {index > 0 && trail && <div className="trail-divider mt-4">
@@ -321,7 +325,7 @@ export function WriteView(props: WriteViewProps) {
       </div>
     </div>
     <ConnectionsPanel key={focusedId} item={items[focusedId]} items={items} trails={props.trails} activeTrailId={props.activeTrailId}
-      onSelectItem={props.onSelectItem} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
+      onSelectItem={props.onSelectItem} onSelectTrail={props.onSelectTrail} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
   </>;
 }

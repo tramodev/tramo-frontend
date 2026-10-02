@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   Plus,
@@ -29,7 +29,7 @@ import { ForkBadge } from "@/components/project/fork-badge"
 import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
 import { formatBytes } from "@/lib/format-bytes"
 import {
-  createProject,
+  startProject,
   deleteProject,
   listProjects,
   renameProject,
@@ -50,6 +50,9 @@ function formatUpdatedAt(iso: string): string {
 
 export default function ProjectsPage() {
   const router = useRouter()
+  const creatingRef = useRef(false)
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState("")
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -75,9 +78,23 @@ export default function ProjectsPage() {
     return copy
   }, [projects, sortBy])
 
-  const handleCreateProject = async () => {
-    const project = await createProject("Untitled project")
-    router.push(`/editor/${project.id}`)
+  const handleCreateProject = async (example = false) => {
+    if (creatingRef.current) return
+    creatingRef.current = true
+    setCreating(true)
+    setCreateError("")
+    const key = `tramo:pending-start:${example ? 'example' : 'blank'}`
+    const requestId = sessionStorage.getItem(key) ?? crypto.randomUUID()
+    sessionStorage.setItem(key, requestId)
+    try {
+      const result = await startProject(requestId, example)
+      sessionStorage.removeItem(key)
+      router.push(`/editor/${result.projectId}?note=${result.itemId}&trail=${result.trailId ?? ''}&write=1`)
+    } catch {
+      setCreateError("Could not open your project. Try again; your request will not create a duplicate.")
+      creatingRef.current = false
+      setCreating(false)
+    }
   }
 
   const startRename = (project: Project) => {
@@ -109,7 +126,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main className="mx-auto w-full flex-1 max-w-[1216px] pt-11 px-18 pb-[84px]">
+    <main className="mx-auto w-full flex-1 max-w-[1216px] pt-11 px-5 sm:px-10 lg:px-18 pb-[84px]">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-primary">
             Your workspace
@@ -121,15 +138,22 @@ export default function ProjectsPage() {
         </h1>
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           <button
-            onClick={handleCreateProject}
+            disabled={creating}
+            onClick={() => handleCreateProject()}
             className="group flex aspect-[3/4] cursor-pointer flex-col items-start justify-end gap-2 rounded-lg p-5 transition-colors bg-card border border-dashed border-input text-muted-foreground hover:bg-muted hover:border-primary hover:text-primary"
           >
             <Plus strokeWidth={2} className="h-7 w-7 transition-colors" />
             <span className="text-sm font-medium transition-colors">
-              Blank project
+              Start writing
             </span>
           </button>
+          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex aspect-[3/4] flex-col items-start justify-end gap-2 rounded-lg border border-input bg-card p-5 text-left hover:bg-muted disabled:opacity-50">
+            <span className="text-sm font-medium">Try an example</span>
+            <span className="text-xs text-muted-foreground">Five notes, two trails. Your own editable copy of API foundations.</span>
+          </button>
         </div>
+        {creating && <p className="mt-3 text-sm text-muted-foreground" role="status">Opening your first note…</p>}
+        {createError && <p className="mt-3 text-sm text-destructive" role="alert">{createError}</p>}
 
         <div className="mt-[70px] min-h-[310px]">
           <div className="mb-5 flex items-center justify-between">
@@ -180,7 +204,7 @@ export default function ProjectsPage() {
             </p>
           ) : sortedProjects.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No projects yet. Create a blank project to get started.
+              No projects yet. Start writing or try an example.
             </p>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-[repeat(auto-fill,208px)] justify-between gap-2">

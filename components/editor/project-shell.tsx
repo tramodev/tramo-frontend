@@ -32,7 +32,7 @@ export function ProjectShell({
             </>
           )}
           <div className="min-w-0 flex-1">{titleSlot}</div>
-          <div className="ml-auto flex shrink-0 items-center gap-3 overflow-x-auto">
+          <div className="ml-auto flex min-w-0 max-w-[70%] items-center gap-3 overflow-x-auto">
             {actions}
           </div>
         </header>

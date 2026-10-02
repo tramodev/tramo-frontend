@@ -1,6 +1,6 @@
 
 "use client"
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { FolderPlus } from 'lucide-react';
 import { ProjectShell } from '@/components/editor/project-shell';
@@ -10,9 +10,11 @@ import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sideba
 import { countProjectTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '../editor-utils';
 import { useProjectEditorState } from './hooks/useProjectEditorState';
 import { useAutoSave } from './hooks/useAutoSave';
-import { useEditorTour } from './hooks/useEditorTour';
+import { startEditorTour } from './hooks/useEditorTour';
 import { EditorTitleSlot, EditorActions } from './components/EditorHeader';
 import { WriteView } from './components/WriteView';
+import { startExistingProject } from '@/lib/projects-store';
+import { TaskHint } from '@/components/editor/task-hint';
 import { OverviewView } from '@/components/editor/overview-view';
 import { GraphView } from '@/components/editor/graph-view';
 
@@ -44,19 +46,31 @@ export default function EditorPage() {
     [project.items]
   );
 
-  useEditorTour(project.loaded && !!project.selectedItem);
+  const startingRef = useRef(false);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState('');
+  const startWriting = async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
+    setStarting(true);
+    setStartError('');
+    try {
+      const result = await startExistingProject(projectId, project.activeTrailId);
+      window.location.assign(`/editor/${result.projectId}?note=${result.itemId}&trail=${result.trailId ?? ''}&write=1`);
+    } catch {
+      setStartError('Could not open a note. Please try again.');
+      startingRef.current = false;
+      setStarting(false);
+    }
+  };
 
   const emptyState = (
     <div className="flex h-full w-full min-h-[60vh] flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
       <FolderPlus className="h-12 w-12 opacity-40" />
-      <p className="text-lg font-medium">
-        {project.trails.length === 0 ? "No trails yet" : "No item selected"}
-      </p>
-      <p className="max-w-sm text-sm">
-        {project.trails.length === 0
-          ? 'Create a trail from the sidebar (the "+" next to "Trails") to get started.'
-          : "Select an item from the sidebar, or create a new one inside a trail."}
-      </p>
+      <p className="text-lg font-medium">{project.activeTrail ? project.activeTrail.title : 'Start with a note'}</p>
+      <p className="max-w-sm text-sm">Write first. A trail is an ordered sequence of notes; you can organize and reuse them as you go.</p>
+      <button type="button" disabled={starting} onClick={startWriting} className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground disabled:opacity-50">{starting ? 'Opening…' : 'Start writing'}</button>
+      {startError && <p role="alert" className="text-sm text-destructive">{startError}</p>}
     </div>
   );
 
@@ -78,14 +92,14 @@ export default function EditorPage() {
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={
-          project.loaded && <EditorActions
+          project.loaded && <><button type="button" data-tour="connections-toggle" disabled={!project.selectedItem || project.view !== 'write'} aria-expanded={connectionsPanelOpen} onClick={() => setConnectionsPanelOpen(o => !o)} className="text-sm text-muted-foreground">Connections</button><button type="button" onClick={() => project.setView('graph')} className="text-sm text-muted-foreground">Graph</button><button type="button" onClick={startEditorTour} className="text-sm text-muted-foreground">Help</button><EditorActions
             textStats={textStats}
             hasActiveTrail={!!project.activeTrail}
             overviewActive={project.view === 'overview'}
             onToggleOverview={() => project.setView((v) => (v === 'overview' ? 'write' : 'overview'))}
             projectId={projectId}
             profile={project.profile}
-          />
+          /></>
         }
         sidebar={
           project.loaded ? <SidebarCustom
@@ -109,7 +123,11 @@ export default function EditorPage() {
           /> : <Sidebar><SidebarContent><div className="m-6 h-5 w-32 animate-pulse rounded bg-muted" /></SidebarContent></Sidebar>
         }
         content={
-          <div className="flex min-w-0 flex-1 gap-3 overflow-hidden">
+          <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden">
+            {project.loaded && project.profile && project.selectedItem && <TaskHint id={`${project.profile?.username ?? projectId}:${project.trails.length > 1 ? 'reuse' : Object.keys(project.items).length > 1 ? 'connect' : 'write'}`}>
+              {project.trails.length > 1 ? 'Reuse a note with “Add existing note” in another trail. Edits appear everywhere that note is used.' : Object.keys(project.items).length > 1 ? 'Connect notes when a relationship adds context. Open Connections beside the editor, or explore the Graph.' : 'Start writing in the note. Your changes save automatically; you can add a title later.'}
+            </TaskHint>}
+            <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
             {!project.loaded ? <div className="editor-container flex flex-1 items-center justify-center text-sm text-muted-foreground" role="status">Loading editor…</div> : project.view === 'graph' ? (
               <GraphView
                 trails={project.trails}
@@ -143,12 +161,12 @@ export default function EditorPage() {
                 onRetryContent={project.retryContent}
                 navigationRequest={project.navigationRequest}
                 onVisibleItem={project.handleVisibleItem}
+                onSelectTrail={project.handleSelectTrail}
                 onUpdateAnnotation={project.handleUpdateAnnotation}
                 onCommitTitle={project.commitItemTitle}
                 onSetTitleAlign={project.handleSetItemTitleAlign}
                 onSelectItem={project.handleSelectItem}
                 onCreateItem={project.handleCreateItem}
-                onLinkItems={project.handleLinkItems}
                 onTie={project.handleTie}
                 onUntie={project.handleUntie}
                 onOpenGraph={() => project.setView('graph')}
@@ -157,6 +175,7 @@ export default function EditorPage() {
                 onToggleConnectionsPanelOpen={() => setConnectionsPanelOpen((o) => !o)}
               />
             ) : emptyState}
+            </div>
           </div>
         }
       />

@@ -69,7 +69,7 @@ const ItemNodeComp = memo(function ItemNodeComp({ data }: NodeProps<ItemNode>) {
   const spine = data.kind === "spine";
   return (
     <div
-      className={`flex items-center justify-center rounded-lg px-2 text-center text-[17.5px] font-medium leading-tight ${
+      className={`flex notes-center justify-center rounded-lg px-2 text-center text-[17.5px] font-medium leading-tight ${
         spine ? "bg-primary text-primary-foreground" : "border border-border bg-card text-foreground"
       }`}
       style={{

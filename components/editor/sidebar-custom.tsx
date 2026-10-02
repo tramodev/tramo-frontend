@@ -225,7 +225,7 @@ export function SidebarCustom({
 
   const submitNewItem = (trailId: string) => {
     if (creatingItemTrailId !== trailId) return;
-    const title = newItemTitle.trim();
+    const title = newItemTitle.trim() || "Untitled note";
     if (title) {
       onCreateItem(trailId, title);
     }
@@ -278,14 +278,14 @@ export function SidebarCustom({
   const confirmDeleteTrail = (trail: Trail) => {
     setPendingConfirm({
       title: `Delete trail "${trail.title}"?`,
-      description: "Its items are kept — they stay in the Items list. This can't be undone.",
+      description: "Its notes are kept — they stay in the Notes list. This can't be undone.",
       onConfirm: () => onDeleteTrail(trail.id),
     });
   };
 
   const submitNewLooseItem = () => {
     if (!isCreatingLoose) return;
-    const title = newLooseTitle.trim();
+    const title = newLooseTitle.trim() || "Untitled note";
     if (title) onCreateLooseItem(title);
     setNewLooseTitle("");
     setIsCreatingLoose(false);
@@ -293,7 +293,7 @@ export function SidebarCustom({
 
   const confirmDeleteItem = (item: Item) => {
     setPendingConfirm({
-      title: `Delete item "${item.title}"?`,
+      title: `Delete note "${item.title}"?`,
       description: "It's removed from every trail and the project. This can't be undone.",
       onConfirm: () => onDeleteItem(item.id),
     });
@@ -354,7 +354,7 @@ export function SidebarCustom({
                   </SidebarMenuItem>
                 ))}
                 {resultItems.length > 0 && (
-                  <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Items</p>
+                  <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Notes</p>
                 )}
                 {resultItems.map((item) => (
                   <SidebarMenuItem key={`result-item-${item.id}`}>
@@ -459,7 +459,7 @@ export function SidebarCustom({
                                       variant="ghost"
                                       size="icon"
                                       className="h-5 w-5 shrink-0"
-                                      title="New item"
+                                      title="New note"
                                       onClick={() => setCreatingItemTrailId(trail.id)}
                                     >
                                       <Plus className="h-3 w-3" />
@@ -479,7 +479,7 @@ export function SidebarCustom({
                                         {linkableItems.length > 0 && (
                                           <DropdownMenuItem onSelect={() => startLinkingItem(trail.id)}>
                                             <Link2 className="h-3.5 w-3.5" />
-                                            Link existing item
+                                            Add existing note
                                           </DropdownMenuItem>
                                         )}
                                         <DropdownMenuItem onSelect={() => confirmDeleteTrail(trail)}>
@@ -506,7 +506,7 @@ export function SidebarCustom({
                                     onChange={(e) => setLinkSelection(e.target.value)}
                                   >
                                     <option value="" disabled>
-                                      Choose an item...
+                                      Choose a note...
                                     </option>
                                     {linkableItems.map((item) => (
                                       <option key={item.id} value={item.id}>
@@ -520,7 +520,7 @@ export function SidebarCustom({
                                     disabled={!linkSelection}
                                     onClick={() => submitLinkItem(trail.id)}
                                   >
-                                    Link
+                                    Add note
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -596,7 +596,7 @@ export function SidebarCustom({
                                                   variant="ghost"
                                                   size="icon"
                                                   className="h-5 w-5 shrink-0 text-muted-foreground opacity-0 hover:text-foreground group-hover/item:opacity-100 data-[state=open]:opacity-100"
-                                                  title="Item actions"
+                                                  title="Note actions"
                                                 >
                                                   <MoreHorizontal className="h-3 w-3" />
                                                 </Button>
@@ -610,7 +610,7 @@ export function SidebarCustom({
                                                 )}
                                                 <DropdownMenuItem onSelect={() => onUnlinkItemFromTrail(trail.id, item.id)}>
                                                   <X className="h-3.5 w-3.5" />
-                                                  Remove from this trail
+                                                  Remove from this trail (keep note)
                                                 </DropdownMenuItem>
                                               </DropdownMenuContent>
                                             </DropdownMenu>
@@ -630,7 +630,7 @@ export function SidebarCustom({
                                     <SidebarMenuSubItem>
                                       <InlineInput
                                         value={newItemTitle}
-                                        placeholder="Item title..."
+                                        placeholder="Note title (optional)"
                                         className="h-7"
                                         onChange={setNewItemTitle}
                                         onSubmit={() => submitNewItem(trail.id)}
@@ -664,12 +664,12 @@ export function SidebarCustom({
                   <CollapsibleTrigger asChild>
                     <button className="flex flex-1 items-center gap-1.5">
                       <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/items:rotate-90" />
-                      Items
+                      Notes
                     </button>
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[11px] font-normal group-data-[state=open]/items:hidden">{allItems.length}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" title="New item" onClick={() => setIsCreatingLoose(true)}>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" title="New note" onClick={() => setIsCreatingLoose(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </span>
@@ -679,7 +679,7 @@ export function SidebarCustom({
                     <div className="px-2 pb-2">
                       <InlineInput
                         value={newLooseTitle}
-                        placeholder="Item title..."
+                        placeholder="Note title (optional)"
                         className="h-7"
                         onChange={setNewLooseTitle}
                         onSubmit={submitNewLooseItem}
@@ -726,12 +726,10 @@ export function SidebarCustom({
                                     </TooltipTrigger>
                                     <TooltipContent className="max-w-56">
                                       <p className="font-medium">
-                                        In: {memberTrails.map((p) => p.title).join(", ")}
+                                        Used in {memberTrails.length} trails: {memberTrails.map((p) => p.title).join(", ")}
                                       </p>
                                       <p className="mt-1 text-muted-foreground">
-                                        Live in {memberTrails.length} of your own trails — edit once and every
-                                        trail updates. A fork by another trailblazer would take a frozen
-                                        snapshot instead.
+                                        Edits appear in every trail that uses this note.
                                       </p>
                                     </TooltipContent>
                                   </Tooltip>
@@ -743,7 +741,7 @@ export function SidebarCustom({
                                     variant="ghost"
                                     size="icon"
                                     className="h-5 w-5 shrink-0 text-muted-foreground opacity-0 hover:text-foreground group-hover/loose:opacity-100 data-[state=open]:opacity-100"
-                                    title="Item actions"
+                                    title="Note actions"
                                   >
                                     <MoreHorizontal className="h-3 w-3" />
                                   </Button>
@@ -757,7 +755,7 @@ export function SidebarCustom({
                                   )}
                                   <DropdownMenuItem onSelect={() => confirmDeleteItem(item)}>
                                     <Trash2 className="h-3.5 w-3.5" />
-                                    Delete item
+                                    Delete note
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -775,7 +773,7 @@ export function SidebarCustom({
                       })}
                       {allItems.length === 0 && !isCreatingLoose && (
                         <p className="px-2 py-1 text-xs italic text-muted-foreground">
-                          No items yet
+                          No notes yet
                         </p>
                       )}
                     </SidebarMenu>

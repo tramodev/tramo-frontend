@@ -65,7 +65,7 @@ export function OverviewReader({ trail, items, associationById, selectedItemId, 
         <h1 className="mt-1 font-display text-[40px] font-medium leading-[1.08]">{trail.title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {trail.forkedFrom && <span className="italic">forked · </span>}
-          version {trail.version} · {trail.itemIds.length} items
+          version {trail.version} · {trail.itemIds.length} notes
         </p>
         {onSetDescription ? (
           <TrailDescriptionEditor key={trail.id} trailId={trail.id} description={trail.description} onSave={onSetDescription} />
@@ -85,7 +85,7 @@ export function OverviewReader({ trail, items, associationById, selectedItemId, 
             const ties = i > 0 ? bridgeTies(items, trail.steps[i - 1].itemId, step.itemId) : [];
             const explicit = step.associationId ? associationById.get(step.associationId) : undefined;
             if (explicit && !ties.some((t) => t.association.id === explicit.id)) {
-              ties.unshift({ association: explicit, forward: true });
+              ties.unshift({ association: explicit, forward: true, sourceTitle: Object.values(items).find(note => note.associations.some(a => a.id === explicit.id))?.title });
             }
             const on = step.itemId === selectedItemId;
 
