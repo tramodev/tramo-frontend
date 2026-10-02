@@ -149,7 +149,7 @@ export default function ProjectsPage() {
           </button>
           <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex aspect-[3/4] flex-col items-start justify-end gap-2 rounded-lg border border-input bg-card p-5 text-left hover:bg-muted disabled:opacity-50">
             <span className="text-sm font-medium">Try an example</span>
-            <span className="text-xs text-muted-foreground">Five notes, two trails. Your own editable copy of API foundations.</span>
+            <span className="text-xs text-muted-foreground">Five notes, two trails. Your own editable copy of Memex and Vannevar Bush.</span>
           </button>
         </div>
         {creating && <p className="mt-3 text-sm text-muted-foreground" role="status">Opening your first note…</p>}
