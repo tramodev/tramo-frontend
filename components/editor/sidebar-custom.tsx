@@ -1,10 +1,11 @@
-import { ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Plus, Search, Trash2, X } from "lucide-react"
+import { CircleHelp, ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Plus, Search, Trash2, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Mark } from "@/components/layout/logo"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
@@ -34,6 +35,7 @@ interface SidebarCustomProps {
   items: Record<string, Item>;
   selectedItemId?: string;
   activeTrailId?: string;
+  onHelp: () => void;
   onSelectItem: (item: Item, trailId?: string) => void;
   onCreateTrail: (title: string) => void;
   onCreateItem: (trailId: string, title: string) => void;
@@ -119,6 +121,7 @@ export function SidebarCustom({
   selectedItemId,
   activeTrailId,
   onSelectItem,
+  onHelp,
   onCreateTrail,
   onCreateItem,
   onCreateLooseItem,
@@ -784,6 +787,16 @@ export function SidebarCustom({
           </div>
         )}
       </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={onHelp} className="text-muted-foreground">
+              <CircleHelp className="h-4 w-4" />
+              <span>Help</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
       <ConfirmDialog
         open={pendingConfirm !== null}
         onOpenChange={(open) => {

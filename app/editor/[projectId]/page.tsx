@@ -92,18 +92,19 @@ export default function EditorPage() {
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={
-          project.loaded && <><button type="button" onClick={startEditorTour} className="text-sm text-muted-foreground">Help</button><EditorActions
+          project.loaded && <EditorActions
             textStats={textStats}
             hasActiveTrail={!!project.activeTrail}
             overviewActive={project.view === 'overview'}
             onToggleOverview={() => project.setView((v) => (v === 'overview' ? 'write' : 'overview'))}
             projectId={projectId}
             profile={project.profile}
-          /></>
+          />
         }
         sidebar={
           project.loaded ? <SidebarCustom
             homeHref="/projects"
+            onHelp={startEditorTour}
             projectId={projectId}
             trails={project.trails}
             items={project.items}
