@@ -15,11 +15,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
   return parseResponse<SubscriptionStatus>(response);
 }
 
-export async function mockUpgrade(): Promise<SubscriptionStatus> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/subscription/mock-upgrade`, { method: "POST" });
-  return parseResponse<SubscriptionStatus>(response);
-}
-
 export async function cancelSubscription(): Promise<SubscriptionStatus> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/subscription`, { method: "DELETE" });
   return parseResponse<SubscriptionStatus>(response);

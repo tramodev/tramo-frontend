@@ -9,7 +9,6 @@ import { anonIdHeader } from "./public-project";
 import type { GraphPreviewData } from "./feed";
 
 export type ProjectVisibility = "private" | "unlisted" | "published";
-export type ProjectThumbnailType = "NONE" | "GRAPH" | "PROJECT_IMAGE" | "DEDICATED";
 
 export interface Project {
   id: string;
