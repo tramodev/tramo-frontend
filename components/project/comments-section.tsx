@@ -151,7 +151,7 @@ export function CommentsSection({
   const repliesFor = (id: string) => comments?.filter((c) => c.parentId === id) ?? []
 
   return (
-    <div id="comments" className="mx-auto flex w-full max-w-[820px] flex-col gap-4 px-6 py-8">
+    <div id="comments" className="mx-auto flex w-full max-w-[1024px] flex-col gap-4 px-6 py-8">
       <div className="flex flex-col gap-1">
         <h2 className="flex items-center gap-2 text-lg font-medium">
           <MessageCircle className="h-5 w-5" />
