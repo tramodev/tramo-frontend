@@ -149,38 +149,35 @@ export function useProjectEditorState(projectId: string) {
   const [contentLoadError, setContentLoadError] = useState(false);
   const [contentRetry, setContentRetry] = useState(0);
   const retryContent = () => setContentRetry((n) => n + 1);
-  const trailContentIds = activeTrail?.itemIds.join('|');
+  const contentSources = useMemo(() => {
+    const filedIds = new Set(trails.flatMap((trail) => trail.itemIds));
+    return JSON.stringify({
+      trails: trails.map((trail) => ({ id: trail.id, itemIds: trail.itemIds })),
+      itemIds: Object.keys(items).filter((id) => !filedIds.has(id)),
+    });
+  }, [trails, items]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!activeTrailId) return;
-    getTrailContents(activeTrailId)
-      .then((byId) => {
-        if (cancelled) return;
-        setContentLoadError(false);
-        setItems((prev) => {
-          const next = { ...prev };
-          for (const [itemId, content] of Object.entries(byId)) {
-            if (next[itemId] && next[itemId].content == null) next[itemId] = { ...next[itemId], content };
-          }
-          return next;
-        });
-      })
-      .catch(() => { if (!cancelled) setContentLoadError(true); });
-    return () => { cancelled = true; };
-  }, [activeTrailId, trailContentIds, contentRetry]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (activeTrailId || !selectedItemId) return;
-    getItemContent(selectedItemId).then((content) => {
+    const sources: { trails: { id: string; itemIds: string[] }[]; itemIds: string[] } = JSON.parse(contentSources);
+    const apply = (byId: Record<string, string>) => {
       if (cancelled) return;
-      setContentLoadError(false);
-      setItems((prev) => prev[selectedItemId] && prev[selectedItemId].content == null
-        ? { ...prev, [selectedItemId]: { ...prev[selectedItemId], content } } : prev);
-    }).catch(() => { if (!cancelled) setContentLoadError(true); });
+      setItems((prev) => {
+        const next = { ...prev };
+        for (const [itemId, content] of Object.entries(byId)) {
+          if (next[itemId] && next[itemId].content == null) next[itemId] = { ...next[itemId], content };
+        }
+        return next;
+      });
+    };
+    Promise.allSettled([
+      ...sources.trails.map((trail) => getTrailContents(trail.id).then(apply)),
+      ...sources.itemIds.map((id) => getItemContent(id).then((content) => apply({ [id]: content }))),
+    ]).then((results) => {
+      if (!cancelled) setContentLoadError(results.some((result) => result.status === 'rejected'));
+    });
     return () => { cancelled = true; };
-  }, [activeTrailId, selectedItemId, contentRetry]);
+  }, [contentSources, contentRetry]);
 
   const handleVisibleItem = useCallback((itemId: string) => {
     setNavigation((prev) => prev.itemId === itemId ? prev : { ...prev, itemId });
@@ -188,7 +185,6 @@ export function useProjectEditorState(projectId: string) {
 
   const handleSelectItem = (item: Item, trailId?: string) => {
     setView('write');
-    setContentLoadError(false);
     const request = { itemId: item.id, sequence: ++navigationSequence.current, focus: true };
     setNavigation((prev) => ({
       itemId: item.id,

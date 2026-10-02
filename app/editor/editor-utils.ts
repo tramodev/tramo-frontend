@@ -38,6 +38,17 @@ export function countTextStats(content: string): { words: number; characters: nu
   }
 }
 
+export function countProjectTextStats(items: Record<string, { content: string | null }>) {
+  const total = { words: 0, characters: 0 };
+  for (const item of Object.values(items)) {
+    if (item.content === null) return null;
+    const stats = countTextStats(item.content);
+    total.words += stats.words;
+    total.characters += stats.characters;
+  }
+  return total;
+}
+
 export function isAuthError(err: unknown): boolean {
   return err instanceof Error && err.message.includes('401');
 }

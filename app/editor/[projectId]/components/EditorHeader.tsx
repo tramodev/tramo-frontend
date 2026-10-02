@@ -80,8 +80,9 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus }: E
 }
 
 interface EditorActionsProps {
-  showWordCount: boolean;
-  textStats: { words: number; characters: number };
+  textStats: { words: number; characters: number } | null;
+  countError: boolean;
+  onRetryCount: () => void;
   hasActiveTrail: boolean;
   overviewActive: boolean;
   onToggleOverview: () => void;
@@ -90,8 +91,9 @@ interface EditorActionsProps {
 }
 
 export function EditorActions({
-  showWordCount,
   textStats,
+  countError,
+  onRetryCount,
   hasActiveTrail,
   overviewActive,
   onToggleOverview,
@@ -100,11 +102,12 @@ export function EditorActions({
 }: EditorActionsProps) {
   return (
     <>
-      {showWordCount && (
-        <span className="text-xs text-muted-foreground">
+      {textStats ? (
+        <span className="text-xs text-muted-foreground" title="Total for the project">
           {textStats.words} words · {textStats.characters} characters
         </span>
-      )}
+      ) : countError ? <button type="button" className="text-xs text-muted-foreground underline" onClick={onRetryCount}>Retry project count</button>
+        : <span className="text-xs text-muted-foreground" role="status">Counting project…</span>}
       {hasActiveTrail && (
         <Button
           data-tour="overview-toggle"

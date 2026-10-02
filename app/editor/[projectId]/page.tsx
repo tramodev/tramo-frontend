@@ -7,7 +7,7 @@ import { ProjectShell } from '@/components/editor/project-shell';
 import { SidebarCustom } from '@/components/editor/sidebar-custom';
 import { ShortcutsDialog } from '@/components/editor/shortcuts-dialog';
 import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sidebar';
-import { countTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '../editor-utils';
+import { countProjectTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '../editor-utils';
 import { useProjectEditorState } from './hooks/useProjectEditorState';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useEditorTour } from './hooks/useEditorTour';
@@ -40,8 +40,8 @@ export default function EditorPage() {
   });
 
   const textStats = useMemo(
-    () => countTextStats(project.selectedItem?.content ?? ''),
-    [project.selectedItem?.content]
+    () => countProjectTextStats(project.items),
+    [project.items]
   );
 
   useEditorTour(project.loaded && !!project.selectedItem);
@@ -79,8 +79,9 @@ export default function EditorPage() {
         }
         actions={
           project.loaded && <EditorActions
-            showWordCount={project.view === 'write' && !!project.selectedItem}
             textStats={textStats}
+            countError={project.contentLoadError}
+            onRetryCount={project.retryContent}
             hasActiveTrail={!!project.activeTrail}
             overviewActive={project.view === 'overview'}
             onToggleOverview={() => project.setView((v) => (v === 'overview' ? 'write' : 'overview'))}
