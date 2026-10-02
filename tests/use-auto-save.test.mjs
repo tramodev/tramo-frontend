@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, test } from '@jest/globals';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
@@ -75,15 +74,15 @@ test('saves serially and keeps only the latest pending content per item', async 
   s.flush();
   s.edit('latest');
   s.flush();
-  assert.equal(s.requests.length, 1);
+  expect(s.requests.length).toBe(1);
   s.requests[0].resolve();
   await settle();
-  assert.equal(s.requests.length, 2);
-  assert.equal(s.requests[1].content, JSON.stringify('latest'));
-  assert.notEqual(s.statuses.at(-1), 'saved');
+  expect(s.requests.length).toBe(2);
+  expect(s.requests[1].content).toBe(JSON.stringify('latest'));
+  expect(s.statuses.at(-1)).not.toBe('saved');
   s.requests[1].resolve();
   await settle();
-  assert.equal(s.statuses.at(-1), 'saved');
+  expect(s.statuses.at(-1)).toBe('saved');
 });
 
 test('keeps pending changes across item switches and warns during unload', async () => {
@@ -97,18 +96,18 @@ test('keeps pending changes across item switches and warns during unload', async
   s.flush();
   let warned = false;
   s.unload({ preventDefault: () => { warned = true; } });
-  assert.equal(warned, true);
-  assert.equal(s.requests.length, 1);
+  expect(warned).toBe(true);
+  expect(s.requests.length).toBe(1);
   s.requests[0].resolve();
   await settle();
-  assert.equal(s.requests[1].itemId, 'a');
-  assert.equal(s.requests[1].content, JSON.stringify('latest a'));
+  expect(s.requests[1].itemId).toBe('a');
+  expect(s.requests[1].content).toBe(JSON.stringify('latest a'));
   s.requests[1].resolve();
   await settle();
-  assert.equal(s.requests[2].itemId, 'b');
+  expect(s.requests[2].itemId).toBe('b');
   s.requests[2].resolve();
   await settle();
-  assert.equal(s.statuses.at(-1), 'saved');
+  expect(s.statuses.at(-1)).toBe('saved');
 });
 
 test('a failed save preserves newer content and does not retry in a loop', async () => {
@@ -120,13 +119,13 @@ test('a failed save preserves newer content and does not retry in a loop', async
   s.flush();
   s.requests[0].reject(new Error('offline'));
   await settle();
-  assert.equal(s.requests.length, 1);
-  assert.equal(s.statuses.at(-1), 'error');
+  expect(s.requests.length).toBe(1);
+  expect(s.statuses.at(-1)).toBe('error');
   s.select('b');
-  assert.equal(s.requests[1].content, JSON.stringify('new'));
+  expect(s.requests[1].content).toBe(JSON.stringify('new'));
   s.requests[1].resolve();
   await settle();
-  assert.equal(s.statuses.at(-1), 'saved');
+  expect(s.statuses.at(-1)).toBe('saved');
 });
 
 
@@ -135,7 +134,7 @@ test('editing a non-visible item saves under its own id', async () => {
   s.select('visible');
   s.editItem('focused', 'text');
   s.flush();
-  assert.equal(s.requests[0].itemId, 'focused');
+  expect(s.requests[0].itemId).toBe('focused');
   s.requests[0].resolve();
   await settle();
 });
@@ -151,5 +150,5 @@ test('deleted items never enqueue or restore pending writes', async () => {
   await settle();
   s.editItem('a', 'late');
   s.flush();
-  assert.equal(s.requests.length, 1);
+  expect(s.requests.length).toBe(1);
 });

@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, test } from '@jest/globals';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
@@ -57,14 +56,14 @@ test('concurrent requests share refresh but each updates its own cookies', async
   const first = s.refresh(0);
   const second = s.refresh(1);
   await settle();
-  assert.equal(s.requests.length, 1);
+  expect(s.requests.length).toBe(1);
   s.requests[0].resolve(new Response(JSON.stringify({
     accessToken: 'new-access', refreshToken: 'new-refresh', username: 'user',
   })));
-  assert.deepEqual(await Promise.all([first, second]), [true, true]);
+  expect(await Promise.all([first, second])).toStrictEqual([true, true]);
   for (const store of s.stores) {
-    assert.equal(store.get('accessToken'), 'new-access');
-    assert.equal(store.get('refreshToken'), 'new-refresh');
+    expect(store.get('accessToken')).toBe('new-access');
+    expect(store.get('refreshToken')).toBe('new-refresh');
   }
 });
 
@@ -73,13 +72,13 @@ test('both authenticated requests retry with the new access token', async () => 
   const first = s.fetch(0);
   const second = s.fetch(1);
   await settle();
-  assert.equal(s.requests.length, 1);
+  expect(s.requests.length).toBe(1);
   s.requests[0].resolve(new Response(JSON.stringify({
     accessToken: 'new-access', refreshToken: 'new-refresh',
   })));
   const responses = await Promise.all([first, second]);
-  assert.deepEqual(responses.map((response) => response.status), [200, 200]);
-  assert.equal(s.accessTokens.filter((token) => token === 'Bearer new-access').length, 2);
+  expect(responses.map((response) => response.status)).toStrictEqual([200, 200]);
+  expect(s.accessTokens.filter((token) => token === 'Bearer new-access').length).toBe(2);
 });
 
 test('a failed shared refresh preserves cookies and allows a new attempt', async () => {
@@ -88,13 +87,13 @@ test('a failed shared refresh preserves cookies and allows a new attempt', async
   const second = s.refresh(1);
   await settle();
   s.requests[0].resolve(new Response(null, { status: 401 }));
-  assert.deepEqual(await Promise.all([first, second]), [false, false]);
-  for (const store of s.stores) assert.equal(store.get('refreshToken'), 'old');
+  expect(await Promise.all([first, second])).toStrictEqual([false, false]);
+  for (const store of s.stores) expect(store.get('refreshToken')).toBe('old');
   const retry = s.refresh(0);
   await settle();
-  assert.equal(s.requests.length, 2);
+  expect(s.requests.length).toBe(2);
   s.requests[1].resolve(new Response(JSON.stringify({
     accessToken: 'new-access', refreshToken: 'new-refresh',
   })));
-  assert.equal(await retry, true);
+  expect(await retry).toBe(true);
 });

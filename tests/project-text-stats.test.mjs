@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, test } from '@jest/globals';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
@@ -13,17 +12,17 @@ const content = (text) => JSON.stringify({ root: { children: [{ children: [{ tex
 test('counts unique project items, including loose items, and updates after edits and deletion', () => {
   const items = { shared: { content: content('hello world') }, loose: { content: content('one') } };
   const count = () => JSON.parse(JSON.stringify(exports.countProjectTextStats(items)));
-  assert.deepEqual(count(), { words: 3, characters: 14 });
+  expect(count()).toStrictEqual({ words: 3, characters: 14 });
   items.loose.content = content('one two');
-  assert.deepEqual(count(), { words: 4, characters: 18 });
+  expect(count()).toStrictEqual({ words: 4, characters: 18 });
   delete items.shared;
-  assert.deepEqual(count(), { words: 2, characters: 7 });
-  assert.deepEqual(exports.countProjectTextStats({}).words, 0);
+  expect(count()).toStrictEqual({ words: 2, characters: 7 });
+  expect(exports.countProjectTextStats({}).words).toStrictEqual(0);
 });
 
 test('does not display a partial project count while any item is unloaded', () => {
-  assert.equal(exports.countProjectTextStats({ loaded: { content: content('hello') }, pending: { content: null } }), null);
-  assert.equal(exports.countProjectTextStats({ empty: { content: '' } }).words, 0);
+  expect(exports.countProjectTextStats({ loaded: { content: content('hello') }, pending: { content: null } })).toBe(null);
+  expect(exports.countProjectTextStats({ empty: { content: '' } }).words).toBe(0);
 });
 
 test('uses backend counts without loading or parsing item bodies', () => {
@@ -31,9 +30,9 @@ test('uses backend counts without loading or parsing item bodies', () => {
     shared: { content: null, textStats: { words: 10, characters: 40 } },
     loose: { content: 'invalid JSON', textStats: { words: 3, characters: 12 } },
   };
-  assert.equal(exports.countProjectTextStats(items).words, 13);
+  expect(exports.countProjectTextStats(items).words).toBe(13);
   items.shared.textStats = { words: 11, characters: 45 };
-  assert.equal(exports.countProjectTextStats(items).words, 14);
+  expect(exports.countProjectTextStats(items).words).toBe(14);
   delete items.loose;
-  assert.equal(exports.countProjectTextStats(items).characters, 45);
+  expect(exports.countProjectTextStats(items).characters).toBe(45);
 });

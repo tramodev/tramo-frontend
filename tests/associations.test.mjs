@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, test } from '@jest/globals';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
@@ -18,8 +17,8 @@ test('incoming relationships retain the source and stored meaning for every type
     ['RELATED', 'JWT is related to Tokens', 'Tokens is related to JWT'],
   ];
   for (const [type, outgoing, incoming] of cases) {
-    assert.equal(exports.relationshipLabel(type, 'JWT', 'Tokens'), outgoing);
-    assert.equal(exports.relationshipLabel(type, 'JWT', 'Tokens', true), incoming);
+    expect(exports.relationshipLabel(type, 'JWT', 'Tokens')).toBe(outgoing);
+    expect(exports.relationshipLabel(type, 'JWT', 'Tokens', true)).toBe(incoming);
   }
 });
 
@@ -28,10 +27,10 @@ test('ordering notes never reverses or creates their associations', () => {
   const items = { jwt: { title: 'JWT', associations: [association] }, tokens: { title: 'Tokens', associations: [] } };
   for (const [previous, current] of [['tokens', 'jwt'], ['jwt', 'tokens']]) {
     const [tie] = exports.bridgeTies(items, previous, current);
-    assert.equal(tie.association.targetId, 'tokens');
-    assert.equal(tie.sourceTitle, 'JWT');
-    assert.equal(tie.association.targetTitle, 'Tokens');
+    expect(tie.association.targetId).toBe('tokens');
+    expect(tie.sourceTitle).toBe('JWT');
+    expect(tie.association.targetTitle).toBe('Tokens');
   }
-  assert.equal(association.targetTitle, 'Old title');
-  assert.equal(exports.bridgeTies(items, 'tokens', 'unrelated').length, 0);
+  expect(association.targetTitle).toBe('Old title');
+  expect(exports.bridgeTies(items, 'tokens', 'unrelated').length).toBe(0);
 });
