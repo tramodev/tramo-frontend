@@ -1,6 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreExportsUsedInFile": true,
-  "ignore": ["components/ui/**"],
-  "ignoreDependencies": []
+  "ignore": [
+    "components/ui/**",
+    "public/gif.worker.js"
+  ],
+  "entry": [
+    "tests/**/*.test.mjs"
+  ]
 }
