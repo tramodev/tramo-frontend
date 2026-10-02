@@ -20,7 +20,7 @@ export function ProjectShell({
   return (
     <>
       {sidebar}
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <header className="flex h-16 shrink-0 items-center gap-4 px-4 md:px-8">
           <SidebarTrigger className="md:hidden" />
           {showLogo && (

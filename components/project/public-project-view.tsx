@@ -20,6 +20,7 @@ import { ProfileHoverCard } from "@/components/social/profile-hover-card"
 import { CommentsSection } from "@/components/project/comments-section"
 import { UserMenu } from "@/components/layout/user-menu"
 import { Button } from "@/components/ui/button"
+import { useSidebar } from "@/components/ui/sidebar"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Association, Item, Trail } from "@/app/editor/types"
 import { firstReadableTrail, resolveItemTrail } from "@/app/editor/trail-navigation"
@@ -74,6 +75,7 @@ export function PublicProjectView({
   username: string | null
   imageUrl: string | null
 }) {
+  const { state: sidebarState } = useSidebar()
   const allItems = [...project.trails.flatMap((trail) => trail.items), ...project.looseItems]
   const firstTrail = firstReadableTrail(project.trails)
   const [selectedItem, setSelectedItem] = useState<PublicItem | undefined>(firstTrail?.items[0] ?? project.looseItems[0])
@@ -299,7 +301,7 @@ export function PublicProjectView({
               emptyState={emptyState}
             />
           ) : (
-            <div ref={columnRef} className="flex min-w-0 flex-1 flex-col gap-3 overflow-auto">
+            <div ref={columnRef} className={`flex min-w-0 flex-1 flex-col gap-3 overflow-auto ${sidebarState === 'expanded' ? 'xl:pr-(--sidebar-width)' : 'xl:pr-(--sidebar-width-icon)'}`}>
               <section aria-label="About this project" className="rounded-2xl bg-popover">
                 <div className="mx-auto w-full max-w-[820px] px-6 py-6">
                   <div className="pl-7">
