@@ -136,6 +136,7 @@ function toItem(dto: ItemDTO, unfiled: boolean, associations: Association[] = []
     titleAlign: (dto.titleAlign as TitleAlign) ?? "center",
     unfiled,
     content: "",
+    textStats: { words: 0, characters: 0 },
     associations,
     linkedItemIds: associations.filter((a) => a.targetType === "ITEM").map((a) => a.targetId),
   };
@@ -155,11 +156,12 @@ export async function getProject(id: string): Promise<Project | null> {
 
   const trailDtos = await apiJson<TrailDTO[]>(`/api/project/${id}/trail`);
 
-  const [trailItemLists, looseDtos] = await Promise.all([
+  const [trailItemLists, looseDtos, textStats] = await Promise.all([
     Promise.all(
       trailDtos.map((trail) => apiJson<TrailStepDTO[]>(`/api/trail/${trail.id}/item`))
     ),
     apiJson<ItemDTO[]>(`/api/project/${id}/item`),
+    apiJson<{ words: number; characters: number; items: { id: number; words: number; characters: number }[] }>(`/api/project/${id}/text-stats`),
   ]);
 
   const itemMap = new Map<number, ItemDTO>();
@@ -172,6 +174,7 @@ export async function getProject(id: string): Promise<Project | null> {
     uniqueItemIds.map((itemId) => apiJson<AssociationDTO[]>(`/api/item/${itemId}/association`))
   );
 
+  const statsById = new Map(textStats.items.map((stats) => [stats.id, { words: stats.words, characters: stats.characters }]));
   const items: Record<string, Item> = {};
   uniqueItemIds.forEach((itemId, index) => {
     const dto = itemMap.get(itemId)!;
@@ -185,6 +188,7 @@ export async function getProject(id: string): Promise<Project | null> {
     items[String(itemId)] = {
       ...toItem(dto, unfiledIds.has(itemId), associations),
       content: null,
+      textStats: statsById.get(itemId) ?? { words: 0, characters: 0 },
     };
   });
 

@@ -25,3 +25,15 @@ test('does not display a partial project count while any item is unloaded', () =
   assert.equal(exports.countProjectTextStats({ loaded: { content: content('hello') }, pending: { content: null } }), null);
   assert.equal(exports.countProjectTextStats({ empty: { content: '' } }).words, 0);
 });
+
+test('uses backend counts without loading or parsing item bodies', () => {
+  const items = {
+    shared: { content: null, textStats: { words: 10, characters: 40 } },
+    loose: { content: 'invalid JSON', textStats: { words: 3, characters: 12 } },
+  };
+  assert.equal(exports.countProjectTextStats(items).words, 13);
+  items.shared.textStats = { words: 11, characters: 45 };
+  assert.equal(exports.countProjectTextStats(items).words, 14);
+  delete items.loose;
+  assert.equal(exports.countProjectTextStats(items).characters, 45);
+});

@@ -38,11 +38,11 @@ export function countTextStats(content: string): { words: number; characters: nu
   }
 }
 
-export function countProjectTextStats(items: Record<string, { content: string | null }>) {
+export function countProjectTextStats(items: Record<string, { content: string | null; textStats?: { words: number; characters: number } }>) {
   const total = { words: 0, characters: 0 };
   for (const item of Object.values(items)) {
-    if (item.content === null) return null;
-    const stats = countTextStats(item.content);
+    if (item.content === null && !item.textStats) return null;
+    const stats = item.textStats ?? countTextStats(item.content ?? '');
     total.words += stats.words;
     total.characters += stats.characters;
   }

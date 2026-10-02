@@ -80,8 +80,6 @@ export default function EditorPage() {
         actions={
           project.loaded && <EditorActions
             textStats={textStats}
-            countError={project.contentLoadError}
-            onRetryCount={project.retryContent}
             hasActiveTrail={!!project.activeTrail}
             overviewActive={project.view === 'overview'}
             onToggleOverview={() => project.setView((v) => (v === 'overview' ? 'write' : 'overview'))}

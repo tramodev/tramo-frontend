@@ -23,6 +23,7 @@ export interface Item {
     titleAlign: TitleAlign;
     unfiled: boolean;
     content: string | null;
+    textStats?: { words: number; characters: number };
     associations: Association[];
     linkedItemIds: string[];
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../../types';
-import { lastItemStorageKey } from '../../editor-utils';
+import { countTextStats, lastItemStorageKey } from '../../editor-utils';
 import {
   getProject,
   renameProject,
@@ -149,35 +149,38 @@ export function useProjectEditorState(projectId: string) {
   const [contentLoadError, setContentLoadError] = useState(false);
   const [contentRetry, setContentRetry] = useState(0);
   const retryContent = () => setContentRetry((n) => n + 1);
-  const contentSources = useMemo(() => {
-    const filedIds = new Set(trails.flatMap((trail) => trail.itemIds));
-    return JSON.stringify({
-      trails: trails.map((trail) => ({ id: trail.id, itemIds: trail.itemIds })),
-      itemIds: Object.keys(items).filter((id) => !filedIds.has(id)),
-    });
-  }, [trails, items]);
+  const trailContentIds = activeTrail?.itemIds.join('|');
 
   useEffect(() => {
     let cancelled = false;
-    const sources: { trails: { id: string; itemIds: string[] }[]; itemIds: string[] } = JSON.parse(contentSources);
-    const apply = (byId: Record<string, string>) => {
-      if (cancelled) return;
-      setItems((prev) => {
-        const next = { ...prev };
-        for (const [itemId, content] of Object.entries(byId)) {
-          if (next[itemId] && next[itemId].content == null) next[itemId] = { ...next[itemId], content };
-        }
-        return next;
-      });
-    };
-    Promise.allSettled([
-      ...sources.trails.map((trail) => getTrailContents(trail.id).then(apply)),
-      ...sources.itemIds.map((id) => getItemContent(id).then((content) => apply({ [id]: content }))),
-    ]).then((results) => {
-      if (!cancelled) setContentLoadError(results.some((result) => result.status === 'rejected'));
-    });
+    if (!activeTrailId) return;
+    getTrailContents(activeTrailId)
+      .then((byId) => {
+        if (cancelled) return;
+        setContentLoadError(false);
+        setItems((prev) => {
+          const next = { ...prev };
+          for (const [itemId, content] of Object.entries(byId)) {
+            if (next[itemId] && next[itemId].content == null) next[itemId] = { ...next[itemId], content, textStats: countTextStats(content) };
+          }
+          return next;
+        });
+      })
+      .catch(() => { if (!cancelled) setContentLoadError(true); });
     return () => { cancelled = true; };
-  }, [contentSources, contentRetry]);
+  }, [activeTrailId, trailContentIds, contentRetry]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (activeTrailId || !selectedItemId) return;
+    getItemContent(selectedItemId).then((content) => {
+      if (cancelled) return;
+      setContentLoadError(false);
+      setItems((prev) => prev[selectedItemId] && prev[selectedItemId].content == null
+        ? { ...prev, [selectedItemId]: { ...prev[selectedItemId], content, textStats: countTextStats(content) } } : prev);
+    }).catch(() => { if (!cancelled) setContentLoadError(true); });
+    return () => { cancelled = true; };
+  }, [activeTrailId, selectedItemId, contentRetry]);
 
   const handleVisibleItem = useCallback((itemId: string) => {
     setNavigation((prev) => prev.itemId === itemId ? prev : { ...prev, itemId });
@@ -185,6 +188,7 @@ export function useProjectEditorState(projectId: string) {
 
   const handleSelectItem = (item: Item, trailId?: string) => {
     setView('write');
+    setContentLoadError(false);
     const request = { itemId: item.id, sequence: ++navigationSequence.current, focus: true };
     setNavigation((prev) => ({
       itemId: item.id,
@@ -401,7 +405,7 @@ export function useProjectEditorState(projectId: string) {
     setItems(prevItems => {
       const item = prevItems[itemId];
       if (!item) return prevItems;
-      return { ...prevItems, [itemId]: { ...item, content } };
+      return { ...prevItems, [itemId]: { ...item, content, textStats: countTextStats(content) } };
     });
   }, []);
 
