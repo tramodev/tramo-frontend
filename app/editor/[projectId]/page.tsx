@@ -92,7 +92,7 @@ export default function EditorPage() {
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={
-          project.loaded && <><button type="button" data-tour="connections-toggle" disabled={!project.selectedItem || project.view !== 'write'} aria-expanded={connectionsPanelOpen} onClick={() => setConnectionsPanelOpen(o => !o)} className="text-sm text-muted-foreground">Connections</button><button type="button" onClick={() => project.setView('graph')} className="text-sm text-muted-foreground">Graph</button><button type="button" onClick={startEditorTour} className="text-sm text-muted-foreground">Help</button><EditorActions
+          project.loaded && <><button type="button" onClick={startEditorTour} className="text-sm text-muted-foreground">Help</button><EditorActions
             textStats={textStats}
             hasActiveTrail={!!project.activeTrail}
             overviewActive={project.view === 'overview'}

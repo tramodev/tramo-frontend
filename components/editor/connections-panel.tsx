@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { Network, PanelRightOpen, X } from 'lucide-react';
 import { Item, Trail, AssociationType, AssociationTargetType } from '@/app/editor/types';
 import { ASSOCIATION_META, ASSOCIATION_TYPES, relationshipLabel } from '@/app/editor/associations';
 import { KnowledgeGraph } from '@/components/editor/knowledge-graph';
@@ -27,7 +27,10 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
   const [type, setType] = useState<AssociationType>('RELATED');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
-  if (!open) return null;
+  if (!open) return <aside aria-label="Connections tools" className="flex w-12 shrink-0 flex-col items-center gap-2 rounded-2xl bg-popover py-3">
+    <button type="button" data-tour="connections-toggle" aria-label="Connections" title="Connections" aria-expanded={false} onClick={onToggleOpen} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><PanelRightOpen className="h-4 w-4" /></button>
+    <button type="button" aria-label="Open graph" title="Open graph" onClick={onOpenGraph} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Network className="h-4 w-4" /></button>
+  </aside>;
   const incoming = Object.values(items).flatMap(source => source.associations.filter(a => a.targetType === 'ITEM' && a.targetId === item.id).map(a => ({ source, association: a })));
   const tied = new Set(item.associations.map(a => `${a.targetType}:${a.targetId}`));
   const matches = (title: string) => title.toLowerCase().includes(query.trim().toLowerCase());
