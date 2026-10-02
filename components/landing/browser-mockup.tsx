@@ -25,7 +25,6 @@ import {
   Share2,
   Check,
   Route,
-  ArrowUp,
   Waypoints,
   Share as GraphIcon,
   Lock,
@@ -35,32 +34,51 @@ import { Mark } from '@/components/layout/logo';
 import type { Item, Trail } from '@/app/editor/types';
 
 const GRAPH_ITEMS: Record<string, Item> = {
-  'why-slow-down': {
-    id: 'why-slow-down',
-    title: 'Why slow down',
+  'vannevar-bush': {
+    id: 'vannevar-bush',
+    title: 'Vannevar Bush',
     titleAlign: 'left',
     unfiled: false,
-    content: null,
-    linkedItemIds: ['morning-rituals', 'digital-minimalism'],
-    associations: [
-      { id: 'a1', type: 'REQUIRES', targetType: 'ITEM', targetId: 'morning-rituals', targetTitle: 'Morning rituals' },
-      { id: 'a2', type: 'RELATED', targetType: 'ITEM', targetId: 'digital-minimalism', targetTitle: 'Digital minimalism' },
-    ],
-  },
-  'morning-rituals': {
-    id: 'morning-rituals',
-    title: 'Morning rituals',
-    titleAlign: 'left',
-    unfiled: true,
     content: null,
     linkedItemIds: [],
     associations: [],
   },
-  'digital-minimalism': {
-    id: 'digital-minimalism',
-    title: 'Digital minimalism',
+  'as-we-may-think': {
+    id: 'as-we-may-think',
+    title: 'As We May Think',
     titleAlign: 'left',
-    unfiled: true,
+    unfiled: false,
+    content: null,
+    linkedItemIds: ['vannevar-bush'],
+    associations: [
+      { id: 'a1', type: 'RELATED', targetType: 'ITEM', targetId: 'vannevar-bush', targetTitle: 'Vannevar Bush' },
+    ],
+  },
+  memex: {
+    id: 'memex',
+    title: 'Memex',
+    titleAlign: 'left',
+    unfiled: false,
+    content: null,
+    linkedItemIds: [],
+    associations: [],
+  },
+  'associative-trails': {
+    id: 'associative-trails',
+    title: 'Associative trails',
+    titleAlign: 'left',
+    unfiled: false,
+    content: null,
+    linkedItemIds: ['memex'],
+    associations: [
+      { id: 'a2', type: 'ELABORATES', targetType: 'ITEM', targetId: 'memex', targetTitle: 'Memex' },
+    ],
+  },
+  'sharing-a-trail': {
+    id: 'sharing-a-trail',
+    title: 'Sharing a trail',
+    titleAlign: 'left',
+    unfiled: false,
     content: null,
     linkedItemIds: [],
     associations: [],
@@ -69,39 +87,45 @@ const GRAPH_ITEMS: Record<string, Item> = {
 
 const GRAPH_TRAILS: Trail[] = [
   {
-    id: 'getting-started',
-    title: 'Getting started',
-    description: '',
-    itemIds: ['why-slow-down'],
-    steps: [{ itemId: 'why-slow-down', annotation: null, associationId: null }],
+    id: 'bushs-vision',
+    title: 'Bush’s vision',
+    description: 'Meet Vannevar Bush, read the idea behind his essay, and explore the Memex.',
+    itemIds: ['vannevar-bush', 'as-we-may-think', 'memex'],
+    steps: [
+      { itemId: 'vannevar-bush', annotation: null, associationId: null },
+      { itemId: 'as-we-may-think', annotation: 'Bush’s essay gives this vision a concrete form. Next, explore the proposal in his own terms.', associationId: null },
+      { itemId: 'memex', annotation: null, associationId: null },
+    ],
+    version: 1,
+    forkedFrom: null,
+  },
+  {
+    id: 'thinking-in-trails',
+    title: 'Thinking in trails',
+    description: 'Explore how the Memex connects records into reusable paths of thought.',
+    itemIds: ['memex', 'associative-trails', 'sharing-a-trail'],
+    steps: [
+      { itemId: 'memex', annotation: null, associationId: null },
+      { itemId: 'associative-trails', annotation: 'The Memex stores records; associative trails explain how a reader connects and revisits them.', associationId: null },
+      { itemId: 'sharing-a-trail', annotation: null, associationId: null },
+    ],
     version: 1,
     forkedFrom: null,
   },
 ];
 
-const TRAILS = [
-  {
-    title: 'Getting started',
-    items: [
-      { title: 'Why slow down', active: true },
-      { title: 'Morning rituals', active: false },
-    ],
-  },
-  {
-    title: 'Advanced practices',
-    items: [{ title: 'Digital minimalism', active: false }],
-  },
-];
+const TRAILS = GRAPH_TRAILS.map(trail => ({
+  title: trail.title,
+  items: trail.itemIds.map(id => ({ title: GRAPH_ITEMS[id].title, active: id === 'memex' && trail.id === 'bushs-vision' })),
+}));
 
-const LOOSE_ITEMS = [
-  { title: 'Why slow down', linked: false },
-  { title: 'Morning rituals', linked: true },
-  { title: 'Digital minimalism', linked: false },
-];
+const LOOSE_ITEMS = Object.values(GRAPH_ITEMS).map(item => ({
+  title: item.title,
+  linked: item.id === 'memex',
+}));
 
 const CONNECTIONS = [
-  { type: 'REQUIRES', Icon: ArrowUp, title: 'Morning rituals' },
-  { type: 'RELATED', Icon: Waypoints, title: 'Digital minimalism' },
+  { type: 'ELABORATED ON BY', Icon: Waypoints, title: 'Associative trails' },
 ];
 
 export const BrowserMockup: React.FC = () => {
@@ -115,7 +139,7 @@ export const BrowserMockup: React.FC = () => {
         </span>
         <div className="mx-auto flex items-center gap-1.5 rounded-full bg-popover px-3 py-1 text-[11px] text-muted-foreground max-w-[60%] truncate">
           <Lock className="w-2.5 h-2.5 shrink-0" />
-          tramo.app/why-slow-down
+          tramo.app/memex
         </div>
       </div>
       <div className="relative aspect-[16/9] overflow-hidden [container-type:inline-size]">
@@ -188,10 +212,10 @@ export const BrowserMockup: React.FC = () => {
         <span className="lg:hidden font-display font-semibold text-[14px]">
           Tramo<span className="text-primary"> ●</span>
         </span>
-        <span className="text-[13px] font-medium">Why slow down</span>
+        <span className="text-[13px] font-medium">Memex and Vannevar Bush</span>
         <div className="flex-1" />
         <span className="text-[11px] hidden md:inline text-muted-foreground">
-          142 words · 812 characters
+          5 notes · 2 trails
         </span>
         <span className="flex items-center gap-1 text-[11px] font-medium shrink-0">
           <Route className="w-3 h-3" />
@@ -246,24 +270,24 @@ export const BrowserMockup: React.FC = () => {
 
           <div className="flex-1 overflow-hidden p-6">
             <h1 className="font-display font-medium text-xl mb-2.5">
-              Why slow down
+              Memex
             </h1>
             <p className="text-[13px] leading-6 mb-3 text-muted-foreground">
-              Slow living isn&apos;t about doing less — it&apos;s about giving each thing the attention
-              it deserves. This idea links to{' '}
+              Bush&apos;s Memex is a proposed personal library for books, records and communications.
+              Introduced in{' '}
               <span className="text-primary font-medium">
-                Morning rituals
-              </span>{' '}
-              and{' '}
+                As We May Think
+              </span>
+              , it lets readers connect records and revisit those connections through{' '}
               <span className="text-primary font-medium">
-                Digital minimalism
+                associative trails
               </span>
               .
             </p>
             <ul className="flex flex-col gap-1.5 text-[13px] text-muted-foreground">
-              <li>— Notice when you&apos;re rushing out of habit, not necessity</li>
-              <li>— Pick one ritual to protect every morning</li>
-              <li>— Let unfinished things stay unfinished sometimes</li>
+              <li>— Connect records by association</li>
+              <li>— Reuse the same record in different trails</li>
+              <li>— Share a path for others to explore</li>
             </ul>
           </div>
         </div>
@@ -271,7 +295,7 @@ export const BrowserMockup: React.FC = () => {
         <div className="w-[204px] hidden lg:flex flex-col shrink-0 p-4 gap-2 overflow-hidden rounded-2xl bg-card">
           <div className="flex items-center justify-between gap-1">
             <h3 className="text-[11px] font-medium text-muted-foreground truncate">
-              Connections from &quot;Why slow down&quot;
+              Connections involving &quot;Memex&quot;
             </h3>
             <Plus className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
           </div>
@@ -308,7 +332,7 @@ export const BrowserMockup: React.FC = () => {
             <KnowledgeGraph
               trails={GRAPH_TRAILS}
               items={GRAPH_ITEMS}
-              activeTrailId="getting-started"
+              activeTrailId="bushs-vision"
               onSelectItem={() => {}}
               variant="preview"
             />
