@@ -90,6 +90,5 @@ export function FeaturesSection() {
         </div>
       </FadeUp>)}
     </div>
-    <p className="mt-6 text-sm text-muted-foreground">You can also explore the graph, discover published projects, follow authors and discuss their work.</p>
   </section>;
 }
