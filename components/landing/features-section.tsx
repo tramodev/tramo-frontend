@@ -1,4 +1,4 @@
-import { FileText, Waypoints, Copy, Share2, Check, Bold, Italic, Link2, List, Undo2, ArrowRight } from 'lucide-react';
+import { FileText, Waypoints, Copy, Share2, Check, Bold, Italic, Link2, List, Undo2 } from 'lucide-react';
 import { FadeUp } from '@/components/landing/landing-motion';
 
 function WriteMockup() {
@@ -63,7 +63,6 @@ function ReadingMockup() {
     <div className="mt-2 rounded-xl border border-border bg-background p-3">
       <p className="text-sm font-medium">Thinking in trails</p><p className="mt-1 text-xs text-muted-foreground">Connections, reuse and sharing · 3 notes</p>
     </div>
-    <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground">Start reading<ArrowRight className="h-3 w-3" /></span>
   </div>;
 }
 

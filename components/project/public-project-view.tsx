@@ -306,10 +306,6 @@ export function PublicProjectView({
                   {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
                   {project.trails.length > 0 && <><p className="mt-5 text-xs text-muted-foreground">Trails are ordered sequences of notes. Choose where to begin.</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{project.trails.map(trail => <button type="button" key={trail.id} aria-pressed={activeTrailId === trail.id} onClick={() => handleSelectTrail(trail.id)} className={`rounded-lg border p-3 text-left ${activeTrailId === trail.id ? 'border-primary bg-muted' : 'border-border hover:bg-muted'}`}><span className="block text-sm font-medium">{trail.title}</span>{trail.description?.trim() && <span className="mt-1 block text-xs text-muted-foreground">{trail.description}</span>}<span className="mt-1 block text-xs text-muted-foreground">{trail.items.length} notes</span></button>)}</div></>}
                   {project.looseItems.length > 0 && <button type="button" className="mt-3 text-sm underline" onClick={() => { setActiveTrailId(undefined); setSelectedItem(project.looseItems[0]); }}>Notes outside trails</button>}
-                  {selectedItem && <button type="button" onClick={() => {
-                    const first = activeTrail ? allItems.find(note => note.id === activeTrail.itemIds[0]) : selectedItem;
-                    if (first) handleSelectItem(first, activeTrailId);
-                  }} className="mt-4 block rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground">Start reading</button>}
                 </div>
               </section>
               {selectedItem ? (
