@@ -300,12 +300,14 @@ export function PublicProjectView({
             />
           ) : (
             <div ref={columnRef} className="flex min-w-0 flex-1 flex-col gap-3 overflow-auto">
-              <section aria-label="About this project" className="rounded-2xl bg-popover px-6 py-6">
-                <div className="mx-auto max-w-[820px]">
+              <section aria-label="About this project" className="rounded-2xl bg-popover">
+                <div className="mx-auto w-full max-w-[820px] px-6 py-6">
+                  <div className="pl-7">
                   <h1 className="font-display text-3xl font-medium">{project.title}</h1>
                   {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
                   {project.trails.length > 0 && <><p className="mt-5 text-xs text-muted-foreground">Trails are ordered sequences of notes. Choose where to begin.</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{project.trails.map(trail => <button type="button" key={trail.id} aria-pressed={activeTrailId === trail.id} onClick={() => handleSelectTrail(trail.id)} className={`rounded-lg border p-3 text-left ${activeTrailId === trail.id ? 'border-primary bg-muted' : 'border-border hover:bg-muted'}`}><span className="block text-sm font-medium">{trail.title}</span>{trail.description?.trim() && <span className="mt-1 block text-xs text-muted-foreground">{trail.description}</span>}<span className="mt-1 block text-xs text-muted-foreground">{trail.items.length} notes</span></button>)}</div></>}
                   {project.looseItems.length > 0 && <button type="button" className="mt-3 text-sm underline" onClick={() => { setActiveTrailId(undefined); setSelectedItem(project.looseItems[0]); }}>Notes outside trails</button>}
+                  </div>
                 </div>
               </section>
               {selectedItem ? (
