@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import {
   Plus,
   FolderKanban,
@@ -148,9 +149,14 @@ export default function ProjectsPage() {
               Start writing
             </span>
           </button>
-          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex cursor-pointer aspect-[3/4] flex-col items-start justify-end gap-2 rounded-lg border border-input bg-card p-5 text-left hover:bg-muted disabled:opacity-50">
-            <span className="text-sm font-medium">Try an example</span>
-            <span className="text-xs text-muted-foreground">Five notes, two trails. Your own editable copy of Memex and Vannevar Bush.</span>
+          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex cursor-pointer aspect-[3/4] flex-col overflow-hidden rounded-lg border border-input bg-card text-left hover:bg-muted disabled:opacity-50">
+            <span className="relative min-h-0 w-full flex-1">
+              <Image src="/memex-example.png" alt="Illustration of a wearable camera from Vannevar Bush’s vision" fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 220px" className="object-cover" />
+            </span>
+            <span className="flex shrink-0 flex-col gap-2 p-5">
+              <span className="text-sm font-medium">Try an example</span>
+              <span className="text-xs text-muted-foreground">Five notes, two trails. Your own editable copy of Memex and Vannevar Bush.</span>
+            </span>
           </button>
         </div>
         {creating && <p className="mt-3 text-sm text-muted-foreground" role="status">Opening your first note…</p>}
