@@ -1,12 +1,8 @@
 import type { NextConfig } from "next";
 
-const R2_PUBLIC_BASE_URL =
-  process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL ??
-  "https://pub-4a72e2c7683d432cb2a78b87f6fadf6a.r2.dev";
-const publicImageOrigins = [...new Set([
-  new URL(R2_PUBLIC_BASE_URL).origin,
-  "https://pub-809332af245f4f50954cd6523674cc35.r2.dev",
-])];
+const publicImageOrigins = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL
+  ? [new URL(process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL).origin]
+  : [];
 
 const privateOrigin = process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN
   ? new URL(process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN).origin
