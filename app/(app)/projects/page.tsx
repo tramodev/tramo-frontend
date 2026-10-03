@@ -224,13 +224,13 @@ export default function ProjectsPage() {
                       placeholder={<FolderKanban strokeWidth={1.5} className="h-9 w-9 text-muted-foreground" />}
                     />
                   </CardContent>
-                  <CardHeader className="shrink-0 gap-0 p-0 py-3 px-4">
-                    <div className="flex items-center justify-between gap-2">
+                  <CardHeader className="min-w-0 grid-cols-1 shrink-0 gap-0 p-0 py-3 px-4">
+                    <div className="flex min-w-0 items-center justify-between gap-2">
                       {editingId === project.id ? (
                         <Input
                           autoFocus
                           value={editingTitle}
-                          className="h-7"
+                          className="h-7 min-w-0 flex-1"
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => setEditingTitle(e.target.value)}
                           onKeyDown={(e) => {
@@ -240,9 +240,9 @@ export default function ProjectsPage() {
                           onBlur={() => submitRename(project.id)}
                         />
                       ) : (
-                        <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="flex min-w-0 flex-1 items-center gap-1.5">
                           <CardTitle
-                            className="truncate text-sm font-medium"
+                            className="min-w-0 flex-1 truncate text-sm font-medium"
                             onDoubleClick={(e) => {
                               e.stopPropagation()
                               startRename(project)
@@ -251,7 +251,7 @@ export default function ProjectsPage() {
                             {project.title}
                           </CardTitle>
                           {project.forkedFromOwnerUsername && (
-                            <span onClick={(e) => e.stopPropagation()}>
+                            <span className="shrink-0" onClick={(e) => e.stopPropagation()}>
                               <ForkBadge forkedFromOwnerUsername={project.forkedFromOwnerUsername} iconOnly />
                             </span>
                           )}
