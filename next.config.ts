@@ -2,14 +2,19 @@ import type { NextConfig } from "next";
 
 const R2_PUBLIC_BASE_URL =
   process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL ??
-  "https://pub-809332af245f4f50954cd6523674cc35.r2.dev";
-const r2Hostname = new URL(R2_PUBLIC_BASE_URL).hostname;
+  "https://pub-4a72e2c7683d432cb2a78b87f6fadf6a.r2.dev";
+const publicImageOrigins = [...new Set([
+  new URL(R2_PUBLIC_BASE_URL).origin,
+  "https://pub-809332af245f4f50954cd6523674cc35.r2.dev",
+])];
 
-const privateOrigin = process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN ?? "";
+const privateOrigin = process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN
+  ? new URL(process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN).origin
+  : "";
 
 const csp = [
   "default-src 'self'",
-  `img-src 'self' data: blob: ${R2_PUBLIC_BASE_URL} ${privateOrigin}`,
+  `img-src 'self' data: blob: ${publicImageOrigins.join(" ")} ${privateOrigin}`,
   "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://accounts.google.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
@@ -23,12 +28,10 @@ const csp = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: r2Hostname,
-      },
-    ],
+    remotePatterns: publicImageOrigins.map((origin) => ({
+      protocol: "https" as const,
+      hostname: new URL(origin).hostname,
+    })),
     formats: ["image/avif", "image/webp"],
   },
   async headers() {
