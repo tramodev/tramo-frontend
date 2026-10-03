@@ -60,3 +60,21 @@ The editor (`app/editor/`) is the largest part of the app. It is built on Lexica
 nodes in `nodes/`, one file per feature in `plugins/`, and item content persisted as Lexical
 editor-state JSON. Published projects reuse the same nodes in a read-only instance
 (`components/project/lexical-read-only.tsx`).
+
+
+## Note image privacy
+
+Note images use the backend's private attachment upload flow and version-2 Lexical image nodes
+containing `imageId`. Signed URLs stay in the shared rendering provider, expire after five
+minutes, and are renewed while the view is visible. Saving and copying editor content do not
+persist these URLs. Published and historical views resolve only images in their visible snapshot.
+
+Set `NEXT_PUBLIC_R2_PRIVATE_ORIGIN=https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` before building
+or starting the frontend. The backend must have a separate `R2_PRIVATE_BUCKET` with public access
+disabled and browser CORS configured for this frontend's exact origin. See the backend README
+for bucket lifecycle and credential configuration. Avatars, banners and separately uploaded
+thumbnails still use the public bucket; do not put confidential information there.
+
+Deploy backend and frontend together. There is no automatic migration of version-1 image URLs;
+existing public objects remain public. Returning a project to private stops new signed links,
+but links already issued can work until their five-minute expiry and downloaded copies remain.
