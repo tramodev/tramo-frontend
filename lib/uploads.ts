@@ -2,7 +2,7 @@
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 
-export type UploadKind = "avatar" | "thumbnail" | "editor-image" | "banner";
+export type UploadKind = "avatar" | "thumbnail" | "banner";
 
 export interface UploadPresign {
   uploadUrl: string;

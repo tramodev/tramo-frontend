@@ -42,6 +42,7 @@ export function useAutoSave({
         pendingContentRef.current.delete(itemId);
         try {
           await saveItemContent(itemId, content);
+          window.dispatchEvent(new Event('editor-images-saved'));
         } catch (err) {
           console.error(err);
           if (!deletedItemsRef.current.has(itemId) && !pendingContentRef.current.has(itemId)) {
@@ -78,7 +79,7 @@ export function useAutoSave({
       if (deletedItemsRef.current.has(itemId)) return;
       const json = JSON.stringify(editorState.toJSON());
       onOptimisticUpdate(itemId, json);
-      if (json.includes('"src":"blob:')) return;
+      if (json.includes('"imageId":""')) return;
 
       pendingContentRef.current.set(itemId, json);
       setSaveStatus('saving');

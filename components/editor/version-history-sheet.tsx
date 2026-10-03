@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Row } from "@/components/profile/row"
+import { EditorImagesProvider } from "@/components/editor/editor-images-provider"
 import { LexicalReadOnly } from "@/components/project/lexical-read-only"
 import {
   getProjectSnapshot,
@@ -73,6 +74,7 @@ export function VersionHistorySheet({ projectId }: VersionHistorySheetProps) {
           {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
 
           {!loading && detail && (
+            <EditorImagesProvider projectId={projectId} publicRead={false} snapshotId={Number(detail.id)}>
             <div className="flex flex-col gap-6">
               <div className="flex items-center justify-between">
                 <Button variant="ghost" size="sm" className="self-start" onClick={() => setDetail(null)}>
@@ -102,6 +104,7 @@ export function VersionHistorySheet({ projectId }: VersionHistorySheetProps) {
                 </div>
               ))}
             </div>
+            </EditorImagesProvider>
           )}
 
           {!loading && !detail && versions.length === 0 && (

@@ -37,7 +37,9 @@ function setup() {
     window: {
       addEventListener: (_, fn) => { beforeUnload = fn; },
       removeEventListener: () => {},
+      dispatchEvent: () => {},
     },
+    Event: class { constructor(type) { this.type = type; } },
     console: { error: () => {} },
   });
   let hook;
@@ -151,4 +153,17 @@ test('deleted items never enqueue or restore pending writes', async () => {
   s.editItem('a', 'late');
   s.flush();
   expect(s.requests.length).toBe(1);
+});
+
+
+test('does not persist an incomplete image or a temporary preview', () => {
+  const s = setup();
+  s.select('a');
+  s.edit({ root: { children: [{ type: 'image', version: 2, imageId: '' }] } });
+  s.flush();
+  expect(s.requests.length).toBe(0);
+  s.edit({ root: { children: [{ type: 'image', version: 2, imageId: 'confirmed-id' }] } });
+  s.flush();
+  expect(s.requests.length).toBe(1);
+  expect(s.requests[0].content).not.toContain('blob:');
 });

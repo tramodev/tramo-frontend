@@ -1,16 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import Image from "next/image"
-import { ImageIcon, Loader2, Route, Upload } from "lucide-react"
+import { useState } from "react"
+import { Loader2, Route, Upload } from "lucide-react"
 
 import { Label } from "@/components/ui/label"
 import { ProjectThumbnail } from "@/components/project/project-thumbnail"
 import {
-  getProjectImages,
   setProjectThumbnail,
   type Project,
-  type ProjectImage,
   type ThumbnailChoice,
 } from "@/lib/projects-store"
 import { uploadImage } from "@/lib/upload-image"
@@ -57,17 +54,8 @@ export function ThumbnailPicker({
   onChange: (imageUrl: string | null, graph: Project["thumbnailGraph"]) => void;
   onError: (message: string) => void;
 }) {
-  const [tab, setTab] = useState<"trail" | "image" | "upload">("trail");
-  const [images, setImages] = useState<ProjectImage[] | null>(null);
+  const [tab, setTab] = useState<"trail" | "upload">("trail");
   const [saving, setSaving] = useState(false);
-  const imagesLoading = tab === "image" && images === null;
-
-  useEffect(() => {
-    if (tab !== "image" || images !== null) return;
-    getProjectImages(projectId)
-      .then(setImages)
-      .catch(() => setImages([]));
-  }, [tab, images, projectId]);
 
   const apply = async (choice: ThumbnailChoice, optimistic: { imageUrl: string | null; graph: Project["thumbnailGraph"] }) => {
     setSaving(true);
@@ -111,10 +99,10 @@ export function ThumbnailPicker({
         className="h-48 w-full rounded-lg border border-border bg-surface-container-high"
       />
 
-      <div className="grid grid-cols-3 gap-1.5">
+      <p className="text-xs text-muted-foreground">Thumbnails are public. Do not upload confidential information.</p>
+      <div className="grid grid-cols-2 gap-1.5">
         {([
           { key: "trail", label: "Trail", icon: Route },
-          { key: "image", label: "Project image", icon: ImageIcon },
         ] as const).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -169,35 +157,6 @@ export function ThumbnailPicker({
         </div>
       )}
 
-      {tab === "image" && (
-        <div className="flex flex-wrap gap-2">
-          {imagesLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          {!imagesLoading && images?.length === 0 && (
-            <p className="text-xs text-muted-foreground">No images in this project yet.</p>
-          )}
-          {images?.slice(0, 3).map((img) => {
-            const isActive = imageUrl === img.url;
-            return (
-              <Image
-                key={img.url}
-                src={img.url}
-                alt={img.itemTitle}
-                title={img.itemTitle}
-                width={104}
-                height={96}
-                onClick={() => !saving && apply(
-                  { type: "PROJECT_IMAGE", imageUrl: img.url },
-                  { imageUrl: img.url, graph: null }
-                )}
-                className={cn(
-                  "h-24 w-[104px] cursor-pointer rounded-lg border object-cover",
-                  isActive ? "outline outline-2 outline-foreground" : "border-border hover:border-foreground"
-                )}
-              />
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

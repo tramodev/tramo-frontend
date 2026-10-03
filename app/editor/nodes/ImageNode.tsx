@@ -14,17 +14,14 @@ import type {
 import { $applyNodeReplacement, DecoratorNode } from 'lexical';
 import * as React from 'react';
 import ImageComponent from '../plugins/ImageComponent';
-import { R2_PUBLIC_BASE_URL } from '@/lib/config';
 
-const ALLOWED_SRC_PREFIXES = [R2_PUBLIC_BASE_URL];
 
-function isAllowedImageSrc(src: string): boolean {
-  return ALLOWED_SRC_PREFIXES.some((prefix) => prefix && src.startsWith(prefix));
-}
+const IMAGE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface ImagePayload {
   altText: string;
-  src: string;
+  src?: string;
+  imageId?: string;
   width?: number;
   height?: number;
   caption?: string;
@@ -33,8 +30,10 @@ export interface ImagePayload {
 
 function convertImageElement(domNode: Node): null | DOMConversionOutput {
   if (domNode instanceof HTMLImageElement) {
-    const { alt: altText, src, width, height } = domNode;
-    const node = $createImageNode({ altText, src, width, height });
+    const imageId = domNode.getAttribute('data-tramo-image-id');
+    if (!imageId || !IMAGE_ID.test(imageId)) return null;
+    const { alt: altText, width, height } = domNode;
+    const node = $createImageNode({ altText, imageId, width, height });
     return { node };
   }
   return null;
@@ -43,7 +42,7 @@ function convertImageElement(domNode: Node): null | DOMConversionOutput {
 export type SerializedImageNode = Spread<
   {
     altText: string;
-    src: string;
+    imageId: string;
     width?: number;
     height?: number;
     caption?: string;
@@ -53,6 +52,7 @@ export type SerializedImageNode = Spread<
 
 export class ImageNode extends DecoratorNode<React.ReactElement> {
   __src: string;
+  __imageId: string;
   __altText: string;
   __width: 'inherit' | number;
   __height: 'inherit' | number;
@@ -70,18 +70,24 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
       node.__height,
       node.__caption,
       node.__key,
+      node.__imageId,
     );
   }
 
   static importJSON(serializedNode: SerializedImageNode): ImageNode {
-    const { altText, height, width, src, caption } = serializedNode;
-    const safeSrc = isAllowedImageSrc(src) ? src : '';
-    return $createImageNode({ altText, height, src: safeSrc, width, caption });
+    const { altText, height, width, imageId, caption } = serializedNode;
+    return $createImageNode({
+      imageId: typeof imageId === 'string' && IMAGE_ID.test(imageId) ? imageId : '',
+      altText: typeof altText === 'string' ? altText : '',
+      height: typeof height === 'number' && height > 0 ? height : undefined,
+      width: typeof width === 'number' && width > 0 ? width : undefined,
+      caption: typeof caption === 'string' ? caption : '',
+    });
   }
 
   exportDOM(): DOMExportOutput {
     const element = document.createElement('img');
-    element.setAttribute('src', this.__src);
+    element.setAttribute('data-tramo-image-id', this.__imageId);
     element.setAttribute('alt', this.__altText);
     if (this.__width !== 'inherit') {
       element.setAttribute('width', this.__width.toString());
@@ -108,9 +114,11 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     height?: 'inherit' | number,
     caption?: string,
     key?: NodeKey,
+    imageId = '',
   ) {
     super(key);
-    this.__src = src;
+    this.__src = src.startsWith('blob:') ? src : '';
+    this.__imageId = imageId;
     this.__altText = altText;
     this.__width = width || 'inherit';
     this.__height = height || 'inherit';
@@ -121,11 +129,11 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     return {
       altText: this.getAltText(),
       height: this.__height === 'inherit' ? undefined : this.__height,
-      src: this.getSrc(),
+      imageId: this.__imageId,
       width: this.__width === 'inherit' ? undefined : this.__width,
       caption: this.getCaption(),
       type: 'image',
-      version: 1,
+      version: 2,
     };
   }
 
@@ -138,9 +146,10 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     writable.__height = height;
   }
 
-  setSrc(src: string): void {
+  setImageId(imageId: string): void {
     const writable = this.getWritable();
-    writable.__src = src;
+    writable.__imageId = imageId;
+    writable.__src = '';
   }
 
   setAltText(altText: string): void {
@@ -166,10 +175,6 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     return false;
   }
 
-  getSrc(): string {
-    return this.__src;
-  }
-
   getAltText(): string {
     return this.__altText;
   }
@@ -182,6 +187,7 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     return (
       <ImageComponent
         src={this.__src}
+        imageId={this.__imageId}
         altText={this.__altText}
         width={this.__width}
         height={this.__height}
@@ -196,12 +202,13 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
 export function $createImageNode({
   altText,
   height,
-  src,
+  src = '',
+  imageId = '',
   width,
   caption,
   key,
 }: ImagePayload): ImageNode {
-  return $applyNodeReplacement(new ImageNode(src, altText, width, height, caption, key));
+  return $applyNodeReplacement(new ImageNode(src, altText, width, height, caption, key, imageId));
 }
 
 export function $isImageNode(

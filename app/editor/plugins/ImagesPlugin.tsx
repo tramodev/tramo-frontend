@@ -18,7 +18,7 @@ import {
 } from 'lexical';
 import { $createImageNode, $isImageNode, ImageNode, ImagePayload } from '../nodes/ImageNode';
 import { resizeImageToBlob } from '@/lib/image-resize';
-import { uploadImage } from '@/lib/upload-image';
+import { uploadEditorImage } from '@/lib/upload-image';
 import { $isSelectionInCode } from './codeBlockGuard';
 
 export type InsertImagePayload = Readonly<ImagePayload>;
@@ -59,7 +59,7 @@ export async function insertImageWithUpload(
   file: File,
   projectId?: string,
 ): Promise<void> {
-  if (editor.getEditorState().read($isSelectionInCode)) return;
+  if (editor.getEditorState().read($isSelectionInCode) || !projectId) return;
 
   const previewUrl = URL.createObjectURL(file);
   let key: NodeKey | null = null;
@@ -73,17 +73,17 @@ export async function insertImageWithUpload(
 
   try {
     const blob = await resizeImageToBlob(file, EDITOR_IMAGE_MAX_DIMENSION, EDITOR_IMAGE_QUALITY);
-    const src = await uploadImage(blob, 'editor-image', projectId);
+    const imageId = await uploadEditorImage(blob, projectId);
     editor.update(() => {
       if (key === null) return;
       const node = $getNodeByKey(key);
       if ($isImageNode(node)) {
-        node.setSrc(src);
+        node.setImageId(imageId);
       }
     });
     URL.revokeObjectURL(previewUrl);
   } catch (err) {
-    console.error('Failed to upload image', err);
+    window.dispatchEvent(new CustomEvent('editor-image-error', { detail: err instanceof Error ? err.message : 'Image upload failed.' }));
     editor.update(() => {
       if (key === null) return;
       $getNodeByKey(key)?.remove();

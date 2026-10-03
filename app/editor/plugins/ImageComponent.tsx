@@ -15,10 +15,12 @@ import {
   KEY_DELETE_COMMAND,
   NodeKey,
 } from 'lexical';
+import { useEditorImage } from '@/components/editor/editor-images-provider';
 import { $isImageNode } from '../nodes/ImageNode';
 
 interface ImageComponentProps {
   src: string;
+  imageId: string;
   altText: string;
   width: 'inherit' | number;
   height: 'inherit' | number;
@@ -29,6 +31,7 @@ interface ImageComponentProps {
 
 export default function ImageComponent({
   src,
+  imageId,
   altText,
   width,
   height,
@@ -37,6 +40,7 @@ export default function ImageComponent({
   resizable,
 }: ImageComponentProps) {
   const [editor] = useLexicalComposerContext();
+  const resolvedSrc = useEditorImage(imageId) || src;
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -181,16 +185,18 @@ export default function ImageComponent({
       className={`editor-image-wrapper${isSelected ? ' selected' : ''}`}
       draggable={false}
     >
-      <img
+      {!resolvedSrc && <span role="status">Image unavailable</span>}
+      {resolvedSrc && <img
         ref={imageRef}
-        src={src}
+        src={resolvedSrc}
+        referrerPolicy="no-referrer"
         alt={altText}
         draggable={false}
         style={{
           width: width === 'inherit' ? undefined : `${width}px`,
           height: height === 'inherit' ? undefined : `${height}px`,
         }}
-      />
+      />}
       {isEditable && isSelected && (
         editingAlt ? (
           <input

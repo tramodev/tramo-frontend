@@ -198,6 +198,7 @@ export default function PublishPage() {
         <TaskHint id={`publish:${projectId}`}>Before publishing, check the description and read each trail from the editor. Readers see the published snapshot; later edits stay private until you publish an update.</TaskHint>
         <div className="flex flex-col gap-1.5">
           <Label>Visibility</Label>
+          <p className="text-xs text-muted-foreground">Sharing or publishing also makes note images available to readers. Returning to private stops new access links; existing links expire within five minutes.</p>
           <div className="flex flex-col gap-2">
             {VISIBILITY_OPTIONS.map((option) => {
               const isActive = option.value === visibility;

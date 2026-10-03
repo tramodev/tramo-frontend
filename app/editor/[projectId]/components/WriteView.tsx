@@ -22,6 +22,7 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { EDITOR_TRANSFORMERS } from '../../plugins/markdownTransformers';
 
 import ToolbarPlugin from '../../plugins/ToolbarPlugin';
+import { EditorImagesProvider } from '@/components/editor/editor-images-provider';
 import ImagesPlugin from '../../plugins/ImagesPlugin';
 import EquationsPlugin from '../../plugins/EquationsPlugin';
 import MusicPlugin from '../../plugins/MusicPlugin';
@@ -211,6 +212,12 @@ function ItemTitle({ item, onCommitTitle, onFocus }: {
 
 export function WriteView(props: WriteViewProps) {
   const { item, items, trail, associationById, navigationRequest, onVisibleItem } = props;
+  const [imageError, setImageError] = useState<string | null>(null);
+  useEffect(() => {
+    const onError = (event: Event) => setImageError((event as CustomEvent<string>).detail);
+    window.addEventListener('editor-image-error', onError);
+    return () => window.removeEventListener('editor-image-error', onError);
+  }, []);
   const [focusedItemId, setFocusedItemId] = useState(item.id);
   const [positionedContext, setPositionedContext] = useState<string | null>(null);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
@@ -285,7 +292,8 @@ export function WriteView(props: WriteViewProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   });
 
-  return <>
+  return <EditorImagesProvider projectId={props.projectId} publicRead={false}>
+    {imageError && <div role="alert" className="text-sm text-destructive">{imageError}<button type="button" onClick={() => setImageError(null)}>Dismiss</button></div>}
     <div data-tour="write-panel" className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <div className="editor-container relative flex flex-1 min-h-0 flex-col" aria-busy={!revealed}>
         {!revealed && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background text-sm text-muted-foreground" role="status">
@@ -327,5 +335,5 @@ export function WriteView(props: WriteViewProps) {
     <ConnectionsPanel key={focusedId} item={items[focusedId]} items={items} trails={props.trails} activeTrailId={props.activeTrailId}
       onSelectItem={props.onSelectItem} onSelectTrail={props.onSelectTrail} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
-  </>;
+  </EditorImagesProvider>;
 }

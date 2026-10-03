@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Eye, FolderPlus, ListTree, MessageCircle, Route } from "lucide-react"
 
 import { PublicSidebar } from "@/components/project/public-sidebar"
+import { EditorImagesProvider } from "@/components/editor/editor-images-provider"
 import { LexicalReadOnly } from "@/components/project/lexical-read-only"
 import { ProjectShell } from "@/components/editor/project-shell"
 import { TrailConnector } from "@/components/editor/trail-connector"
@@ -166,6 +167,7 @@ export function PublicProjectView({
   )
 
   return (
+    <EditorImagesProvider projectId={project.id} publicRead={true}>
     <ProjectShell
       homeHref={homeHref}
       showLogo={false}
@@ -389,5 +391,6 @@ export function PublicProjectView({
         </div>
       }
     />
+    </EditorImagesProvider>
   )
 }

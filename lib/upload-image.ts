@@ -1,3 +1,4 @@
+import { beginEditorImageUpload, completeEditorImageUpload } from "./editor-images";
 import { getUploadPresign, type UploadKind } from "./uploads";
 
 async function sha256Hex(blob: Blob): Promise<string> {
@@ -21,4 +22,13 @@ export async function uploadImage(blob: Blob, kind: UploadKind, projectId?: stri
   }
 
   return publicUrl;
+}
+
+export async function uploadEditorImage(blob: Blob, projectId: string): Promise<string> {
+  const contentHash = await sha256Hex(blob);
+  const { imageId, uploadUrl } = await beginEditorImageUpload(projectId, blob.type, contentHash, blob.size);
+  const response = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': blob.type }, body: blob });
+  if (!response.ok) throw new Error('Image upload failed. Please try again.');
+  await completeEditorImageUpload(imageId);
+  return imageId;
 }

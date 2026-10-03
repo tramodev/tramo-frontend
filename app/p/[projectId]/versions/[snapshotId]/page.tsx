@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getPublicProjectSnapshot } from "@/lib/project-snapshots"
+import { EditorImagesProvider } from "@/components/editor/editor-images-provider"
 import { LexicalReadOnly } from "@/components/project/lexical-read-only"
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default async function PublicVersionPage({
   }
 
   return (
+    <EditorImagesProvider projectId={projectId} publicRead={true} snapshotId={Number(snapshotId)}>
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
       <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
         You&apos;re viewing an old version (Version {snapshot.version} ·{" "}
@@ -49,5 +51,6 @@ export default async function PublicVersionPage({
         ))}
       </div>
     </div>
+    </EditorImagesProvider>
   )
 }

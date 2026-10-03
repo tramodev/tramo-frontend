@@ -242,26 +242,10 @@ export async function publishProject(id: string): Promise<{ error: string | null
 export type ThumbnailChoice =
   | { type: "NONE" }
   | { type: "GRAPH"; trailId: string }
-  | { type: "PROJECT_IMAGE" | "DEDICATED"; imageUrl: string };
+  | { type: "DEDICATED"; imageUrl: string };
 
 export async function setProjectThumbnail(id: string, choice: ThumbnailChoice): Promise<void> {
   await apiVoid(`/api/project/${id}/thumbnail`, { method: "PUT", json: choice });
-}
-
-export interface ProjectImage {
-  url: string;
-  itemId: string;
-  itemTitle: string;
-}
-
-interface ProjectImageDTO {
-  url: string;
-  itemId: string;
-  itemTitle: string;
-}
-
-export async function getProjectImages(id: string): Promise<ProjectImage[]> {
-  return apiJson<ProjectImageDTO[]>(`/api/project/${id}/images`);
 }
 
 export async function searchProjectItems(id: string, q: string): Promise<string[]> {
