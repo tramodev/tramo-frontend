@@ -208,8 +208,12 @@ export async function getProject(id: string): Promise<Project | null> {
   return { ...toProjectSummary(projectDto), trails, items };
 }
 
-export async function startProject(requestId: string, example: boolean = false): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
-  return apiJson('/api/project/start', { method: 'POST', json: { requestId, example } });
+export async function startExampleProject(): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
+  return apiJson('/api/project/example', { method: 'POST' });
+}
+
+export async function startProject(requestId: string): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
+  return apiJson('/api/project/start', { method: 'POST', json: { requestId } });
 }
 
 export async function startExistingProject(projectId: string, trailId?: string): Promise<{ projectId: string; trailId: number | null; itemId: number }> {

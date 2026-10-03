@@ -30,6 +30,7 @@ import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
 import { formatBytes } from "@/lib/format-bytes"
 import {
   startProject,
+  startExampleProject,
   deleteProject,
   listProjects,
   renameProject,
@@ -83,12 +84,12 @@ export default function ProjectsPage() {
     creatingRef.current = true
     setCreating(true)
     setCreateError("")
-    const key = `tramo:pending-start:${example ? 'example' : 'blank'}`
+    const key = 'tramo:pending-start:blank'
     const requestId = sessionStorage.getItem(key) ?? crypto.randomUUID()
-    sessionStorage.setItem(key, requestId)
+    if (!example) sessionStorage.setItem(key, requestId)
     try {
-      const result = await startProject(requestId, example)
-      sessionStorage.removeItem(key)
+      const result = await (example ? startExampleProject() : startProject(requestId))
+      if (!example) sessionStorage.removeItem(key)
       router.push(`/editor/${result.projectId}?note=${result.itemId}&trail=${result.trailId ?? ''}&write=1`)
     } catch {
       setCreateError("Could not open your project. Try again; your request will not create a duplicate.")
