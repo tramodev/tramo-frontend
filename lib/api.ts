@@ -12,6 +12,7 @@ export async function authenticatedFetch(
 
   let response = await fetch(url, {
     ...options,
+    cache: 'no-store',
     headers: {
       ...options.headers,
       Authorization: `Bearer ${token}`,
@@ -25,6 +26,7 @@ export async function authenticatedFetch(
       token = await getAccessToken();
       response = await fetch(url, {
         ...options,
+        cache: 'no-store',
         headers: {
           ...options.headers,
           Authorization: `Bearer ${token}`,

@@ -60,14 +60,33 @@ export async function proxy(request: NextRequest) {
   let refreshed: { accessToken: string; refreshToken: string } | null = null;
 
   const isServerAction = request.headers.has('next-action');
-  const accessValid = !!accessToken && !isExpiringSoon(accessToken);
+  let accessValid = !!accessToken && !isExpiringSoon(accessToken);
+  const isAuthPage = path === '/login' || path === '/signup';
+  const hadAuthCookies = !!(accessToken || refreshToken);
 
-  if (isProtected && !isServerAction && !accessValid && refreshToken) {
+  if (accessValid && (isProtected || isAuthPage)) {
+    try {
+      const profile = await fetch(`${API_BASE_URL}/api/profile/me`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (profile.status >= 500) {
+        return new NextResponse('Session validation unavailable', { status: 503 });
+      }
+      const birthDateRequired = profile.status === 403
+        && (await profile.json().catch(() => null))?.message === 'Please provide your birth date to continue.';
+      accessValid = profile.ok || birthDateRequired;
+    } catch {
+      return new NextResponse('Session validation unavailable', { status: 503 });
+    }
+  }
+
+  if ((isProtected || isAuthPage) && !accessValid && refreshToken) {
     refreshed = await refreshAccessToken(refreshToken);
     if (refreshed) accessToken = refreshed.accessToken;
   }
 
-  if (isProtected && !isServerAction && !accessValid && !refreshed) {
+  if (isProtected && !accessValid && !refreshed) {
     const res = NextResponse.redirect(new URL('/login', request.url));
     res.cookies.delete('accessToken');
     res.cookies.delete('refreshToken');
@@ -75,29 +94,31 @@ export async function proxy(request: NextRequest) {
     return res;
   }
 
-  const isLoggedIn = !!(accessToken || refreshToken);
+  const isLoggedIn = accessValid || !!refreshed;
+  if (!isLoggedIn) accessToken = null;
 
   const pendingBirthDate = !!accessToken && needsBirthDate(accessToken);
+  let redirectTo: string | null = null;
 
   if (isProtected && !isServerAction && !isOnboarding && pendingBirthDate) {
-    return NextResponse.redirect(new URL('/onboarding/birth-date', request.url));
+    redirectTo = '/onboarding/birth-date';
   }
   const admin = !!accessToken && getRole(accessToken) === 'ADMIN';
 
   if (isOnboarding && !isServerAction && (accessValid || refreshed) && !pendingBirthDate) {
-    return NextResponse.redirect(new URL(admin ? '/explore' : '/projects', request.url));
+    redirectTo = admin ? '/explore' : '/projects';
   }
 
-  if (path.startsWith('/projects') && admin) {
-    return NextResponse.redirect(new URL('/explore', request.url));
+  if (!redirectTo && path.startsWith('/projects') && admin) {
+    redirectTo = '/explore';
   }
 
-  if (path.startsWith('/admin') && !admin) {
-    return NextResponse.redirect(new URL('/projects', request.url));
+  if (!redirectTo && path.startsWith('/admin') && !admin) {
+    redirectTo = '/projects';
   }
 
-  if ((path === '/login' || path === '/signup') && isLoggedIn) {
-    return NextResponse.redirect(new URL(admin ? '/explore' : '/projects', request.url));
+  if (isAuthPage && isLoggedIn) {
+    redirectTo = admin ? '/explore' : '/projects';
   }
 
   const needsAnonId = path.startsWith('/p/') && !request.cookies.get(ANON_ID_COOKIE);
@@ -109,7 +130,15 @@ export async function proxy(request: NextRequest) {
     request.cookies.set('refreshToken', refreshed.refreshToken);
   }
 
-  const response = NextResponse.next({ request });
+  const response = redirectTo
+    ? NextResponse.redirect(new URL(redirectTo, request.url))
+    : NextResponse.next({ request });
+
+  if (isAuthPage && hadAuthCookies && !isLoggedIn) {
+    response.cookies.delete('accessToken');
+    response.cookies.delete('refreshToken');
+    response.cookies.delete('username');
+  }
 
   if (anonId) {
     response.cookies.set(ANON_ID_COOKIE, anonId, {
