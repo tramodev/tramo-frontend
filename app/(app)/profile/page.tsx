@@ -66,16 +66,18 @@ export default async function ProfilePage({
 
   const profile = fetchedProfile ?? { username: cookieUsername ?? "", bio: null, birthDate: null, location: null, website: null, imageUrl: null, bannerUrl: null, createdAt: null, selectedBadge: null }
 
+  const bannerUrl = badges.some((badge) => badge.code === "supporter" && badge.earned) ? profile.bannerUrl : null
+
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
         <div className="pt-9 px-18 pb-0">
-          <div className="mb-3">
-            <div className="relative aspect-[6/1] w-full overflow-hidden rounded-[28px] bg-muted">
-              {profile.bannerUrl && (
-                <Image src={profile.bannerUrl} alt="" fill sizes="1216px" className="object-cover" />
-              )}
+          {bannerUrl && (
+            <div className="mb-3">
+              <div className="relative aspect-[6/1] w-full overflow-hidden rounded-[28px] bg-muted">
+                <Image src={bannerUrl} alt="" fill sizes="1216px" className="object-cover" />
+              </div>
             </div>
-          </div>
+          )}
           <div className="relative rounded-[28px] bg-card p-8">
             <div className="absolute right-8 top-8">
               <EditProfileModal

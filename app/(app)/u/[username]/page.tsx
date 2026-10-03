@@ -56,6 +56,7 @@ export default async function PublicProfilePage({
   }
 
   const { stats, badges } = profile
+  const bannerUrl = badges.some((badge) => badge.code === "supporter" && badge.earned) ? profile.bannerUrl : null
   const [{ items: published, hasMore: publishedHasMore }, upvoted] = await Promise.all([
     getPublicUserPublishedPage(username, 0, PAGE_SIZE),
     profile.showUpvotes ? getPublicUserUpvotedPage(username, 0, PAGE_SIZE) : null,
@@ -74,19 +75,19 @@ export default async function PublicProfilePage({
   return (
     <main className="mx-auto w-full flex-1 max-w-[1216px]">
         <div className="pt-9 px-6 md:px-18 pb-14">
-          {profile.bannerUrl && (
+          {bannerUrl && (
             <div className="relative mb-3">
               <div className="relative aspect-[6/1] w-full overflow-hidden rounded-[28px] bg-muted">
-                <Image src={profile.bannerUrl} alt="" fill sizes="1216px" className="object-cover" />
+                <Image src={bannerUrl} alt="" fill sizes="1216px" className="object-cover" />
               </div>
               <div className="absolute left-1/2 -bottom-[50px] z-10 -translate-x-1/2 sm:left-8 sm:-bottom-[70px] sm:translate-x-0">
                 {avatar}
               </div>
             </div>
           )}
-          <div className={`flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-7 rounded-[28px] bg-card p-5 sm:p-8 ${profile.bannerUrl ? "pt-16 sm:pt-20" : ""}`}>
-            {!profile.bannerUrl && avatar}
-            <div className={`min-w-0 flex-1 text-center sm:text-left ${profile.bannerUrl ? "sm:pl-[200px]" : ""}`}>
+          <div className={`flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-7 rounded-[28px] bg-card p-5 sm:p-8 ${bannerUrl ? "pt-16 sm:pt-20" : ""}`}>
+            {!bannerUrl && avatar}
+            <div className={`min-w-0 flex-1 text-center sm:text-left ${bannerUrl ? "sm:pl-[200px]" : ""}`}>
               <div className="mb-2 flex flex-wrap items-center justify-center sm:justify-start gap-4">
                 <h1 className="font-display text-[28px] sm:text-[36px] font-normal leading-[1.1]">
                   {profile.username}
