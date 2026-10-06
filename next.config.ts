@@ -11,7 +11,7 @@ const privateOrigin = process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN
 const csp = [
   "default-src 'self'",
   `img-src 'self' data: blob: ${publicImageOrigins.join(" ")} ${privateOrigin}`,
-  "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://accounts.google.com",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://www.google.com https://www.gstatic.com https://accounts.google.com`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   `connect-src 'self' https://accounts.google.com ${privateOrigin} https://*.r2.cloudflarestorage.com`,
