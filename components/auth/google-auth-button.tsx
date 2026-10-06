@@ -2,7 +2,7 @@
 
 import { GoogleLogin, GoogleOAuthProvider, type CredentialResponse } from "@react-oauth/google"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { googleAuthHandler } from "@/lib/google-auth-actions"
 
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""
@@ -14,6 +14,18 @@ export function GoogleAuthButton({
 }) {
   const router = useRouter()
   const [error, setError] = useState("")
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(Math.floor(entry.contentRect.width))
+    })
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
 
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) {
@@ -33,15 +45,17 @@ export function GoogleAuthButton({
 
   return (
     <GoogleOAuthProvider clientId={clientId} locale="en">
-      <div className="flex w-full flex-col items-center gap-2">
-        <GoogleLogin
+      <div ref={containerRef} className="flex w-full flex-col items-center gap-2">
+        {width > 0 && <GoogleLogin
           onSuccess={handleSuccess}
           onError={() => setError("Google sign-in failed. Please try again.")}
           theme="outline"
           shape="pill"
+          logo_alignment="center"
           size="large"
           text={text}
-        />
+          width={width}
+        />}
         {error && (
           <p className="text-sm text-center text-destructive">
             {error}
