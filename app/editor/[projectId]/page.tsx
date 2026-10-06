@@ -9,7 +9,6 @@ import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sideba
 import { countProjectTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '../editor-utils';
 import { useProjectEditorState } from './hooks/useProjectEditorState';
 import { useAutoSave } from './hooks/useAutoSave';
-import { startEditorTour } from './hooks/useEditorTour';
 import { EditorTitleSlot, EditorActions } from './components/EditorHeader';
 import { WriteView } from './components/WriteView';
 import { startExistingProject } from '@/lib/projects-store';
@@ -103,7 +102,6 @@ export default function EditorPage() {
         sidebar={
           project.loaded ? <SidebarCustom
             homeHref="/projects"
-            onHelp={startEditorTour}
             projectId={projectId}
             trails={project.trails}
             items={project.items}

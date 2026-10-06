@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from 'react';
-import { Network, PanelRightOpen, X } from 'lucide-react';
+import { CircleHelp, Network, PanelRightOpen, X } from 'lucide-react';
 import { Item, Trail, AssociationType, AssociationTargetType } from '@/app/editor/types';
 import { ASSOCIATION_META, ASSOCIATION_TYPES, relationshipLabel } from '@/app/editor/associations';
 import { KnowledgeGraph } from '@/components/editor/knowledge-graph';
+import { ShortcutsDialog } from '@/components/editor/shortcuts-dialog';
+import { startEditorTour } from '@/app/editor/[projectId]/hooks/useEditorTour';
 
 interface ConnectionsPanelProps {
   item: Item;
@@ -27,9 +29,16 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
   const [type, setType] = useState<AssociationType>('RELATED');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const utilities = <div className={`mt-auto flex shrink-0 flex-col gap-2 ${open ? 'border-t border-border pt-3' : 'items-center pt-2'}`}>
+    <ShortcutsDialog compact={!open} />
+    <button type="button" aria-label="Help" title="Help" onClick={startEditorTour} className="flex items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+      <CircleHelp className="h-4 w-4" />{open && <span>Help</span>}
+    </button>
+  </div>;
   if (!open) return <aside aria-label="Connections tools" className="flex w-12 shrink-0 flex-col items-center gap-2 rounded-2xl bg-popover py-3">
     <button type="button" data-tour="connections-toggle" aria-label="Connections" title="Connections" aria-expanded={false} onClick={onToggleOpen} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><PanelRightOpen className="h-4 w-4" /></button>
     <button type="button" aria-label="Open graph" title="Open graph" onClick={onOpenGraph} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Network className="h-4 w-4" /></button>
+    {utilities}
   </aside>;
   const incoming = Object.values(items).flatMap(source => source.associations.filter(a => a.targetType === 'ITEM' && a.targetId === item.id).map(a => ({ source, association: a })));
   const tied = new Set(item.associations.map(a => `${a.targetType}:${a.targetId}`));
@@ -74,5 +83,6 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
       <div className="flex gap-2"><button disabled={pending || !target} className="rounded-full bg-primary px-4 py-2 text-xs text-primary-foreground disabled:opacity-50">{pending ? 'Connecting…' : 'Connect'}</button><button type="button" onClick={() => setAdding(false)} className="px-3 text-xs">Cancel</button></div>
     </form>}
     <div className="border-t border-border pt-3"><button type="button" onClick={onOpenGraph} className="mb-3 text-sm text-primary">Open graph</button><div className="h-44 overflow-hidden rounded-lg border border-border"><KnowledgeGraph trails={trails} items={items} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" /></div></div>
+    {utilities}
   </aside>;
 }

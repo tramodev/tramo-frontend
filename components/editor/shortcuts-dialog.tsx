@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Keyboard } from "lucide-react"
-import { SidebarMenuButton } from "@/components/ui/sidebar"
 import {
   Dialog,
   DialogContent,
@@ -49,7 +48,7 @@ const GROUPS: { title: string; shortcuts: [string, string][] }[] = [
   },
 ]
 
-export function ShortcutsDialog() {
+export function ShortcutsDialog({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
@@ -67,12 +66,12 @@ export function ShortcutsDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton className="text-muted-foreground" onClick={(event) => {
+        <button type="button" aria-label="Shortcuts" title="Shortcuts" className="flex items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground" onClick={(event) => {
           previousFocusRef.current = event.currentTarget
         }}>
           <Keyboard className="h-4 w-4" />
-          <span>Keyboard shortcuts</span>
-        </SidebarMenuButton>
+          {!compact && <span>Shortcuts</span>}
+        </button>
       </DialogTrigger>
       <DialogContent
         className="max-h-[85vh] overflow-y-auto sm:max-w-lg"
