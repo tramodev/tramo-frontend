@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { API_BASE_URL, REFRESH_TOKEN_MAX_AGE } from '@/lib/config';

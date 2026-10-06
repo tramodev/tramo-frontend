@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 export const ITEM_LINK_REL_PREFIX = 'tramo-idea:';
 const LEGACY_ITEM_LINK_REL_PREFIX = 'mypath-idea:';
 

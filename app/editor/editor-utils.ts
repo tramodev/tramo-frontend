@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 export const lastItemStorageKey = (projectId: string) => `tramo:lastItem:${projectId}`;
 export const SIDEBAR_OPEN_STORAGE_KEY = 'tramo:editorSidebarOpen';
 export const CONNECTIONS_OPEN_STORAGE_KEY = 'tramo:editorConnectionsOpen';

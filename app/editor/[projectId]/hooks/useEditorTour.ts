@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { setEditorTourSeen } from '@/lib/editor-tour-prefs';

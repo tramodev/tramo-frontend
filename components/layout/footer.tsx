@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 export function Footer() {
   return (
     <footer className="border-t border-border">

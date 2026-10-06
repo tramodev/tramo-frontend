@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { parseResponse, expectOk } from "./http";
 
 export async function getItemContent(itemId: string): Promise<string> {

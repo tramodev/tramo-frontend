@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import type { Metadata } from "next"
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
 import { AuthPoster } from "@/components/auth/auth-poster"

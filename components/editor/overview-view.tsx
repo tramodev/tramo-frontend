@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { X } from 'lucide-react';
 import { OverviewReader } from '@/components/editor/overview-reader';
 import { Trail, Item, Association } from '@/app/editor/types';

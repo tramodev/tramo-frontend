@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 const BURST_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
 
 export function BurstParticles() {

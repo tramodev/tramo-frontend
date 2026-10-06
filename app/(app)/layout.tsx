@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { AppHeader } from "@/components/layout/app-header"
 import { isLoggedIn } from "@/lib/auth"
 import { getMyProfile } from "@/lib/profile"

@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { redirect } from "next/navigation";
 import { BrowserMockup } from "@/components/landing/browser-mockup";
 import { Hero } from "@/components/landing/hero";

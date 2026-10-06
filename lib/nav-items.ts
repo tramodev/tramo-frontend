@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 const NAV_ITEMS = [
   { key: "projects", href: "/projects", label: "My Projects" },
   { key: "explore", href: "/explore", label: "Explore" },

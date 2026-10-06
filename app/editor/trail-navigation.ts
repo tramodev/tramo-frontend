@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import type { Trail } from './types';
 
 export function resolveItemTrail(trails: Trail[], itemId: string, current?: string, explicit?: string) {

@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { StaggerGroup, StaggerItem } from '@/components/landing/landing-motion';

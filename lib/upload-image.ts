@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { beginEditorImageUpload, completeEditorImageUpload } from "./editor-images";
 import { getUploadPresign, type UploadKind } from "./uploads";
 

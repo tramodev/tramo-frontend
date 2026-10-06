@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { useEffect, useRef, type RefObject } from "react"
 import { visibleItemAtLine } from "@/app/editor/trail-navigation"
 

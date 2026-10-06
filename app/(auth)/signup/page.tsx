@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import type { Metadata } from "next"
 import Script from "next/script"
 import { SignupForm } from "@/components/auth/signup-form"

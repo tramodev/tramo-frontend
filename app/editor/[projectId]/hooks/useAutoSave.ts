@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EditorState } from 'lexical';
 import { saveItemContent } from '@/lib/item-content-client';

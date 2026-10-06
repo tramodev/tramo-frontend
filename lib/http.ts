@@ -1,3 +1,5 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
 
 export async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
