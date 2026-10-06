@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogOut, Moon, Settings, Sun, SunMoon } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
+import { initial } from '@/components/shared/author-avatar';
 import type { NavItem } from '@/lib/nav-items';
 
 export function AvatarMenu({
@@ -30,7 +31,7 @@ export function AvatarMenu({
   imageUrl?: string | null;
   navItems?: NavItem[];
 }) {
-  const initials = username.slice(0, 2).toUpperCase();
+  const initials = initial(username);
   const { theme, resolvedTheme, setTheme } = useTheme();
   const mounted = useMounted();
 

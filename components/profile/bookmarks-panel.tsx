@@ -39,7 +39,7 @@ export function BookmarksPanel({
   }
 
   if (items.length === 0) {
-    return <EmptyState message="Nothing saved yet — bookmark paths from" linkHref="/explore" linkLabel="Explore." />
+    return <EmptyState message="Nothing saved yet — bookmark projects from" linkHref="/explore" linkLabel="Explore." />
   }
 
   return (

@@ -102,7 +102,7 @@ const GRAPH_TRAILS: Trail[] = [
   {
     id: 'thinking-in-trails',
     title: 'Thinking in trails',
-    description: 'Explore how the Memex connects records into reusable paths of thought.',
+    description: 'Explore how the Memex connects notes into reusable trails.',
     itemIds: ['memex', 'associative-trails', 'sharing-a-trail'],
     steps: [
       { itemId: 'memex', annotation: null, associationId: null },
@@ -151,7 +151,7 @@ export const BrowserMockup: React.FC = () => {
             <Mark size={22} className="shrink-0" />
             <div className="flex flex-1 items-center gap-1.5 rounded-full bg-popover px-2.5 py-1.5 text-[11px] text-muted-foreground">
               <Search className="w-3 h-3 shrink-0" />
-              Buscar
+              Search
             </div>
           </div>
 
@@ -189,7 +189,7 @@ export const BrowserMockup: React.FC = () => {
 
           <div className="mt-1 flex items-center justify-between px-2 border-t border-border pt-2.5">
             <h3 className="text-[11px] font-medium text-muted-foreground">
-              Items
+              Notes
             </h3>
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
@@ -312,7 +312,7 @@ export const BrowserMockup: React.FC = () => {
                 <div className="flex items-center gap-1.5">
                   <span className="truncate text-[12px] font-medium flex-1">{title}</span>
                   <span className="shrink-0 rounded-sm bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-secondary-foreground">
-                    item
+                    note
                   </span>
                 </div>
               </div>

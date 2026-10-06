@@ -360,7 +360,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
           <svg width="30" height="8" className="shrink-0">
             <line x1="0" y1="4" x2="30" y2="4" stroke={spineColor} strokeWidth={4} />
           </svg>
-          orden del trail
+          Trail order
         </span>
         {typesPresent.map((type) => (
           <span key={type} className="flex items-center gap-2">

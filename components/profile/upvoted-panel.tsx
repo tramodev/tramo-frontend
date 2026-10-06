@@ -37,7 +37,7 @@ export function UpvotedPanel({
   }
 
   if (items.length === 0) {
-    return <EmptyState message="Nothing upvoted yet — find paths worth voting for on" linkHref="/explore" linkLabel="Explore." />
+    return <EmptyState message="Nothing upvoted yet — find projects worth voting for on" linkHref="/explore" linkLabel="Explore." />
   }
 
   return (

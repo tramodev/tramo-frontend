@@ -41,7 +41,6 @@ export function GoogleAuthButton({
           shape="pill"
           size="large"
           text={text}
-          width={400}
         />
         {error && (
           <p className="text-sm text-center text-destructive">

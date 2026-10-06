@@ -319,7 +319,7 @@ export function SidebarCustom({
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query}
-                placeholder="Buscar en el memex"
+                placeholder="Search this project"
                 className="h-8 pl-8 rounded-full"
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {

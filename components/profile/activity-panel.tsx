@@ -88,7 +88,7 @@ export function ActivityPanel({
   }
 
   if (items.length === 0) {
-    return <EmptyState message="No activity yet — publish, fork, or upvote paths on" linkHref="/explore" linkLabel="Explore." />
+    return <EmptyState message="No activity yet — publish, fork, or upvote projects on" linkHref="/explore" linkLabel="Explore." />
   }
 
   return (
