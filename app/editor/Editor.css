@@ -1038,6 +1038,7 @@ pre::-webkit-scrollbar-thumb {
 
 .toolbar button.toolbar-item.align-dropdown-trigger {
   width: auto;
+  font-size: 13px;
   gap: 1px;
   padding: 0 5px;
 }
