@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Camera, ImagePlus, Pencil, X } from "lucide-react"
+import { Camera, CircleOff, ImagePlus, Pencil, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { CropModal } from "@/components/profile/crop-modal"
+import { BadgeIcon } from "@/components/profile/badges-panel"
 import { updateMyProfile, type Badge } from "@/lib/profile"
 import { updatePrivacySettings } from "@/lib/privacy"
 import { uploadImage } from "@/lib/upload-image"
@@ -330,23 +331,36 @@ export function EditProfileModal({
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-profile-badge">Showcase badge</Label>
-              <select
-                id="edit-profile-badge"
-                value={selectedBadge}
-                onChange={(event) => setSelectedBadge(event.target.value)}
-                disabled={earnedBadges.length === 0}
-                className="border-input h-14 w-full min-w-0 rounded-xs border bg-transparent px-4 py-1 text-base outline-none focus-visible:border-primary focus-visible:shadow-[inset_0_0_0_1px_var(--primary)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-[38%] md:text-sm"
-              >
-                <option value="">None</option>
-                {earnedBadges.map((badge) => (
-                  <option key={badge.code} value={badge.code}>
-                    {badge.name}
-                  </option>
+            <fieldset disabled={isPending || earnedBadges.length === 0}>
+              <legend className="mb-1.5 text-sm font-medium">Showcase badge</legend>
+              <p className="mb-3 text-xs text-muted-foreground">Choose the badge shown beside your name.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[null, ...earnedBadges].map((badge) => (
+                  <label key={badge?.code ?? "none"} className="relative cursor-pointer">
+                    <input
+                      type="radio"
+                      name="edit-profile-badge"
+                      value={badge?.code ?? ""}
+                      aria-label={badge?.name ?? "None"}
+                      checked={selectedBadge === (badge?.code ?? "")}
+                      onChange={(event) => setSelectedBadge(event.target.value)}
+                      className="peer sr-only"
+                    />
+                    <span className="flex h-full items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:bg-muted peer-checked:border-primary peer-checked:bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-disabled:cursor-not-allowed peer-disabled:opacity-50">
+                      {badge ? <BadgeIcon badge={badge} size={24} /> : (
+                        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-tertiary text-muted-foreground">
+                          <CircleOff className="size-6" />
+                        </span>
+                      )}
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium">{badge?.name ?? "None"}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">{badge?.description ?? "Show your name without a badge."}</span>
+                      </span>
+                    </span>
+                  </label>
                 ))}
-              </select>
-            </div>
+              </div>
+            </fieldset>
 
             {error && (
               <span className="text-xs font-medium text-destructive">{error}</span>
