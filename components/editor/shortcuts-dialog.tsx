@@ -1,12 +1,15 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { Keyboard } from "lucide-react"
+import { SidebarMenuButton } from "@/components/ui/sidebar"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 
 const GROUPS: { title: string; shortcuts: [string, string][] }[] = [
@@ -16,6 +19,8 @@ const GROUPS: { title: string; shortcuts: [string, string][] }[] = [
       ["⌘P", "Find a note in this project"],
       ["↑ / ↓ at start or end", "Previous / next note"],
       ["⌘⌥↑ / ⌘⌥↓", "Previous / next note in the trail"],
+      ["⌘⌥→", "Next trail from its last note"],
+      ["⌘/", "Keyboard shortcuts"],
       ["Esc", "Move to the toolbar and back"],
       ["⌘F", "Find and replace in this note"],
     ],
@@ -61,8 +66,16 @@ export function ShortcutsDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <SidebarMenuButton className="text-muted-foreground" onClick={(event) => {
+          previousFocusRef.current = event.currentTarget
+        }}>
+          <Keyboard className="h-4 w-4" />
+          <span>Keyboard shortcuts</span>
+        </SidebarMenuButton>
+      </DialogTrigger>
       <DialogContent
-        className="sm:max-w-lg"
+        className="max-h-[85vh] overflow-y-auto sm:max-w-lg"
         onCloseAutoFocus={(event) => {
           const previous = previousFocusRef.current
           if (previous === null || !previous.isConnected) return
@@ -72,7 +85,7 @@ export function ShortcutsDialog() {
       >
         <DialogHeader>
           <DialogTitle>Keyboard shortcuts</DialogTitle>
-          <DialogDescription>⌘/ opens and closes this dialog. Use Ctrl instead of ⌘ on Windows and Linux.</DialogDescription>
+          <DialogDescription>⌘/ opens and closes this dialog. Use Ctrl instead of ⌘ and Alt instead of ⌥ on Windows and Linux.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-5">
           {GROUPS.map((group) => (

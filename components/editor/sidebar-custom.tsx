@@ -1,4 +1,5 @@
 import { CircleHelp, ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Plus, Search, Trash2, X } from "lucide-react"
+import { ShortcutsDialog } from "@/components/editor/shortcuts-dialog"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Mark } from "@/components/layout/logo"
@@ -789,6 +790,9 @@ export function SidebarCustom({
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <ShortcutsDialog />
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onHelp} className="text-muted-foreground">
               <CircleHelp className="h-4 w-4" />

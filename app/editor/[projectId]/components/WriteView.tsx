@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 import type { EditorState } from 'lexical';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
@@ -226,6 +226,7 @@ export function WriteView(props: WriteViewProps) {
   const editors = useRef(new Map<string, LexicalEditor>());
   const handledRequest = useRef<number | null>(null);
   const inTrail = !!trail?.itemIds.includes(item.id);
+  const nextTrail = inTrail && trail ? props.trails[props.trails.findIndex(candidate => candidate.id === trail.id) + 1] : undefined;
   const steps = inTrail && trail ? trail.steps : [{ itemId: item.id, annotation: null, associationId: null }];
   const ids = useMemo(() => inTrail && trail ? trail.itemIds : [item.id], [inTrail, trail, item.id]);
   const focusedId = ids.includes(focusedItemId) ? focusedItemId : item.id;
@@ -282,9 +283,14 @@ export function WriteView(props: WriteViewProps) {
         props.onCreateItem(trail.id, 'Untitled');
       }
       if (!event.altKey || (!event.metaKey && !event.ctrlKey) || event.shiftKey) return;
-      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
       if (target?.closest('input, textarea, [contenteditable="true"]') && !target.closest('.trail-item-editor')) return;
       const origin = target?.closest<HTMLElement>('[data-item-id]')?.dataset.itemId ?? item.id;
+      if (event.key === 'ArrowRight' && nextTrail && origin === ids[ids.length - 1] && !event.isComposing) {
+        event.preventDefault();
+        props.onSelectTrail(nextTrail.id);
+        return;
+      }
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
       event.preventDefault();
       move(origin, event.key === 'ArrowUp' ? -1 : 1);
     };
@@ -320,6 +326,13 @@ export function WriteView(props: WriteViewProps) {
                 </div>
                 {stepItem.content != null && <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
                   toolbar={toolbar} onFocus={onFocus} register={register} move={move} />}
+                {index === steps.length - 1 && nextTrail && <div className="mt-8 flex justify-end pl-7">
+                  <button type="button" onClick={() => props.onSelectTrail(nextTrail.id)}
+                    className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">
+                    Next trail: {nextTrail.title} <kbd className="text-xs text-muted-foreground">⌘⌥→</kbd>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>}
               </section>;
             })}
             {inTrail && trail && <div className="mt-16 flex justify-center pb-4">
