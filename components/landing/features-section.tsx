@@ -79,8 +79,8 @@ export function FeaturesSection() {
     <h2 className="mb-3.5 max-w-[24ch] font-display text-[40px] font-medium leading-[1.1]">Write once. Explain in different ways.</h2>
     <p className="mb-10 max-w-[60ch] text-[17px] leading-relaxed text-muted-foreground">Keep your notes connected and reusable. Build trails for the things you want to learn or explain.</p>
     <div className="grid gap-4 md:grid-cols-2">
-      {STEPS.map(({ Mockup, color, label, title, description }, index) => <FadeUp key={label} delay={index * 0.08} className="h-full">
-        <div className="flex h-full flex-col overflow-hidden rounded-[28px] bg-card">
+      {STEPS.map(({ Mockup, color, label, title, description }, index) => <FadeUp key={label} delay={index * 0.08} className="h-full md:row-span-2 md:grid md:grid-rows-subgrid">
+        <div className="flex h-full flex-col overflow-hidden rounded-[28px] bg-card md:row-span-2 md:grid md:grid-rows-subgrid md:gap-0">
           <div className="p-6 sm:p-9">
             <div className="mb-3 text-xs font-semibold uppercase tracking-wide" style={{ color: `var(${color})` }}>{label}</div>
             <h3 className="mb-3 font-display text-2xl font-medium">{title}</h3>

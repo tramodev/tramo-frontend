@@ -236,7 +236,7 @@ export function EditProfileModal({
                 onChange={handleBannerFileChange}
               />
 
-              <p className="text-xs text-muted-foreground">Avatars and banners are public. Do not upload confidential information.</p>
+              <p className="px-6 pt-3 text-xs text-muted-foreground">Avatars and banners are public. Do not upload confidential information.</p>
               {error && (
                 <p className="absolute inset-x-3 top-2 z-20 rounded-md bg-black/60 px-2 py-1 text-center text-[11px] font-medium text-white">
                   {error}

@@ -232,9 +232,9 @@ export default async function ExplorePage({
                       href={`/p/${project.id}`}
                       className="-mx-5 flex flex-col gap-1 px-5 py-2.5 transition-colors hover:bg-surface-container-high"
                     >
-                      <span className="flex items-baseline gap-2">
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium">{project.title}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="line-clamp-2 break-words text-sm font-medium">{project.title}</span>
+                        <span className="truncate text-xs text-muted-foreground">
                           {project.ownerUsername}
                         </span>
                       </span>

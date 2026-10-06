@@ -214,11 +214,11 @@ export default function ProjectsPage() {
               No projects yet. Start writing or try an example.
             </p>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-[repeat(auto-fill,208px)] justify-between gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-4">
               {sortedProjects.map((project) => (
                 <Card
                   key={project.id}
-                  className="group/card flex h-[255px] w-[208px] flex-col cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
+                  className="group/card flex h-[300px] flex-col cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
                   onClick={() => router.push(`/editor/${project.id}`)}
                 >
                   <CardContent className="mx-2 mt-2 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-sm p-0">
@@ -248,7 +248,7 @@ export default function ProjectsPage() {
                       ) : (
                         <span className="flex min-w-0 flex-1 items-center gap-1.5">
                           <CardTitle
-                            className="min-w-0 flex-1 truncate text-sm font-medium"
+                            className="min-w-0 flex-1 line-clamp-2 break-words text-sm font-medium"
                             onDoubleClick={(e) => {
                               e.stopPropagation()
                               startRename(project)

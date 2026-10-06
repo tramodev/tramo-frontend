@@ -303,7 +303,7 @@ export function PublicProjectView({
           ) : (
             <div ref={columnRef} className="flex min-w-0 flex-1 flex-col gap-3 overflow-auto">
               <section aria-label="About this project" className="rounded-2xl bg-popover">
-                <div className="mx-auto w-full max-w-[1024px] px-6 py-6">
+                <div className="mx-auto w-full max-w-[800px] px-6 py-6">
                   <div className="pl-7">
                   <h1 className="font-display text-3xl font-medium">{project.title}</h1>
                   {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
@@ -314,7 +314,7 @@ export function PublicProjectView({
               </section>
               {selectedItem ? (
                 <div className="rounded-2xl bg-popover">
-                  <div className="public-trail-column mx-auto w-full max-w-[1024px] px-6 py-8">
+                  <div className="public-trail-column mx-auto w-full max-w-[800px] px-6 py-8">
                     {steps.map((step, i) => {
                       const stepItem = items[step.itemId]
                       if (!stepItem) return null

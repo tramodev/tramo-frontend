@@ -114,9 +114,9 @@
 .dark {
   --background: #000000;
   --foreground: #F5F5F5;
-  --card: #0A0A0A;
+  --card: var(--surface-container-high);
   --card-foreground: #F5F5F5;
-  --popover: #000000;
+  --popover: var(--surface-container-high);
   --popover-foreground: #F5F5F5;
   --primary: #F2F2F2;
   --primary-foreground: #111111;
@@ -134,7 +134,7 @@
   --success-foreground: #78DC77;
   --warning: #F2C55C;
   --warning-foreground: #F2C55C;
-  --border: #1E1E1E;
+  --border: var(--input);
   --input: #333333;
   --ring: #F2F2F2;
   --surface-container-high: #171717;
@@ -144,13 +144,13 @@
   --chart-3: #BBC7DB;
   --chart-4: #F2C55C;
   --chart-5: #FFB4AB;
-  --sidebar: #0A0A0A;
+  --sidebar: var(--card);
   --sidebar-foreground: #F5F5F5;
   --sidebar-primary: #F2F2F2;
   --sidebar-primary-foreground: #111111;
   --sidebar-accent: #1C1C1C;
   --sidebar-accent-foreground: #EDEDED;
-  --sidebar-border: #1E1E1E;
+  --sidebar-border: var(--border);
   --sidebar-ring: #F2F2F2;
   --ed-red: #F2B8B5;
   --ed-orange: #FFB960;

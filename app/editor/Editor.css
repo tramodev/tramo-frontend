@@ -991,9 +991,9 @@ pre::-webkit-scrollbar-thumb {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   flex: none;
-  padding: 8px 20px;
+  padding: 8px 12px;
   flex-wrap: wrap;
 }
 
@@ -1033,7 +1033,7 @@ pre::-webkit-scrollbar-thumb {
   width: 1px;
   height: 20px;
   background-color: var(--border);
-  margin: 0 5px;
+  margin: 0 3px;
 }
 
 .toolbar button.toolbar-item.align-dropdown-trigger {
@@ -1050,7 +1050,7 @@ pre::-webkit-scrollbar-thumb {
   font-size: 13px;
   padding: 4px 6px;
   margin-right: 4px;
-  max-width: 140px;
+  max-width: 120px;
   height: 32px;
   cursor: pointer;
 }
