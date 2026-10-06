@@ -67,10 +67,10 @@ function ReadingMockup() {
 }
 
 const STEPS = [
-  { Mockup: WriteMockup, color: '--ed-blue', label: '1 · Write notes', title: 'Start with one idea', description: 'Open a project and start writing. Add a title, more notes and structure when they help.' },
-  { Mockup: ConnectionsMockup, color: '--ed-orange', label: '2 · Connect them', title: 'Explain how ideas relate', description: 'Connect notes when a relationship adds context. Keep simple connections or describe prerequisites, examples and contrasting ideas.' },
-  { Mockup: ReuseMockup, color: '--ed-purple', label: '3 · Reuse them', title: 'One note, more than one explanation', description: 'A trail is an ordered sequence of notes. Use the same note in different trails, with a transition that fits each explanation.' },
-  { Mockup: ReadingMockup, color: '--ed-green', label: '4 · Share an explanation', title: 'Give readers a place to begin', description: 'Describe your project and publish a readable snapshot. Share its link, then keep working privately until you publish an update.' },
+  { Mockup: WriteMockup, color: '--ed-blue', label: 'Write notes', title: 'Start with one idea', description: 'Open a project and start writing. Add a title, more notes and structure when they help.' },
+  { Mockup: ConnectionsMockup, color: '--ed-orange', label: 'Connect them', title: 'Explain how ideas relate', description: 'Connect notes when a relationship adds context. Keep simple connections or describe prerequisites, examples and contrasting ideas.' },
+  { Mockup: ReuseMockup, color: '--ed-purple', label: 'Reuse them', title: 'One note, more than one explanation', description: 'A trail is an ordered sequence of notes. Use the same note in different trails, with a transition that fits each explanation.' },
+  { Mockup: ReadingMockup, color: '--ed-green', label: 'Share an explanation', title: 'Give readers a place to begin', description: 'Describe your project and publish a readable snapshot. Share its link, then keep working privately until you publish an update.' },
 ];
 
 export function FeaturesSection() {
