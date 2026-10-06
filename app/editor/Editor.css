@@ -35,10 +35,6 @@
   flex-direction: column;
 }
 
-.editor-inner.find-open {
-  padding-top: 88px;
-}
-
 .editor-content-column {
   width: 95%;
   margin: 0 auto;

@@ -190,13 +190,6 @@ export default function FindReplacePlugin() {
   }, [editor]);
 
   useEffect(() => {
-    const inner = editor.getRootElement()?.closest('.editor-inner');
-    if (inner === null || inner === undefined) return;
-    inner.classList.toggle('find-open', open);
-    return () => inner.classList.remove('find-open');
-  }, [editor, open]);
-
-  useEffect(() => {
     return editor.registerCommand(
       OPEN_FIND_REPLACE_COMMAND,
       () => {
