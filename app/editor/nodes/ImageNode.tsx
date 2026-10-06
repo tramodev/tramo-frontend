@@ -149,7 +149,6 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
   setImageId(imageId: string): void {
     const writable = this.getWritable();
     writable.__imageId = imageId;
-    writable.__src = '';
   }
 
   setAltText(altText: string): void {

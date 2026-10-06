@@ -29,6 +29,8 @@ export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> =
 export const EDITOR_IMAGE_MAX_DIMENSION = 1600;
 export const EDITOR_IMAGE_QUALITY = 0.85;
 
+const previews = new WeakMap<ReturnType<typeof useLexicalComposerContext>[0], Set<string>>();
+
 function $placeCaretBelowImage(imageNode: ImageNode): void {
   const block = imageNode.getTopLevelElement();
   if (block === null) return;
@@ -62,6 +64,9 @@ export async function insertImageWithUpload(
   if (editor.getEditorState().read($isSelectionInCode) || !projectId) return;
 
   const previewUrl = URL.createObjectURL(file);
+  const urls = previews.get(editor) ?? new Set<string>();
+  previews.set(editor, urls);
+  urls.add(previewUrl);
   let key: NodeKey | null = null;
 
   editor.update(() => {
@@ -81,7 +86,6 @@ export async function insertImageWithUpload(
         node.setImageId(imageId);
       }
     });
-    URL.revokeObjectURL(previewUrl);
   } catch (err) {
     window.dispatchEvent(new CustomEvent('editor-image-error', { detail: err instanceof Error ? err.message : 'Image upload failed.' }));
     editor.update(() => {
@@ -89,6 +93,7 @@ export async function insertImageWithUpload(
       $getNodeByKey(key)?.remove();
     });
     URL.revokeObjectURL(previewUrl);
+    urls.delete(previewUrl);
   }
 }
 
@@ -122,6 +127,10 @@ export default function ImagesPlugin({ projectId }: { projectId?: string }): nul
     }
 
     return mergeRegister(
+      () => {
+        previews.get(editor)?.forEach(url => URL.revokeObjectURL(url));
+        previews.delete(editor);
+      },
       editor.registerCommand<InsertImagePayload>(
         INSERT_IMAGE_COMMAND,
         (payload) => {

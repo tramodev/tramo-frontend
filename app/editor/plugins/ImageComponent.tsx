@@ -40,7 +40,7 @@ export default function ImageComponent({
   resizable,
 }: ImageComponentProps) {
   const [editor] = useLexicalComposerContext();
-  const resolvedSrc = useEditorImage(imageId) || src;
+  const resolvedSrc = useEditorImage(src ? '' : imageId) || src;
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const imageRef = useRef<HTMLImageElement | null>(null);
