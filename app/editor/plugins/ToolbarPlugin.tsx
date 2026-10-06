@@ -130,12 +130,11 @@ const BLOCK_OPTIONS: { value: BlockOption; label: string; Icon: typeof Type }[] 
   { value: 'h1', label: 'Heading 1', Icon: Heading1 },
   { value: 'h2', label: 'Heading 2', Icon: Heading2 },
   { value: 'h3', label: 'Heading 3', Icon: Heading3 },
-];
-
-const LIST_OPTIONS: { value: BlockOption; label: string; Icon: typeof Type }[] = [
-  { value: 'bullet', label: 'Bulleted list', Icon: ListIcon },
   { value: 'number', label: 'Numbered list', Icon: ListOrdered },
+  { value: 'bullet', label: 'Bulleted list', Icon: ListIcon },
+  { value: 'quote', label: 'Quote', Icon: Quote },
   { value: 'check', label: 'Check list', Icon: CheckSquare },
+  { value: 'code', label: 'Code block', Icon: SquareCode },
 ];
 
 const LIST_COMMANDS: Partial<Record<BlockOption, LexicalCommand<void>>> = {
@@ -497,10 +496,6 @@ export default function ToolbarPlugin({
     else setBlock(() => $createHeadingNode(value as HeadingTagType));
   };
 
-  const formatCode = () => {
-    setBlock(blockType === 'code' ? $createParagraphNode : () => $createCodeNode('plain'));
-  };
-
   const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -510,8 +505,8 @@ export default function ToolbarPlugin({
 
 
   const activeAlign = titleFocused ? titleAlign ?? 'left' : elementFormat;
-  const ActiveBlockIcon = BLOCK_OPTIONS.find((option) => option.value === blockType)?.Icon ?? Type;
-  const ActiveListIcon = LIST_OPTIONS.find((option) => option.value === blockType)?.Icon ?? ListIcon;
+  const activeBlock = BLOCK_OPTIONS.find((option) => option.value === blockType) ?? BLOCK_OPTIONS[0];
+  const ActiveBlockIcon = activeBlock.Icon;
   const ActiveAlignIcon = ALIGN_OPTIONS.find((option) => option.value === activeAlign)?.Icon ?? AlignLeft;
 
   return (
@@ -542,6 +537,23 @@ export default function ToolbarPlugin({
         disabled={!canRedo}
         onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
       />
+      <Divider />
+      <DropdownMenu>
+        <ToolbarMenuButton label="Text Styles" tooltip="Text Styles" className="toolbar-item align-dropdown-trigger spaced">
+          <ActiveBlockIcon size={18} />
+          <span>{activeBlock.label}</span>
+          <ChevronDown size={12} />
+        </ToolbarMenuButton>
+        <DropdownMenuContent align="start">
+          {BLOCK_OPTIONS.map(({ value, label, Icon }) => (
+            <DropdownMenuItem key={value} onSelect={() => selectBlock(value)}>
+              <Icon className="h-4 w-4" />
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <Divider />
       <select
         className="toolbar-item font-family-select"
@@ -609,36 +621,6 @@ export default function ToolbarPlugin({
       </DropdownMenu>
 
       <Divider />
-      <DropdownMenu>
-        <ToolbarMenuButton label="Text style" tooltip="Text style" className="toolbar-item align-dropdown-trigger spaced">
-          <ActiveBlockIcon size={18} />
-          <ChevronDown size={12} />
-        </ToolbarMenuButton>
-        <DropdownMenuContent align="start">
-          {BLOCK_OPTIONS.map(({ value, label, Icon }) => (
-            <DropdownMenuItem key={value} onSelect={() => selectBlock(value)}>
-              <Icon className="h-4 w-4" />
-              {label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <ToolbarMenuButton label="Lists" tooltip="Lists" className="toolbar-item align-dropdown-trigger spaced">
-          <ActiveListIcon size={18} />
-          <ChevronDown size={12} />
-        </ToolbarMenuButton>
-        <DropdownMenuContent align="start">
-          {LIST_OPTIONS.map(({ value, label, Icon }) => (
-            <DropdownMenuItem key={value} onSelect={() => selectBlock(value)}>
-              <Icon className="h-4 w-4" />
-              {label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
       <DropdownMenu>
         <ToolbarMenuButton label="Align text" tooltip="Align text" className="toolbar-item align-dropdown-trigger spaced">
           <ActiveAlignIcon size={18} />
@@ -733,14 +715,6 @@ export default function ToolbarPlugin({
           >
             <Music className="h-4 w-4" />
             Music score
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => selectBlock('quote')}>
-            <Quote className="h-4 w-4" />
-            Quote
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={formatCode}>
-            <SquareCode className="h-4 w-4" />
-            Code block
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code'}
