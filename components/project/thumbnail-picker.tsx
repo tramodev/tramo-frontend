@@ -17,7 +17,7 @@ function UploadThumbnailTab({ disabled, active, onFile }: { disabled: boolean; a
   return (
     <label
       className={cn(
-        "flex flex-col notes-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
+        "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
         active ? "border-foreground bg-foreground/5" : "border-border hover:bg-muted",
         disabled ? "pointer-events-none opacity-50" : "cursor-pointer"
       )}
@@ -109,7 +109,7 @@ export function ThumbnailPicker({
             type="button"
             onClick={() => setTab(key)}
             className={cn(
-              "flex flex-col notes-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
+              "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
               tab === key ? "border-foreground bg-foreground/5" : "border-border hover:bg-muted"
             )}
           >
