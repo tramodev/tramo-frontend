@@ -8,6 +8,7 @@ export interface ExtractionRequest {
   sourceContent: string;
   extractedContent: string;
   trailId: number | null;
+  appendToTrail: boolean;
   expectedOrder: number[] | null;
 }
 export interface ExtractionResult {

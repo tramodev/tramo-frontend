@@ -5,7 +5,9 @@ import ts from 'typescript';
 
 function setup() {
   const states = [], refs = [], effects = [], requests = [], accepted = [], applied = [], history = [], saves = [];
-  let si = 0, ri = 0, initialized = false, inspect;
+  let si = 0, ri = 0, initialized = false, inspect, now = 0, timerId = 0;
+  const timers = new Map();
+  const advance = ms => { now += ms; for (const [id, timer] of timers) if (timer.at <= now) { timers.delete(id); timer.fn(); } };
   const original = { root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'original' }] }] } };
   let current = original, editable = true, failSave = false;
   const captured = { state: { toJSON: () => original }, content: JSON.stringify(original), selection: {} };
@@ -18,7 +20,7 @@ function setup() {
   };
   const jsx = (type, props) => ({ type, props }); const exports = {};
   runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/ExtractSelectionPlugin.tsx', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
-    exports, Error, crypto: { randomUUID: () => 'fixed-operation-id' },
+    exports, Error, setTimeout: (fn, ms) => { const id = ++timerId; timers.set(id, { fn, at: now + ms }); return id; }, clearTimeout: id => timers.delete(id), crypto: { randomUUID: () => 'fixed-operation-id' },
     require: name => ({
       react: { useRef: value => refs[ri++] ?? (refs[ri - 1] = { current: value }), useState: value => { const index = si++; if (!(index in states)) states[index] = value; return [states[index], next => { states[index] = next; }]; }, useEffect: effect => { if (!initialized) effects.push(effect); } },
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' }, 'react-dom': { createPortal: element => element },
@@ -36,9 +38,9 @@ function setup() {
   const flatten = element => Array.isArray(element) ? element.flatMap(flatten) : element?.props ? [element, ...flatten(element.props.children)] : [];
   function render() { si = ri = 0; const elements = flatten(exports.default({ projectId: 'project', itemId: 'source', trail: { id: '1', itemIds: ['2', '3'] }, sharedCount: 2, actions, onOpen: () => {} })); if (!initialized) { initialized = true; effects.forEach(fn => fn()); } return elements; }
   function button(label) { return render().find(node => node.type === 'Button' && node.props.children === label); }
-  function open() { render(); inspect(); button('Extract to new note').props.onClick(); render().find(node => node.type === 'Input').props.onChange({ target: { value: 'New note' } }); }
+  function open() { render(); inspect(); advance(500); button('Extract to new note').props.onClick(); render().find(node => node.type === 'Input').props.onChange({ target: { value: 'New note' } }); }
   const result = { item: { id: 'new', title: 'New note', content: 'extracted' }, sourceContent: JSON.stringify({ root: { children: [{ text: 'replacement' }] } }), extractionEpoch: 1, steps: [] };
-  return { render, button, open, result, requests, accepted, applied, history, saves, failSave: () => { failSave = true; }, change: () => { current = { root: { children: [{ text: 'later edit' }] } }; }, content: () => current, editable: () => editable };
+  return { render, button, open, advance, inspect: () => inspect(), result, requests, accepted, applied, history, saves, failSave: () => { failSave = true; }, change: () => { current = { root: { children: [{ text: 'later edit' }] } }; }, content: () => current, editable: () => editable };
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
@@ -62,4 +64,21 @@ test('double submit is blocked and ambiguous failure retries the same operation 
 test('late response does not discard content changed after submission', async () => {
   const s = setup(); s.open(); await settle(); s.button('Extract').props.onClick(); await settle(); s.change(); s.requests[0].resolve(s.result); await settle();
   expect(s.applied[0][3]).toBe(false); expect(s.accepted).toHaveLength(0); expect(s.history).toHaveLength(0); expect(s.content().root.children[0].text).toBe('later edit'); expect(s.render().find(node => node.props.role === 'alert').props.children).toContain('local text was kept');
+});
+
+test('waits for a stable selection and hides the action while selection changes', () => {
+  const s = setup(); s.render(); s.inspect();
+  s.advance(499); expect(s.button('Extract to new note')).toBeUndefined();
+  s.inspect(); s.advance(499); expect(s.button('Extract to new note')).toBeUndefined();
+  s.advance(1); expect(s.button('Extract to new note')).toBeDefined();
+  s.inspect(); expect(s.button('Extract to new note')).toBeUndefined();
+});
+
+test('offers next, last and outside in order and sends last placement with the trail snapshot', async () => {
+  const s = setup(); s.open(); await settle();
+  const choices = s.render().filter(node => node.type === 'option');
+  expect(choices.map(node => node.props.children)).toEqual(['Next step in this trail', 'Last step in this trail', 'Note outside trails']);
+  s.render().find(node => node.type === 'select').props.onChange({ target: { value: 'last' } });
+  s.button('Extract').props.onClick(); await settle();
+  expect(s.requests[0].args[2]).toMatchObject({ trailId: 1, appendToTrail: true, expectedOrder: [2, 3] });
 });

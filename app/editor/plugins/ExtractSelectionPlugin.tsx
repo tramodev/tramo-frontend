@@ -28,7 +28,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
   const [available, setAvailable] = useState<{ capture?: CapturedSelection; reason?: string; top: number; left: number } | null>(null);
   const [capture, setCapture] = useState<CapturedSelection | null>(null);
   const [title, setTitle] = useState('');
-  const [nextStep, setNextStep] = useState(false);
+  const [placement, setPlacement] = useState<'next' | 'last' | 'outside'>('outside');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [created, setCreated] = useState<ExtractionResult | null>(null);
@@ -40,6 +40,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
   const request = useRef<ExtractionRequest | null>(null);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     const inspect = () => {
       if (opened.current || busy.current) return;
       const selection = window.getSelection();
@@ -52,9 +53,14 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
       if (!result.capture && !result.reason) { setAvailable(null); return; }
       setAvailable({ ...result, top: Math.min(window.innerHeight - 44, rect.bottom + 6), left: Math.max(8, Math.min(rect.left, window.innerWidth - 220)) });
     };
-    document.addEventListener('selectionchange', inspect);
-    const unregister = editor.registerUpdateListener(inspect);
-    return () => { document.removeEventListener('selectionchange', inspect); unregister(); };
+    const schedule = () => {
+      clearTimeout(timer);
+      setAvailable(null);
+      if (!opened.current && !busy.current) timer = setTimeout(inspect, 500);
+    };
+    document.addEventListener('selectionchange', schedule);
+    const unregister = editor.registerUpdateListener(schedule);
+    return () => { clearTimeout(timer); document.removeEventListener('selectionchange', schedule); unregister(); };
   }, [editor]);
 
   const close = () => {
@@ -74,8 +80,9 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
       if (!request.current) {
         const operationId = crypto.randomUUID();
         request.current = { ...prepareExtraction(editor, capture, title.trim(), operationId), operationId, title: title.trim(), extractionEpoch: getExtractionEpoch(itemId),
-          trailId: nextStep && dialogTrail ? Number(dialogTrail.id) : null,
-          expectedOrder: nextStep && dialogTrail ? dialogTrail.itemIds.map(Number) : null };
+          trailId: placement !== 'outside' && dialogTrail ? Number(dialogTrail.id) : null,
+          appendToTrail: placement === 'last',
+          expectedOrder: placement !== 'outside' && dialogTrail ? dialogTrail.itemIds.map(Number) : null };
         setSubmitted(true);
       }
       const result = await extractSelection(projectId, itemId, request.current);
@@ -95,26 +102,29 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
     }
   };
   return <>
-    {available && !capture && createPortal(<div className="fixed z-40 rounded-lg border border-border bg-popover p-1 shadow-elevation-2" style={{ top: available.top, left: available.left }}>
-      <Button size="sm" variant="ghost" disabled={!available.capture} title={available.reason} onMouseDown={event => event.preventDefault()} onClick={() => {
+    {available && !capture && createPortal(<div className="fixed z-40" style={{ top: available.top, left: available.left }}>
+      <Button size="sm" variant="ghost" className="rounded-full border border-border bg-popover shadow-elevation-2" disabled={!available.capture} title={available.reason} onMouseDown={event => event.preventDefault()} onClick={() => {
         if (!available.capture) return;
         opened.current = true; request.current = null; setDialogTrail(trail); setSubmitted(false);
-        setCapture(available.capture); setTitle(''); setNextStep(false); setError(''); setCreated(null);
+        setCapture(available.capture); setTitle(''); setPlacement('outside'); setError(''); setCreated(null);
         setUsage(null);
         void getExtractionTrailCount(projectId, itemId).then(count => { if (opened.current) setUsage(count); })
           .catch(failure => { if (opened.current) setError(failure instanceof Error ? failure.message : 'Could not check note usage. Close and try again.'); });
       }}>Extract to new note</Button>
-      {available.reason && <p role="status" className="max-w-64 px-2 py-1 text-xs text-muted-foreground">{available.reason}</p>}
+      {available.reason && <p role="status" className="mt-1 max-w-64 rounded-lg border border-border bg-popover px-2 py-1 text-xs text-muted-foreground">{available.reason}</p>}
     </div>, document.body)}
     <Dialog open={!!capture} onOpenChange={open => { if (!open) close(); }}>
       <DialogContent showCloseButton={!pending} onEscapeKeyDown={event => { if (pending) event.preventDefault(); }} onInteractOutside={event => { if (pending) event.preventDefault(); }}>
         <DialogHeader><DialogTitle>Extract to new note</DialogTitle><DialogDescription>The selected content will move to a new note and be replaced here with a link. After extraction, Undo applies only to subsequent edits; it cannot undo note creation.</DialogDescription></DialogHeader>
         {usage === null ? <p role="status" className="text-sm text-muted-foreground">Checking where this note is used…</p> : usage > 1 && <p className="text-sm">This note is used in {usage} trails. The replacement link will appear in all of them. A new step is added only to the current trail.</p>}
         <label className="text-sm">Note title<Input autoFocus required maxLength={300} value={title} disabled={pending || submitted} onChange={event => setTitle(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void confirm(); } }} /></label>
-        <fieldset disabled={pending || submitted} className="space-y-2 text-sm"><legend className="mb-2">Create as</legend>
-          <label className="flex items-center gap-2"><input type="radio" name={`extract-${itemId}`} checked={!nextStep} onChange={() => setNextStep(false)} />Linked note outside trails</label>
-          {dialogTrail && <label className="flex items-center gap-2"><input type="radio" name={`extract-${itemId}`} checked={nextStep} onChange={() => setNextStep(true)} />Next step in this trail</label>}
-        </fieldset>
+        <label className="text-sm">Create as
+          <select value={placement} disabled={pending || submitted} onChange={event => setPlacement(event.target.value as typeof placement)} className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm">
+            {dialogTrail && <option value="next">Next step in this trail</option>}
+            {dialogTrail && <option value="last">Last step in this trail</option>}
+            <option value="outside">Note outside trails</option>
+          </select>
+        </label>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <div className="flex justify-end gap-2"><Button variant="ghost" disabled={pending} onClick={close}>Cancel</Button><Button disabled={pending || !title.trim() || usage === null} onClick={() => { void confirm(); }}>{pending ? 'Extracting…' : submitted ? 'Try again' : 'Extract'}</Button></div>
       </DialogContent>
