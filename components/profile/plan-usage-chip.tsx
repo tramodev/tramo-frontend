@@ -15,12 +15,12 @@ export function PlanUsageChip({ className }: { className?: string }) {
     getSubscriptionStatus().then(setStatus).catch(() => {})
   }, [])
 
-  if (!status) return <div className={`h-7 w-28 rounded-full bg-secondary ${className ?? ""}`} />;
+  if (!status) return <div className={`h-7 w-28 rounded-full border border-input bg-secondary ${className ?? ""}`} />;
 
   return (
     <Link
       href="/settings?tab=plan"
-      className={`inline-flex h-7 items-center gap-1.5 rounded-full bg-secondary px-3 text-xs font-medium text-secondary-foreground transition-colors hover:bg-muted ${className ?? ""}`}
+      className={`inline-flex h-7 items-center gap-1.5 rounded-full border border-input bg-secondary px-3 text-xs font-medium text-secondary-foreground transition-colors hover:bg-muted ${className ?? ""}`}
     >
       <HardDrive className="h-3.5 w-3.5" />
       {formatBytes(status.storageUsedBytes)} / {formatBytes(status.storageQuotaBytes)}

@@ -130,7 +130,9 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main className="mx-auto w-full flex-1 max-w-[1216px] pt-11 px-5 sm:px-10 lg:px-18 pb-[84px]">
+    <main className="w-full flex-1 pb-[84px]">
+      <section className="bg-surface-container-high">
+        <div className="mx-auto max-w-[1216px] px-5 py-11 sm:px-10 lg:px-18">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-primary">
             Your workspace
@@ -144,14 +146,14 @@ export default function ProjectsPage() {
           <button
             disabled={creating}
             onClick={() => handleCreateProject()}
-            className="group flex aspect-[3/4] cursor-pointer flex-col items-start justify-end gap-2 rounded-lg p-5 transition-colors bg-card border border-dashed border-input text-muted-foreground hover:bg-muted hover:border-primary hover:text-primary"
+            className="group flex aspect-[3/4] cursor-pointer flex-col items-start justify-end gap-2 rounded-lg p-5 transition-colors bg-card dark:bg-background border border-dashed border-input text-muted-foreground hover:bg-muted hover:border-primary hover:text-primary"
           >
             <Plus strokeWidth={2} className="h-7 w-7 transition-colors" />
             <span className="text-sm font-medium transition-colors">
               Start writing
             </span>
           </button>
-          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex cursor-pointer aspect-[3/4] flex-col overflow-hidden rounded-lg border border-input bg-card text-left hover:bg-muted disabled:opacity-50">
+          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex cursor-pointer aspect-[3/4] flex-col overflow-hidden rounded-lg border border-input bg-card dark:bg-background text-left hover:bg-muted disabled:opacity-50">
             <span className="relative min-h-0 w-full flex-1">
               <Image src="/memex-example.png" alt="Illustration of a wearable camera from Vannevar Bush’s vision" fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 220px" className="object-cover" />
             </span>
@@ -164,7 +166,10 @@ export default function ProjectsPage() {
         {creating && <p className="mt-3 text-sm text-muted-foreground" role="status">Opening your first note…</p>}
         {createError && <p className="mt-3 text-sm text-destructive" role="alert">{createError}</p>}
 
-        <div className="mt-[70px] min-h-[310px]">
+        </div>
+      </section>
+
+        <div className="mx-auto mt-[34px] min-h-[310px] max-w-[1216px] px-5 sm:px-10 lg:px-18">
           <div className="mb-5 flex items-center justify-between">
             <span className="block text-sm font-medium text-muted-foreground">My projects</span>
             <div className="flex items-center gap-2">
