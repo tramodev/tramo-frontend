@@ -46,7 +46,7 @@ import { editorConfig, placeholder } from '../../lexical-config';
 import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
 import { bridgeTies } from '../../associations';
-import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../../types';
+import { Trail, Item, TitleAlign, AssociationType, AssociationTargetType } from '../../types';
 
 interface WriteViewProps {
   projectId: string;
@@ -55,7 +55,6 @@ interface WriteViewProps {
   trails: Trail[];
   activeTrailId: string | undefined;
   trail: Trail | undefined;
-  associationById: Map<string, Association>;
   contentLoadError: boolean;
   onRetryContent: () => void;
   navigationRequest?: { itemId: string; sequence: number; focus: boolean };
@@ -213,7 +212,7 @@ function ItemTitle({ item, onCommitTitle, onFocus }: {
 }
 
 export function WriteView(props: WriteViewProps) {
-  const { item, items, trail, associationById, navigationRequest, onVisibleItem } = props;
+  const { item, items, trail, navigationRequest, onVisibleItem } = props;
   const [imageError, setImageError] = useState<string | null>(null);
   useEffect(() => {
     const onError = (event: Event) => setImageError((event as CustomEvent<string>).detail);
@@ -315,8 +314,6 @@ export function WriteView(props: WriteViewProps) {
               const stepItem = items[step.itemId];
               if (!stepItem) return null;
               const ties = index > 0 && trail ? bridgeTies(items, trail.steps[index - 1].itemId, step.itemId) : [];
-              const explicit = step.associationId ? associationById.get(step.associationId) : undefined;
-              if (explicit && !ties.some((tie) => tie.association.id === explicit.id)) ties.unshift({ association: explicit, forward: true, sourceTitle: Object.values(items).find(note => note.associations.some(a => a.id === explicit.id))?.title });
               return <section key={step.itemId} aria-label={`Step ${index + 1}: ${stepItem.title}`}
                 ref={(element) => { if (element) slotRefs.current.set(step.itemId, element); else slotRefs.current.delete(step.itemId); }}>
                 {index > 0 && trail && <div className="trail-divider mt-4">

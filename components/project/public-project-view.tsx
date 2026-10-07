@@ -322,10 +322,6 @@ export function PublicProjectView({
                       if (!stepItem) return null
                       const isActive = step.itemId === selectedItem.id
                       const ties = i > 0 ? bridgeTies(items, steps[i - 1].itemId, step.itemId) : []
-                      const explicit = step.associationId ? associationById.get(step.associationId) : undefined
-                      if (explicit && !ties.some((t) => t.association.id === explicit.id)) {
-                        ties.unshift({ association: explicit, forward: true, sourceTitle: Object.values(items).find(note => note.associations.some(a => a.id === explicit.id))?.title })
-                      }
 
                       return (
                         <div

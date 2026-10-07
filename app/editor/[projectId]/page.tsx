@@ -156,7 +156,6 @@ export default function EditorPage() {
                 trails={project.trails}
                 activeTrailId={project.activeTrailId}
                 trail={project.activeTrail}
-                associationById={project.associationById}
                 contentLoadError={project.contentLoadError}
                 onRetryContent={project.retryContent}
                 navigationRequest={project.navigationRequest}
