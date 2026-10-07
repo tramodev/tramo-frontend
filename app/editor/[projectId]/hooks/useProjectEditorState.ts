@@ -24,10 +24,15 @@ import {
   untie,
   type ProjectVisibility,
 } from '@/lib/projects-store';
-import { resolveItemTrail } from '../../trail-navigation';
+import { annotationsToReview, resolveItemTrail } from '../../trail-navigation';
 import { getItemContent, getTrailContents } from '@/lib/item-content-client';
 import { getMyProfile } from '@/lib/profile';
 import type { GraphPreviewData } from '@/lib/feed';
+
+export interface ReorderNotice {
+  reviewItemIds: string[];
+  error?: string;
+}
 
 export function useProjectEditorState(projectId: string) {
   const router = useRouter();
@@ -48,6 +53,13 @@ export function useProjectEditorState(projectId: string) {
   const [thumbnailGraph, setThumbnailGraph] = useState<GraphPreviewData | null>(null);
 
   const [trails, setTrails] = useState<Trail[]>([]);
+  const [reorderNotices, setReorderNotices] = useState<Record<string, ReorderNotice>>({});
+  const reorderingTrails = useRef(new Set<string>());
+  const dismissReorderNotice = (trailId: string) => setReorderNotices(previous => {
+    const next = { ...previous };
+    delete next[trailId];
+    return next;
+  });
   const [items, setItems] = useState<Record<string, Item>>({});
   const [navigation, setNavigation] = useState<{
     itemId?: string;
@@ -213,25 +225,32 @@ export function useProjectEditorState(projectId: string) {
   };
 
   const handleReorderTrailItems = async (trailId: string, itemIds: string[]) => {
-    const previous = trails.find((trail) => trail.id === trailId);
-    if (!previous) return;
-    setTrails((prev) => prev.map((trail) => {
-      if (trail.id !== trailId) return trail;
-      const stepByItemId = new Map(trail.steps.map((step) => [step.itemId, step]));
-      const steps = itemIds.flatMap((itemId) => {
-        const step = stepByItemId.get(itemId);
-        return step ? [step] : [];
-      });
-      if (steps.length !== trail.steps.length) return trail;
-      return { ...trail, itemIds, steps };
-    }));
+    const previous = trails.find(trail => trail.id === trailId);
+    if (!previous || reorderingTrails.current.has(trailId)) return;
+    const stepByItemId = new Map(previous.steps.map(step => [step.itemId, step]));
+    if (itemIds.length !== previous.steps.length || new Set(itemIds).size !== itemIds.length || itemIds.some(id => !stepByItemId.has(id))) return;
+    const reviewItemIds = annotationsToReview(previous.steps, itemIds);
+    reorderingTrails.current.add(trailId);
+    setTrails(prev => prev.map(trail => trail.id === trailId
+      ? { ...trail, itemIds, steps: itemIds.map(id => stepByItemId.get(id)!) } : trail));
     try {
       await reorderTrailItems(trailId, itemIds);
+      setReorderNotices(prev => ({ ...prev, [trailId]: {
+        reviewItemIds: [...new Set([...(prev[trailId]?.reviewItemIds ?? []), ...reviewItemIds])],
+      } }));
     } catch (err) {
       console.error(err);
-      setTrails((prev) => prev.map((trail) =>
-        trail.id === trailId ? { ...trail, itemIds: previous.itemIds, steps: previous.steps } : trail
-      ));
+      setTrails(prev => prev.map(trail => {
+        if (trail.id !== trailId) return trail;
+        const currentSteps = new Map(trail.steps.map(step => [step.itemId, step]));
+        return { ...trail, itemIds: previous.itemIds, steps: previous.steps.map(step => currentSteps.get(step.itemId) ?? step) };
+      }));
+      setReorderNotices(prev => ({ ...prev, [trailId]: {
+        reviewItemIds: prev[trailId]?.reviewItemIds ?? [],
+        error: 'Could not reorder this trail. The previous order was restored. Please try again.',
+      } }));
+    } finally {
+      reorderingTrails.current.delete(trailId);
     }
   };
 
@@ -456,6 +475,8 @@ export function useProjectEditorState(projectId: string) {
     handleSetItemTitleAlign,
     handleSelectItem,
     handleReorderTrailItems,
+    reorderNotices,
+    dismissReorderNotice,
     handleCreateTrail,
     handleCreateItem,
     handleLinkItemToTrail,

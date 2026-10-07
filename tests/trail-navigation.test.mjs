@@ -32,3 +32,11 @@ test('public reading starts deterministically at the first nonempty trail withou
   expect(exports.firstReadableTrail([input[1]])).toBe(undefined);
   expect(exports.firstReadableTrail([])).toBe(undefined);
 });
+
+test('only annotated steps whose predecessor changes need review, including the first step', () => {
+  const steps = [{ itemId: 'a', annotation: null }, { itemId: 'b', annotation: 'Because A follows' }, { itemId: 'c', annotation: '  ' }];
+  expect(Array.from(exports.annotationsToReview(steps, ['a', 'b', 'c']))).toEqual([]);
+  expect(Array.from(exports.annotationsToReview(steps, ['a', 'c', 'b']))).toEqual(['b']);
+  expect(Array.from(exports.annotationsToReview(steps, ['b', 'a', 'c']))).toEqual(['b']);
+  expect(steps[1].annotation).toBe('Because A follows');
+});

@@ -36,3 +36,23 @@ test('ordering notes never reverses or creates their associations', () => {
   expect(association.targetTitle).toBe('Old title');
   expect(exports.bridgeTies(items, 'tokens', 'unrelated').length).toBe(0);
 });
+
+test('moving a note removes only its transition label, while keeping connections in both directions', () => {
+  const association = { id: 'ab', type: 'RELATED', targetType: 'ITEM', targetId: 'b', targetTitle: 'B' };
+  const items = { a: { id: 'a', title: 'A', associations: [association] }, b: { id: 'b', title: 'B', associations: [] }, c: { id: 'c', title: 'C', associations: [] } };
+  expect(exports.bridgeTies(items, 'a', 'b')).toHaveLength(1);
+  expect(exports.bridgeTies(items, 'c', 'b')).toHaveLength(0);
+  expect(exports.bridgeTies(items, 'b', 'a')).toHaveLength(1);
+  expect(exports.connectionCounts(items).get('a')).toBe(1);
+  expect(exports.connectionCounts(items).get('b')).toBe(1);
+  expect(exports.connectionCounts(items).get('c')).toBe(0);
+  expect(items.a.associations[0]).toBe(association);
+});
+
+test('connection counts include trail destinations and only incoming sources loaded in the project', () => {
+  const items = { a: { id: 'a', associations: [{ targetType: 'TRAIL', targetId: 'trail' }, { targetType: 'ITEM', targetId: 'outside' }] }, b: { id: 'b', associations: [{ targetType: 'ITEM', targetId: 'a' }] } };
+  const counts = exports.connectionCounts(items);
+  expect(counts.get('a')).toBe(3);
+  expect(counts.get('b')).toBe(1);
+  expect(counts.has('outside')).toBe(false);
+});

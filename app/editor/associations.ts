@@ -54,3 +54,15 @@ export function bridgeTies(
   if (backward) ties.push({ association: { ...backward, targetTitle: items[itemId]?.title ?? backward.targetTitle }, forward: false, sourceTitle: items[prevItemId]?.title });
   return ties;
 }
+
+export function connectionCounts(items: Record<string, Item>): Map<string, number> {
+  const counts = new Map(Object.values(items).map(item => [item.id, item.associations.length]));
+  for (const source of Object.values(items)) {
+    for (const association of source.associations) {
+      if (association.targetType === 'ITEM' && counts.has(association.targetId)) {
+        counts.set(association.targetId, counts.get(association.targetId)! + 1);
+      }
+    }
+  }
+  return counts;
+}

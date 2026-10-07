@@ -45,7 +45,8 @@ import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
 import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
-import { bridgeTies } from '../../associations';
+import { bridgeTies, connectionCounts } from '../../associations';
+import type { ReorderNotice } from '../hooks/useProjectEditorState';
 import { Trail, Item, TitleAlign, AssociationType, AssociationTargetType } from '../../types';
 
 interface WriteViewProps {
@@ -55,6 +56,8 @@ interface WriteViewProps {
   trails: Trail[];
   activeTrailId: string | undefined;
   trail: Trail | undefined;
+  reorderNotice?: ReorderNotice;
+  onDismissReorderNotice: () => void;
   contentLoadError: boolean;
   onRetryContent: () => void;
   navigationRequest?: { itemId: string; sequence: number; focus: boolean };
@@ -213,6 +216,7 @@ function ItemTitle({ item, onCommitTitle, onFocus }: {
 
 export function WriteView(props: WriteViewProps) {
   const { item, items, trail, navigationRequest, onVisibleItem } = props;
+  const counts = useMemo(() => connectionCounts(items), [items]);
   const [imageError, setImageError] = useState<string | null>(null);
   useEffect(() => {
     const onError = (event: Event) => setImageError((event as CustomEvent<string>).detail);
@@ -308,6 +312,16 @@ export function WriteView(props: WriteViewProps) {
         </div>}
         <div ref={setToolbar} data-editor-toolbar className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
         <hr />
+        {props.reorderNotice && (props.reorderNotice.error || props.reorderNotice.reviewItemIds.length > 0) && <div
+          role={props.reorderNotice.error ? 'alert' : 'status'} className="mx-4 my-2 max-h-36 shrink-0 overflow-y-auto rounded-lg border border-border bg-muted p-3 text-sm">
+          {props.reorderNotice.error && <p className="text-destructive">{props.reorderNotice.error}</p>}
+          {props.reorderNotice.reviewItemIds.length > 0 && <>
+            <p>Transition notes were kept after reordering. Review the explanations for:</p>
+            <div className="mt-2 flex flex-wrap gap-3">{props.reorderNotice.reviewItemIds.map(id => items[id] && <button
+              key={id} type="button" className="text-primary underline" onClick={() => props.onSelectItem(items[id], trail?.id)}>{items[id].title}</button>)}</div>
+          </>}
+          <button type="button" className="mt-2 text-muted-foreground underline" onClick={props.onDismissReorderNotice}>Dismiss</button>
+        </div>}
         <div className="editor-inner" ref={editorInnerRef} style={{ visibility: revealed ? undefined : 'hidden' }} inert={!revealed}>
           <div className="editor-content-column">
             {steps.map((step, index) => {
@@ -320,8 +334,15 @@ export function WriteView(props: WriteViewProps) {
                   <TrailConnector ties={ties} annotation={step.annotation}
                     onSaveAnnotation={(text) => props.onUpdateAnnotation(trail.id, step.itemId, text)} />
                 </div>}
-                <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  Step {index + 1}
+                <div className={`flex flex-wrap items-center justify-between gap-2 pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <span>Step {index + 1}</span>
+                  <button type="button" aria-label={`Connections for ${stepItem.title}: ${counts.get(stepItem.id) ?? 0}`}
+                    aria-controls="editor-connections" aria-expanded={props.connectionsPanelOpen && focusedId === stepItem.id}
+                    className="rounded-full border border-border px-2.5 py-1 text-xs font-normal normal-case tracking-normal text-muted-foreground hover:bg-muted"
+                    onClick={() => {
+                      onFocus(stepItem.id);
+                      if (!props.connectionsPanelOpen) props.onToggleConnectionsPanelOpen();
+                    }}>Connections · {counts.get(stepItem.id) ?? 0}</button>
                 </div>
                 {stepItem.content != null && <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
                   toolbar={toolbar} onFocus={onFocus} register={register} move={move} />}

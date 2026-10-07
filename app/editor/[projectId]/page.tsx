@@ -156,6 +156,8 @@ export default function EditorPage() {
                 trails={project.trails}
                 activeTrailId={project.activeTrailId}
                 trail={project.activeTrail}
+                reorderNotice={project.activeTrailId ? project.reorderNotices[project.activeTrailId] : undefined}
+                onDismissReorderNotice={() => { if (project.activeTrailId) project.dismissReorderNotice(project.activeTrailId); }}
                 contentLoadError={project.contentLoadError}
                 onRetryContent={project.retryContent}
                 navigationRequest={project.navigationRequest}

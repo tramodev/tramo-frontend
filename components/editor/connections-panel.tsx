@@ -37,7 +37,7 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
       <CircleHelp className="h-4 w-4" />{open && <span>Help</span>}
     </button>
   </div>;
-  if (!open) return <aside aria-label="Connections tools" className="flex w-12 shrink-0 flex-col items-center gap-2 rounded-2xl bg-popover py-3">
+  if (!open) return <aside id="editor-connections" aria-label="Connections tools" className="flex w-12 shrink-0 flex-col items-center gap-2 rounded-2xl bg-popover py-3">
     <button type="button" data-tour="connections-toggle" aria-label="Connections" title="Connections" aria-expanded={false} onClick={onToggleOpen} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><PanelRightOpen className="h-4 w-4" /></button>
     <button type="button" aria-label="Open graph" title="Open graph" onClick={onOpenGraph} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Network className="h-4 w-4" /></button>
     {utilities}
@@ -56,7 +56,7 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
     try { await action(); } catch { setError('Could not update this connection. Please try again.'); }
     finally { setPending(false); }
   };
-  return <aside aria-label="Connections" className="absolute inset-y-0 right-0 z-20 flex w-72 max-w-full flex-col gap-4 overflow-auto rounded-2xl border border-border bg-popover p-4 shadow-elevation-2 md:static md:shrink-0 md:shadow-none">
+  return <aside id="editor-connections" aria-label="Connections" className="absolute inset-y-0 right-0 z-20 flex w-72 max-w-full flex-col gap-4 overflow-auto rounded-2xl border border-border bg-popover p-4 shadow-elevation-2 md:static md:shrink-0 md:shadow-none">
     <div className="flex items-center justify-between gap-2"><h2 className="text-sm font-medium">Connections</h2><button type="button" aria-label="Close connections" onClick={onToggleOpen} className="rounded p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
     <p className="text-xs text-muted-foreground">Relationships involving “{item.title}”.</p>
     {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
