@@ -25,6 +25,8 @@ interface ConfirmDialogProps {
   confirmLabel?: string
   destructive?: boolean
   requireText?: string
+  pending?: boolean
+  error?: string
   onConfirm: () => void
 }
 
@@ -36,13 +38,16 @@ export function ConfirmDialog({
   confirmLabel = "Delete",
   destructive = true,
   requireText,
+  pending,
+  error,
   onConfirm,
 }: ConfirmDialogProps) {
   const [typed, setTyped] = useState("")
 
-  const confirmDisabled = requireText !== undefined && typed !== requireText
+  const confirmDisabled = pending || (requireText !== undefined && typed !== requireText)
 
   function handleOpenChange(next: boolean) {
+    if (pending) return
     if (!next) setTyped("")
     onOpenChange(next)
   }
@@ -56,6 +61,7 @@ export function ConfirmDialog({
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         {requireText !== undefined && (
           <div>
             <label className="mb-1.5 block text-sm text-muted-foreground">
@@ -70,9 +76,12 @@ export function ConfirmDialog({
           </div>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={(event) => {
+              if (pending !== undefined) event.preventDefault()
+              onConfirm()
+            }}
             disabled={confirmDisabled}
             className={cn(destructive && buttonVariants({ variant: "destructive" }))}
           >

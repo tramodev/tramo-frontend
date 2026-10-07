@@ -157,11 +157,12 @@ export async function getProject(id: string): Promise<Project | null> {
 
   const trailDtos = await apiJson<TrailDTO[]>(`/api/project/${id}/trail`);
 
-  const [trailItemLists, looseDtos, textStats] = await Promise.all([
+  const [trailItemLists, looseDtos, memberships, textStats] = await Promise.all([
     Promise.all(
       trailDtos.map((trail) => apiJson<TrailStepDTO[]>(`/api/trail/${trail.id}/item`))
     ),
     apiJson<ItemDTO[]>(`/api/project/${id}/item`),
+    apiJson<{ itemId: number; trailId: number; title: string; projectId: string }[]>(`/api/project/${id}/item-trails`),
     apiJson<{ words: number; characters: number; items: { id: number; words: number; characters: number }[] }>(`/api/project/${id}/text-stats`),
   ]);
 
@@ -189,6 +190,7 @@ export async function getProject(id: string): Promise<Project | null> {
     items[String(itemId)] = {
       ...toItem(dto, unfiledIds.has(itemId), associations),
       content: null,
+      otherTrails: memberships.filter(m => m.itemId === itemId && m.projectId !== id).map(m => ({ id: String(m.trailId), title: m.title, projectId: m.projectId })),
       textStats: statsById.get(itemId) ?? { words: 0, characters: 0 },
     };
   });
@@ -351,6 +353,19 @@ export async function deleteTrail(trailId: string): Promise<void> {
 export async function createItem(trailId: string, title: string): Promise<Item> {
   const dto = await apiJson<ItemDTO>(`/api/trail/${trailId}/item`, { method: "POST", json: { title } });
   return toItem(dto, false);
+}
+
+export async function copyItemForTrail(trailId: string, itemId: string): Promise<{ item: Item; steps: Trail['steps'] }> {
+  const result = await apiJson<{ item: ItemDTO; content: string; associations: AssociationDTO[]; steps: TrailStepDTO[] }>(
+    `/api/trail/${trailId}/item/${itemId}/independent-copy`, { method: 'POST' },
+  );
+  const associations: Association[] = result.associations.map(a => ({
+    ...a, type: a.type as AssociationType, targetType: a.targetType as AssociationTargetType,
+  }));
+  return {
+    item: { ...toItem(result.item, false, associations), content: result.content },
+    steps: result.steps.map(step => ({ itemId: String(step.id), annotation: step.annotation, associationId: step.associationId })),
+  };
 }
 
 export async function createLooseItem(projectId: string, title: string): Promise<Item> {
