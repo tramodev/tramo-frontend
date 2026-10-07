@@ -31,7 +31,7 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
   const [type, setType] = useState<AssociationType>('RELATED');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
-  const utilities = <div className={`mt-auto flex shrink-0 flex-col gap-2 ${open ? 'border-t border-border pt-3' : 'items-center pt-2'}`}>
+  const utilities = <div className={`mt-auto flex shrink-0 items-center justify-center gap-2 ${open ? 'border-t border-border pt-3' : 'flex-col pt-2'}`}>
     <ShortcutsDialog compact={!open} />
     <button type="button" aria-label="Help" title="Help" onClick={startEditorTour} className="flex items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
       <CircleHelp className="h-4 w-4" />{open && <span>Help</span>}
