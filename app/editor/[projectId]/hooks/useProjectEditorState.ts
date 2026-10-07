@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPendingSaves } from '@/lib/pending-saves';
 import { useRouter } from 'next/navigation';
 import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../../types';
 import { countTextStats, lastItemStorageKey } from '../../editor-utils';
@@ -36,6 +37,7 @@ export interface ReorderNotice {
 
 export function useProjectEditorState(projectId: string) {
   const router = useRouter();
+  const pendingSaves = useRef(createPendingSaves());
 
   const authRedirectedRef = useRef(false);
   const redirectToLogin = useCallback(() => {
@@ -137,7 +139,7 @@ export function useProjectEditorState(projectId: string) {
     return map;
   }, [items]);
 
-  const handleUpdateAnnotation = async (trailId: string, itemId: string, annotation: string) => {
+  const handleUpdateAnnotation = (trailId: string, itemId: string, annotation: string) => pendingSaves.current.track(`annotation:${trailId}:${itemId}`, async () => {
     const step = trails.find((t) => t.id === trailId)?.steps.find((s) => s.itemId === itemId);
     setTrails((prev) => prev.map((t) =>
       t.id === trailId
@@ -145,22 +147,22 @@ export function useProjectEditorState(projectId: string) {
         : t
     ));
     await updateStep(trailId, itemId, { annotation, associationId: step?.associationId ?? null });
-  };
+  }, true);
 
   const commitItemTitle = (itemId: string, currentTitle: string, nextValue: string) => {
     const trimmed = nextValue.trim();
     if (!trimmed || trimmed === currentTitle) return;
-    handleRenameItem(itemId, trimmed);
+    void handleRenameItem(itemId, trimmed).catch(() => {});
   };
 
-  const handleSetItemTitleAlign = async (itemId: string, titleAlign: TitleAlign) => {
+  const handleSetItemTitleAlign = (itemId: string, titleAlign: TitleAlign) => pendingSaves.current.track(`align:${itemId}`, async () => {
     setItems(prevItems => {
       const item = prevItems[itemId];
       if (!item) return prevItems;
       return { ...prevItems, [itemId]: { ...item, titleAlign } };
     });
     await setItemTitleAlign(itemId, titleAlign);
-  };
+  }, true);
 
   const [contentLoadError, setContentLoadError] = useState(false);
   const [contentRetry, setContentRetry] = useState(0);
@@ -224,42 +226,46 @@ export function useProjectEditorState(projectId: string) {
     }
   };
 
-  const handleReorderTrailItems = async (trailId: string, itemIds: string[]) => {
-    const previous = trails.find(trail => trail.id === trailId);
-    if (!previous || reorderingTrails.current.has(trailId)) return;
-    const stepByItemId = new Map(previous.steps.map(step => [step.itemId, step]));
-    if (itemIds.length !== previous.steps.length || new Set(itemIds).size !== itemIds.length || itemIds.some(id => !stepByItemId.has(id))) return;
-    const reviewItemIds = annotationsToReview(previous.steps, itemIds);
-    reorderingTrails.current.add(trailId);
-    setTrails(prev => prev.map(trail => trail.id === trailId
-      ? { ...trail, itemIds, steps: itemIds.map(id => stepByItemId.get(id)!) } : trail));
-    try {
-      await reorderTrailItems(trailId, itemIds);
-      setReorderNotices(prev => ({ ...prev, [trailId]: {
-        reviewItemIds: [...new Set([...(prev[trailId]?.reviewItemIds ?? []), ...reviewItemIds])],
-      } }));
-    } catch (err) {
-      console.error(err);
-      setTrails(prev => prev.map(trail => {
-        if (trail.id !== trailId) return trail;
-        const currentSteps = new Map(trail.steps.map(step => [step.itemId, step]));
-        return { ...trail, itemIds: previous.itemIds, steps: previous.steps.map(step => currentSteps.get(step.itemId) ?? step) };
-      }));
-      setReorderNotices(prev => ({ ...prev, [trailId]: {
-        reviewItemIds: prev[trailId]?.reviewItemIds ?? [],
-        error: 'Could not reorder this trail. The previous order was restored. Please try again.',
-      } }));
-    } finally {
-      reorderingTrails.current.delete(trailId);
-    }
+  const handleReorderTrailItems = (trailId: string, itemIds: string[]) => {
+    if (reorderingTrails.current.has(trailId)) return Promise.resolve();
+    return pendingSaves.current.track(`order:${trailId}`, async () => {
+      const previous = trails.find(trail => trail.id === trailId);
+      if (!previous || reorderingTrails.current.has(trailId)) return;
+      const stepByItemId = new Map(previous.steps.map(step => [step.itemId, step]));
+      if (itemIds.length !== previous.steps.length || new Set(itemIds).size !== itemIds.length || itemIds.some(id => !stepByItemId.has(id))) return;
+      const reviewItemIds = annotationsToReview(previous.steps, itemIds);
+      reorderingTrails.current.add(trailId);
+      setTrails(prev => prev.map(trail => trail.id === trailId
+        ? { ...trail, itemIds, steps: itemIds.map(id => stepByItemId.get(id)!) } : trail));
+      try {
+        await reorderTrailItems(trailId, itemIds);
+        setReorderNotices(prev => ({ ...prev, [trailId]: {
+          reviewItemIds: [...new Set([...(prev[trailId]?.reviewItemIds ?? []), ...reviewItemIds])],
+        } }));
+      } catch (err) {
+        console.error(err);
+        setTrails(prev => prev.map(trail => {
+          if (trail.id !== trailId) return trail;
+          const currentSteps = new Map(trail.steps.map(step => [step.itemId, step]));
+          return { ...trail, itemIds: previous.itemIds, steps: previous.steps.map(step => currentSteps.get(step.itemId) ?? step) };
+        }));
+        setReorderNotices(prev => ({ ...prev, [trailId]: {
+          reviewItemIds: prev[trailId]?.reviewItemIds ?? [],
+          error: 'Could not reorder this trail. The previous order was restored. Please try again.',
+        } }));
+        throw err;
+      } finally {
+        reorderingTrails.current.delete(trailId);
+      }
+    }, true).catch(() => {});
   };
 
-  const handleCreateTrail = async (title: string) => {
+  const handleCreateTrail = (title: string) => pendingSaves.current.track(`create-trail:${title}`, async () => {
     const newTrail = await createTrail(projectId, title);
     setTrails(prevTrails => [...prevTrails, newTrail]);
-  };
+  }, false);
 
-  const handleCreateItem = async (trailId: string, title: string) => {
+  const handleCreateItem = (trailId: string, title: string) => pendingSaves.current.track(`create-item:${trailId}:${title}`, async () => {
     const newItem = await createItem(trailId, title);
     setItems(prevItems => ({ ...prevItems, [newItem.id]: newItem }));
     setTrails(prevTrails => prevTrails.map(trail =>
@@ -273,9 +279,9 @@ export function useProjectEditorState(projectId: string) {
     ));
     setView('write');
     setNavigation({ trailId, itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } });
-  };
+  }, false);
 
-  const handleLinkItemToTrail = async (trailId: string, itemId: string) => {
+  const handleLinkItemToTrail = (trailId: string, itemId: string) => pendingSaves.current.track(`attach:${trailId}:${itemId}`, async () => {
     await attachItemToTrail(trailId, itemId);
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId && !trail.itemIds.includes(itemId)
@@ -286,9 +292,9 @@ export function useProjectEditorState(projectId: string) {
           }
         : trail
     ));
-  };
+  }, false);
 
-  const handleUnlinkItemFromTrail = async (trailId: string, itemId: string) => {
+  const handleUnlinkItemFromTrail = (trailId: string, itemId: string) => pendingSaves.current.track(`detach:${trailId}:${itemId}`, async () => {
     await detachItemFromTrail(trailId, itemId);
     const nextTrails = trails.map(trail =>
       trail.id === trailId
@@ -310,16 +316,16 @@ export function useProjectEditorState(projectId: string) {
         return it && !it.unfiled ? { ...prev, [itemId]: { ...it, unfiled: true } } : prev;
       });
     }
-  };
+  }, false);
 
-  const handleCreateLooseItem = async (title: string) => {
+  const handleCreateLooseItem = (title: string) => pendingSaves.current.track(`create-loose:${title}`, async () => {
     const newItem = await createLooseItem(projectId, title);
     setItems(prevItems => ({ ...prevItems, [newItem.id]: newItem }));
     setView('write');
     setNavigation({ itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } });
-  };
+  }, false);
 
-  const handleDeleteItem = async (itemId: string) => {
+  const handleDeleteItem = (itemId: string) => pendingSaves.current.track(`delete-item:${itemId}`, async () => {
     await deleteItem(itemId);
     setTrails(prevTrails => prevTrails.map(trail => ({
       ...trail,
@@ -336,32 +342,32 @@ export function useProjectEditorState(projectId: string) {
       const next = trails.find((t) => t.id === prev.trailId)?.itemIds.find((id) => id !== itemId);
       return { ...prev, itemId: next, request: undefined };
     });
-  };
+  }, false);
 
-  const handleRenameTrail = async (trailId: string, title: string) => {
+  const handleRenameTrail = (trailId: string, title: string) => pendingSaves.current.track(`trail-title:${trailId}`, async () => {
     await renameTrail(trailId, title);
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId ? { ...trail, title } : trail
     ));
-  };
+  }, true);
 
-  const handleSetTrailDescription = async (trailId: string, description: string) => {
+  const handleSetTrailDescription = (trailId: string, description: string) => pendingSaves.current.track(`trail-description:${trailId}`, async () => {
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId ? { ...trail, description } : trail
     ));
     await setTrailDescription(trailId, description);
-  };
+  }, true);
 
-  const handleRenameItem = async (itemId: string, title: string) => {
+  const handleRenameItem = (itemId: string, title: string) => pendingSaves.current.track(`item-title:${itemId}`, async () => {
     await renameItem(itemId, title);
     setItems(prevItems => {
       const item = prevItems[itemId];
       if (!item) return prevItems;
       return { ...prevItems, [itemId]: { ...item, title } };
     });
-  };
+  }, true);
 
-  const handleDeleteTrail = async (trailId: string) => {
+  const handleDeleteTrail = (trailId: string) => pendingSaves.current.track(`delete-trail:${trailId}`, async () => {
     const target = trails.find(trail => trail.id === trailId);
     if (!target) return;
 
@@ -384,9 +390,9 @@ export function useProjectEditorState(projectId: string) {
         return next;
       });
     }
-  };
+  }, false);
 
-  const handleTie = async (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => {
+  const handleTie = (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => pendingSaves.current.track(`tie:${itemId}:${targetType}:${targetId}`, async () => {
     await tie(itemId, targetId, targetType, type);
     const targetTitle = targetType === 'ITEM'
       ? items[targetId]?.title ?? ''
@@ -403,9 +409,9 @@ export function useProjectEditorState(projectId: string) {
         : it.linkedItemIds;
       return { ...prev, [itemId]: { ...it, associations: [...it.associations, association], linkedItemIds } };
     });
-  };
+  }, false);
 
-  const handleUntie = async (itemId: string, targetId: string, targetType: AssociationTargetType) => {
+  const handleUntie = (itemId: string, targetId: string, targetType: AssociationTargetType) => pendingSaves.current.track(`untie:${itemId}:${targetType}:${targetId}`, async () => {
     await untie(itemId, targetId, targetType);
     setItems((prev) => {
       const it = prev[itemId];
@@ -419,7 +425,7 @@ export function useProjectEditorState(projectId: string) {
         },
       };
     });
-  };
+  }, false);
 
   const handleVisibilityChange = async (next: ProjectVisibility) => {
     setVisibility(next);
@@ -435,7 +441,7 @@ export function useProjectEditorState(projectId: string) {
 
   const handleRenameProject = (title: string) => {
     setProjectTitle(title);
-    renameProject(projectId, title);
+    void pendingSaves.current.track("project-title", () => renameProject(projectId, title), true).catch(() => {});
   };
 
   const handleThumbnailChange = useCallback((imageUrl: string | null, graph: GraphPreviewData | null) => {
@@ -470,6 +476,7 @@ export function useProjectEditorState(projectId: string) {
     handleVisibleItem,
     handleSelectTrail,
     redirectToLogin,
+    flushProjectChanges: () => pendingSaves.current.flush(),
     handleUpdateAnnotation,
     commitItemTitle,
     handleSetItemTitleAlign,

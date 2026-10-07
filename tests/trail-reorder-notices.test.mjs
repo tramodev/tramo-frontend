@@ -17,6 +17,8 @@ async function setup() {
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
   const navigation = {};
   runInNewContext(transpile('app/editor/trail-navigation.ts'), { exports: navigation });
+  const saves = {};
+  runInNewContext(transpile('lib/pending-saves.ts'), { exports: saves });
   const exports = {};
   const router = { replace: () => {} };
   runInNewContext(transpile('app/editor/[projectId]/hooks/useProjectEditorState.ts'), {
@@ -42,6 +44,7 @@ async function setup() {
       '@/lib/item-content-client': { getTrailContents: async () => ({}), getItemContent: async () => '' },
       '../../editor-utils': { lastItemStorageKey: () => 'last', countTextStats: () => ({ words: 0, characters: 0 }) },
       '../../trail-navigation': navigation,
+      '@/lib/pending-saves': saves,
     })[name],
     window: { location: { search: '', pathname: '/editor/project' } },
     localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },

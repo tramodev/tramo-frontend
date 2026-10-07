@@ -98,6 +98,12 @@ export default function EditorPage() {
             overviewActive={project.view === 'overview'}
             onToggleOverview={() => project.setView((v) => (v === 'overview' ? 'write' : 'overview'))}
             projectId={projectId}
+            beforeExport={async () => {
+              if (!await autoSave.flushPendingContent()) throw new Error('Could not save note content. Wait for image uploads to finish or retry before exporting.');
+              try { await project.flushProjectChanges(); }
+              catch { throw new Error('Could not save project changes. Retry the failed edit or refresh the project before exporting.'); }
+              if (!await autoSave.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
+            }}
             profile={project.profile}
           />
         }

@@ -6,6 +6,7 @@ import { AlertCircle, Check, Loader2, Route, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserMenu } from '@/components/layout/user-menu';
+import { ExportProjectButton } from '@/components/editor/export-project-button';
 import { VersionHistorySheet } from '@/components/editor/version-history-sheet';
 import type { SaveStatus } from '../hooks/useAutoSave';
 
@@ -87,6 +88,7 @@ interface EditorActionsProps {
   overviewActive: boolean;
   onToggleOverview: () => void;
   projectId: string;
+  beforeExport: () => Promise<void>;
   profile: { username: string; imageUrl: string | null } | null;
 }
 
@@ -97,6 +99,7 @@ export function EditorActions({
   onToggleOverview,
   projectId,
   profile,
+  beforeExport,
 }: EditorActionsProps) {
   return (
     <>
@@ -123,6 +126,7 @@ export function EditorActions({
           Publish &amp; Share
         </Link>
       </Button>
+      <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />
       <VersionHistorySheet projectId={projectId} />
       <UserMenu loggedIn={!!profile} username={profile?.username ?? null} imageUrl={profile?.imageUrl ?? null} />
     </>
