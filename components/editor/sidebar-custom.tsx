@@ -692,6 +692,7 @@ export function SidebarCustom({
                   <SidebarGroupContent>
                     <SidebarMenu>
                       {allItems.map((item) => {
+                        const isActive = selectedItemId === item.id && !activeTrailId;
                         const memberTrails = trailsForItem(item.id);
                         const isShared = memberTrails.length > 1;
                         const addableTrails = trails.filter((t) => !t.itemIds.includes(item.id));
@@ -708,14 +709,14 @@ export function SidebarCustom({
                           ) : (
                             <div className="flex items-center">
                               <SidebarMenuButton
-                                isActive={selectedItemId === item.id}
+                                isActive={isActive}
                                 onClick={() => onSelectItem(item)}
                                 onDoubleClick={() => startEditItem(item)}
-                                className={selectedItemId === item.id ? "bg-secondary text-secondary-foreground" : undefined}
+                                className={isActive ? "bg-secondary text-secondary-foreground" : undefined}
                               >
                                 <span
                                   className={
-                                    selectedItemId === item.id
+                                    isActive
                                       ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary"
                                       : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"
                                   }
