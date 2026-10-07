@@ -106,7 +106,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
       <Button size="sm" variant="ghost" className="rounded-full border border-border bg-popover shadow-elevation-2" disabled={!available.capture} title={available.reason} onMouseDown={event => event.preventDefault()} onClick={() => {
         if (!available.capture) return;
         opened.current = true; request.current = null; setDialogTrail(trail); setSubmitted(false);
-        setCapture(available.capture); setTitle(''); setPlacement('outside'); setError(''); setCreated(null);
+        setCapture(available.capture); setTitle(''); setPlacement(trail ? 'next' : 'outside'); setError(''); setCreated(null);
         setUsage(null);
         void getExtractionTrailCount(projectId, itemId).then(count => { if (opened.current) setUsage(count); })
           .catch(failure => { if (opened.current) setError(failure instanceof Error ? failure.message : 'Could not check note usage. Close and try again.'); });

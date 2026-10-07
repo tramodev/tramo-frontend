@@ -76,6 +76,7 @@ test('waits for a stable selection and hides the action while selection changes'
 
 test('offers next, last and outside in order and sends last placement with the trail snapshot', async () => {
   const s = setup(); s.open(); await settle();
+  expect(s.render().find(node => node.type === 'select').props.value).toBe('next');
   const choices = s.render().filter(node => node.type === 'option');
   expect(choices.map(node => node.props.children)).toEqual(['Next step in this trail', 'Last step in this trail', 'Note outside trails']);
   s.render().find(node => node.type === 'select').props.onChange({ target: { value: 'last' } });
