@@ -21,51 +21,44 @@ export function useAutoSave({
 }: UseAutoSaveParams) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const pendingContentRef = useRef(new Map<string, string>());
-  const inFlightRef = useRef<Promise<boolean> | null>(null);
-  const incompleteImagesRef = useRef(new Set<string>());
+  const inFlightRef = useRef(false);
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deletedItemsRef = useRef(new Set<string>());
 
   const discardItem = useCallback((itemId: string) => {
     deletedItemsRef.current.add(itemId);
     pendingContentRef.current.delete(itemId);
-    incompleteImagesRef.current.delete(itemId);
   }, []);
 
-  const flushPendingContent = useCallback((): Promise<boolean> => {
+  const flushPendingContent = useCallback(async () => {
     if (saveContentTimeoutRef.current) {
       clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = null;
     }
-    if (inFlightRef.current) return inFlightRef.current;
-    if (pendingContentRef.current.size === 0) return Promise.resolve(incompleteImagesRef.current.size === 0);
-    const save = async () => {
-      setSaveStatus('saving');
-      try {
-        while (pendingContentRef.current.size > 0) {
-          const [itemId, content] = pendingContentRef.current.entries().next().value!;
-          pendingContentRef.current.delete(itemId);
-          try {
-            await saveItemContent(itemId, content);
-            window.dispatchEvent(new Event('editor-images-saved'));
-          } catch (err) {
-            console.error(err);
-            if (!deletedItemsRef.current.has(itemId) && !pendingContentRef.current.has(itemId)) {
-              pendingContentRef.current.set(itemId, content);
-            }
-            setSaveStatus('error');
-            if (isAuthError(err)) redirectToLogin();
-            return false;
+    if (inFlightRef.current || pendingContentRef.current.size === 0) return;
+    inFlightRef.current = true;
+    setSaveStatus('saving');
+    try {
+      while (pendingContentRef.current.size > 0) {
+        const [itemId, content] = pendingContentRef.current.entries().next().value!;
+        pendingContentRef.current.delete(itemId);
+        try {
+          await saveItemContent(itemId, content);
+          window.dispatchEvent(new Event('editor-images-saved'));
+        } catch (err) {
+          console.error(err);
+          if (!deletedItemsRef.current.has(itemId) && !pendingContentRef.current.has(itemId)) {
+            pendingContentRef.current.set(itemId, content);
           }
+          setSaveStatus('error');
+          if (isAuthError(err)) redirectToLogin();
+          return;
         }
-        setSaveStatus('saved');
-        return incompleteImagesRef.current.size === 0;
-      } finally {
-        inFlightRef.current = null;
       }
-    };
-    inFlightRef.current = save();
-    return inFlightRef.current;
+      setSaveStatus('saved');
+    } finally {
+      inFlightRef.current = false;
+    }
   }, [redirectToLogin]);
 
   useEffect(() => {
@@ -88,12 +81,7 @@ export function useAutoSave({
       if (deletedItemsRef.current.has(itemId)) return;
       const json = JSON.stringify(editorState.toJSON());
       onOptimisticUpdate(itemId, json);
-      if (json.includes('"imageId":""')) {
-        incompleteImagesRef.current.add(itemId);
-        pendingContentRef.current.delete(itemId);
-        return;
-      }
-      incompleteImagesRef.current.delete(itemId);
+      if (json.includes('"imageId":""')) return;
 
       pendingContentRef.current.set(itemId, json);
       setSaveStatus('saving');
@@ -102,5 +90,5 @@ export function useAutoSave({
     });
   }, [flushPendingContent, onOptimisticUpdate]);
 
-  return { saveStatus, onChange, discardItem, flushPendingContent };
+  return { saveStatus, onChange, discardItem };
 }

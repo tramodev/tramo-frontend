@@ -12,7 +12,6 @@ import {
   setTrailDescription,
   deleteTrail as deleteTrailRequest,
   createItem,
-  copyItemForTrail,
   createLooseItem,
   deleteItem,
   renameItem,
@@ -50,25 +49,6 @@ export function useProjectEditorState(projectId: string) {
 
   const [trails, setTrails] = useState<Trail[]>([]);
   const [items, setItems] = useState<Record<string, Item>>({});
-  const pendingItemChanges = useRef(new Map<string, { save: () => Promise<void>; promise: Promise<void> | null }>());
-  const persistItemChange = (key: string, save: () => Promise<void>) => {
-    const previous = pendingItemChanges.current.get(key)?.promise;
-    const change = { save, promise: Promise.resolve().then(async () => {
-      await previous?.catch(() => {});
-      await save();
-    }) as Promise<void> | null };
-    pendingItemChanges.current.set(key, change);
-    const promise = change.promise!;
-    promise.then(() => {
-      if (pendingItemChanges.current.get(key) === change) pendingItemChanges.current.delete(key);
-    }, () => { change.promise = null; });
-    return promise;
-  };
-  const flushItemChanges = async () => {
-    for (const [key, change] of pendingItemChanges.current) {
-      await (change.promise ?? persistItemChange(key, change.save));
-    }
-  };
   const [navigation, setNavigation] = useState<{
     itemId?: string;
     trailId?: string;
@@ -152,13 +132,13 @@ export function useProjectEditorState(projectId: string) {
         ? { ...t, steps: t.steps.map((s) => (s.itemId === itemId ? { ...s, annotation } : s)) }
         : t
     ));
-    await persistItemChange(`${itemId}:annotation:${trailId}`, () => updateStep(trailId, itemId, { annotation, associationId: step?.associationId ?? null }));
+    await updateStep(trailId, itemId, { annotation, associationId: step?.associationId ?? null });
   };
 
   const commitItemTitle = (itemId: string, currentTitle: string, nextValue: string) => {
     const trimmed = nextValue.trim();
     if (!trimmed || trimmed === currentTitle) return;
-    void handleRenameItem(itemId, trimmed).catch(() => {});
+    handleRenameItem(itemId, trimmed);
   };
 
   const handleSetItemTitleAlign = async (itemId: string, titleAlign: TitleAlign) => {
@@ -167,7 +147,7 @@ export function useProjectEditorState(projectId: string) {
       if (!item) return prevItems;
       return { ...prevItems, [itemId]: { ...item, titleAlign } };
     });
-    await persistItemChange(`${itemId}:align`, () => setItemTitleAlign(itemId, titleAlign));
+    await setItemTitleAlign(itemId, titleAlign);
   };
 
   const [contentLoadError, setContentLoadError] = useState(false);
@@ -276,16 +256,6 @@ export function useProjectEditorState(projectId: string) {
     setNavigation({ trailId, itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } });
   };
 
-  const handleCopyItemForTrail = async (trailId: string, itemId: string) => {
-    await flushItemChanges();
-    const result = await copyItemForTrail(trailId, itemId);
-    const copy = { ...result.item, textStats: countTextStats(result.item.content ?? '') };
-    setItems(prev => ({ ...prev, [copy.id]: copy }));
-    setTrails(prev => prev.map(trail => trail.id === trailId
-      ? { ...trail, steps: result.steps, itemIds: result.steps.map(step => step.itemId) } : trail));
-    setNavigation({ trailId, itemId: copy.id, request: { itemId: copy.id, sequence: ++navigationSequence.current, focus: true } });
-  };
-
   const handleLinkItemToTrail = async (trailId: string, itemId: string) => {
     await attachItemToTrail(trailId, itemId);
     setTrails(prevTrails => prevTrails.map(trail =>
@@ -364,13 +334,11 @@ export function useProjectEditorState(projectId: string) {
   };
 
   const handleRenameItem = async (itemId: string, title: string) => {
-    await persistItemChange(`${itemId}:title`, async () => {
-      await renameItem(itemId, title);
-      setItems(prevItems => {
-        const item = prevItems[itemId];
-        if (!item) return prevItems;
-        return { ...prevItems, [itemId]: { ...item, title } };
-      });
+    await renameItem(itemId, title);
+    setItems(prevItems => {
+      const item = prevItems[itemId];
+      if (!item) return prevItems;
+      return { ...prevItems, [itemId]: { ...item, title } };
     });
   };
 
@@ -490,7 +458,6 @@ export function useProjectEditorState(projectId: string) {
     handleReorderTrailItems,
     handleCreateTrail,
     handleCreateItem,
-    handleCopyItemForTrail,
     handleLinkItemToTrail,
     handleUnlinkItemFromTrail,
     handleCreateLooseItem,

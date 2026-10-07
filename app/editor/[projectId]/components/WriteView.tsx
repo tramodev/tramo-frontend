@@ -45,7 +45,6 @@ import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
 import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
-import { SharedNoteIndicator } from '@/components/editor/shared-note-indicator';
 import { bridgeTies } from '../../associations';
 import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../../types';
 
@@ -67,7 +66,6 @@ interface WriteViewProps {
   onSetTitleAlign: (itemId: string, titleAlign: TitleAlign) => void;
   onSelectItem: (item: Item, trailId?: string) => void;
   onCreateItem: (trailId: string, title: string) => void;
-  onCopyItemForTrail: (trailId: string, itemId: string) => Promise<void>;
   onTie: (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => void;
   onUntie: (itemId: string, targetId: string, targetType: AssociationTargetType) => void;
   onOpenGraph: () => void;
@@ -137,10 +135,14 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
   return (
     <LexicalComposer initialConfig={{ ...editorConfig, editorState: initialContent || undefined }}>
       <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor}>
-        <ItemTitle item={item} props={props} onCommitTitle={props.onCommitTitle} onFocus={() => {
+        <ItemTitle item={item} onCommitTitle={props.onCommitTitle} onFocus={() => {
           setTitleFocused(true);
           onFocus(item.id);
         }} />
+        {props.trails.filter(trail => trail.itemIds.includes(item.id)).length > 1 && <div className="pl-7 py-2 text-xs text-muted-foreground">
+          <p>Used in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length} trails. Edits appear in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length === 2 ? 'both' : 'all of them'}.</p>
+          <div className="mt-1 flex flex-wrap gap-3">{props.trails.filter(trail => trail.itemIds.includes(item.id)).map(trail => <button type="button" key={trail.id} onClick={() => props.onSelectItem(item, trail.id)} className="underline">{trail.title}</button>)}</div>
+        </div>}
         <div className="relative">
           <RichTextPlugin contentEditable={
             <ContentEditable className="editor-input" aria-label={`Content of ${item.title}`} aria-placeholder={placeholder}
@@ -186,9 +188,8 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
   );
 }
 
-function ItemTitle({ item, props, onCommitTitle, onFocus }: {
+function ItemTitle({ item, onCommitTitle, onFocus }: {
   item: Item;
-  props: WriteViewProps;
   onCommitTitle: WriteViewProps['onCommitTitle'];
   onFocus: () => void;
 }) {
@@ -198,7 +199,7 @@ function ItemTitle({ item, props, onCommitTitle, onFocus }: {
     const input = inputRef.current;
     if (input && input !== document.activeElement) input.value = item.title;
   }, [item.title]);
-  return <div className="flex flex-wrap items-center gap-2 pl-7 pt-2">
+  return <div className="pl-7 pt-2">
     <input ref={inputRef} defaultValue={item.title} aria-label="Note title" onFocus={onFocus}
       onBlur={(event) => onCommitTitle(item.id, item.title, event.target.value)}
       onKeyDown={(event) => {
@@ -207,9 +208,7 @@ function ItemTitle({ item, props, onCommitTitle, onFocus }: {
         event.currentTarget.blur();
         requestAnimationFrame(() => focusEditor(editor));
       }} placeholder="Untitled" style={{ textAlign: item.titleAlign }}
-      className="min-w-0 flex-1 basis-48 border-0 bg-transparent font-display text-[28px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40" />
-    <SharedNoteIndicator item={item} trails={props.trails} activeTrailId={props.trail?.id}
-      onSelectItem={props.onSelectItem} onCopy={props.onCopyItemForTrail} />
+      className="w-full border-0 bg-transparent font-display text-[28px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40" />
   </div>;
 }
 

@@ -28,7 +28,6 @@ export interface Item {
     textStats?: { words: number; characters: number };
     associations: Association[];
     linkedItemIds: string[];
-    otherTrails?: { id: string; title: string; projectId: string }[];
 }
 
 export interface TrailStep {

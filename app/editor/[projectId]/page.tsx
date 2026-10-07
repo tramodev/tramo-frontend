@@ -167,10 +167,6 @@ export default function EditorPage() {
                 onSetTitleAlign={project.handleSetItemTitleAlign}
                 onSelectItem={project.handleSelectItem}
                 onCreateItem={project.handleCreateItem}
-                onCopyItemForTrail={async (trailId, itemId) => {
-                  if (!await autoSave.flushPendingContent()) throw new Error('Could not save your changes. Wait for image uploads or try again before creating a copy.');
-                  await project.handleCopyItemForTrail(trailId, itemId);
-                }}
                 onTie={project.handleTie}
                 onUntie={project.handleUntie}
                 onOpenGraph={() => project.setView('graph')}

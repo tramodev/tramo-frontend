@@ -63,7 +63,6 @@ function setup() {
     flush: () => { for (const [id, fn] of timers) { timers.delete(id); fn(); } },
     unload: (event) => beforeUnload(event),
     discard: (id) => hook.discardItem(id),
-    flushAndWait: () => hook.flushPendingContent(),
     editItem: (id, content) => hook.onChange(id, { read: (fn) => fn(), toJSON: () => content }),
   };
 }
@@ -169,53 +168,4 @@ test('does not persist an incomplete image or a temporary preview', () => {
   s.flush();
   expect(s.requests.length).toBe(1);
   expect(s.requests[0].content).not.toContain('blob:');
-});
-
-
-test('copy barrier waits for an in-flight save and the latest queued edit', async () => {
-  const s = setup();
-  s.select('shared');
-  s.edit('first');
-  s.flush();
-  s.edit('latest');
-  let saved = false;
-  const barrier = s.flushAndWait().then(result => { saved = result; });
-  await settle();
-  expect(saved).toBe(false);
-  s.requests[0].resolve();
-  await settle();
-  expect(saved).toBe(false);
-  expect(s.requests[1].content).toBe(JSON.stringify('latest'));
-  s.requests[1].resolve();
-  await barrier;
-  expect(saved).toBe(true);
-});
-
-test('copy barrier fails without losing content and can be retried', async () => {
-  const s = setup();
-  s.select('shared');
-  s.edit('unsaved');
-  const barrier = s.flushAndWait();
-  s.requests[0].reject(new Error('offline'));
-  expect(await barrier).toBe(false);
-  const retry = s.flushAndWait();
-  expect(s.requests[1].content).toBe(JSON.stringify('unsaved'));
-  s.requests[1].resolve();
-  expect(await retry).toBe(true);
-});
-
-test('copy barrier rejects incomplete uploads even when an older save is running', async () => {
-  const s = setup();
-  s.select('shared');
-  s.edit('before image');
-  s.flush();
-  s.edit({ root: { children: [{ type: 'image', imageId: '' }] } });
-  const barrier = s.flushAndWait();
-  s.requests[0].resolve();
-  expect(await barrier).toBe(false);
-  expect(await s.flushAndWait()).toBe(false);
-  s.edit({ root: { children: [{ type: 'image', imageId: 'ready' }] } });
-  const ready = s.flushAndWait();
-  s.requests[1].resolve();
-  expect(await ready).toBe(true);
 });
