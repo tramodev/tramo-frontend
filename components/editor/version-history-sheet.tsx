@@ -55,9 +55,8 @@ export function VersionHistorySheet({ projectId }: VersionHistorySheetProps) {
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="secondary" size="lg">
+        <Button variant="ghost" size="icon" title="Publish history" aria-label="Publish history">
           <History className="h-[15px] w-[15px]" />
-          History
         </Button>
       </SheetTrigger>
       <SheetContent className="overflow-y-auto sm:max-w-md">

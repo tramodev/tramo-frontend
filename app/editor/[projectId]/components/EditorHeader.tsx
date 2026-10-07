@@ -112,22 +112,23 @@ export function EditorActions({
         <Button
           data-tour="overview-toggle"
           variant={overviewActive ? 'secondary' : 'ghost'}
-          size="lg"
+          size="icon"
           onClick={onToggleOverview}
-          title="See the whole trail at a glance"
+          title="Overview"
+          aria-label="Overview"
+          aria-pressed={overviewActive}
         >
           <Route className="h-[15px] w-[15px]" />
-          Overview
         </Button>
       )}
+      <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />
+      <VersionHistorySheet projectId={projectId} />
       <Button data-tour="share" variant="secondary" size="lg" asChild>
         <Link href={`/projects/${projectId}/share`}>
           <Share2 className="h-[15px] w-[15px]" />
           Publish &amp; Share
         </Link>
       </Button>
-      <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />
-      <VersionHistorySheet projectId={projectId} />
       <UserMenu loggedIn={!!profile} username={profile?.username ?? null} imageUrl={profile?.imageUrl ?? null} />
     </>
   );

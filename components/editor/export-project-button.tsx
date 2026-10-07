@@ -40,8 +40,8 @@ export function ExportProjectButton({ projectId, beforeExport }: { projectId: st
     }
   };
   return <>
-    <Button variant="ghost" size="lg" disabled={pending} onClick={() => { void exportProject(); }} title="Download an offline HTML and original project data">
-      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Export project
+    <Button variant="ghost" size="icon" disabled={pending} onClick={() => { void exportProject(); }} title="Export" aria-label="Export">
+      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
     </Button>
     <Dialog open={pending || !!error} onOpenChange={open => { if (!open && !pending) setError(''); }}>
       <DialogContent showCloseButton={!pending} onEscapeKeyDown={event => { if (pending) event.preventDefault(); }} onInteractOutside={event => { if (pending) event.preventDefault(); }}>
