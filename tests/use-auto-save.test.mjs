@@ -64,6 +64,9 @@ function setup() {
     unload: (event) => beforeUnload(event),
     barrier: () => hook.flushPendingContent(),
     discard: (id) => hook.discardItem(id),
+    pause: (id) => hook.pauseItem(id),
+    resume: (id) => hook.resumeItem(id),
+    acceptPersisted: (id) => hook.acceptPersistedItem(id),
     editItem: (id, content) => hook.onChange(id, { read: (fn) => fn(), toJSON: () => content }),
   };
 }
@@ -197,4 +200,18 @@ test('incomplete image uploads block export instead of saving an older note snap
   expect(await s.barrier()).toBe(false); expect(s.requests).toHaveLength(0);
   s.edit({ root: { children: [{ type: 'image', imageId: 'ready-image' }] } });
   const retry = s.barrier(); s.requests[0].resolve(); expect(await retry).toBe(true);
+});
+
+test('pauses autosave during extraction and resumes without getting stuck on a synchronous empty flush', async () => {
+  const s = setup(); s.select('a'); s.pause('a'); s.edit('during extraction');
+  expect(await s.barrier()).toBe(false); expect(s.requests).toHaveLength(0);
+  s.resume('a'); const saved = s.barrier(); expect(s.requests).toHaveLength(1);
+  s.requests[0].resolve(); expect(await saved).toBe(true);
+});
+
+test('accepting a confirmed extraction discards obsolete pending snapshots and saves later edits', async () => {
+  const s = setup(); s.select('a'); s.pause('a'); s.edit('old snapshot'); s.acceptPersisted('a'); s.resume('a');
+  expect(await s.barrier()).toBe(true); expect(s.requests).toHaveLength(0);
+  s.edit('after extraction'); const saved = s.barrier(); expect(s.requests[0].content).toBe(JSON.stringify('after extraction'));
+  s.requests[0].resolve(); expect(await saved).toBe(true);
 });

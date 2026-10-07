@@ -25,6 +25,7 @@ export function useAutoSave({
   const incompleteImagesRef = useRef(new Set<string>());
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deletedItemsRef = useRef(new Set<string>());
+  const pausedItemsRef = useRef(new Set<string>());
 
   const discardItem = useCallback((itemId: string) => {
     deletedItemsRef.current.add(itemId);
@@ -39,11 +40,14 @@ export function useAutoSave({
     }
     if (inFlightRef.current) return inFlightRef.current;
     if (pendingContentRef.current.size === 0) return Promise.resolve(incompleteImagesRef.current.size === 0);
+    if (!Array.from(pendingContentRef.current.keys()).some(id => !pausedItemsRef.current.has(id))) return Promise.resolve(false);
     const save = async () => {
       setSaveStatus('saving');
       try {
         while (pendingContentRef.current.size > 0) {
-          const [itemId, content] = pendingContentRef.current.entries().next().value!;
+          const pending = Array.from(pendingContentRef.current).find(([id]) => !pausedItemsRef.current.has(id));
+          if (!pending) return false;
+          const [itemId, content] = pending;
           pendingContentRef.current.delete(itemId);
           try {
             await saveItemContent(itemId, content);
@@ -102,5 +106,15 @@ export function useAutoSave({
     });
   }, [flushPendingContent, onOptimisticUpdate]);
 
-  return { saveStatus, onChange, discardItem, flushPendingContent };
+  const pauseItem = (id: string) => { pausedItemsRef.current.add(id); };
+  const resumeItem = (id: string) => {
+    pausedItemsRef.current.delete(id);
+    if (pendingContentRef.current.size > 0) saveContentTimeoutRef.current = setTimeout(() => { void flushPendingContent(); }, 600);
+  };
+  const acceptPersistedItem = (id: string) => {
+    pendingContentRef.current.delete(id);
+    incompleteImagesRef.current.delete(id);
+    setSaveStatus('saved');
+  };
+  return { saveStatus, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem };
 }
