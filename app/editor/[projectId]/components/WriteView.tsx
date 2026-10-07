@@ -338,7 +338,7 @@ export function WriteView(props: WriteViewProps) {
                   <span>Step {index + 1}</span>
                   <button type="button" aria-label={`Connections for ${stepItem.title}: ${counts.get(stepItem.id) ?? 0}`}
                     aria-controls="editor-connections" aria-expanded={props.connectionsPanelOpen && focusedId === stepItem.id}
-                    className="rounded-full border border-border px-2.5 py-1 text-xs font-normal normal-case tracking-normal text-muted-foreground hover:bg-muted"
+                    className="rounded-full px-2.5 py-1 text-xs font-normal normal-case tracking-normal text-muted-foreground hover:bg-muted"
                     onClick={() => {
                       onFocus(stepItem.id);
                       if (!props.connectionsPanelOpen) props.onToggleConnectionsPanelOpen();
