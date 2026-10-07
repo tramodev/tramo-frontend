@@ -62,6 +62,7 @@ function setup() {
     edit: (content) => hook.onChange(currentItemId, { read: (fn) => fn(), toJSON: () => content }),
     flush: () => { for (const [id, fn] of timers) { timers.delete(id); fn(); } },
     unload: (event) => beforeUnload(event),
+    barrier: () => hook.flushPendingContent(),
     discard: (id) => hook.discardItem(id),
     editItem: (id, content) => hook.onChange(id, { read: (fn) => fn(), toJSON: () => content }),
   };
@@ -168,4 +169,32 @@ test('does not persist an incomplete image or a temporary preview', () => {
   s.flush();
   expect(s.requests.length).toBe(1);
   expect(s.requests[0].content).not.toContain('blob:');
+});
+
+
+test('export waits for in-flight content and drains newer pending edits', async () => {
+  const s = setup(); s.select('a'); s.edit('first'); s.flush(); s.edit('latest');
+  let finished = false;
+  const barrier = s.barrier().then(result => { finished = true; return result; });
+  await settle(); expect(finished).toBe(false);
+  s.requests[0].resolve(); await settle();
+  expect(s.requests[1].content).toBe(JSON.stringify('latest'));
+  expect(finished).toBe(false);
+  s.requests[1].resolve(); expect(await barrier).toBe(true);
+});
+
+test('failed content save cancels export and retains changes for retry', async () => {
+  const s = setup(); s.select('a'); s.edit('unsaved');
+  const first = s.barrier(); s.requests[0].reject(new Error('offline'));
+  expect(await first).toBe(false);
+  const retry = s.barrier(); expect(s.requests[1].content).toBe(JSON.stringify('unsaved'));
+  s.requests[1].resolve(); expect(await retry).toBe(true);
+});
+
+test('incomplete image uploads block export instead of saving an older note snapshot', async () => {
+  const s = setup(); s.select('a'); s.edit('older');
+  s.edit({ root: { children: [{ type: 'image', imageId: '' }] } });
+  expect(await s.barrier()).toBe(false); expect(s.requests).toHaveLength(0);
+  s.edit({ root: { children: [{ type: 'image', imageId: 'ready-image' }] } });
+  const retry = s.barrier(); s.requests[0].resolve(); expect(await retry).toBe(true);
 });
