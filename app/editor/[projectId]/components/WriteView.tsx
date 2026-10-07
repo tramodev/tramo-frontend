@@ -40,6 +40,7 @@ import FloatingLinkEditorPlugin from '../../plugins/FloatingLinkEditorPlugin';
 import FindReplacePlugin from '../../plugins/FindReplacePlugin';
 import DraggableBlockPlugin from '../../plugins/DraggableBlockPlugin';
 import ItemMentionPlugin from '../../plugins/ItemMentionPlugin';
+import ExtractSelectionPlugin, { type ExtractionActions } from '../../plugins/ExtractSelectionPlugin';
 import WikiLinkPlugin from '../../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
@@ -72,6 +73,7 @@ interface WriteViewProps {
   onUntie: (itemId: string, targetId: string, targetType: AssociationTargetType) => void;
   onOpenGraph: () => void;
   onChange: (itemId: string, editorState: EditorState) => void;
+  extractionActions: ExtractionActions;
   connectionsPanelOpen: boolean;
   onToggleConnectionsPanelOpen: () => void;
 }
@@ -175,8 +177,11 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
         <WikiLinkPlugin items={props.items} currentItemId={item.id} />
         <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         <ItemNavigationPlugin itemId={item.id} register={register} move={move} />
-        <OnChangePlugin onChange={(state) => props.onChange(item.id, state)} ignoreSelectionChange />
+        <OnChangePlugin onChange={(state, _editor, tags) => { if (!tags.has('extraction')) props.onChange(item.id, state); }} ignoreSelectionChange />
         {focused && <>
+          <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail} history={history}
+            sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}
+            onOpen={result => props.onSelectItem(result.item, result.trailId)} />
           {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId}
             history={history}
             titleFocused={titleFocused} titleAlign={item.titleAlign}

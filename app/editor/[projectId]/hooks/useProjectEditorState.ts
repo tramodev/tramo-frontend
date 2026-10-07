@@ -27,6 +27,7 @@ import {
 } from '@/lib/projects-store';
 import { annotationsToReview, resolveItemTrail } from '../../trail-navigation';
 import { getItemContent, getTrailContents } from '@/lib/item-content-client';
+import type { ExtractionResult } from '@/lib/extract-selection-client';
 import { getMyProfile } from '@/lib/profile';
 import type { GraphPreviewData } from '@/lib/feed';
 
@@ -477,6 +478,14 @@ export function useProjectEditorState(projectId: string) {
     handleSelectTrail,
     redirectToLogin,
     flushProjectChanges: () => pendingSaves.current.flush(),
+    applyExtraction: (sourceId: string, expectedContent: string, result: ExtractionResult, applySource: boolean) => {
+      setItems(previous => ({ ...previous,
+        [result.item.id]: { ...result.item, textStats: countTextStats(result.item.content ?? '') },
+        ...(applySource && previous[sourceId]?.content === expectedContent ? { [sourceId]: { ...previous[sourceId], content: result.sourceContent, textStats: countTextStats(result.sourceContent) } } : {}),
+      }));
+      if (result.trailId) setTrails(previous => previous.map(trail => trail.id === result.trailId
+        ? { ...trail, steps: result.steps, itemIds: result.steps.map(step => step.itemId) } : trail));
+    },
     handleUpdateAnnotation,
     commitItemTitle,
     handleSetItemTitleAlign,

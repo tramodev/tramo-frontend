@@ -178,6 +178,19 @@ export default function EditorPage() {
                 onUntie={project.handleUntie}
                 onOpenGraph={() => project.setView('graph')}
                 onChange={autoSave.onChange}
+                extractionActions={{
+                  beforeExtract: async (id, state) => {
+                    autoSave.onChange(id, state);
+                    if (!await autoSave.flushPendingContent()) throw new Error('Could not save note content. Your selection is kept; wait for image uploads or retry.');
+                    try { await project.flushProjectChanges(); }
+                    catch { throw new Error('Could not save project changes. Your selection is kept; retry the failed edit before extracting.'); }
+                    if (!await autoSave.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
+                  },
+                  pauseItem: autoSave.pauseItem,
+                  resumeItem: autoSave.resumeItem,
+                  acceptPersistedItem: autoSave.acceptPersistedItem,
+                  onExtracted: project.applyExtraction,
+                }}
                 connectionsPanelOpen={connectionsPanelOpen}
                 onToggleConnectionsPanelOpen={() => setConnectionsPanelOpen((o) => !o)}
               />
