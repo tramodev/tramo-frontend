@@ -4,6 +4,10 @@ Frontend for **Tramo**, a Memex-inspired tool for writing connected, reusable no
 Projects group notes and **trails**: ordered sequences of notes for learning,
 explaining and sharing ideas.
 
+A connection points from one note to another in the same project, with optional
+shared text (up to 2,000 characters). Trail order is independent of connections.
+Reordering or removing a note from a trail leaves its connections intact.
+
 The backend is [`tramo-api`](../tramo-api), running at `http://localhost:8080`.
 
 ## Environment
