@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { memo, useEffect, useMemo, useRef, useState } from "react"
+import { memo, useMemo, useState } from "react"
 import { useTheme } from "next-themes"
 import { useMounted } from "@/hooks/use-mounted"
 import {
@@ -13,8 +13,6 @@ import {
   Position,
   MarkerType,
   BaseEdge,
-  EdgeLabelRenderer,
-  getBezierPath,
   type Node,
   type Edge,
   type NodeProps,
@@ -22,8 +20,7 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 
-import { Item, Trail, AssociationType } from "@/app/editor/types"
-import { ASSOCIATION_META } from "@/app/editor/associations"
+import { Item, Trail } from "@/app/editor/types"
 
 interface KnowledgeGraphProps {
   trails: Trail[];
@@ -33,27 +30,6 @@ interface KnowledgeGraphProps {
   onSelectItem: (item: Item) => void;
   variant?: "full" | "preview";
 }
-
-const TYPE_VAR: Record<AssociationType, string> = {
-  REQUIRES: "--ed-blue",
-  ELABORATES: "--ed-purple",
-  CONTRADICTS: "--ed-red",
-  EXAMPLE_OF: "--ed-green",
-  RELATED: "--ed-orange",
-};
-
-const FALLBACK: Record<string, string> = {
-  "--ed-blue": "#0B57D0",
-  "--ed-purple": "#6750A4",
-  "--ed-red": "#B3261E",
-  "--ed-green": "#1B6E38",
-  "--ed-orange": "#9A5B00",
-  "--ed-gray": "#5F6368",
-  "--popover": "#FFFFFF",
-  "--border": "#E4E4E4",
-};
-
-const ACCENT = "#1D9BF0";
 
 const NODE_W = 132;
 const NODE_H = 44;
@@ -77,7 +53,7 @@ const ItemNodeComp = memo(function ItemNodeComp({ data }: NodeProps<ItemNode>) {
       style={{
         width: NODE_W,
         height: NODE_H,
-        boxShadow: data.selected ? `0 0 0 2px var(--background), 0 0 0 4px ${ACCENT}` : undefined,
+        boxShadow: data.selected ? `0 0 0 2px var(--background), 0 0 0 4px var(--primary)` : undefined,
       }}
     >
       <Handle type="target" position={Position.Left} id="l" style={{ opacity: 0 }} />
@@ -93,103 +69,29 @@ const ItemNodeComp = memo(function ItemNodeComp({ data }: NodeProps<ItemNode>) {
 
 const nodeTypes = { item: ItemNodeComp };
 
-type AssocEdgeData = { label: string; color: string; incident: boolean; span: number };
+type AssocEdgeData = { incident: boolean; span: number; reverse: boolean };
 
-const AssocEdge = memo(function AssocEdge({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  markerEnd,
-  data,
-}: EdgeProps) {
-  const [hovered, setHovered] = useState(false);
+const AssocEdge = memo(function AssocEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd, data, selected }: EdgeProps) {
   const d = data as AssocEdgeData;
-  const sameRow = Math.abs(sourceY - targetY) < 20;
-
-  let path: string;
-  let labelX: number;
-  let labelY: number;
-  if (sameRow) {
-    const apexY = Math.min(sourceY, targetY) - (BASE_ARC + Math.max(d.span - 1, 0) * ARC_STEP);
-    path = `M ${sourceX} ${sourceY} C ${sourceX} ${apexY}, ${targetX} ${apexY}, ${targetX} ${targetY}`;
-    labelX = (sourceX + targetX) / 2;
-    labelY = apexY + 6;
-  } else {
-    const [p, lx, ly] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
-    path = p;
-    labelX = lx;
-    labelY = ly;
-  }
-
-  const showLabel = d.incident || hovered;
-
-  return (
-    <>
-      <BaseEdge
-        id={id}
-        path={path}
-        markerEnd={markerEnd}
-        style={{ stroke: d.color, strokeWidth: d.incident || hovered ? 3 : 1.75 }}
-      />
-      <path
-        d={path}
-        fill="none"
-        stroke="transparent"
-        strokeWidth={20}
-        style={{ pointerEvents: "stroke" }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-      />
-      {showLabel && (
-        <EdgeLabelRenderer>
-          <div
-            className="pointer-events-none absolute rounded-sm px-1.5 py-0.5 text-[11px] font-medium"
-            style={{
-              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              color: d.color,
-              background: "var(--popover)",
-            }}
-          >
-            {d.label}
-          </div>
-        </EdgeLabelRenderer>
-      )}
-    </>
-  );
+  const direction = d.reverse ? 1 : -1;
+  const bend = direction * (BASE_ARC + Math.max(d.span - 1, 0) * ARC_STEP);
+  const path = Math.abs(sourceY - targetY) < 20
+    ? `M ${sourceX} ${sourceY} C ${sourceX} ${sourceY + bend}, ${targetX} ${targetY + bend}, ${targetX} ${targetY}`
+    : `M ${sourceX} ${sourceY} C ${sourceX + bend} ${sourceY}, ${targetX + bend} ${targetY}, ${targetX} ${targetY}`;
+  return <BaseEdge id={id} path={path} markerEnd={markerEnd} interactionWidth={24}
+    style={{ stroke: 'var(--primary)', strokeWidth: selected ? 4 : d.incident ? 3 : 1.75 }} />;
 });
 
 const edgeTypes = { assoc: AssocEdge };
 
 interface Pos { x: number; y: number }
-interface Assoc { from: string; to: string; type: AssociationType }
+interface Assoc { id: string; from: string; to: string; text: string | null }
 
 export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, onSelectItem, variant = "full" }: KnowledgeGraphProps) {
   const preview = variant === "preview";
   const { resolvedTheme } = useTheme();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [selectedConnection, setSelectedConnection] = useState<string>();
   const mounted = useMounted();
-
-  const [colors, setColors] = useState<Record<string, string>>(FALLBACK);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const raf = requestAnimationFrame(() => {
-      const style = getComputedStyle(el);
-      const next: Record<string, string> = {};
-      for (const name of Object.keys(FALLBACK)) {
-        next[name] = style.getPropertyValue(name).trim() || FALLBACK[name];
-      }
-      setColors(next);
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [resolvedTheme]);
-
-  const typeColor = (type: AssociationType) => colors[TYPE_VAR[type]] ?? FALLBACK[TYPE_VAR[type]];
-  const spineColor = colors["--ed-gray"] ?? FALLBACK["--ed-gray"];
 
   const layout = useMemo(() => {
     const activeTrail = trails.find((t) => t.id === activeTrailId) ?? trails[0];
@@ -197,7 +99,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     const hasTrailOrder = trailIds.length > 0;
     const spineIds = hasTrailOrder ? trailIds : Object.keys(items);
     const spineSet = new Set(spineIds);
-    const col = new Map<string, number>(); // column index (for arc span)
+    const col = new Map<string, number>();
     spineIds.forEach((id, i) => col.set(id, i));
 
     const pos = new Map<string, Pos>();
@@ -225,8 +127,8 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
 
     for (const id of outgoingFrom) {
       for (const a of items[id].associations) {
-        if (a.targetType !== "ITEM" || !items[a.targetId]) continue;
-        assocs.push({ from: id, to: a.targetId, type: a.type });
+        if (!items[a.targetId]) continue;
+        assocs.push({ id: a.id, from: id, to: a.targetId, text: a.text });
         addLoose(a.targetId);
       }
     }
@@ -235,8 +137,8 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     for (const [id, item] of Object.entries(items)) {
       if (drawn.has(id)) continue;
       for (const a of item.associations ?? []) {
-        if (a.targetType !== "ITEM" || !drawn.has(a.targetId)) continue;
-        assocs.push({ from: id, to: a.targetId, type: a.type });
+        if (!drawn.has(a.targetId)) continue;
+        assocs.push({ id: a.id, from: id, to: a.targetId, text: a.text });
         addLoose(id);
       }
     }
@@ -244,13 +146,10 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     const spineEdges = hasTrailOrder
       ? spineIds.slice(0, -1).map((from, i) => ({ from, to: spineIds[i + 1] }))
       : [];
-    const typesPresent = (Object.keys(TYPE_VAR) as AssociationType[]).filter((t) =>
-      assocs.some((a) => a.type === t)
-    );
-    return { pos, kind, col, assocs, spineEdges, typesPresent, rootPos: pos.get(spineIds[0]) };
+    return { pos, kind, col, assocs, spineEdges, rootPos: pos.get(spineIds[0]) };
   }, [trails, items, activeTrailId, selectedItemId]);
 
-  const { pos, kind, col, assocs, spineEdges, typesPresent, rootPos } = layout;
+  const { pos, kind, col, assocs, spineEdges, rootPos } = layout;
 
   const nodes: ItemNode[] = useMemo(() => {
     const looseXs = [...pos.entries()].filter(([id]) => kind.get(id) === "loose").map(([, p]) => p.x);
@@ -280,29 +179,32 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
         target: to,
         sourceHandle: "r",
         targetHandle: "l",
-        style: { stroke: spineColor, strokeWidth: incident(from, to) ? 4.25 : 3 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: spineColor, width: 18, height: 18 },
+        style: { stroke: "var(--muted-foreground)", strokeWidth: 2, strokeDasharray: "6 5" },
+        selectable: false,
+        focusable: false,
       });
     }
-    assocs.forEach(({ from, to, type }, i) => {
-      const color = typeColor(type);
+    assocs.forEach(({ id, from, to }) => {
+      const color = "var(--primary)";
+      const reverse = from.localeCompare(to, "en", { numeric: true }) > 0;
       const sameRow = pos.get(from)!.y === pos.get(to)!.y;
       const sourceBelow = pos.get(from)!.y > pos.get(to)!.y;
       const span = Math.abs((col.get(to) ?? 0) - (col.get(from) ?? 0));
       es.push({
-        id: `assoc-${from}-${to}-${i}`,
+        id: `assoc-${id}`,
         source: from,
         target: to,
         type: "assoc",
-        sourceHandle: sameRow || sourceBelow ? "ts" : "bs",
-        targetHandle: sourceBelow ? "bt" : "tt",
-        data: { label: ASSOCIATION_META[type].label, color, incident: incident(from, to), span },
+        sourceHandle: sameRow ? (reverse ? "bs" : "ts") : sourceBelow ? "ts" : "bs",
+        targetHandle: sameRow ? (reverse ? "bt" : "tt") : sourceBelow ? "bt" : "tt",
+        data: { incident: incident(from, to), span, reverse },
+        selected: selectedConnection === id,
+        ariaLabel: `${items[from].title} → ${items[to].title}`,
         markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
       });
     });
     return es;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spineEdges, assocs, pos, col, colors, selectedItemId]);
+  }, [spineEdges, assocs, pos, col, selectedItemId, selectedConnection, items]);
 
   const previewKey = useMemo(
     () => [activeTrailId ?? "none", ...nodes.map((n) => n.id), ...edges.map((e) => e.id)].join("|"),
@@ -324,6 +226,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
       nodesDraggable={false}
       nodesConnectable={false}
       proOptions={preview ? { hideAttribution: true } : undefined}
+      onEdgeClick={(_, edge) => { if (edge.id.startsWith("assoc-")) setSelectedConnection(edge.id.slice(6)); }}
       onNodeClick={(_, node) => {
         const it = items[node.id];
         if (it) onSelectItem(it);
@@ -340,39 +243,38 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
           }
         : {})}
     >
-      {!preview && <Background color={colors["--border"]} gap={22} size={1} />}
+      {!preview && <Background color="var(--border)" gap={22} size={1} />}
       {!preview && <Controls position="bottom-right" showInteractive={false} />}
     </ReactFlow>
   );
 
   if (preview) {
     return (
-      <div ref={containerRef} className="h-full w-full pointer-events-none">
+      <div className="h-full w-full pointer-events-none">
         {flow}
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-popover">
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-popover">
       <div className="min-h-0 flex-1">{flow}</div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-2 border-t border-border px-6 py-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-2">
           <svg width="30" height="8" className="shrink-0">
-            <line x1="0" y1="4" x2="30" y2="4" stroke={spineColor} strokeWidth={4} />
+            <line x1="0" y1="4" x2="30" y2="4" stroke="var(--muted-foreground)" strokeDasharray="6 5" strokeWidth={4} />
           </svg>
           Trail order
         </span>
-        {typesPresent.map((type) => (
-          <span key={type} className="flex items-center gap-2">
-            <svg width="30" height="8" className="shrink-0">
-              <line x1="0" y1="4" x2="30" y2="4" stroke={typeColor(type)} strokeWidth={2} />
-            </svg>
-            {ASSOCIATION_META[type].label}
-          </span>
-        ))}
-        {typesPresent.length === 0 && <span className="italic">no associations yet</span>}
+        <span>→ Connection</span>
+        <label className="flex items-center gap-2">Connection
+          <select value={selectedConnection ?? ''} onChange={event => setSelectedConnection(event.target.value || undefined)} className="max-w-full rounded border border-input bg-background p-2">
+            <option value="">Select a connection</option>
+            {assocs.map(a => <option key={a.id} value={a.id}>{items[a.from].title} → {items[a.to].title}</option>)}
+          </select>
+        </label>
+        {assocs.filter(a => a.id === selectedConnection).map(a => <p key={a.id} className="max-h-40 w-full overflow-auto whitespace-pre-wrap break-words" role="status">{items[a.from].title} → {items[a.to].title}{'\n'}{a.text || 'No explanation.'}</p>)}
       </div>
     </div>
   );

@@ -89,12 +89,16 @@ export function VersionHistorySheet({ projectId }: VersionHistorySheetProps) {
                   Public link <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
-              {detail.trails.map((trail) => (
+              {[...detail.trails, { id: "loose", title: "Notes outside trails", items: detail.looseItems }].filter(trail => trail.items.length > 0).map((trail) => (
                 <div key={trail.id} className="flex flex-col gap-3">
                   <h3 className="text-sm font-semibold">{trail.title}</h3>
                   {trail.items.map((item) => (
                     <div key={item.id} className="flex flex-col gap-1">
                       <p className="text-sm font-medium">{item.title}</p>
+                      {item.associations.map(a => <div key={a.id} className="text-xs text-muted-foreground">
+                        <p>{item.title} → {a.targetTitle}</p>
+                        {a.text && <p className="whitespace-pre-wrap break-words">{a.text}</p>}
+                      </div>)}
                       {item.content && (
                         <div className="text-sm text-muted-foreground">
                           <LexicalReadOnly content={item.content} />

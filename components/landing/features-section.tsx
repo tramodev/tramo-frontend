@@ -26,13 +26,13 @@ function WriteMockup() {
 function ConnectionsMockup() {
   return <div className="w-full rounded-[18px] border border-border bg-popover p-5 shadow-elevation-2">
     <div className="mb-4 flex items-center justify-between"><span className="font-display text-lg font-medium">Connections</span><Waypoints className="h-4 w-4 text-muted-foreground" /></div>
-    <p className="mb-4 text-xs text-muted-foreground">Relationships involving “Memex”.</p>
+    <p className="mb-4 text-xs text-muted-foreground">Connections involving “Memex”.</p>
     <div className="rounded-xl border border-border bg-background p-4">
-      <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-[var(--ed-orange)]">Related</span>
-      <p className="text-[13px] font-medium">Memex is related to As We May Think</p>
+      <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-primary">Outgoing</span>
+      <p className="text-[13px] font-medium">Memex → As We May Think</p>
     </div>
     <div className="mt-3 rounded-xl border border-border bg-background p-4">
-      <p className="text-[13px] font-medium">Memex is elaborated on by Associative trails</p>
+      <p className="text-[13px] font-medium">Associative trails → Memex</p>
     </div>
     <div className="mt-4 flex items-center gap-2 text-xs text-primary"><Link2 className="h-3.5 w-3.5" />Connect notes when they add context</div>
   </div>;
@@ -70,8 +70,8 @@ function ReadingMockup() {
 
 const STEPS = [
   { Mockup: WriteMockup, color: '--ed-blue', label: 'Write notes', title: 'Start with one idea', description: 'Open a project and start writing. Add a title, more notes and structure when they help.' },
-  { Mockup: ConnectionsMockup, color: '--ed-orange', label: 'Connect them', title: 'Explain how ideas relate', description: 'Connect notes when a relationship adds context. Keep simple connections or describe prerequisites, examples and contrasting ideas.' },
-  { Mockup: ReuseMockup, color: '--ed-purple', label: 'Reuse them', title: 'One note, more than one explanation', description: 'A trail is an ordered sequence of notes. Use the same note in different trails, with a transition that fits each explanation.' },
+  { Mockup: ConnectionsMockup, color: '--ed-orange', label: 'Connect them', title: 'Explain how ideas relate', description: 'Connect notes when a relationship adds context. Choose a destination and add an optional explanation.' },
+  { Mockup: ReuseMockup, color: '--ed-purple', label: 'Reuse them', title: 'One note, more than one trail', description: 'A trail is an ordered sequence of notes. Use the same note in different trails, in a different reading order.' },
   { Mockup: ReadingMockup, color: '--ed-green', label: 'Share an explanation', title: 'Give readers a place to begin', description: 'Describe your project and publish a readable snapshot. Share its link, then keep working privately until you publish an update.' },
 ];
 

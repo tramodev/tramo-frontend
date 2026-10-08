@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPendingSaves } from '@/lib/pending-saves';
 import { useRouter } from 'next/navigation';
-import { Trail, Item, TitleAlign, Association, AssociationType, AssociationTargetType } from '../../types';
+import { Trail, Item, TitleAlign } from '../../types';
 import { countTextStats, lastItemStorageKey } from '../../editor-utils';
 import {
   getProject,
@@ -19,20 +19,19 @@ import {
   setItemTitleAlign,
   attachItemToTrail,
   detachItemFromTrail,
-  updateStep,
+  updateAssociation,
   reorderTrailItems,
   tie,
   untie,
   type ProjectVisibility,
 } from '@/lib/projects-store';
-import { annotationsToReview, resolveItemTrail } from '../../trail-navigation';
+import { resolveItemTrail } from '../../trail-navigation';
 import { getItemContent, getTrailContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
 import { getMyProfile } from '@/lib/profile';
 import type { GraphPreviewData } from '@/lib/feed';
 
 export interface ReorderNotice {
-  reviewItemIds: string[];
   error?: string;
 }
 
@@ -134,22 +133,6 @@ export function useProjectEditorState(projectId: string) {
 
   const activeTrail = useMemo(() => trails.find((t) => t.id === activeTrailId), [trails, activeTrailId]);
 
-  const associationById = useMemo(() => {
-    const map = new Map<string, Association>();
-    Object.values(items).forEach((it) => it.associations.forEach((a) => map.set(a.id, a)));
-    return map;
-  }, [items]);
-
-  const handleUpdateAnnotation = (trailId: string, itemId: string, annotation: string) => pendingSaves.current.track(`annotation:${trailId}:${itemId}`, async () => {
-    const step = trails.find((t) => t.id === trailId)?.steps.find((s) => s.itemId === itemId);
-    setTrails((prev) => prev.map((t) =>
-      t.id === trailId
-        ? { ...t, steps: t.steps.map((s) => (s.itemId === itemId ? { ...s, annotation } : s)) }
-        : t
-    ));
-    await updateStep(trailId, itemId, { annotation, associationId: step?.associationId ?? null });
-  }, true);
-
   const commitItemTitle = (itemId: string, currentTitle: string, nextValue: string) => {
     const trimmed = nextValue.trim();
     if (!trimmed || trimmed === currentTitle) return;
@@ -234,14 +217,12 @@ export function useProjectEditorState(projectId: string) {
       if (!previous || reorderingTrails.current.has(trailId)) return;
       const stepByItemId = new Map(previous.steps.map(step => [step.itemId, step]));
       if (itemIds.length !== previous.steps.length || new Set(itemIds).size !== itemIds.length || itemIds.some(id => !stepByItemId.has(id))) return;
-      const reviewItemIds = annotationsToReview(previous.steps, itemIds);
       reorderingTrails.current.add(trailId);
       setTrails(prev => prev.map(trail => trail.id === trailId
         ? { ...trail, itemIds, steps: itemIds.map(id => stepByItemId.get(id)!) } : trail));
       try {
         await reorderTrailItems(trailId, itemIds);
         setReorderNotices(prev => ({ ...prev, [trailId]: {
-          reviewItemIds: [...new Set([...(prev[trailId]?.reviewItemIds ?? []), ...reviewItemIds])],
         } }));
       } catch (err) {
         console.error(err);
@@ -251,7 +232,6 @@ export function useProjectEditorState(projectId: string) {
           return { ...trail, itemIds: previous.itemIds, steps: previous.steps.map(step => currentSteps.get(step.itemId) ?? step) };
         }));
         setReorderNotices(prev => ({ ...prev, [trailId]: {
-          reviewItemIds: prev[trailId]?.reviewItemIds ?? [],
           error: 'Could not reorder this trail. The previous order was restored. Please try again.',
         } }));
         throw err;
@@ -274,7 +254,7 @@ export function useProjectEditorState(projectId: string) {
         ? {
             ...trail,
             itemIds: [...trail.itemIds, newItem.id],
-            steps: [...trail.steps, { itemId: newItem.id, annotation: null, associationId: null }],
+            steps: [...trail.steps, { itemId: newItem.id }],
           }
         : trail
     ));
@@ -289,7 +269,7 @@ export function useProjectEditorState(projectId: string) {
         ? {
             ...trail,
             itemIds: [...trail.itemIds, itemId],
-            steps: [...trail.steps, { itemId, annotation: null, associationId: null }],
+            steps: [...trail.steps, { itemId }],
           }
         : trail
     ));
@@ -336,6 +316,9 @@ export function useProjectEditorState(projectId: string) {
     setItems(prevItems => {
       const next = { ...prevItems };
       delete next[itemId];
+      for (const [id, note] of Object.entries(next)) {
+        next[id] = { ...note, associations: note.associations.filter(a => a.targetId !== itemId) };
+      }
       return next;
     });
     setNavigation((prev) => {
@@ -393,38 +376,27 @@ export function useProjectEditorState(projectId: string) {
     }
   }, false);
 
-  const handleTie = (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => pendingSaves.current.track(`tie:${itemId}:${targetType}:${targetId}`, async () => {
-    await tie(itemId, targetId, targetType, type);
-    const targetTitle = targetType === 'ITEM'
-      ? items[targetId]?.title ?? ''
-      : trails.find((t) => t.id === targetId)?.title ?? '';
-    setItems((prev) => {
-      const it = prev[itemId];
-      if (!it) return prev;
-      if (it.associations.some((a) => a.targetType === targetType && a.targetId === targetId)) {
-        return prev;
-      }
-      const association: Association = { id: `tmp:${type}:${targetType}:${targetId}`, type, targetType, targetId, targetTitle };
-      const linkedItemIds = targetType === 'ITEM' && !it.linkedItemIds.includes(targetId)
-        ? [...it.linkedItemIds, targetId]
-        : it.linkedItemIds;
-      return { ...prev, [itemId]: { ...it, associations: [...it.associations, association], linkedItemIds } };
+  const handleTie = (itemId: string, targetId: string, text: string) => pendingSaves.current.track(`tie:${itemId}:${targetId}`, async () => {
+    const association = await tie(itemId, targetId, text);
+    setItems(prev => {
+      const item = prev[itemId];
+      return item ? { ...prev, [itemId]: { ...item, associations: [...item.associations, association] } } : prev;
     });
   }, false);
 
-  const handleUntie = (itemId: string, targetId: string, targetType: AssociationTargetType) => pendingSaves.current.track(`untie:${itemId}:${targetType}:${targetId}`, async () => {
-    await untie(itemId, targetId, targetType);
-    setItems((prev) => {
-      const it = prev[itemId];
-      if (!it) return prev;
-      return {
-        ...prev,
-        [itemId]: {
-          ...it,
-          associations: it.associations.filter((a) => !(a.targetId === targetId && a.targetType === targetType)),
-          linkedItemIds: targetType === 'ITEM' ? it.linkedItemIds.filter((id) => id !== targetId) : it.linkedItemIds,
-        },
-      };
+  const handleUpdateAssociation = (itemId: string, associationId: string, text: string) => pendingSaves.current.track(`connection:${associationId}`, async () => {
+    const association = await updateAssociation(itemId, associationId, text);
+    setItems(prev => {
+      const item = prev[itemId];
+      return item ? { ...prev, [itemId]: { ...item, associations: item.associations.map(a => a.id === associationId ? association : a) } } : prev;
+    });
+  }, false);
+
+  const handleUntie = (itemId: string, associationId: string) => pendingSaves.current.track(`connection:${associationId}`, async () => {
+    await untie(itemId, associationId);
+    setItems(prev => {
+      const item = prev[itemId];
+      return item ? { ...prev, [itemId]: { ...item, associations: item.associations.filter(a => a.id !== associationId) } } : prev;
     });
   }, false);
 
@@ -470,7 +442,6 @@ export function useProjectEditorState(projectId: string) {
     activeTrailId,
     view,
     setView,
-    associationById,
     contentLoadError,
     retryContent,
     navigationRequest: navigation.request,
@@ -486,7 +457,7 @@ export function useProjectEditorState(projectId: string) {
       if (result.trailId) setTrails(previous => previous.map(trail => trail.id === result.trailId
         ? { ...trail, steps: result.steps, itemIds: result.steps.map(step => step.itemId) } : trail));
     },
-    handleUpdateAnnotation,
+    handleUpdateAssociation,
     commitItemTitle,
     handleSetItemTitleAlign,
     handleSelectItem,

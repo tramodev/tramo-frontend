@@ -21,8 +21,6 @@ export interface PublicItem {
   type: string | null;
   content: string;
   titleAlign: TitleAlign;
-  annotation: string | null;
-  associationId: string | null;
   associations: Association[];
 }
 
@@ -59,8 +57,7 @@ export interface PublicProject {
 
 interface AssociationDTO {
   id: string;
-  type: string;
-  targetType: string;
+  text: string | null;
   targetId: string;
   targetTitle: string;
 }
@@ -71,8 +68,6 @@ interface PublicItemDTO {
   type: string | null;
   content: string;
   titleAlign: TitleAlign | null;
-  annotation: string | null;
-  associationId: string | null;
   associations: AssociationDTO[];
 }
 
@@ -212,12 +207,9 @@ function toPublicItem(item: PublicItemDTO): PublicItem {
     type: item.type,
     content: item.content,
     titleAlign: item.titleAlign ?? "center",
-    annotation: item.annotation,
-    associationId: item.associationId,
     associations: item.associations.map((a) => ({
       id: a.id,
-      type: a.type as Association["type"],
-      targetType: a.targetType as Association["targetType"],
+      text: a.text,
       targetId: a.targetId,
       targetTitle: a.targetTitle,
     })),

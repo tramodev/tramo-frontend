@@ -24,9 +24,8 @@ import { CommentsSection } from "@/components/project/comments-section"
 import { UserMenu } from "@/components/layout/user-menu"
 import { Button } from "@/components/ui/button"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
-import type { Association, Item, Trail } from "@/app/editor/types"
+import type { Item, Trail } from "@/app/editor/types"
 import { firstReadableTrail, resolveItemTrail } from "@/app/editor/trail-navigation"
-import { bridgeTies } from "@/app/editor/associations"
 import { useScrollSpy } from "@/hooks/use-scroll-spy"
 
 function toEditorShape(project: PublicProject): { trails: Trail[]; items: Record<string, Item> } {
@@ -39,7 +38,7 @@ function toEditorShape(project: PublicProject): { trails: Trail[]; items: Record
       unfiled,
       content: item.content,
       associations: item.associations,
-      linkedItemIds: item.associations.filter((a) => a.targetType === "ITEM").map((a) => a.targetId),
+      linkedItemIds: item.associations.map((a) => a.targetId),
     };
   };
   project.looseItems.forEach((item) => addItem(item, true));
@@ -52,8 +51,6 @@ function toEditorShape(project: PublicProject): { trails: Trail[]; items: Record
       itemIds: trail.items.map((item) => item.id),
       steps: trail.items.map((item) => ({
         itemId: item.id,
-        annotation: item.annotation,
-        associationId: item.associationId,
       })),
       version: trail.version,
       forkedFrom: trail.forkedFromId,
@@ -88,17 +85,13 @@ export function PublicProjectView({
 
   const activeTrail = useMemo(() => trails.find((t) => t.id === activeTrailId), [trails, activeTrailId])
 
-  const associationById = useMemo(() => {
-    const map = new Map<string, Association>();
-    Object.values(items).forEach((it) => it.associations.forEach((a) => map.set(a.id, a)));
-    return map;
-  }, [items])
+
 
   const inTrail = !!(selectedItem && activeTrail?.itemIds.includes(selectedItem.id))
   const steps = inTrail && activeTrail
     ? activeTrail.steps
     : selectedItem
-      ? [{ itemId: selectedItem.id, annotation: null, associationId: null }]
+      ? [{ itemId: selectedItem.id }]
       : []
   const stacked = steps.length > 1
 
@@ -296,7 +289,6 @@ export function PublicProjectView({
             <OverviewView
               trail={activeTrail}
               items={items}
-              associationById={associationById}
               selectedItemId={selectedItem?.id}
               onSelectItem={handleSelectMappedItem}
               onClose={() => setView('content')}
@@ -321,7 +313,6 @@ export function PublicProjectView({
                       const stepItem = items[step.itemId]
                       if (!stepItem) return null
                       const isActive = step.itemId === selectedItem.id
-                      const ties = i > 0 ? bridgeTies(items, steps[i - 1].itemId, step.itemId) : []
 
                       return (
                         <div
@@ -335,7 +326,7 @@ export function PublicProjectView({
                         >
                           {i > 0 && (
                             <div className="trail-divider mt-4">
-                              <TrailConnector ties={ties} annotation={step.annotation} />
+                              <TrailConnector />
                             </div>
                           )}
                           <div

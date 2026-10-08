@@ -36,12 +36,16 @@ export default async function PublicVersionPage({
       </div>
 
       <div className="flex flex-col gap-8">
-        {snapshot.trails.map((trail) => (
+        {[...snapshot.trails, { id: "loose", title: "Notes outside trails", items: snapshot.looseItems }].filter(trail => trail.items.length > 0).map((trail) => (
           <div key={trail.id} className="flex flex-col gap-3">
             <h2 className="text-lg font-semibold">{trail.title}</h2>
             {trail.items.map((item) => (
               <div key={item.id} className="flex flex-col gap-1">
                 <p className="text-sm font-medium">{item.title}</p>
+                      {item.associations.map(a => <div key={a.id} className="text-xs text-muted-foreground">
+                        <p>{item.title} → {a.targetTitle}</p>
+                        {a.text && <p className="whitespace-pre-wrap break-words">{a.text}</p>}
+                      </div>)}
                 {item.content && (
                   <div className="text-sm text-muted-foreground">
                     <LexicalReadOnly content={item.content} />

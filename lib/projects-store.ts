@@ -3,7 +3,7 @@
 'use server';
 
 import { headers } from "next/headers";
-import { Item, Trail, TitleAlign, Association, AssociationType, AssociationTargetType } from "@/app/editor/types";
+import { Item, Trail, TitleAlign, Association } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 import { parseResponse, expectOk } from "./http";
@@ -69,18 +69,9 @@ interface ItemDTO {
   unfiled?: boolean;
 }
 
-interface TrailStepDTO extends ItemDTO {
-  annotation: string | null;
-  associationId: string | null;
-}
+type TrailStepDTO = ItemDTO;
 
-interface AssociationDTO {
-  id: string;
-  type: string;
-  targetType: string;
-  targetId: string;
-  targetTitle: string;
-}
+type AssociationDTO = Association;
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -139,7 +130,7 @@ function toItem(dto: ItemDTO, unfiled: boolean, associations: Association[] = []
     content: "",
     textStats: { words: 0, characters: 0 },
     associations,
-    linkedItemIds: associations.filter((a) => a.targetType === "ITEM").map((a) => a.targetId),
+    linkedItemIds: associations.map((a) => a.targetId),
   };
 }
 
@@ -181,8 +172,7 @@ export async function getProject(id: string): Promise<Project | null> {
     const dto = itemMap.get(itemId)!;
     const associations: Association[] = associationLists[index].map((a) => ({
       id: String(a.id),
-      type: a.type as AssociationType,
-      targetType: a.targetType as AssociationTargetType,
+      text: a.text,
       targetId: a.targetId,
       targetTitle: a.targetTitle,
     }));
@@ -200,8 +190,6 @@ export async function getProject(id: string): Promise<Project | null> {
     itemIds: trailItemLists[index].map((step) => String(step.id)),
     steps: trailItemLists[index].map((step) => ({
       itemId: String(step.id),
-      annotation: step.annotation,
-      associationId: step.associationId,
     })),
     version: trail.version,
     forkedFrom: trail.forkedFromId != null ? String(trail.forkedFromId) : null,
@@ -322,20 +310,6 @@ export async function reorderTrailItems(trailId: string, itemIds: string[]): Pro
   });
 }
 
-export async function updateStep(
-  trailId: string,
-  itemId: string,
-  fields: { annotation?: string | null; associationId?: string | null },
-): Promise<void> {
-  await apiVoid(`/api/trail/${trailId}/item/${itemId}`, {
-    method: "PUT",
-    json: {
-      annotation: fields.annotation ?? null,
-      associationId: fields.associationId != null ? Number(fields.associationId) : null,
-    },
-  });
-}
-
 export async function renameTrail(trailId: string, title: string): Promise<void> {
   await apiVoid(`/api/trail/${trailId}`, { method: "PUT", json: { title } });
 }
@@ -378,24 +352,18 @@ export async function detachItemFromTrail(trailId: string, itemId: string): Prom
   await apiVoid(`/api/trail/${trailId}/item/${itemId}`, { method: "DELETE" });
 }
 
-export async function tie(
-  itemId: string,
-  targetId: string,
-  targetType: AssociationTargetType = "ITEM",
-  type: AssociationType = "RELATED",
-): Promise<void> {
-  await apiVoid(`/api/item/${itemId}/tie`, {
-    method: "POST",
-    json: { type, targetType, targetId: Number(targetId) },
+export async function tie(itemId: string, targetId: string, text: string): Promise<Association> {
+  return apiJson<Association>(`/api/item/${itemId}/tie`, {
+    method: "POST", json: { targetId: Number(targetId), text },
   });
 }
 
-export async function untie(
-  itemId: string,
-  targetId: string,
-  targetType: AssociationTargetType = "ITEM",
-): Promise<void> {
-  await apiVoid(`/api/item/${itemId}/tie?targetType=${targetType}&targetId=${targetId}`, {
-    method: "DELETE",
+export async function updateAssociation(itemId: string, associationId: string, text: string): Promise<Association> {
+  return apiJson<Association>(`/api/item/${itemId}/association/${associationId}`, {
+    method: "PUT", json: { text },
   });
+}
+
+export async function untie(itemId: string, associationId: string): Promise<void> {
+  await apiVoid(`/api/item/${itemId}/association/${associationId}`, { method: "DELETE" });
 }

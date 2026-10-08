@@ -10,16 +10,16 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
 
 test('export waits for all metadata writes, serializes the same field and includes newly queued saves', async () => {
   const pending = exports.createPendingSaves(), calls = [];
-  let titleDone, annotationDone;
+  let titleDone, connectionDone;
   const first = pending.track('title', () => new Promise(resolve => { calls.push('first'); titleDone = resolve; }), true);
   const second = pending.track('title', async () => { calls.push('latest'); }, true);
-  pending.track('annotation', () => new Promise(resolve => { annotationDone = resolve; }), true);
+  pending.track('connection', () => new Promise(resolve => { connectionDone = resolve; }), true);
   let exported = false;
   const barrier = pending.flush().then(() => { exported = true; });
   await settle(); expect(exported).toBe(false); expect(calls).toEqual(['first']);
   titleDone(); await first; await second; await settle();
   expect(calls).toEqual(['first', 'latest']); expect(exported).toBe(false);
-  annotationDone(); await barrier; expect(exported).toBe(true);
+  connectionDone(); await barrier; expect(exported).toBe(true);
 });
 
 test('export rejects failed saves and safely retries idempotent metadata actions on another attempt', async () => {

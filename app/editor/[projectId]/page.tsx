@@ -147,7 +147,6 @@ export default function EditorPage() {
               <OverviewView
                 trail={project.activeTrail}
                 items={project.items}
-                associationById={project.associationById}
                 selectedItemId={project.selectedItemId}
                 onSelectItem={project.handleSelectItem}
                 onSetDescription={project.handleSetTrailDescription}
@@ -169,7 +168,7 @@ export default function EditorPage() {
                 navigationRequest={project.navigationRequest}
                 onVisibleItem={project.handleVisibleItem}
                 onSelectTrail={project.handleSelectTrail}
-                onUpdateAnnotation={project.handleUpdateAnnotation}
+                onUpdateAssociation={project.handleUpdateAssociation}
                 onCommitTitle={project.commitItemTitle}
                 onSetTitleAlign={project.handleSetItemTitleAlign}
                 onSelectItem={project.handleSelectItem}

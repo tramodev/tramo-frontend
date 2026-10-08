@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 
-import { authenticatedFetch } from "./api";
-import { API_BASE_URL } from "./config";
-import { parseResponse } from "./http";
+import type { Association } from "@/app/editor/types";
+import { authenticatedFetch } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/config";
+import { parseResponse } from "@/lib/http";
 
 export interface ProjectSnapshotSummary {
   id: string;
@@ -17,6 +18,7 @@ export interface ProjectSnapshotItem {
   title: string;
   type: string | null;
   content: string | null;
+  associations: Association[];
 }
 
 export interface ProjectSnapshotTrail {
@@ -28,6 +30,7 @@ export interface ProjectSnapshotTrail {
 
 export interface ProjectSnapshotDetail extends ProjectSnapshotSummary {
   trails: ProjectSnapshotTrail[];
+  looseItems: ProjectSnapshotItem[];
 }
 
 interface ProjectSnapshotSummaryDTO {
@@ -41,6 +44,7 @@ interface SnapshotItemDTO {
   title: string;
   type: string | null;
   content: string | null;
+  associations: { id: number; targetId: number; targetTitle: string; text: string | null }[];
 }
 
 interface SnapshotTrailDTO {
@@ -53,6 +57,7 @@ interface SnapshotTrailDTO {
 interface ProjectSnapshotDetailDTO extends ProjectSnapshotSummaryDTO {
   content: {
     trails: SnapshotTrailDTO[];
+    looseItems: SnapshotItemDTO[];
   };
 }
 
@@ -66,19 +71,19 @@ export async function getProjectSnapshots(projectId: string): Promise<ProjectSna
   return dtos.map(toSummary);
 }
 
+function toItem(item: SnapshotItemDTO): ProjectSnapshotItem {
+  return { ...item, id: String(item.id), associations: item.associations.map(a => ({ ...a, id: String(a.id), targetId: String(a.targetId) })) };
+}
+
 function toDetail(dto: ProjectSnapshotDetailDTO): ProjectSnapshotDetail {
   return {
     ...toSummary(dto),
+    looseItems: dto.content.looseItems.map(toItem),
     trails: dto.content.trails.map((trail) => ({
       id: String(trail.id),
       title: trail.title,
       version: trail.version,
-      items: trail.items.map((item) => ({
-        id: String(item.id),
-        title: item.title,
-        type: item.type,
-        content: item.content,
-      })),
+      items: trail.items.map(toItem),
     })),
   };
 }

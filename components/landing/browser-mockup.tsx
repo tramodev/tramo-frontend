@@ -53,7 +53,7 @@ const GRAPH_ITEMS: Record<string, Item> = {
     content: null,
     linkedItemIds: ['vannevar-bush'],
     associations: [
-      { id: 'a1', type: 'RELATED', targetType: 'ITEM', targetId: 'vannevar-bush', targetTitle: 'Vannevar Bush' },
+      { id: 'a1', text: null, targetId: 'vannevar-bush', targetTitle: 'Vannevar Bush' },
     ],
   },
   memex: {
@@ -73,7 +73,7 @@ const GRAPH_ITEMS: Record<string, Item> = {
     content: null,
     linkedItemIds: ['memex'],
     associations: [
-      { id: 'a2', type: 'ELABORATES', targetType: 'ITEM', targetId: 'memex', targetTitle: 'Memex' },
+      { id: 'a2', text: null, targetId: 'memex', targetTitle: 'Memex' },
     ],
   },
   'sharing-a-trail': {
@@ -94,9 +94,9 @@ const GRAPH_TRAILS: Trail[] = [
     description: 'Meet Vannevar Bush, read the idea behind his essay, and explore the Memex.',
     itemIds: ['vannevar-bush', 'as-we-may-think', 'memex'],
     steps: [
-      { itemId: 'vannevar-bush', annotation: null, associationId: null },
-      { itemId: 'as-we-may-think', annotation: 'Bush’s essay gives this vision a concrete form. Next, explore the proposal in his own terms.', associationId: null },
-      { itemId: 'memex', annotation: null, associationId: null },
+      { itemId: 'vannevar-bush'},
+      { itemId: 'as-we-may-think' },
+      { itemId: 'memex'},
     ],
     version: 1,
     forkedFrom: null,
@@ -107,9 +107,9 @@ const GRAPH_TRAILS: Trail[] = [
     description: 'Explore how the Memex connects notes into reusable trails.',
     itemIds: ['memex', 'associative-trails', 'sharing-a-trail'],
     steps: [
-      { itemId: 'memex', annotation: null, associationId: null },
-      { itemId: 'associative-trails', annotation: 'The Memex stores records; associative trails explain how a reader connects and revisits them.', associationId: null },
-      { itemId: 'sharing-a-trail', annotation: null, associationId: null },
+      { itemId: 'memex'},
+      { itemId: 'associative-trails'},
+      { itemId: 'sharing-a-trail'},
     ],
     version: 1,
     forkedFrom: null,
@@ -127,7 +127,7 @@ const LOOSE_ITEMS = Object.values(GRAPH_ITEMS).map(item => ({
 }));
 
 const CONNECTIONS = [
-  { type: 'ELABORATED ON BY', Icon: Waypoints, title: 'Associative trails' },
+  { type: 'INCOMING → MEMEX', Icon: Waypoints, title: 'Associative trails' },
 ];
 
 export const BrowserMockup: React.FC = () => {

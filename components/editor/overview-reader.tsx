@@ -5,14 +5,12 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 
-import { Association, Item, Trail } from "@/app/editor/types"
-import { bridgeTies } from "@/app/editor/associations"
+import { Item, Trail } from "@/app/editor/types"
 import { TrailConnector } from "@/components/editor/trail-connector"
 
 interface OverviewReaderProps {
   trail: Trail;
   items: Record<string, Item>;
-  associationById: Map<string, Association>;
   selectedItemId?: string;
   onSelectItem: (item: Item) => void;
   onSetDescription?: (trailId: string, description: string) => void;
@@ -57,7 +55,7 @@ function TrailDescriptionEditor({ trailId, description, onSave }: { trailId: str
   );
 }
 
-export function OverviewReader({ trail, items, associationById, selectedItemId, onSelectItem, onSetDescription }: OverviewReaderProps) {
+export function OverviewReader({ trail, items, selectedItemId, onSelectItem, onSetDescription }: OverviewReaderProps) {
   return (
     <div className="flex-1 overflow-y-auto rounded-2xl bg-popover">
       <div className="mx-auto max-w-[640px] px-5 py-10">
@@ -84,16 +82,11 @@ export function OverviewReader({ trail, items, associationById, selectedItemId, 
           {trail.steps.map((step, i) => {
             const item = items[step.itemId];
             if (!item) return null;
-            const ties = i > 0 ? bridgeTies(items, trail.steps[i - 1].itemId, step.itemId) : [];
-            const explicit = step.associationId ? associationById.get(step.associationId) : undefined;
-            if (explicit && !ties.some((t) => t.association.id === explicit.id)) {
-              ties.unshift({ association: explicit, forward: true, sourceTitle: Object.values(items).find(note => note.associations.some(a => a.id === explicit.id))?.title });
-            }
             const on = step.itemId === selectedItemId;
 
             return (
               <div key={step.itemId}>
-                {i > 0 && <TrailConnector ties={ties} annotation={step.annotation} />}
+                {i > 0 && <TrailConnector />}
                 <button
                   type="button"
                   onClick={() => onSelectItem(item)}

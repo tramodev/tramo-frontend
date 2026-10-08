@@ -16,7 +16,7 @@ runInNewContext(source('app/editor/[projectId]/components/WriteView.tsx'), {
     react: { useState: value => [value, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useCallback: fn => fn, useEffect: () => {} },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
-    '../../associations': associations,
+    '@/app/editor/associations': associations,
     '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
     '@/components/editor/trail-connector': { TrailConnector: 'TrailConnector' },
     '@/components/editor/editor-images-provider': { EditorImagesProvider: 'EditorImagesProvider' },
@@ -30,9 +30,9 @@ function flatten(element) {
 function props(open = false) {
   const visible = [], selected = [];
   let toggles = 0, dismissals = 0;
-  const ab = { id: 'ab', type: 'RELATED', targetType: 'ITEM', targetId: 'b', targetTitle: 'B' };
+  const ab = { id: 'ab', text: null, targetId: 'b', targetTitle: 'B' };
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id.toUpperCase(), content: '', associations: id === 'a' ? [ab] : [] }]));
-  const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps: ['a', 'b', 'c'].map(itemId => ({ itemId, annotation: null, associationId: itemId === 'c' ? 'ab' : null })) };
+  const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps: ['a', 'b', 'c'].map(itemId => ({ itemId })) };
   return {
     item: items.a, items, trail, trails: [trail], projectId: 'project', connectionsPanelOpen: open,
     onVisibleItem: id => visible.push(id), onToggleConnectionsPanelOpen: () => toggles++,
@@ -41,13 +41,13 @@ function props(open = false) {
   };
 }
 
-test('separators ignore stale explicit associations and the connections button selects its note without toggling an open panel closed', () => {
+test('separators are visual and the connections button selects its note without toggling an open panel closed', () => {
   for (const open of [false, true]) {
     const p = props(open);
     const nodes = flatten(exports.WriteView(p));
     const connectors = nodes.filter(node => node.type === 'TrailConnector');
-    expect(connectors[0].props.ties).toHaveLength(1);
-    expect(connectors[1].props.ties).toHaveLength(0);
+    expect(connectors).toHaveLength(2);
+    expect(connectors.every(node => Object.keys(node.props).length === 0)).toBe(true);
     const buttons = nodes.filter(node => node.type === 'button' && node.props['aria-controls'] === 'editor-connections');
     expect(buttons.map(node => node.props['aria-label'])).toEqual(['Connections for A: 1', 'Connections for B: 1', 'Connections for C: 0']);
     buttons[1].props.onClick();
@@ -56,15 +56,11 @@ test('separators ignore stale explicit associations and the connections button s
   }
 });
 
-test('review notice exposes navigation and dismissal while failed saves use an accessible alert', () => {
+test('failed reorder has an accessible dismissible alert', () => {
   const p = props();
-  let nodes = flatten(exports.WriteView({ ...p, reorderNotice: { reviewItemIds: ['b'] } }));
-  const notice = nodes.find(node => node.props.role === 'status' && node.props.className?.includes('border-border'));
+  const nodes = flatten(exports.WriteView({ ...p, reorderNotice: { error: 'Could not reorder' } }));
+  const notice = nodes.find(node => node.props.role === 'alert');
   expect(notice).toBeDefined();
-  flatten(notice).find(node => node.type === 'button' && node.props.children === 'B').props.onClick();
-  expect(p.selected).toEqual(['b']);
   flatten(notice).find(node => node.type === 'button' && node.props.children === 'Dismiss').props.onClick();
   expect(p.dismissals()).toBe(1);
-  nodes = flatten(exports.WriteView({ ...p, reorderNotice: { reviewItemIds: [], error: 'Could not reorder' } }));
-  expect(nodes.some(node => node.props.role === 'alert')).toBe(true);
 });

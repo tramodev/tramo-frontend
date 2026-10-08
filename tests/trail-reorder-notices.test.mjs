@@ -13,7 +13,8 @@ async function setup() {
   let stateIndex = 0, refIndex = 0, initial = true;
   let resolveSave, rejectSave, requests = 0;
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, associations: [], content: '' }]));
-  const steps = ['a', 'b', 'c'].map(id => ({ itemId: id, annotation: id === 'b' ? 'Because A comes before B' : null, associationId: id === 'b' ? 'ab' : null }));
+  items.a.associations = [{ id: 'ab', targetId: 'b', text: 'Shared context' }];
+  const steps = ['a', 'b', 'c'].map(id => ({ itemId: id }));
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
   const navigation = {};
   runInNewContext(transpile('app/editor/trail-navigation.ts'), { exports: navigation });
@@ -38,7 +39,7 @@ async function setup() {
       '@/lib/projects-store': {
         getProject: async () => ({ title: 'Project', items, trails: [trail] }),
         reorderTrailItems: () => { requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
-        updateStep: async () => {},
+        updateAssociation: async (id, associationId, text) => ({ id: associationId, targetId: 'b', text }),
       },
       '@/lib/profile': { getMyProfile: async () => ({ username: 'owner' }) },
       '@/lib/item-content-client': { getTrailContents: async () => ({}), getItemContent: async () => '' },
@@ -61,55 +62,32 @@ async function setup() {
   return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), requests: () => requests };
 }
 
-test('reorder preserves step data and warns only after saving, including moving an annotated note first', async () => {
+test('reorder preserves connections and rejects concurrent requests', async () => {
   const s = await setup();
   const pending = s.render().handleReorderTrailItems('trail', ['b', 'a', 'c']);
-  let hook = s.render();
-  expect(Array.from(hook.trails[0].itemIds)).toEqual(['b', 'a', 'c']);
-  expect(hook.trails[0].steps[0].annotation).toBe('Because A comes before B');
-  expect(hook.trails[0].steps[0].associationId).toBe('ab');
-  expect(hook.reorderNotices.trail).toBeUndefined();
-  s.save();
-  await pending;
-  hook = s.render();
-  expect(Array.from(hook.reorderNotices.trail.reviewItemIds)).toEqual(['b']);
-  hook.dismissReorderNotice('trail');
-  expect(s.render().reorderNotices.trail).toBeUndefined();
-});
-
-test('failed reorder restores order without losing annotations edited during the request', async () => {
-  const s = await setup();
-  const pending = s.render().handleReorderTrailItems('trail', ['a', 'c', 'b']);
-  await s.render().handleUpdateAnnotation('trail', 'b', 'Updated during save');
-  s.fail();
-  await pending;
-  const hook = s.render();
-  expect(Array.from(hook.trails[0].itemIds)).toEqual(['a', 'b', 'c']);
-  expect(hook.trails[0].steps[1].annotation).toBe('Updated during save');
-  expect(hook.reorderNotices.trail.reviewItemIds).toHaveLength(0);
-  expect(hook.reorderNotices.trail.error).toContain('previous order was restored');
-});
-
-test('review notices accumulate until dismissed and simultaneous saves do not overwrite each other', async () => {
-  const s = await setup();
-  let pending = s.render().handleReorderTrailItems('trail', ['a', 'c', 'b']);
   await s.render().handleReorderTrailItems('trail', ['c', 'a', 'b']);
   expect(s.requests()).toBe(1);
   s.save();
   await pending;
-  await s.render().handleUpdateAnnotation('trail', 'c', 'A step explanation');
-  pending = s.render().handleReorderTrailItems('trail', ['a', 'b', 'c']);
-  s.save();
-  await pending;
-  expect(Array.from(s.render().reorderNotices.trail.reviewItemIds)).toEqual(['b', 'c']);
+  const hook = s.render();
+  expect(Array.from(hook.trails[0].itemIds)).toEqual(['b', 'a', 'c']);
+  expect(hook.items.a.associations[0].text).toBe('Shared context');
 });
 
-test('unchanged predecessors and invalid permutations do not generate review notices', async () => {
+test('failed reorder restores order without overwriting a connection edited during the request', async () => {
+  const s = await setup();
+  const pending = s.render().handleReorderTrailItems('trail', ['a', 'c', 'b']);
+  await s.render().handleUpdateAssociation('a', 'ab', 'Updated during save');
+  s.fail();
+  await pending;
+  const hook = s.render();
+  expect(Array.from(hook.trails[0].itemIds)).toEqual(['a', 'b', 'c']);
+  expect(hook.items.a.associations[0].text).toBe('Updated during save');
+  expect(hook.reorderNotices.trail.error).toContain('previous order was restored');
+});
+
+test('invalid permutations are not sent', async () => {
   const s = await setup();
   await s.render().handleReorderTrailItems('trail', ['a', 'a', 'c']);
   expect(s.requests()).toBe(0);
-  const pending = s.render().handleReorderTrailItems('trail', ['a', 'b', 'c']);
-  s.save();
-  await pending;
-  expect(s.render().reorderNotices.trail.reviewItemIds).toHaveLength(0);
 });

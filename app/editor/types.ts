@@ -2,21 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 export type TitleAlign = "left" | "center" | "right";
 
-export type AssociationType =
-    | "REQUIRES"
-    | "ELABORATES"
-    | "CONTRADICTS"
-    | "EXAMPLE_OF"
-    | "RELATED";
-
-export type AssociationTargetType = "ITEM" | "TRAIL";
-
 export interface Association {
     id: string;
-    type: AssociationType;
-    targetType: AssociationTargetType;
     targetId: string;
     targetTitle: string;
+    text: string | null;
 }
 
 export interface Item {
@@ -32,8 +22,6 @@ export interface Item {
 
 export interface TrailStep {
     itemId: string;
-    annotation: string | null;
-    associationId: string | null;
 }
 
 export interface Trail {

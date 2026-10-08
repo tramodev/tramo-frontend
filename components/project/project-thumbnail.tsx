@@ -27,7 +27,7 @@ function toGraphProps(graph: GraphPreviewData): { trails: Trail[]; items: Record
       unfiled: false,
       content: null,
       associations: item.associations,
-      linkedItemIds: item.associations.filter((a) => a.targetType === "ITEM").map((a) => a.targetId),
+      linkedItemIds: item.associations.map((a) => a.targetId),
     }
   }
   return { trails: [trail], items }

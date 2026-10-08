@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { X } from 'lucide-react';
 import { OverviewReader } from '@/components/editor/overview-reader';
-import { Trail, Item, Association } from '@/app/editor/types';
+import { Trail, Item } from '@/app/editor/types';
 
 interface OverviewViewProps {
   trail: Trail | undefined;
   items: Record<string, Item>;
-  associationById: Map<string, Association>;
   selectedItemId: string | undefined;
   onSelectItem: (item: Item) => void;
   onSetDescription?: (trailId: string, description: string) => void;
@@ -18,7 +17,6 @@ interface OverviewViewProps {
 export function OverviewView({
   trail,
   items,
-  associationById,
   selectedItemId,
   onSelectItem,
   onSetDescription,
@@ -41,7 +39,6 @@ export function OverviewView({
       <OverviewReader
         trail={trail}
         items={items}
-        associationById={associationById}
         selectedItemId={selectedItemId}
         onSelectItem={onSelectItem}
         onSetDescription={onSetDescription}

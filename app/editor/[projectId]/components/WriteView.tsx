@@ -46,9 +46,9 @@ import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
 import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
-import { bridgeTies, connectionCounts } from '../../associations';
+import { connectionCounts } from '@/app/editor/associations';
 import type { ReorderNotice } from '../hooks/useProjectEditorState';
-import { Trail, Item, TitleAlign, AssociationType, AssociationTargetType } from '../../types';
+import { Trail, Item, TitleAlign } from '../../types';
 
 interface WriteViewProps {
   projectId: string;
@@ -64,13 +64,13 @@ interface WriteViewProps {
   navigationRequest?: { itemId: string; sequence: number; focus: boolean };
   onVisibleItem: (itemId: string) => void;
   onSelectTrail: (trailId: string) => void;
-  onUpdateAnnotation: (trailId: string, itemId: string, annotation: string) => void;
   onCommitTitle: (itemId: string, currentTitle: string, nextValue: string) => void;
   onSetTitleAlign: (itemId: string, titleAlign: TitleAlign) => void;
   onSelectItem: (item: Item, trailId?: string) => void;
   onCreateItem: (trailId: string, title: string) => void;
-  onTie: (itemId: string, targetId: string, targetType: AssociationTargetType, type: AssociationType) => void;
-  onUntie: (itemId: string, targetId: string, targetType: AssociationTargetType) => void;
+  onTie: (itemId: string, targetId: string, text: string) => Promise<void>;
+  onUntie: (itemId: string, associationId: string) => Promise<void>;
+  onUpdateAssociation: (itemId: string, associationId: string, text: string) => Promise<void>;
   onOpenGraph: () => void;
   onChange: (itemId: string, editorState: EditorState) => void;
   extractionActions: ExtractionActions;
@@ -237,7 +237,7 @@ export function WriteView(props: WriteViewProps) {
   const handledRequest = useRef<number | null>(null);
   const inTrail = !!trail?.itemIds.includes(item.id);
   const nextTrail = inTrail && trail ? props.trails[props.trails.findIndex(candidate => candidate.id === trail.id) + 1] : undefined;
-  const steps = inTrail && trail ? trail.steps : [{ itemId: item.id, annotation: null, associationId: null }];
+  const steps = inTrail && trail ? trail.steps : [{ itemId: item.id }];
   const ids = useMemo(() => inTrail && trail ? trail.itemIds : [item.id], [inTrail, trail, item.id]);
   const focusedId = ids.includes(focusedItemId) ? focusedItemId : item.id;
   const contentReady = ids.every((id) => items[id]?.content != null);
@@ -317,14 +317,9 @@ export function WriteView(props: WriteViewProps) {
         </div>}
         <div ref={setToolbar} data-editor-toolbar className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
         <hr />
-        {props.reorderNotice && (props.reorderNotice.error || props.reorderNotice.reviewItemIds.length > 0) && <div
+        {props.reorderNotice && props.reorderNotice.error && <div
           role={props.reorderNotice.error ? 'alert' : 'status'} className="mx-4 my-2 max-h-36 shrink-0 overflow-y-auto rounded-lg border border-border bg-muted p-3 text-sm">
           {props.reorderNotice.error && <p className="text-destructive">{props.reorderNotice.error}</p>}
-          {props.reorderNotice.reviewItemIds.length > 0 && <>
-            <p>Transition notes were kept after reordering. Review the explanations for:</p>
-            <div className="mt-2 flex flex-wrap gap-3">{props.reorderNotice.reviewItemIds.map(id => items[id] && <button
-              key={id} type="button" className="text-primary underline" onClick={() => props.onSelectItem(items[id], trail?.id)}>{items[id].title}</button>)}</div>
-          </>}
           <button type="button" className="mt-2 text-muted-foreground underline" onClick={props.onDismissReorderNotice}>Dismiss</button>
         </div>}
         <div className="editor-inner" ref={editorInnerRef} style={{ visibility: revealed ? undefined : 'hidden' }} inert={!revealed}>
@@ -332,12 +327,10 @@ export function WriteView(props: WriteViewProps) {
             {steps.map((step, index) => {
               const stepItem = items[step.itemId];
               if (!stepItem) return null;
-              const ties = index > 0 && trail ? bridgeTies(items, trail.steps[index - 1].itemId, step.itemId) : [];
               return <section key={step.itemId} aria-label={`Step ${index + 1}: ${stepItem.title}`}
                 ref={(element) => { if (element) slotRefs.current.set(step.itemId, element); else slotRefs.current.delete(step.itemId); }}>
                 {index > 0 && trail && <div className="trail-divider mt-4">
-                  <TrailConnector ties={ties} annotation={step.annotation}
-                    onSaveAnnotation={(text) => props.onUpdateAnnotation(trail.id, step.itemId, text)} />
+                  <TrailConnector />
                 </div>}
                 <div className={`flex flex-wrap items-center justify-between gap-2 pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                   <span>Step {index + 1}</span>
@@ -370,8 +363,8 @@ export function WriteView(props: WriteViewProps) {
         </div>
       </div>
     </div>
-    <ConnectionsPanel key={focusedId} item={items[focusedId]} items={items} trails={props.trails} activeTrailId={props.activeTrailId}
-      onSelectItem={props.onSelectItem} onSelectTrail={props.onSelectTrail} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
+    <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} activeTrailId={props.activeTrailId}
+      onSelectItem={props.onSelectItem} onUpdateAssociation={props.onUpdateAssociation} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
   </EditorImagesProvider>;
 }
