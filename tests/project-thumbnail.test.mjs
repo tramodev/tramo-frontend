@@ -10,9 +10,10 @@ runInNewContext(ts.transpileModule(readFileSync('components/project/project-thum
 }).outputText, { exports, require: name => ({
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/image': { default: 'Image' },
-  '@/components/editor/knowledge-graph': { KnowledgeGraph: 'KnowledgeGraph' },
   '@/components/shared/author-avatar': { initial: title => title[0] },
 })[name] ?? {} });
+
+const textOf = node => Array.isArray(node) ? node.map(textOf).join(' ') : node?.props ? textOf(node.props.children) : typeof node === 'string' ? node : '';
 
 test('graph thumbnail includes every trail and one copy of a shared note', () => {
   const graph = {
@@ -20,10 +21,10 @@ test('graph thumbnail includes every trail and one copy of a shared note', () =>
     items: [{ id: 'shared', title: 'Shared', associations: [] }, { id: 'other', title: 'Other', associations: [] }],
   };
   const thumbnail = exports.ProjectThumbnail({ thumbnailImageUrl: null, thumbnailGraph: graph, title: 'Project' });
-  const preview = thumbnail.props.children;
-  expect(preview.props.variant).toBe('thumbnail');
-  expect(preview.props.trails.map(trail => trail.id)).toEqual(['first', 'second']);
-  expect(Object.keys(preview.props.items)).toEqual(['shared', 'other']);
+  const tiles = thumbnail.props.children.props.children;
+  expect(tiles).toHaveLength(2);
+  expect(tiles.map(tile => textOf(tile).trim())).toEqual(['First Shared', 'Second Shared']);
+  expect(thumbnail.props.children.type).toBe('div');
 });
 
 test('graph thumbnail renders a response with the previous single-trail format', () => {
@@ -32,7 +33,20 @@ test('graph thumbnail renders a response with the previous single-trail format',
     items: [{ id: 'note', title: 'Note', associations: [] }],
   };
   const thumbnail = exports.ProjectThumbnail({ thumbnailImageUrl: null, thumbnailGraph: graph, title: 'Project' });
-  const preview = thumbnail.props.children;
-  expect(preview.props.trails.map(trail => trail.id)).toEqual(['first']);
-  expect(Object.keys(preview.props.items)).toEqual(['note']);
+  const tiles = thumbnail.props.children.props.children;
+  expect(tiles).toHaveLength(1);
+  expect(textOf(tiles[0])).toContain('First');
+  expect(textOf(tiles[0])).toContain('Note');
+});
+
+test('static thumbnail keeps every trail when the graph has several', () => {
+  const graph = {
+    trails: ['One', 'Two', 'Three', 'Four', 'Five'].map((title, index) => ({ id: String(index), title, itemIds: [] })),
+    items: [],
+  };
+  const thumbnail = exports.ProjectThumbnail({ thumbnailImageUrl: null, thumbnailGraph: graph, title: 'Project' });
+  const grid = thumbnail.props.children;
+  expect(grid.props.style.gridTemplateColumns).toContain('2');
+  expect(grid.props.style.gridTemplateRows).toContain('3');
+  expect(grid.props.children.map(tile => textOf(tile).trim())).toEqual(['One', 'Two', 'Three', 'Four', 'Five']);
 });

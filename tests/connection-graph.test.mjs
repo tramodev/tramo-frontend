@@ -72,22 +72,6 @@ test('three appearances of one note are connected without duplicating links', ()
   expect(renderGraph(props).props.nodes.find(node => node.id === 'card:first:a').data.selected).toBe(true);
 });
 
-test('thumbnail graph uses compact cards with much larger titles', () => {
-  hookValues = [];
-  const items = { a: { id: 'a', title: 'A', content: '', associations: [] } };
-  const trails = [{ id: 'first', title: 'First', itemIds: ['a'] }, { id: 'second', title: 'Second', itemIds: ['a'] }];
-  const flow = renderGraph({ items, trails, variant: 'thumbnail', onSelectItem() {} });
-  const card = flow.props.nodes.find(node => node.id === 'card:first:a');
-  const lane = flow.props.nodes.find(node => node.id === 'lane:second');
-  expect(card.data.thumbnail).toBe(true);
-  expect(lane.data.thumbnail).toBe(true);
-  expect(lane.position.x).toBe(264);
-  expect(lane.style.width).toBe(256);
-  expect(flow.props.minZoom).toBe(0.05);
-  expect(flatten(flow.props.nodeTypes.card({ data: card.data })).some(node => node.props.className?.includes('text-4xl'))).toBe(true);
-  expect(flatten(flow.props.nodeTypes.lane({ data: lane.data })).some(node => node.props.className?.includes('text-3xl'))).toBe(true);
-});
-
 test('graph background colors save for shared notes and trails', async () => {
   hookValues = [];
   const items = { a: { id: 'a', title: 'A', content: '', associations: [] } };

@@ -3,34 +3,8 @@
 "use client"
 
 import Image from "next/image"
-import type { Item, Trail } from "@/app/editor/types"
 import type { GraphPreviewData } from "@/lib/feed"
-import { KnowledgeGraph } from "@/components/editor/knowledge-graph"
 import { initial } from "@/components/shared/author-avatar"
-
-function toGraphProps(graph: GraphPreviewData): { trails: Trail[]; items: Record<string, Item> } {
-  const graphTrails = "trails" in graph ? graph.trails : [{ id: graph.trailId, title: graph.trailTitle, itemIds: graph.itemIds }]
-  const trails: Trail[] = graphTrails.map(trail => ({
-    ...trail,
-    description: "",
-    steps: [],
-    version: 1,
-    forkedFrom: null,
-  }))
-  const items: Record<string, Item> = {}
-  for (const item of graph.items) {
-    items[item.id] = {
-      id: item.id,
-      title: item.title,
-      titleAlign: "center",
-      unfiled: false,
-      content: null,
-      associations: item.associations,
-      linkedItemIds: item.associations.map((a) => a.targetId),
-    }
-  }
-  return { trails, items }
-}
 
 export function ProjectThumbnail({
   thumbnailImageUrl,
@@ -53,12 +27,27 @@ export function ProjectThumbnail({
     )
   }
   if (thumbnailGraph) {
-    const { trails, items } = toGraphProps(thumbnailGraph)
-    return (
-      <div className={`overflow-hidden ${className}`}>
-        <KnowledgeGraph trails={trails} items={items} onSelectItem={() => {}} variant="thumbnail" />
-      </div>
-    )
+    const trails = "trails" in thumbnailGraph ? thumbnailGraph.trails : [{ id: thumbnailGraph.trailId, title: thumbnailGraph.trailTitle, itemIds: thumbnailGraph.itemIds }]
+    if (trails.length) {
+      const columns = trails.length <= 2 ? 1 : 2
+      const rows = Math.ceil(trails.length / columns)
+      const noteTitles = new Map(thumbnailGraph.items.map(item => [item.id, item.title]))
+      return (
+        <div className={`overflow-hidden ${className}`}>
+          <div className={`grid h-full w-full ${rows > 2 ? "gap-1 p-2" : "gap-2 p-3"}`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}>
+            {trails.map(trail => (
+              <div key={trail.id} className={`flex min-h-0 min-w-0 flex-col overflow-hidden rounded-md border border-border bg-card ${rows > 2 ? "px-2 py-0.5" : "px-2.5 py-2"}`}>
+                <div className={`truncate font-display font-medium leading-tight text-foreground ${rows === 1 ? "text-2xl" : rows <= 2 ? "text-xl" : rows <= 4 ? "text-sm" : "text-[11px]"}`}>{trail.title}</div>
+                {rows <= 2 && <div className="mt-1 min-h-0 overflow-hidden border-l border-border pl-2 text-sm text-muted-foreground">
+                  {trail.itemIds.slice(0, rows === 1 ? 3 : 1).map(id => <div key={id} className="truncate">{noteTitles.get(id) || "Untitled note"}</div>)}
+                  {!trail.itemIds.length && <div>No notes yet</div>}
+                </div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
   }
   return (
     <div className={`grid place-items-center overflow-hidden ${className}`}>
