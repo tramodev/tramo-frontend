@@ -40,7 +40,7 @@ function previewText(content: string | null) {
       const text = collectPlainText(JSON.stringify({ root: block })).join("").trim()
       if (!text) continue
       preview += `${preview ? "\n\n" : ""}${text}`
-      if (preview.length > 500) return `${preview.slice(0, 500).trimEnd()}...`
+      if (preview.length > 256) return `${preview.slice(0, 256).trimEnd()}...`
     }
     return preview
   }
