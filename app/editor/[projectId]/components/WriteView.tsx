@@ -46,7 +46,6 @@ import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
 import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
-import { connectionCounts } from '@/app/editor/associations';
 import type { ReorderNotice } from '../hooks/useProjectEditorState';
 import { Trail, Item, TitleAlign } from '../../types';
 
@@ -221,7 +220,6 @@ function ItemTitle({ item, onCommitTitle, onFocus }: {
 
 export function WriteView(props: WriteViewProps) {
   const { item, items, trail, navigationRequest, onVisibleItem } = props;
-  const counts = useMemo(() => connectionCounts(items), [items]);
   const [imageError, setImageError] = useState<string | null>(null);
   useEffect(() => {
     const onError = (event: Event) => setImageError((event as CustomEvent<string>).detail);
@@ -332,15 +330,8 @@ export function WriteView(props: WriteViewProps) {
                 {index > 0 && trail && <div className="trail-divider mt-4">
                   <TrailConnector />
                 </div>}
-                <div className={`flex flex-wrap items-center justify-between gap-2 pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  <span>Step {index + 1}</span>
-                  <button type="button" aria-label={`Connections for ${stepItem.title}: ${counts.get(stepItem.id) ?? 0}`}
-                    aria-controls="editor-connections" aria-expanded={props.connectionsPanelOpen && focusedId === stepItem.id}
-                    className="rounded-full px-2.5 py-1 text-xs font-normal normal-case tracking-normal text-muted-foreground hover:bg-muted"
-                    onClick={() => {
-                      onFocus(stepItem.id);
-                      if (!props.connectionsPanelOpen) props.onToggleConnectionsPanelOpen();
-                    }}>Connections · {counts.get(stepItem.id) ?? 0}</button>
+                <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  Step {index + 1}
                 </div>
                 {stepItem.content != null && <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
                   toolbar={toolbar} onFocus={onFocus} register={register} move={move} />}
