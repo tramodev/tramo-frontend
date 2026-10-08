@@ -42,10 +42,29 @@ test('shared notes have distinct appearances and explicit connections appear onc
   const flow = renderGraph({ items, trails, onSelectItem() {} });
   expect(flow.props.nodes.filter(node => node.type === 'card').map(node => node.id)).toEqual(['card:first:a', 'card:first:b', 'card:second:a']);
   expect(flow.props.nodes.filter(node => node.type === 'lane').map(node => node.data.title)).toEqual(['First', 'Second']);
-  expect(flow.props.edges.map(edge => edge.id)).toEqual(['a:ab', 'b:ba']);
+  expect(flow.props.edges.map(edge => edge.id)).toEqual(['shared:card:first:a:card:second:a', 'a:ab', 'b:ba']);
   expect(flow.props.edges.every(edge => edge.type === 'straight')).toBe(true);
-  expect(flow.props.edges.map(edge => [edge.source, edge.target])).toEqual([['card:first:a', 'card:first:b'], ['card:first:b', 'card:first:a']]);
-  expect(flow.props.edges.every(edge => edge.markerEnd.type === 'arrow')).toBe(true);
+  expect(flow.props.edges.map(edge => [edge.source, edge.target])).toEqual([['card:first:a', 'card:second:a'], ['card:first:a', 'card:first:b'], ['card:first:b', 'card:first:a']]);
+  expect(flow.props.edges.slice(1).every(edge => edge.markerEnd.type === 'arrow')).toBe(true);
+  expect(flow.props.edges[0].markerEnd).toBeUndefined();
+  expect(flow.props.edges[0].style.strokeDasharray).toBe('2 6');
+  expect(flow.props.edges[0].style.stroke).toBe('var(--ed-purple)');
+  expect(flow.props.edges[0].selectable).toBe(false);
+});
+
+test('three appearances of one note are connected without duplicating links', () => {
+  hookValues = [];
+  const items = { a: { id: 'a', title: 'A', content: '', associations: [] } };
+  const trails = ['first', 'second', 'third'].map(id => ({ id, title: id, itemIds: ['a'] }));
+  const props = { items, trails, onSelectItem() {} };
+  const flow = renderGraph(props);
+  expect(flow.props.edges.map(edge => [edge.source, edge.target])).toEqual([
+    ['card:first:a', 'card:second:a'],
+    ['card:second:a', 'card:third:a'],
+  ]);
+  flow.props.onNodeClick({ stopPropagation() {} }, flow.props.nodes.find(node => node.id === 'card:first:a'));
+  flow.props.onEdgeClick({}, flow.props.edges[0]);
+  expect(renderGraph(props).props.nodes.find(node => node.id === 'card:first:a').data.selected).toBe(true);
 });
 
 test('a card opens only on its second click in the graph', () => {

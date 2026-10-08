@@ -94,7 +94,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     setLink(null)
   }
 
-  const { nodes, associations } = useMemo(() => {
+  const { nodes, associations, sharedEdges } = useMemo(() => {
     const columns = trails.map(trail => ({ title: trail.title, trailId: trail.id, ids: trail.itemIds.filter(id => items[id]) }))
     const filed = new Set(columns.flatMap(column => column.ids))
     const loose = Object.keys(items).filter(id => !filed.has(id))
@@ -115,6 +115,10 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
       })
       nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title }, style: { width: COLUMN_WIDTH + 32, height: Math.max(104, y - 16), pointerEvents: "none" }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
     })
+    const sharedEdges: Edge[] = []
+    for (const [itemId, copies] of appearances) for (let index = 1; index < copies.length; index++) {
+      sharedEdges.push({ id: `shared:${copies[index - 1].id}:${copies[index].id}`, source: copies[index - 1].id, target: copies[index].id, sourceHandle: "source-right", targetHandle: "target-left", type: "straight", selectable: false, focusable: false, interactionWidth: 0, style: { stroke: "var(--ed-purple)", strokeWidth: 1.5, strokeDasharray: "2 6", strokeLinecap: "round", opacity: 0.75 }, ariaLabel: `${items[itemId].title} appears in both trails` })
+    }
     const associations: AssociationView[] = []
     for (const item of Object.values(items)) for (const association of item.associations ?? []) {
       const sources = appearances.get(item.id)
@@ -130,7 +134,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
       const target = appearances.get(connection.targetId)?.find(appearance => appearance.id === connection.targetVisualId)
       if (source && target) associations.push({ id: `local:${source.id}:${target.id}`, sourceId: connection.sourceId, targetId: connection.targetId, text: null, source, target })
     }
-    return { nodes, associations }
+    return { nodes, associations, sharedEdges }
   }, [trails, items, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections])
 
   const onNodesChange = (changes: NodeChange<GraphNode>[]) => {
@@ -147,7 +151,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     })
   }
 
-  const edges: Edge[] = associations.map(association => {
+  const edges: Edge[] = sharedEdges.concat(associations.map(association => {
     const { source, target } = association
     const sameColumn = source.column === target.column
     const downward = source.row < target.row
@@ -162,7 +166,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
       style: { stroke: "var(--primary)", strokeWidth: selectedConnection === association.id ? 2 : 1.5 },
       ariaLabel: `${items[association.sourceId].title} → ${items[association.targetId].title}`,
     }
-  })
+  }))
   const selected = associations.find(association => association.id === selectedConnection)
   const connectItems = async (sourceId: string, targetId: string, sourceVisualId: string, targetVisualId: string) => {
     if (!onTie || connecting || !items[sourceId] || !items[targetId] || sourceId === targetId || items[sourceId].associations.some(a => a.targetId === targetId) || localConnections.some(connection => connection.sourceId === sourceId && connection.targetId === targetId)) return
@@ -231,7 +235,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     setCursor({ x: event.clientX - bounds.left, y: event.clientY - bounds.top })
   }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
     <div className="min-h-0 flex-1">
-      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 0.85 }} minZoom={0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={!preview && !!onTie} onConnect={onConnect} onClickConnectEnd={() => setLink(null)} onEdgeClick={(_, edge) => { setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 0.85 }} minZoom={0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={!preview && !!onTie} onConnect={onConnect} onClickConnectEnd={() => setLink(null)} onEdgeClick={(_, edge) => { if (!associations.some(association => association.id === edge.id)) return; setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
         setMenu(null)
         setEdgeMenu(null)
         if (node.type !== "card") return
