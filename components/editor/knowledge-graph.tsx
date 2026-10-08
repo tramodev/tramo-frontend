@@ -35,13 +35,14 @@ function previewText(content: string | null) {
   try {
     const blocks = (JSON.parse(content) as { root?: { children?: unknown[] } }).root?.children
     if (!Array.isArray(blocks)) return ""
-    const paragraphs: string[] = []
+    let preview = ""
     for (const block of blocks) {
       const text = collectPlainText(JSON.stringify({ root: block })).join("").trim()
-      if (text) paragraphs.push(text)
-      if (paragraphs.length === 2) break
+      if (!text) continue
+      preview += `${preview ? "\n\n" : ""}${text}`
+      if (preview.length > 500) return `${preview.slice(0, 500).trimEnd()}...`
     }
-    return paragraphs.join("\n\n")
+    return preview
   }
   catch { return "" }
 }

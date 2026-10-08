@@ -100,12 +100,22 @@ test('measured card height moves the next card down without clipping', () => {
   expect(lane.style.height).toBe(560);
 });
 
-test('cards show the first two nonempty paragraphs', () => {
+test('cards show all nonempty paragraphs up to 500 characters', () => {
   hookValues = [];
   const content = JSON.stringify({ root: { children: [{ text: '' }, { text: 'First paragraph' }, { text: 'Second paragraph' }, { text: 'Third paragraph' }] } });
   const items = { a: { id: 'a', title: 'A', content, associations: [] } };
   const flow = renderGraph({ items, trails: [{ id: 'first', title: 'First', itemIds: ['a'] }], onSelectItem() {} });
-  expect(flow.props.nodes.find(node => node.type === 'card').data.preview).toBe('First paragraph\n\nSecond paragraph');
+  expect(flow.props.nodes.find(node => node.type === 'card').data.preview).toBe('First paragraph\n\nSecond paragraph\n\nThird paragraph');
+});
+
+test('cards add an ellipsis only when content exceeds 500 characters', () => {
+  hookValues = [];
+  const content = text => JSON.stringify({ root: { children: [{ text }] } });
+  const items = { a: { id: 'a', title: 'A', content: content('a'.repeat(500)), associations: [] } };
+  const props = { items, trails: [{ id: 'first', title: 'First', itemIds: ['a'] }], onSelectItem() {} };
+  expect(renderGraph(props).props.nodes.find(node => node.type === 'card').data.preview).toBe('a'.repeat(500));
+  items.a.content = content(`${'a'.repeat(500)}b`);
+  expect(renderGraph(props).props.nodes.find(node => node.type === 'card').data.preview).toBe(`${'a'.repeat(500)}...`);
 });
 
 test('Connect starts from the selected appearance and exposes whole-card targets', () => {
