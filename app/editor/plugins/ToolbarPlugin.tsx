@@ -8,6 +8,7 @@ import {
   $getSelection,
   $isElementNode,
   $isRangeSelection,
+  $setSelection,
   CAN_REDO_COMMAND,
   CAN_UNDO_COMMAND,
   COMMAND_PRIORITY_LOW,
@@ -21,6 +22,7 @@ import {
   $createParagraphNode,
   ElementNode,
   LexicalCommand,
+  RangeSelection,
 } from 'lexical';
 import {
   $createHeadingNode,
@@ -297,6 +299,7 @@ export default function ToolbarPlugin({
   const [fontFamily, setFontFamily] = useState('Arial');
   const [fontSize, setFontSize] = useState('15');
   const [textColor, setTextColor] = useState('');
+  const colorSelection = useRef<RangeSelection | null>(null);
   const [elementFormat, setElementFormat] = useState<ElementFormat>('left');
   const [insertMenuOpen, setInsertMenuOpen] = useState(false);
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
@@ -605,13 +608,25 @@ export default function ToolbarPlugin({
           onClick={() => updateFontSizeByStep(1)}
         />
       </div>
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={(open) => {
+        if (open) {
+          editor.getEditorState().read(() => {
+            const selection = $getSelection();
+            colorSelection.current = $isRangeSelection(selection) ? selection.clone() : null;
+          });
+        }
+      }}>
         <ToolbarMenuButton label="Text color" tooltip="Text color" className="toolbar-item spaced">
           <Baseline size={18} style={textColor ? { color: textColor } : undefined} />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start">
           {COLOR_OPTIONS.map(({ value, label }) => (
-            <DropdownMenuItem key={label} onSelect={() => applyStyleText({ color: value || null })}>
+            <DropdownMenuItem key={label} onSelect={() => editor.update(() => {
+              const selection = colorSelection.current?.clone();
+              if (!selection) return;
+              $setSelection(selection);
+              $patchStyleText(selection, { color: value || null });
+            })}>
               <span
                 className="toolbar-color-swatch"
                 style={{ background: value || 'var(--foreground)' }}
