@@ -138,7 +138,6 @@ export default function EditorPage() {
               <GraphView
                 projectId={projectId}
                 graphColors={project.graphColors}
-                colorSyncFailed={project.graphColorSyncFailed}
                 onSaveColors={project.handleSetGraphColors}
                 trails={project.trails}
                 items={project.items}

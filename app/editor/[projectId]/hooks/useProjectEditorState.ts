@@ -5,7 +5,6 @@ import { createPendingSaves } from '@/lib/pending-saves';
 import { useRouter } from 'next/navigation';
 import { Trail, Item, TitleAlign } from '../../types';
 import { countTextStats, lastItemStorageKey } from '../../editor-utils';
-import { parseGraphColors } from '../../graph-colors';
 import {
   getProject,
   setProjectGraphColors,
@@ -53,7 +52,6 @@ export function useProjectEditorState(projectId: string) {
   const [visibility, setVisibility] = useState<ProjectVisibility>('private');
   const [description, setDescription] = useState('');
   const [graphColors, setGraphColors] = useState<string | null>(null);
-  const [graphColorSyncFailed, setGraphColorSyncFailed] = useState(false);
   const [tags, setTags] = useState('');
   const [thumbnailImageUrl, setThumbnailImageUrl] = useState<string | null>(null);
   const [thumbnailGraph, setThumbnailGraph] = useState<GraphPreviewData | null>(null);
@@ -90,32 +88,16 @@ export function useProjectEditorState(projectId: string) {
 
   useEffect(() => {
     let cancelled = false;
-    getProject(projectId).then(async (project) => {
+    getProject(projectId).then((project) => {
       if (cancelled) return;
       if (!project) {
         router.replace('/projects');
         return;
       }
-      let loadedGraphColors = project.graphColors;
-      let syncFailed = false;
-      const legacyKey = `tramo:graph-colors:${projectId}`;
-      if (!loadedGraphColors) {
-        const legacy = localStorage.getItem(legacyKey);
-        const colors = parseGraphColors(legacy);
-        if (Object.keys(colors.items).length || Object.keys(colors.trails).length) {
-          loadedGraphColors = JSON.stringify(colors);
-          try {
-            await setProjectGraphColors(projectId, loadedGraphColors);
-            localStorage.removeItem(legacyKey);
-          } catch { syncFailed = true; }
-        }
-      } else localStorage.removeItem(legacyKey);
-      if (cancelled) return;
       setProjectTitle(project.title);
       setVisibility(project.visibility);
       setDescription(project.description);
-      setGraphColors(loadedGraphColors);
-      setGraphColorSyncFailed(syncFailed);
+      setGraphColors(project.graphColors);
       setTags(project.tags);
       setThumbnailImageUrl(project.thumbnailImageUrl);
       setThumbnailGraph(project.thumbnailGraph);
@@ -172,8 +154,6 @@ export function useProjectEditorState(projectId: string) {
   const handleSetGraphColors = (colors: string) => pendingSaves.current.track('graph-colors', async () => {
     await setProjectGraphColors(projectId, colors);
     setGraphColors(colors);
-    setGraphColorSyncFailed(false);
-    localStorage.removeItem(`tramo:graph-colors:${projectId}`);
   });
 
   const [contentLoadError, setContentLoadError] = useState(false);
@@ -469,7 +449,6 @@ export function useProjectEditorState(projectId: string) {
     activeTrail,
     activeTrailId,
     graphColors,
-    graphColorSyncFailed,
     view,
     setView,
     contentLoadError,

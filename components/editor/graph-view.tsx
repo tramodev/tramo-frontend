@@ -11,7 +11,6 @@ import { getItemContent, getTrailContents } from '@/lib/item-content-client';
 interface GraphViewProps {
   projectId?: string;
   graphColors?: string | null;
-  colorSyncFailed?: boolean;
   onSaveColors?: (colors: string) => Promise<void>;
   trails: Trail[];
   items: Record<string, Item>;
@@ -23,7 +22,7 @@ interface GraphViewProps {
   onClose: () => void;
 }
 
-export function GraphView({ projectId, graphColors, colorSyncFailed, onSaveColors, trails, items, activeTrailId, selectedItemId, onSelectItem, onTie, onUntie, onClose }: GraphViewProps) {
+export function GraphView({ projectId, graphColors, onSaveColors, trails, items, activeTrailId, selectedItemId, onSelectItem, onTie, onUntie, onClose }: GraphViewProps) {
   const [contents, setContents] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState(false);
   useEffect(() => {
@@ -44,7 +43,6 @@ export function GraphView({ projectId, graphColors, colorSyncFailed, onSaveColor
   return (
     <div className="relative flex-1 overflow-hidden rounded-md">
       {loadError && <p role="alert" className="absolute left-6 top-6 z-10 rounded-md bg-card px-3 py-2 text-xs text-destructive">Some note previews could not load.</p>}
-      {colorSyncFailed && <p role="alert" className={`absolute left-6 z-10 rounded-md bg-card px-3 py-2 text-xs text-destructive ${loadError ? 'top-16' : 'top-6'}`}>Graph colors are stored only in this browser until they can be saved.</p>}
       <button
         type="button"
         onClick={onClose}
