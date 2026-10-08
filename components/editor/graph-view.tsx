@@ -9,6 +9,7 @@ import { Trail, Item } from '@/app/editor/types';
 import { getItemContent, getTrailContents } from '@/lib/item-content-client';
 
 interface GraphViewProps {
+  projectId?: string;
   trails: Trail[];
   items: Record<string, Item>;
   activeTrailId: string | undefined;
@@ -19,7 +20,7 @@ interface GraphViewProps {
   onClose: () => void;
 }
 
-export function GraphView({ trails, items, activeTrailId, selectedItemId, onSelectItem, onTie, onUntie, onClose }: GraphViewProps) {
+export function GraphView({ projectId, trails, items, activeTrailId, selectedItemId, onSelectItem, onTie, onUntie, onClose }: GraphViewProps) {
   const [contents, setContents] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState(false);
   useEffect(() => {
@@ -49,6 +50,8 @@ export function GraphView({ trails, items, activeTrailId, selectedItemId, onSele
         <X className="h-4 w-4" />
       </button>
       <KnowledgeGraph
+        key={projectId}
+        projectId={projectId}
         trails={trails}
         items={previewItems}
         activeTrailId={activeTrailId}

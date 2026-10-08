@@ -13,15 +13,20 @@ interface KnowledgeGraphProps {
   items: Record<string, Item>
   activeTrailId?: string
   selectedItemId?: string
+  projectId?: string
   onSelectItem: (item: Item, trailId?: string) => void
   onTie?: (itemId: string, targetId: string, text: string) => Promise<void>
   onUntie?: (itemId: string, associationId: string) => Promise<void>
   variant?: "full" | "preview"
 }
 
-type CardData = { itemId: string; trailId?: string; title: string; preview: string; number: number; selected: boolean; shared: boolean; connectRole?: "source" | "target" }
+const GRAPH_COLORS = ["red", "orange", "green", "blue", "purple", "gray"] as const
+type GraphColor = typeof GRAPH_COLORS[number]
+type GraphColors = { items: Record<string, string>; trails: Record<string, string> }
+type GraphMenu = { x: number; y: number } & ({ kind: "item"; sourceId: string; sourceVisualId: string; sourceX: number; sourceY: number } | { kind: "trail"; trailId: string })
+type CardData = { itemId: string; trailId?: string; title: string; preview: string; number: number; selected: boolean; shared: boolean; color?: GraphColor; connectRole?: "source" | "target" }
 type CardNode = Node<CardData, "card">
-type LaneNode = Node<{ title: string }, "lane">
+type LaneNode = Node<{ title: string; color?: GraphColor }, "lane">
 type GraphNode = CardNode | LaneNode
 
 type Appearance = { id: string; itemId: string; trailId?: string; column: number; row: number }
@@ -48,7 +53,7 @@ function previewText(content: string | null) {
 }
 
 const Card = memo(function Card({ data }: NodeProps<CardNode>) {
-  return <div className={`relative min-h-[132px] w-[420px] rounded-md border bg-card p-4 ${data.selected ? "border-primary" : "border-border"}`}>
+  return <div className={`relative min-h-[132px] w-[420px] rounded-md border bg-card p-4 ${data.selected ? "border-primary" : "border-border"}`} style={data.color ? { background: `color-mix(in srgb, var(--ed-${data.color}) 16%, var(--card))` } : undefined}>
     <Handle id="target-top" type="target" position={Position.Top} className="!h-5 !w-5 !opacity-0" />
     <Handle id="source-bottom" type="source" position={Position.Bottom} className="!h-5 !w-5 !opacity-0" />
     <Handle id="target-left" type="target" position={Position.Left} className="!h-5 !w-5 !opacity-0" />
@@ -67,12 +72,12 @@ const Card = memo(function Card({ data }: NodeProps<CardNode>) {
 })
 
 const Lane = memo(function Lane({ data }: NodeProps<LaneNode>) {
-  return <div className="relative h-full w-full text-foreground"><div className="absolute inset-x-0 bottom-0 top-14 rounded-md border border-border bg-muted/20" /><div className="absolute left-4 right-4 top-2 truncate font-display text-xl font-medium">{data.title}</div></div>
+  return <div className="relative h-full w-full text-foreground"><div className="absolute inset-x-0 bottom-0 top-14 rounded-md border border-border bg-muted/20" style={data.color ? { background: `color-mix(in srgb, var(--ed-${data.color}) 12%, var(--popover))` } : undefined} /><div className="absolute left-4 right-4 top-2 truncate font-display text-xl font-medium">{data.title}</div></div>
 })
 
 const nodeTypes = { card: Card, lane: Lane }
 
-export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, onSelectItem, onTie, onUntie, variant = "full" }: KnowledgeGraphProps) {
+export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, projectId, onSelectItem, onTie, onUntie, variant = "full" }: KnowledgeGraphProps) {
   const preview = variant === "preview"
   const { resolvedTheme } = useTheme()
   const mounted = useMounted()
@@ -80,7 +85,14 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [heights, setHeights] = useState<Record<string, number>>({})
-  const [menu, setMenu] = useState<{ sourceId: string; sourceVisualId: string; x: number; y: number; sourceX: number; sourceY: number } | null>(null)
+  const [menu, setMenu] = useState<GraphMenu | null>(null)
+  const [colors, setColors] = useState<GraphColors>(() => {
+    if (!projectId || typeof window === "undefined") return { items: {}, trails: {} }
+    try {
+      const stored = JSON.parse(localStorage.getItem(`tramo:graph-colors:${projectId}`) || "{}")
+      return { items: stored?.items && typeof stored.items === "object" ? stored.items : {}, trails: stored?.trails && typeof stored.trails === "object" ? stored.trails : {} }
+    } catch { return { items: {}, trails: {} } }
+  })
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null)
   const [link, setLink] = useState<{ sourceId: string; sourceVisualId: string; x: number; y: number } | null>(null)
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
@@ -110,10 +122,10 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
         const item = items[itemId]
         const appearance = { id: `card:${column.trailId || "loose"}:${itemId}`, itemId, trailId: column.trailId || undefined, column: columnIndex, row }
         appearances.set(itemId, [...(appearances.get(itemId) ?? []), appearance])
-        nodes.push({ id: appearance.id, type: "card", position: { x: x + 16, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: previewText(item.content), number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !items[link.sourceId]?.associations.some(association => association.targetId === itemId) && !localConnections.some(connection => connection.sourceId === link.sourceId && connection.targetId === itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
+        nodes.push({ id: appearance.id, type: "card", position: { x: x + 16, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: previewText(item.content), number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !items[link.sourceId]?.associations.some(association => association.targetId === itemId) && !localConnections.some(connection => connection.sourceId === link.sourceId && connection.targetId === itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
         y += (heights[appearance.id] ?? 132) + 40
       })
-      nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title }, style: { width: COLUMN_WIDTH + 32, height: Math.max(104, y - 16), pointerEvents: "none" }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
+      nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: COLUMN_WIDTH + 32, height: Math.max(104, y - 16) }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
     })
     const sharedEdges: Edge[] = []
     for (const [itemId, copies] of appearances) for (let index = 1; index < copies.length; index++) {
@@ -135,7 +147,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
       if (source && target) associations.push({ id: `local:${source.id}:${target.id}`, sourceId: connection.sourceId, targetId: connection.targetId, text: null, source, target })
     }
     return { nodes, associations, sharedEdges }
-  }, [trails, items, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections])
+  }, [trails, items, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections, colors])
 
   const onNodesChange = (changes: NodeChange<GraphNode>[]) => {
     const measured = changes.filter(change => change.type === "dimensions" && change.id.startsWith("card:") && change.dimensions?.height)
@@ -197,7 +209,19 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     catch { setError("Could not remove this connection. Please try again.") }
     finally { setRemoving(false) }
   }
-  const candidates = menu && items[menu.sourceId]
+  const setBackground = (color: GraphColor | "") => {
+    if (!projectId || !menu) return
+    const group = menu.kind === "item" ? "items" : "trails"
+    const id = menu.kind === "item" ? menu.sourceId : menu.trailId
+    const next = { ...colors, [group]: { ...colors[group], [id]: color } }
+    try {
+      localStorage.setItem(`tramo:graph-colors:${projectId}`, JSON.stringify(next))
+      setColors(next)
+      setMenu(null)
+      setError("")
+    } catch { setError("Could not save graph colors in this browser.") }
+  }
+  const candidates = menu?.kind === "item" && items[menu.sourceId]
     ? Object.values(items).filter(item => item.id !== menu.sourceId && !items[menu.sourceId].associations.some(association => association.targetId === item.id) && !localConnections.some(connection => connection.sourceId === menu.sourceId && connection.targetId === item.id))
     : []
   const edgeAtPoint = (x: number, y: number) => {
@@ -244,13 +268,19 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
         if (preview || selectedCardId === node.id) onSelectItem(items[node.data.itemId], node.data.trailId)
         else { setSelectedCardId(node.id); setSelectedConnection(undefined) }
       }} onNodeContextMenu={(event, node) => {
-        if (!onTie || node.type !== "card" || !graphRef.current) return
+        if (preview || !graphRef.current) return
+        if (node.type === "card" && !onTie && !projectId) return
+        if (node.type === "lane" && (!projectId || !trails.some(trail => trail.id === node.id.slice(5)))) return
         event.preventDefault()
         setEdgeMenu(null)
         const bounds = graphRef.current.getBoundingClientRect()
-        const card = event.currentTarget.getBoundingClientRect()
         cancelLink()
-        setMenu({ sourceId: node.data.itemId, sourceVisualId: node.id, x: Math.max(8, Math.min(event.clientX - bounds.left, bounds.width - 264)), y: Math.max(8, Math.min(event.clientY - bounds.top, bounds.height - 70)), sourceX: (card.left + card.right) / 2 - bounds.left, sourceY: (card.top + card.bottom) / 2 - bounds.top })
+        const x = Math.max(8, Math.min(event.clientX - bounds.left, bounds.width - 264))
+        const y = Math.max(8, Math.min(event.clientY - bounds.top, bounds.height - 172))
+        if (node.type === "card") {
+          const card = event.currentTarget.getBoundingClientRect()
+          setMenu({ kind: "item", sourceId: node.data.itemId, sourceVisualId: node.id, x, y, sourceX: (card.left + card.right) / 2 - bounds.left, sourceY: (card.top + card.bottom) / 2 - bounds.top })
+        } else if (node.type === "lane") setMenu({ kind: "trail", trailId: node.id.slice(5), x, y })
       }} onPaneClick={() => { setMenu(null); setEdgeMenu(null); setSelectedCardId(null); cancelLink() }} panOnDrag={!preview && !link} zoomOnScroll={!preview && !link} zoomOnPinch={!preview && !link} zoomOnDoubleClick={!preview && !link} elementsSelectable={!preview} nodesFocusable={!preview} edgesFocusable={!preview} proOptions={preview ? { hideAttribution: true } : undefined}>
         {!preview && <Background color="var(--border)" gap={22} size={1} />}
         {!preview && !link && <Controls position="bottom-right" showInteractive={false} />}
@@ -258,7 +288,11 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, o
     </div>
     {link && <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true"><defs><marker id="graph-connection-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M 1 1 L 7 4.5 L 1 8" fill="none" stroke="var(--primary)" strokeWidth="1.5" /></marker></defs><line x1={link.x} y1={link.y} x2={cursor.x} y2={cursor.y} stroke="var(--primary)" strokeWidth="1.5" markerEnd="url(#graph-connection-arrow)" /></svg>}
     {menu && <div className="absolute z-20 w-64 rounded-md border border-border bg-card p-2 text-sm" style={{ left: menu.x, top: menu.y }} onKeyDown={event => { if (event.key === "Escape") setMenu(null) }}>
-      <button type="button" disabled={!candidates.length} onClick={() => { setLink({ sourceId: menu.sourceId, sourceVisualId: menu.sourceVisualId, x: menu.sourceX, y: menu.sourceY }); setCursor({ x: menu.x, y: menu.y }); setMenu(null); graphRef.current?.focus(); requestAnimationFrame(() => sourceHandle(menu.sourceVisualId)?.click()) }} className="w-full rounded-md px-2 py-2 text-left hover:bg-muted disabled:opacity-50">Connect to another note</button>
+      {menu.kind === "item" && onTie && <button type="button" disabled={!candidates.length} onClick={() => { setLink({ sourceId: menu.sourceId, sourceVisualId: menu.sourceVisualId, x: menu.sourceX, y: menu.sourceY }); setCursor({ x: menu.x, y: menu.y }); setMenu(null); graphRef.current?.focus(); requestAnimationFrame(() => sourceHandle(menu.sourceVisualId)?.click()) }} className="w-full rounded-md px-2 py-2 text-left hover:bg-muted disabled:opacity-50">Connect to another note</button>}
+      {projectId && <div className={`${menu.kind === "item" && onTie ? "border-t border-border " : ""}px-2 pt-2`}>
+        <p className="mb-2 text-xs text-muted-foreground">Background color</p>
+        <div className="flex flex-wrap gap-2">{(["", ...GRAPH_COLORS] as const).map(color => <button key={color} type="button" aria-label={`${menu.kind === "item" ? "Note" : "Trail"} background: ${color || "Default"}`} aria-pressed={((menu.kind === "item" ? colors.items[menu.sourceId] : colors.trails[menu.trailId]) ?? "") === color} onClick={() => setBackground(color)} className="h-7 w-7 rounded-full border border-border aria-pressed:ring-2 aria-pressed:ring-primary" style={{ background: color ? `color-mix(in srgb, var(--ed-${color}) 24%, var(--card))` : "var(--card)" }} />)}</div>
+      </div>}
     </div>}
     {edgeMenu && <div className="absolute z-20 w-44 rounded-md border border-border bg-card p-2 text-sm" style={{ left: edgeMenu.x, top: edgeMenu.y }}>
       <button type="button" disabled={removing || connecting} onClick={() => { const association = associations.find(association => association.id === edgeMenu.id); if (association) void removeConnection(association) }} className="w-full rounded-md px-2 py-2 text-left text-destructive hover:bg-muted disabled:opacity-50">Remove connection</button>

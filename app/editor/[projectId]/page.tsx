@@ -136,6 +136,7 @@ export default function EditorPage() {
             <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
             {!project.loaded ? <div className="editor-container flex flex-1 items-center justify-center text-sm text-muted-foreground" role="status">Loading editor…</div> : project.view === 'graph' ? (
               <GraphView
+                projectId={projectId}
                 trails={project.trails}
                 items={project.items}
                 activeTrailId={project.activeTrailId}

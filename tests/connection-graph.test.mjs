@@ -10,12 +10,13 @@ let hookIndex = 0;
 let frames = [];
 let sourceClicks = 0;
 let edgePaths = [];
+const storage = new Map();
 runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-graph.tsx', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-}).outputText, { exports, requestAnimationFrame: callback => frames.push(callback), require: name => ({
+}).outputText, { exports, window: {}, localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) }, requestAnimationFrame: callback => frames.push(callback), require: name => ({
   react: { memo: fn => fn, useMemo: fn => fn(), useRef: () => ({ current: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }), querySelectorAll: selector => selector === '.react-flow__edge-path' ? edgePaths : [{ dataset: { nodeid: 'card:second:a' }, click: () => { sourceClicks++; } }, { dataset: { nodeid: 'card:first:a' }, click: () => { sourceClicks++; } }], focus() {} } }), useState: value => {
     const index = hookIndex++;
-    if (!(index in hookValues)) hookValues[index] = value;
+    if (!(index in hookValues)) hookValues[index] = typeof value === 'function' ? value() : value;
     return [hookValues[index], next => { hookValues[index] = typeof next === 'function' ? next(hookValues[index]) : next; }];
   } },
   'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -65,6 +66,42 @@ test('three appearances of one note are connected without duplicating links', ()
   flow.props.onNodeClick({ stopPropagation() {} }, flow.props.nodes.find(node => node.id === 'card:first:a'));
   flow.props.onEdgeClick({}, flow.props.edges[0]);
   expect(renderGraph(props).props.nodes.find(node => node.id === 'card:first:a').data.selected).toBe(true);
+});
+
+test('graph background colors persist for shared notes and trails', () => {
+  hookValues = [];
+  storage.clear();
+  const items = { a: { id: 'a', title: 'A', content: '', associations: [] } };
+  const trails = ['first', 'second'].map(id => ({ id, title: id, itemIds: ['a'] }));
+  const props = { projectId: 'project', items, trails, onSelectItem() {}, onTie: async () => {} };
+  const event = { clientX: 100, clientY: 100, preventDefault() {}, currentTarget: { getBoundingClientRect: () => ({ left: 20, right: 440, top: 50, bottom: 190 }) } };
+  let flow = renderGraph(props);
+  flow.props.onNodeContextMenu(event, flow.props.nodes.find(node => node.id === 'card:first:a'));
+  renderTree(props).find(node => node.props['aria-label'] === 'Note background: blue').props.onClick();
+  expect(renderGraph(props).props.nodes.filter(node => node.type === 'card').map(node => node.data.color)).toEqual(['blue', 'blue']);
+  flow = renderGraph(props);
+  expect(flow.props.nodes.find(node => node.id === 'lane:first').style.pointerEvents).toBeUndefined();
+  flow.props.onNodeContextMenu(event, flow.props.nodes.find(node => node.id === 'lane:first'));
+  renderTree(props).find(node => node.props['aria-label'] === 'Trail background: red').props.onClick();
+  expect(renderGraph(props).props.nodes.find(node => node.id === 'lane:first').data.color).toBe('red');
+  hookValues = [];
+  flow = renderGraph(props);
+  expect(flow.props.nodes.find(node => node.id === 'card:second:a').data.color).toBe('blue');
+  expect(flow.props.nodes.find(node => node.id === 'lane:first').data.color).toBe('red');
+  expect(flow.props.nodes.find(node => node.id === 'lane:second').data.color).toBeUndefined();
+  flow.props.onNodeContextMenu(event, flow.props.nodes.find(node => node.id === 'card:second:a'));
+  renderTree(props).find(node => node.props['aria-label'] === 'Note background: Default').props.onClick();
+  expect(renderGraph(props).props.nodes.filter(node => node.type === 'card').every(node => node.data.color === undefined)).toBe(true);
+});
+
+test('invalid stored colors never become graph styles', () => {
+  hookValues = [];
+  storage.set('tramo:graph-colors:project', JSON.stringify({ items: { a: 'url(bad)' }, trails: { first: 'purple' } }));
+  const items = { a: { id: 'a', title: 'A', content: '', associations: [] } };
+  const trails = [{ id: 'first', title: 'First', itemIds: ['a'] }];
+  const flow = renderGraph({ projectId: 'project', items, trails, onSelectItem() {} });
+  expect(flow.props.nodes.find(node => node.type === 'card').data.color).toBeUndefined();
+  expect(flow.props.nodes.find(node => node.type === 'lane').data.color).toBe('purple');
 });
 
 test('a card opens only on its second click in the graph', () => {
