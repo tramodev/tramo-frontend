@@ -57,8 +57,10 @@ const Card = memo(function Card({ data }: NodeProps<CardNode>) {
     <Handle id="source-left" type="source" position={Position.Left} className="!pointer-events-none !opacity-0" />
     <Handle id="target-bottom" type="target" position={Position.Bottom} className="!pointer-events-none !opacity-0" />
     <Handle id="source-top" type="source" position={Position.Top} className="!pointer-events-none !opacity-0" />
-    <div className="flex items-center justify-between gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"><span>Note {data.number}</span>{data.shared && <span>Shared</span>}</div>
-    <div className="mt-2 break-words font-display text-lg font-medium leading-tight text-foreground">{data.title}</div>
+    <div className="flex items-baseline justify-between gap-2">
+      <div className="min-w-0 break-words font-display text-lg font-medium leading-tight text-foreground">{data.title}</div>
+      <div className="flex shrink-0 items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{data.shared && <span>Shared</span>}<span>{data.number}</span></div>
+    </div>
     <div className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">{data.preview || "No preview available"}</div>
     {data.connectRole && <Handle id={`easy-${data.connectRole}`} type={data.connectRole} position={data.connectRole === "source" ? Position.Right : Position.Left} className={`easy-connect-${data.connectRole} !absolute !left-0 !top-0 !h-full !w-full !translate-x-0 !translate-y-0 !rounded-none !border-0 !bg-transparent !opacity-0`} isConnectableStart={data.connectRole === "source"} isConnectableEnd={data.connectRole === "target"} />}
   </div>
