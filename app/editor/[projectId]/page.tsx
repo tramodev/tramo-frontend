@@ -141,6 +141,8 @@ export default function EditorPage() {
                 activeTrailId={project.activeTrailId}
                 selectedItemId={project.selectedItemId}
                 onSelectItem={project.handleSelectItem}
+                onTie={project.handleTie}
+                onUntie={project.handleUntie}
                 onClose={() => project.setView('write')}
               />
             ) : project.view === 'overview' ? (

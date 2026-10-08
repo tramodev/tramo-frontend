@@ -144,9 +144,9 @@ export function PublicProjectView({
     columnRef.current?.scrollTo({ top: 0 })
   }
 
-  const handleSelectMappedItem = (item: Item) => {
+  const handleSelectMappedItem = (item: Item, trailId?: string) => {
     const original = allItems.find((candidate) => candidate.id === item.id)
-    if (original) handleSelectItem(original)
+    if (original) handleSelectItem(original, trailId)
   }
 
   const handleItemLinkClick = (itemId: string) => {

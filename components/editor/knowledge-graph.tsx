@@ -1,281 +1,264 @@
-// Copyright (C) 2026 Ezequiel Martino
-// SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { memo, useMemo, useState } from "react"
+import { memo, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { useMounted } from "@/hooks/use-mounted"
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  Handle,
-  Position,
-  MarkerType,
-  BaseEdge,
-  type Node,
-  type Edge,
-  type NodeProps,
-  type EdgeProps,
-} from "@xyflow/react"
+import { ReactFlow, Background, Controls, Handle, Position, MarkerType, type Node, type Edge, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
-
-import { Item, Trail } from "@/app/editor/types"
+import type { Item, Trail } from "@/app/editor/types"
+import { collectPlainText } from "@/app/editor/editor-utils"
 
 interface KnowledgeGraphProps {
-  trails: Trail[];
-  items: Record<string, Item>;
-  activeTrailId?: string;
-  selectedItemId?: string;
-  onSelectItem: (item: Item) => void;
-  variant?: "full" | "preview";
+  trails: Trail[]
+  items: Record<string, Item>
+  activeTrailId?: string
+  selectedItemId?: string
+  onSelectItem: (item: Item, trailId?: string) => void
+  onTie?: (itemId: string, targetId: string, text: string) => Promise<void>
+  onUntie?: (itemId: string, associationId: string) => Promise<void>
+  variant?: "full" | "preview"
 }
 
-const NODE_W = 132;
-const NODE_H = 44;
-const X_GAP = 210;
-const MARGIN_X = 60;
-const TOP_Y = 150;
-const BOTTOM_Y = 380;
-const BASE_ARC = 46;
-const ARC_STEP = 34;
+type CardData = { itemId: string; trailId?: string; title: string; preview: string; number: number; selected: boolean; shared: boolean; connectRole?: "source" | "target" }
+type CardNode = Node<CardData, "card">
+type LaneNode = Node<{ title: string }, "lane">
+type GraphNode = CardNode | LaneNode
 
-type ItemNodeData = { title: string; selected: boolean; kind: "spine" | "loose" };
-type ItemNode = Node<ItemNodeData, "item">;
+type Appearance = { id: string; itemId: string; trailId?: string; column: number; row: number }
+type AssociationView = { id: string; associationId?: string; sourceId: string; targetId: string; text: string | null; source: Appearance; target: Appearance }
+type LocalConnection = { sourceId: string; targetId: string; sourceVisualId: string; targetVisualId: string }
 
-const ItemNodeComp = memo(function ItemNodeComp({ data }: NodeProps<ItemNode>) {
-  const spine = data.kind === "spine";
-  return (
-    <div
-      className={`flex items-center justify-center rounded-lg px-2 text-center text-[17.5px] font-medium leading-tight ${
-        spine ? "bg-primary text-primary-foreground" : "border border-border bg-card text-foreground"
-      }`}
-      style={{
-        width: NODE_W,
-        height: NODE_H,
-        boxShadow: data.selected ? `0 0 0 2px var(--background), 0 0 0 4px var(--primary)` : undefined,
-      }}
-    >
-      <Handle type="target" position={Position.Left} id="l" style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Right} id="r" style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Top} id="ts" style={{ opacity: 0 }} />
-      <Handle type="target" position={Position.Top} id="tt" style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Bottom} id="bs" style={{ opacity: 0 }} />
-      <Handle type="target" position={Position.Bottom} id="bt" style={{ opacity: 0 }} />
-      <span className="pointer-events-none line-clamp-2 font-display">{data.title}</span>
-    </div>
-  );
-});
-
-const nodeTypes = { item: ItemNodeComp };
-
-type AssocEdgeData = { incident: boolean; span: number; reverse: boolean };
-
-const AssocEdge = memo(function AssocEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd, data, selected }: EdgeProps) {
-  const d = data as AssocEdgeData;
-  const direction = d.reverse ? 1 : -1;
-  const bend = direction * (BASE_ARC + Math.max(d.span - 1, 0) * ARC_STEP);
-  const path = Math.abs(sourceY - targetY) < 20
-    ? `M ${sourceX} ${sourceY} C ${sourceX} ${sourceY + bend}, ${targetX} ${targetY + bend}, ${targetX} ${targetY}`
-    : `M ${sourceX} ${sourceY} C ${sourceX + bend} ${sourceY}, ${targetX + bend} ${targetY}, ${targetX} ${targetY}`;
-  return <BaseEdge id={id} path={path} markerEnd={markerEnd} interactionWidth={24}
-    style={{ stroke: 'var(--primary)', strokeWidth: selected ? 4 : d.incident ? 3 : 1.75 }} />;
-});
-
-const edgeTypes = { assoc: AssocEdge };
-
-interface Pos { x: number; y: number }
-interface Assoc { id: string; from: string; to: string; text: string | null }
-
-export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, onSelectItem, variant = "full" }: KnowledgeGraphProps) {
-  const preview = variant === "preview";
-  const { resolvedTheme } = useTheme();
-  const [selectedConnection, setSelectedConnection] = useState<string>();
-  const mounted = useMounted();
-
-  const layout = useMemo(() => {
-    const activeTrail = trails.find((t) => t.id === activeTrailId) ?? trails[0];
-    const trailIds = (activeTrail?.itemIds ?? []).filter((id) => items[id]);
-    const hasTrailOrder = trailIds.length > 0;
-    const spineIds = hasTrailOrder ? trailIds : Object.keys(items);
-    const spineSet = new Set(spineIds);
-    const col = new Map<string, number>();
-    spineIds.forEach((id, i) => col.set(id, i));
-
-    const pos = new Map<string, Pos>();
-    const kind = new Map<string, "spine" | "loose">();
-    spineIds.forEach((id, i) => {
-      pos.set(id, { x: MARGIN_X + NODE_W / 2 + i * X_GAP, y: TOP_Y });
-      kind.set(id, "spine");
-    });
-
-    const assocs: Assoc[] = [];
-    let offCount = 0;
-    const addLoose = (id: string) => {
-      if (spineSet.has(id) || pos.has(id)) return;
-      pos.set(id, { x: MARGIN_X + NODE_W / 2 + offCount * X_GAP, y: BOTTOM_Y });
-      kind.set(id, "loose");
-      col.set(id, offCount);
-      offCount++;
-    };
-
-    const outgoingFrom = [...spineIds];
-    if (selectedItemId && items[selectedItemId] && !spineSet.has(selectedItemId)) {
-      addLoose(selectedItemId);
-      outgoingFrom.push(selectedItemId);
+const COLUMN_WIDTH = 420
+const COLUMN_GAP = 90
+function previewText(content: string | null) {
+  if (!content) return ""
+  try {
+    const blocks = (JSON.parse(content) as { root?: { children?: unknown[] } }).root?.children
+    if (!Array.isArray(blocks)) return ""
+    const paragraphs: string[] = []
+    for (const block of blocks) {
+      const text = collectPlainText(JSON.stringify({ root: block })).join("").trim()
+      if (text) paragraphs.push(text)
+      if (paragraphs.length === 2) break
     }
+    return paragraphs.join("\n\n")
+  }
+  catch { return "" }
+}
 
-    for (const id of outgoingFrom) {
-      for (const a of items[id].associations) {
-        if (!items[a.targetId]) continue;
-        assocs.push({ id: a.id, from: id, to: a.targetId, text: a.text });
-        addLoose(a.targetId);
-      }
-    }
+const Card = memo(function Card({ data }: NodeProps<CardNode>) {
+  return <div className={`relative min-h-[132px] w-[420px] rounded-md border bg-card p-4 ${data.selected ? "border-primary" : "border-border"}`}>
+    <Handle id="target-top" type="target" position={Position.Top} className="!h-5 !w-5 !opacity-0" />
+    <Handle id="source-bottom" type="source" position={Position.Bottom} className="!h-5 !w-5 !opacity-0" />
+    <Handle id="target-left" type="target" position={Position.Left} className="!h-5 !w-5 !opacity-0" />
+    <Handle id="source-right" type="source" position={Position.Right} className="!h-5 !w-5 !opacity-0" />
+    <Handle id="target-right" type="target" position={Position.Right} className="!pointer-events-none !opacity-0" />
+    <Handle id="source-left" type="source" position={Position.Left} className="!pointer-events-none !opacity-0" />
+    <Handle id="target-bottom" type="target" position={Position.Bottom} className="!pointer-events-none !opacity-0" />
+    <Handle id="source-top" type="source" position={Position.Top} className="!pointer-events-none !opacity-0" />
+    <div className="flex items-center justify-between gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"><span>Note {data.number}</span>{data.shared && <span>Shared</span>}</div>
+    <div className="mt-2 break-words font-display text-lg font-medium leading-tight text-foreground">{data.title}</div>
+    <div className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">{data.preview || "No preview available"}</div>
+    {data.connectRole && <Handle id={`easy-${data.connectRole}`} type={data.connectRole} position={data.connectRole === "source" ? Position.Right : Position.Left} className={`easy-connect-${data.connectRole} !absolute !left-0 !top-0 !h-full !w-full !translate-x-0 !translate-y-0 !rounded-none !border-0 !bg-transparent !opacity-0`} isConnectableStart={data.connectRole === "source"} isConnectableEnd={data.connectRole === "target"} />}
+  </div>
+})
 
-    const drawn = new Set(outgoingFrom);
-    for (const [id, item] of Object.entries(items)) {
-      if (drawn.has(id)) continue;
-      for (const a of item.associations ?? []) {
-        if (!drawn.has(a.targetId)) continue;
-        assocs.push({ id: a.id, from: id, to: a.targetId, text: a.text });
-        addLoose(id);
-      }
-    }
+const Lane = memo(function Lane({ data }: NodeProps<LaneNode>) {
+  return <div className="relative h-full w-full text-foreground"><div className="absolute inset-x-0 bottom-0 top-14 rounded-md border border-border bg-muted/20" /><div className="absolute left-4 right-4 top-2 truncate font-display text-xl font-medium">{data.title}</div></div>
+})
 
-    const spineEdges = hasTrailOrder
-      ? spineIds.slice(0, -1).map((from, i) => ({ from, to: spineIds[i + 1] }))
-      : [];
-    return { pos, kind, col, assocs, spineEdges, rootPos: pos.get(spineIds[0]) };
-  }, [trails, items, activeTrailId, selectedItemId]);
+const nodeTypes = { card: Card, lane: Lane }
 
-  const { pos, kind, col, assocs, spineEdges, rootPos } = layout;
-
-  const nodes: ItemNode[] = useMemo(() => {
-    const looseXs = [...pos.entries()].filter(([id]) => kind.get(id) === "loose").map(([, p]) => p.x);
-    const shiftX =
-      preview && rootPos && looseXs.length
-        ? rootPos.x - (Math.min(...looseXs) + Math.max(...looseXs)) / 2
-        : 0;
-    return [...pos.entries()].map(([id, p]) => {
-      const x = kind.get(id) === "loose" ? p.x + shiftX : p.x;
-      return {
-        id,
-        type: "item" as const,
-        position: { x: x - NODE_W / 2, y: p.y - NODE_H / 2 },
-        data: { title: items[id]?.title ?? "", selected: id === selectedItemId, kind: kind.get(id) ?? "spine" },
-        draggable: false,
-      };
-    });
-  }, [pos, kind, items, selectedItemId, preview, rootPos]);
-
-  const edges: Edge[] = useMemo(() => {
-    const incident = (from: string, to: string) => from === selectedItemId || to === selectedItemId;
-    const es: Edge[] = [];
-    for (const { from, to } of spineEdges) {
-      es.push({
-        id: `spine-${from}-${to}`,
-        source: from,
-        target: to,
-        sourceHandle: "r",
-        targetHandle: "l",
-        style: { stroke: "var(--muted-foreground)", strokeWidth: 2, strokeDasharray: "6 5" },
-        selectable: false,
-        focusable: false,
-      });
-    }
-    assocs.forEach(({ id, from, to }) => {
-      const color = "var(--primary)";
-      const reverse = from.localeCompare(to, "en", { numeric: true }) > 0;
-      const sameRow = pos.get(from)!.y === pos.get(to)!.y;
-      const sourceBelow = pos.get(from)!.y > pos.get(to)!.y;
-      const span = Math.abs((col.get(to) ?? 0) - (col.get(from) ?? 0));
-      es.push({
-        id: `assoc-${id}`,
-        source: from,
-        target: to,
-        type: "assoc",
-        sourceHandle: sameRow ? (reverse ? "bs" : "ts") : sourceBelow ? "ts" : "bs",
-        targetHandle: sameRow ? (reverse ? "bt" : "tt") : sourceBelow ? "bt" : "tt",
-        data: { incident: incident(from, to), span, reverse },
-        selected: selectedConnection === id,
-        ariaLabel: `${items[from].title} → ${items[to].title}`,
-        markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
-      });
-    });
-    return es;
-  }, [spineEdges, assocs, pos, col, selectedItemId, selectedConnection, items]);
-
-  const previewKey = useMemo(
-    () => [activeTrailId ?? "none", ...nodes.map((n) => n.id), ...edges.map((e) => e.id)].join("|"),
-    [activeTrailId, nodes, edges],
-  );
-
-  const flow = (
-    <ReactFlow
-      key={preview ? previewKey : activeTrailId ?? "none"}
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-      colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"}
-      fitView
-      fitViewOptions={{ padding: preview ? 0.05 : 0.2 }}
-      minZoom={0.2}
-      maxZoom={preview ? 4 : 2.5}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      proOptions={preview ? { hideAttribution: true } : undefined}
-      onEdgeClick={(_, edge) => { if (edge.id.startsWith("assoc-")) setSelectedConnection(edge.id.slice(6)); }}
-      onNodeClick={(_, node) => {
-        const it = items[node.id];
-        if (it) onSelectItem(it);
-      }}
-      {...(preview
-        ? {
-            panOnDrag: false,
-            zoomOnScroll: false,
-            zoomOnPinch: false,
-            zoomOnDoubleClick: false,
-            elementsSelectable: false,
-            nodesFocusable: false,
-            edgesFocusable: false,
-          }
-        : {})}
-    >
-      {!preview && <Background color="var(--border)" gap={22} size={1} />}
-      {!preview && <Controls position="bottom-right" showInteractive={false} />}
-    </ReactFlow>
-  );
-
-  if (preview) {
-    return (
-      <div className="h-full w-full pointer-events-none">
-        {flow}
-      </div>
-    );
+export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, onSelectItem, onTie, onUntie, variant = "full" }: KnowledgeGraphProps) {
+  const preview = variant === "preview"
+  const { resolvedTheme } = useTheme()
+  const mounted = useMounted()
+  const [selectedConnection, setSelectedConnection] = useState<string>()
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const [error, setError] = useState("")
+  const [heights, setHeights] = useState<Record<string, number>>({})
+  const [menu, setMenu] = useState<{ sourceId: string; sourceVisualId: string; x: number; y: number; sourceX: number; sourceY: number } | null>(null)
+  const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null)
+  const [link, setLink] = useState<{ sourceId: string; sourceVisualId: string; x: number; y: number } | null>(null)
+  const [cursor, setCursor] = useState({ x: 0, y: 0 })
+  const [connecting, setConnecting] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [localConnections, setLocalConnections] = useState<LocalConnection[]>([])
+  const graphRef = useRef<HTMLDivElement>(null)
+  const sourceHandle = (sourceVisualId: string) => Array.from(graphRef.current?.querySelectorAll<HTMLElement>(".easy-connect-source") ?? []).find(handle => handle.dataset.nodeid === sourceVisualId)
+  const cancelLink = () => {
+    if (link) sourceHandle(link.sourceVisualId)?.click()
+    setLink(null)
   }
 
-  return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-popover">
-      <div className="min-h-0 flex-1">{flow}</div>
+  const { nodes, associations } = useMemo(() => {
+    const columns = trails.map(trail => ({ title: trail.title, trailId: trail.id, ids: trail.itemIds.filter(id => items[id]) }))
+    const filed = new Set(columns.flatMap(column => column.ids))
+    const loose = Object.keys(items).filter(id => !filed.has(id))
+    if (loose.length) columns.push({ title: "Notes without a trail", trailId: "", ids: loose })
+    const counts = new Map<string, number>()
+    columns.forEach(column => column.ids.forEach(id => counts.set(id, (counts.get(id) ?? 0) + 1)))
+    const appearances = new Map<string, Appearance[]>()
+    const nodes: GraphNode[] = []
+    columns.forEach((column, columnIndex) => {
+      const x = columnIndex * (COLUMN_WIDTH + COLUMN_GAP)
+      let y = 84
+      column.ids.forEach((itemId, row) => {
+        const item = items[itemId]
+        const appearance = { id: `card:${column.trailId || "loose"}:${itemId}`, itemId, trailId: column.trailId || undefined, column: columnIndex, row }
+        appearances.set(itemId, [...(appearances.get(itemId) ?? []), appearance])
+        nodes.push({ id: appearance.id, type: "card", position: { x: x + 16, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: previewText(item.content), number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !items[link.sourceId]?.associations.some(association => association.targetId === itemId) && !localConnections.some(connection => connection.sourceId === link.sourceId && connection.targetId === itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
+        y += (heights[appearance.id] ?? 132) + 40
+      })
+      nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title }, style: { width: COLUMN_WIDTH + 32, height: Math.max(104, y - 16), pointerEvents: "none" }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
+    })
+    const associations: AssociationView[] = []
+    for (const item of Object.values(items)) for (const association of item.associations ?? []) {
+      const sources = appearances.get(item.id)
+      const targets = appearances.get(association.targetId)
+      if (!sources?.length || !targets?.length) continue
+      const pairs = sources.flatMap(source => targets.map(target => ({ source, target, distance: Math.abs(source.column - target.column) * 3 + Math.abs(source.row - target.row) })))
+      pairs.sort((a, b) => a.distance - b.distance || a.source.column - b.source.column || a.target.column - b.target.column)
+      associations.push({ id: `${item.id}:${association.id}`, associationId: association.id, sourceId: item.id, targetId: association.targetId, text: association.text, source: pairs[0].source, target: pairs[0].target })
+    }
+    for (const connection of localConnections) {
+      if (items[connection.sourceId]?.associations.some(association => association.targetId === connection.targetId)) continue
+      const source = appearances.get(connection.sourceId)?.find(appearance => appearance.id === connection.sourceVisualId)
+      const target = appearances.get(connection.targetId)?.find(appearance => appearance.id === connection.targetVisualId)
+      if (source && target) associations.push({ id: `local:${source.id}:${target.id}`, sourceId: connection.sourceId, targetId: connection.targetId, text: null, source, target })
+    }
+    return { nodes, associations }
+  }, [trails, items, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections])
 
-      <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-2 border-t border-border px-6 py-3 text-xs text-muted-foreground">
-        <span className="flex items-center gap-2">
-          <svg width="30" height="8" className="shrink-0">
-            <line x1="0" y1="4" x2="30" y2="4" stroke="var(--muted-foreground)" strokeDasharray="6 5" strokeWidth={4} />
-          </svg>
-          Trail order
-        </span>
-        <span>→ Connection</span>
-        <label className="flex items-center gap-2">Connection
-          <select value={selectedConnection ?? ''} onChange={event => setSelectedConnection(event.target.value || undefined)} className="max-w-full rounded border border-input bg-background p-2">
-            <option value="">Select a connection</option>
-            {assocs.map(a => <option key={a.id} value={a.id}>{items[a.from].title} → {items[a.to].title}</option>)}
-          </select>
-        </label>
-        {assocs.filter(a => a.id === selectedConnection).map(a => <p key={a.id} className="max-h-40 w-full overflow-auto whitespace-pre-wrap break-words" role="status">{items[a.from].title} → {items[a.to].title}{'\n'}{a.text || 'No explanation.'}</p>)}
-      </div>
+  const onNodesChange = (changes: NodeChange<GraphNode>[]) => {
+    const measured = changes.filter(change => change.type === "dimensions" && change.id.startsWith("card:") && change.dimensions?.height)
+    if (!measured.length) return
+    setHeights(previous => {
+      const next = { ...previous }
+      let changed = false
+      for (const change of measured) if (change.type === "dimensions" && change.dimensions && next[change.id] !== change.dimensions.height) {
+        next[change.id] = change.dimensions.height
+        changed = true
+      }
+      return changed ? next : previous
+    })
+  }
+
+  const edges: Edge[] = associations.map(association => {
+    const { source, target } = association
+    const sameColumn = source.column === target.column
+    const downward = source.row < target.row
+    const rightward = source.column < target.column
+    return {
+      id: association.id, source: source.id, target: target.id, type: "straight",
+      sourceHandle: sameColumn ? downward ? "source-bottom" : "source-top" : rightward ? "source-right" : "source-left",
+      targetHandle: sameColumn ? downward ? "target-top" : "target-bottom" : rightward ? "target-left" : "target-right",
+      markerEnd: { type: MarkerType.Arrow, color: "var(--primary)", width: 16, height: 16, markerUnits: "userSpaceOnUse", strokeWidth: 1.5 },
+      selected: selectedConnection === association.id,
+      interactionWidth: 40,
+      style: { stroke: "var(--primary)", strokeWidth: selectedConnection === association.id ? 2 : 1.5 },
+      ariaLabel: `${items[association.sourceId].title} → ${items[association.targetId].title}`,
+    }
+  })
+  const selected = associations.find(association => association.id === selectedConnection)
+  const connectItems = async (sourceId: string, targetId: string, sourceVisualId: string, targetVisualId: string) => {
+    if (!onTie || connecting || !items[sourceId] || !items[targetId] || sourceId === targetId || items[sourceId].associations.some(a => a.targetId === targetId) || localConnections.some(connection => connection.sourceId === sourceId && connection.targetId === targetId)) return
+    setConnecting(true)
+    setError("")
+    setLocalConnections(previous => [...previous, { sourceId, targetId, sourceVisualId, targetVisualId }])
+    try { await onTie(sourceId, targetId, ""); setLocalConnections(previous => previous.filter(connection => connection.sourceId !== sourceId || connection.targetId !== targetId)); setMenu(null) }
+    catch { setError("Connection shown only in this graph. It could not be saved.") }
+    finally { setConnecting(false) }
+  }
+  const onConnect = (connection: Connection) => {
+    setLink(null)
+    const source = nodes.find(node => node.id === connection.source)
+    const target = nodes.find(node => node.id === connection.target)
+    if (source?.type === "card" && target?.type === "card") void connectItems(source.data.itemId, target.data.itemId, source.id, target.id)
+  }
+  const removeConnection = async (association: AssociationView) => {
+    setEdgeMenu(null)
+    setError("")
+    if (!association.associationId) {
+      setLocalConnections(previous => previous.filter(connection => `local:${connection.sourceVisualId}:${connection.targetVisualId}` !== association.id))
+      setSelectedConnection(undefined)
+      return
+    }
+    if (!onUntie || removing) return
+    setRemoving(true)
+    try { await onUntie(association.sourceId, association.associationId); setSelectedConnection(undefined) }
+    catch { setError("Could not remove this connection. Please try again.") }
+    finally { setRemoving(false) }
+  }
+  const candidates = menu && items[menu.sourceId]
+    ? Object.values(items).filter(item => item.id !== menu.sourceId && !items[menu.sourceId].associations.some(association => association.targetId === item.id) && !localConnections.some(connection => connection.sourceId === menu.sourceId && connection.targetId === item.id))
+    : []
+  const edgeAtPoint = (x: number, y: number) => {
+    for (const path of graphRef.current?.querySelectorAll<SVGPathElement>(".react-flow__edge-path") ?? []) {
+      const id = path.closest(".react-flow__edge")?.getAttribute("data-id")
+      if (!id || !associations.some(association => association.id === id)) continue
+      const matrix = path.getScreenCTM()
+      if (!matrix) continue
+      const start = path.getPointAtLength(0)
+      const end = path.getPointAtLength(path.getTotalLength())
+      const x1 = start.x * matrix.a + start.y * matrix.c + matrix.e
+      const y1 = start.x * matrix.b + start.y * matrix.d + matrix.f
+      const x2 = end.x * matrix.a + end.y * matrix.c + matrix.e
+      const y2 = end.x * matrix.b + end.y * matrix.d + matrix.f
+      const dx = x2 - x1
+      const dy = y2 - y1
+      const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy || 1)))
+      if (Math.hypot(x - x1 - t * dx, y - y1 - t * dy) <= 20) return id
+    }
+  }
+  return <div ref={graphRef} tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") { setMenu(null); setEdgeMenu(null); cancelLink() } }} onContextMenuCapture={event => {
+    if (preview || !onUntie || !graphRef.current || (event.target as Element).closest(".react-flow__node")) return
+    const id = edgeAtPoint(event.clientX, event.clientY)
+    if (!id) return
+    event.preventDefault()
+    event.stopPropagation()
+    const bounds = graphRef.current.getBoundingClientRect()
+    setMenu(null)
+    cancelLink()
+    setSelectedConnection(id)
+    setEdgeMenu({ id, x: Math.max(8, Math.min(event.clientX - bounds.left, bounds.width - 180)), y: Math.max(8, Math.min(event.clientY - bounds.top, bounds.height - 56)) })
+  }} onPointerMove={event => {
+    if (!link || !graphRef.current) return
+    const bounds = graphRef.current.getBoundingClientRect()
+    setCursor({ x: event.clientX - bounds.left, y: event.clientY - bounds.top })
+  }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
+    <div className="min-h-0 flex-1">
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 0.85 }} minZoom={0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={!preview && !!onTie} onConnect={onConnect} onClickConnectEnd={() => setLink(null)} onEdgeClick={(_, edge) => { setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
+        setMenu(null)
+        setEdgeMenu(null)
+        if (node.type !== "card") return
+        event.stopPropagation()
+        if (link) return
+        if (preview || selectedCardId === node.id) onSelectItem(items[node.data.itemId], node.data.trailId)
+        else { setSelectedCardId(node.id); setSelectedConnection(undefined) }
+      }} onNodeContextMenu={(event, node) => {
+        if (!onTie || node.type !== "card" || !graphRef.current) return
+        event.preventDefault()
+        setEdgeMenu(null)
+        const bounds = graphRef.current.getBoundingClientRect()
+        const card = event.currentTarget.getBoundingClientRect()
+        cancelLink()
+        setMenu({ sourceId: node.data.itemId, sourceVisualId: node.id, x: Math.max(8, Math.min(event.clientX - bounds.left, bounds.width - 264)), y: Math.max(8, Math.min(event.clientY - bounds.top, bounds.height - 70)), sourceX: (card.left + card.right) / 2 - bounds.left, sourceY: (card.top + card.bottom) / 2 - bounds.top })
+      }} onPaneClick={() => { setMenu(null); setEdgeMenu(null); setSelectedCardId(null); cancelLink() }} panOnDrag={!preview && !link} zoomOnScroll={!preview && !link} zoomOnPinch={!preview && !link} zoomOnDoubleClick={!preview && !link} elementsSelectable={!preview} nodesFocusable={!preview} edgesFocusable={!preview} proOptions={preview ? { hideAttribution: true } : undefined}>
+        {!preview && <Background color="var(--border)" gap={22} size={1} />}
+        {!preview && !link && <Controls position="bottom-right" showInteractive={false} />}
+      </ReactFlow>
     </div>
-  );
+    {link && <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true"><defs><marker id="graph-connection-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M 1 1 L 7 4.5 L 1 8" fill="none" stroke="var(--primary)" strokeWidth="1.5" /></marker></defs><line x1={link.x} y1={link.y} x2={cursor.x} y2={cursor.y} stroke="var(--primary)" strokeWidth="1.5" markerEnd="url(#graph-connection-arrow)" /></svg>}
+    {menu && <div className="absolute z-20 w-64 rounded-md border border-border bg-card p-2 text-sm" style={{ left: menu.x, top: menu.y }} onKeyDown={event => { if (event.key === "Escape") setMenu(null) }}>
+      <button type="button" disabled={!candidates.length} onClick={() => { setLink({ sourceId: menu.sourceId, sourceVisualId: menu.sourceVisualId, x: menu.sourceX, y: menu.sourceY }); setCursor({ x: menu.x, y: menu.y }); setMenu(null); graphRef.current?.focus(); requestAnimationFrame(() => sourceHandle(menu.sourceVisualId)?.click()) }} className="w-full rounded-md px-2 py-2 text-left hover:bg-muted disabled:opacity-50">Connect to another note</button>
+    </div>}
+    {edgeMenu && <div className="absolute z-20 w-44 rounded-md border border-border bg-card p-2 text-sm" style={{ left: edgeMenu.x, top: edgeMenu.y }}>
+      <button type="button" disabled={removing || connecting} onClick={() => { const association = associations.find(association => association.id === edgeMenu.id); if (association) void removeConnection(association) }} className="w-full rounded-md px-2 py-2 text-left text-destructive hover:bg-muted disabled:opacity-50">Remove connection</button>
+    </div>}
+    {!preview && (selected || error) && <div className="shrink-0 border-t border-border px-5 py-3 text-xs text-muted-foreground">
+      {error && <p role="alert" className="text-destructive">{error}</p>}
+      {selected && <p role="status" className="max-h-32 overflow-auto whitespace-pre-wrap break-words"><span className="font-medium text-foreground">{items[selected.sourceId].title} → {items[selected.targetId].title}</span><span className="mt-1 block">{selected.text || "No explanation."}</span></p>}
+    </div>}
+  </div>
 }
