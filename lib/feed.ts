@@ -3,10 +3,15 @@
 
 import type { Association } from "@/app/editor/types";
 
-export interface GraphPreviewData {
+export type GraphPreviewData = {
   trails: { id: string; title: string; itemIds: string[] }[];
   items: { id: string; title: string; associations: Association[] }[];
-}
+} | {
+  trailId: string;
+  trailTitle: string;
+  itemIds: string[];
+  items: { id: string; title: string; associations: Association[] }[];
+};
 
 export interface ProjectFeedItem {
   id: string;

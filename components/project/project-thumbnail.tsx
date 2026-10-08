@@ -9,7 +9,8 @@ import { KnowledgeGraph } from "@/components/editor/knowledge-graph"
 import { initial } from "@/components/shared/author-avatar"
 
 function toGraphProps(graph: GraphPreviewData): { trails: Trail[]; items: Record<string, Item> } {
-  const trails: Trail[] = graph.trails.map(trail => ({
+  const graphTrails = "trails" in graph ? graph.trails : [{ id: graph.trailId, title: graph.trailTitle, itemIds: graph.itemIds }]
+  const trails: Trail[] = graphTrails.map(trail => ({
     ...trail,
     description: "",
     steps: [],

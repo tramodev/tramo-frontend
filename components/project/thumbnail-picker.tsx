@@ -64,6 +64,7 @@ export function ThumbnailPicker({
     try {
       await setProjectThumbnail(projectId, choice);
     } catch {
+      onChange(imageUrl, graph);
       onError("Couldn't update the thumbnail — try again.");
     } finally {
       setSaving(false);
