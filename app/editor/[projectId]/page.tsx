@@ -137,6 +137,9 @@ export default function EditorPage() {
             {!project.loaded ? <div className="editor-container flex flex-1 items-center justify-center text-sm text-muted-foreground" role="status">Loading editor…</div> : project.view === 'graph' ? (
               <GraphView
                 projectId={projectId}
+                graphColors={project.graphColors}
+                colorSyncFailed={project.graphColorSyncFailed}
+                onSaveColors={project.handleSetGraphColors}
                 trails={project.trails}
                 items={project.items}
                 activeTrailId={project.activeTrailId}

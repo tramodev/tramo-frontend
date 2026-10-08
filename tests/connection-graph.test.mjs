@@ -10,10 +10,13 @@ let hookIndex = 0;
 let frames = [];
 let sourceClicks = 0;
 let edgePaths = [];
-const storage = new Map();
+const colorExports = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/graph-colors.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: colorExports });
 runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-graph.tsx', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-}).outputText, { exports, window: {}, localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) }, requestAnimationFrame: callback => frames.push(callback), require: name => ({
+}).outputText, { exports, requestAnimationFrame: callback => frames.push(callback), require: name => ({
   react: { memo: fn => fn, useMemo: fn => fn(), useRef: () => ({ current: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }), querySelectorAll: selector => selector === '.react-flow__edge-path' ? edgePaths : [{ dataset: { nodeid: 'card:second:a' }, click: () => { sourceClicks++; } }, { dataset: { nodeid: 'card:first:a' }, click: () => { sourceClicks++; } }], focus() {} } }), useState: value => {
     const index = hookIndex++;
     if (!(index in hookValues)) hookValues[index] = typeof value === 'function' ? value() : value;
@@ -23,6 +26,7 @@ runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-gra
   'next-themes': { useTheme: () => ({ resolvedTheme: 'light' }) },
   '@/hooks/use-mounted': { useMounted: () => true },
   '@/app/editor/editor-utils': { collectPlainText: content => [JSON.parse(content).root.text] },
+  '@/app/editor/graph-colors': colorExports,
   '@xyflow/react': { ReactFlow: 'Flow', MarkerType: { Arrow: 'arrow' }, Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
 })[name] ?? {} });
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
@@ -68,21 +72,22 @@ test('three appearances of one note are connected without duplicating links', ()
   expect(renderGraph(props).props.nodes.find(node => node.id === 'card:first:a').data.selected).toBe(true);
 });
 
-test('graph background colors persist for shared notes and trails', () => {
+test('graph background colors save for shared notes and trails', async () => {
   hookValues = [];
-  storage.clear();
   const items = { a: { id: 'a', title: 'A', content: '', associations: [] } };
   const trails = ['first', 'second'].map(id => ({ id, title: id, itemIds: ['a'] }));
-  const props = { projectId: 'project', items, trails, onSelectItem() {}, onTie: async () => {} };
+  const props = { graphColors: null, items, trails, onSelectItem() {}, onTie: async () => {}, onSaveColors: async colors => { props.graphColors = colors; } };
   const event = { clientX: 100, clientY: 100, preventDefault() {}, currentTarget: { getBoundingClientRect: () => ({ left: 20, right: 440, top: 50, bottom: 190 }) } };
   let flow = renderGraph(props);
   flow.props.onNodeContextMenu(event, flow.props.nodes.find(node => node.id === 'card:first:a'));
   renderTree(props).find(node => node.props['aria-label'] === 'Note background: blue').props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
   expect(renderGraph(props).props.nodes.filter(node => node.type === 'card').map(node => node.data.color)).toEqual(['blue', 'blue']);
   flow = renderGraph(props);
   expect(flow.props.nodes.find(node => node.id === 'lane:first').style.pointerEvents).toBeUndefined();
   flow.props.onNodeContextMenu(event, flow.props.nodes.find(node => node.id === 'lane:first'));
   renderTree(props).find(node => node.props['aria-label'] === 'Trail background: red').props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
   expect(renderGraph(props).props.nodes.find(node => node.id === 'lane:first').data.color).toBe('red');
   hookValues = [];
   flow = renderGraph(props);
@@ -91,15 +96,15 @@ test('graph background colors persist for shared notes and trails', () => {
   expect(flow.props.nodes.find(node => node.id === 'lane:second').data.color).toBeUndefined();
   flow.props.onNodeContextMenu(event, flow.props.nodes.find(node => node.id === 'card:second:a'));
   renderTree(props).find(node => node.props['aria-label'] === 'Note background: Default').props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
   expect(renderGraph(props).props.nodes.filter(node => node.type === 'card').every(node => node.data.color === undefined)).toBe(true);
 });
 
 test('invalid stored colors never become graph styles', () => {
   hookValues = [];
-  storage.set('tramo:graph-colors:project', JSON.stringify({ items: { a: 'url(bad)' }, trails: { first: 'purple' } }));
   const items = { a: { id: 'a', title: 'A', content: '', associations: [] } };
   const trails = [{ id: 'first', title: 'First', itemIds: ['a'] }];
-  const flow = renderGraph({ projectId: 'project', items, trails, onSelectItem() {} });
+  const flow = renderGraph({ graphColors: JSON.stringify({ items: { a: 'url(bad)' }, trails: { first: 'purple' } }), items, trails, onSelectItem() {} });
   expect(flow.props.nodes.find(node => node.type === 'card').data.color).toBeUndefined();
   expect(flow.props.nodes.find(node => node.type === 'lane').data.color).toBe('purple');
 });

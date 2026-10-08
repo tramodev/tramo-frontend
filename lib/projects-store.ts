@@ -16,6 +16,7 @@ export interface Project {
   id: string;
   title: string;
   description: string;
+  graphColors: string | null;
   trails: Trail[];
   items: Record<string, Item>;
   visibility: ProjectVisibility;
@@ -35,6 +36,7 @@ interface ProjectDTO {
   id: number;
   title: string;
   description: string | null;
+  graphColors: string | null;
   visibility: ProjectVisibility | null;
   thumbnailImageUrl: string | null;
   thumbnailGraph: GraphPreviewData | null;
@@ -106,6 +108,7 @@ function toProjectSummary(dto: ProjectDTO): Project {
     id: String(dto.id),
     title: dto.title,
     description: dto.description ?? "",
+    graphColors: dto.graphColors ?? null,
     trails: [],
     items: {},
     visibility: dto.visibility ?? "private",
@@ -245,6 +248,11 @@ export async function searchProjectItems(id: string, q: string): Promise<string[
 
 export async function setProjectDescription(id: string, description: string): Promise<void> {
   await apiVoid(`/api/project/${id}`, { method: "PUT", json: { description } });
+}
+
+export async function setProjectGraphColors(id: string, graphColors: string): Promise<void> {
+  const saved = await apiJson<{ graphColors: string | null }>(`/api/project/${id}`, { method: "PUT", json: { graphColors } });
+  if (saved.graphColors !== graphColors) throw new Error("Graph colors were not saved");
 }
 
 export async function setProjectTags(id: string, tags: string): Promise<void> {

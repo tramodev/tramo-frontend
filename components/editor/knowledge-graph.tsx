@@ -7,22 +7,21 @@ import { ReactFlow, Background, Controls, Handle, Position, MarkerType, type Nod
 import "@xyflow/react/dist/style.css"
 import type { Item, Trail } from "@/app/editor/types"
 import { collectPlainText } from "@/app/editor/editor-utils"
+import { GRAPH_COLORS, parseGraphColors, type GraphColor, type GraphColors } from "@/app/editor/graph-colors"
 
 interface KnowledgeGraphProps {
   trails: Trail[]
   items: Record<string, Item>
   activeTrailId?: string
   selectedItemId?: string
-  projectId?: string
+  graphColors?: string | null
+  onSaveColors?: (colors: string) => Promise<void>
   onSelectItem: (item: Item, trailId?: string) => void
   onTie?: (itemId: string, targetId: string, text: string) => Promise<void>
   onUntie?: (itemId: string, associationId: string) => Promise<void>
   variant?: "full" | "preview"
 }
 
-const GRAPH_COLORS = ["red", "orange", "green", "blue", "purple", "gray"] as const
-type GraphColor = typeof GRAPH_COLORS[number]
-type GraphColors = { items: Record<string, string>; trails: Record<string, string> }
 type GraphMenu = { x: number; y: number } & ({ kind: "item"; sourceId: string; sourceVisualId: string; sourceX: number; sourceY: number } | { kind: "trail"; trailId: string })
 type CardData = { itemId: string; trailId?: string; title: string; preview: string; number: number; selected: boolean; shared: boolean; color?: GraphColor; connectRole?: "source" | "target" }
 type CardNode = Node<CardData, "card">
@@ -77,7 +76,7 @@ const Lane = memo(function Lane({ data }: NodeProps<LaneNode>) {
 
 const nodeTypes = { card: Card, lane: Lane }
 
-export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, projectId, onSelectItem, onTie, onUntie, variant = "full" }: KnowledgeGraphProps) {
+export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, graphColors, onSaveColors, onSelectItem, onTie, onUntie, variant = "full" }: KnowledgeGraphProps) {
   const preview = variant === "preview"
   const { resolvedTheme } = useTheme()
   const mounted = useMounted()
@@ -86,13 +85,8 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, p
   const [error, setError] = useState("")
   const [heights, setHeights] = useState<Record<string, number>>({})
   const [menu, setMenu] = useState<GraphMenu | null>(null)
-  const [colors, setColors] = useState<GraphColors>(() => {
-    if (!projectId || typeof window === "undefined") return { items: {}, trails: {} }
-    try {
-      const stored = JSON.parse(localStorage.getItem(`tramo:graph-colors:${projectId}`) || "{}")
-      return { items: stored?.items && typeof stored.items === "object" ? stored.items : {}, trails: stored?.trails && typeof stored.trails === "object" ? stored.trails : {} }
-    } catch { return { items: {}, trails: {} } }
-  })
+  const [colors, setColors] = useState<GraphColors>(() => parseGraphColors(graphColors))
+  const [savingColors, setSavingColors] = useState(false)
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null)
   const [link, setLink] = useState<{ sourceId: string; sourceVisualId: string; x: number; y: number } | null>(null)
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
@@ -209,17 +203,23 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, p
     catch { setError("Could not remove this connection. Please try again.") }
     finally { setRemoving(false) }
   }
-  const setBackground = (color: GraphColor | "") => {
-    if (!projectId || !menu) return
+  const setBackground = async (color: GraphColor | "") => {
+    if (!onSaveColors || !menu || savingColors) return
     const group = menu.kind === "item" ? "items" : "trails"
     const id = menu.kind === "item" ? menu.sourceId : menu.trailId
-    const next = { ...colors, [group]: { ...colors[group], [id]: color } }
+    const next = { ...colors, [group]: { ...colors[group] } }
+    if (color) next[group][id] = color
+    else delete next[group][id]
+    setColors(next)
+    setMenu(null)
+    setSavingColors(true)
     try {
-      localStorage.setItem(`tramo:graph-colors:${projectId}`, JSON.stringify(next))
-      setColors(next)
-      setMenu(null)
+      await onSaveColors(JSON.stringify(next))
       setError("")
-    } catch { setError("Could not save graph colors in this browser.") }
+    } catch {
+      setColors(colors)
+      setError("Could not save graph colors. Please try again.")
+    } finally { setSavingColors(false) }
   }
   const candidates = menu?.kind === "item" && items[menu.sourceId]
     ? Object.values(items).filter(item => item.id !== menu.sourceId && !items[menu.sourceId].associations.some(association => association.targetId === item.id) && !localConnections.some(connection => connection.sourceId === menu.sourceId && connection.targetId === item.id))
@@ -269,8 +269,8 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, p
         else { setSelectedCardId(node.id); setSelectedConnection(undefined) }
       }} onNodeContextMenu={(event, node) => {
         if (preview || !graphRef.current) return
-        if (node.type === "card" && !onTie && !projectId) return
-        if (node.type === "lane" && (!projectId || !trails.some(trail => trail.id === node.id.slice(5)))) return
+        if (node.type === "card" && !onTie && !onSaveColors) return
+        if (node.type === "lane" && (!onSaveColors || !trails.some(trail => trail.id === node.id.slice(5)))) return
         event.preventDefault()
         setEdgeMenu(null)
         const bounds = graphRef.current.getBoundingClientRect()
@@ -289,9 +289,9 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, p
     {link && <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true"><defs><marker id="graph-connection-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M 1 1 L 7 4.5 L 1 8" fill="none" stroke="var(--primary)" strokeWidth="1.5" /></marker></defs><line x1={link.x} y1={link.y} x2={cursor.x} y2={cursor.y} stroke="var(--primary)" strokeWidth="1.5" markerEnd="url(#graph-connection-arrow)" /></svg>}
     {menu && <div className="absolute z-20 w-64 rounded-md border border-border bg-card p-2 text-sm" style={{ left: menu.x, top: menu.y }} onKeyDown={event => { if (event.key === "Escape") setMenu(null) }}>
       {menu.kind === "item" && onTie && <button type="button" disabled={!candidates.length} onClick={() => { setLink({ sourceId: menu.sourceId, sourceVisualId: menu.sourceVisualId, x: menu.sourceX, y: menu.sourceY }); setCursor({ x: menu.x, y: menu.y }); setMenu(null); graphRef.current?.focus(); requestAnimationFrame(() => sourceHandle(menu.sourceVisualId)?.click()) }} className="w-full rounded-md px-2 py-2 text-left hover:bg-muted disabled:opacity-50">Connect to another note</button>}
-      {projectId && <div className={`${menu.kind === "item" && onTie ? "border-t border-border " : ""}px-2 pt-2`}>
+      {onSaveColors && <div className={`${menu.kind === "item" && onTie ? "border-t border-border " : ""}px-2 pt-2`}>
         <p className="mb-2 text-xs text-muted-foreground">Background color</p>
-        <div className="flex flex-wrap gap-2">{(["", ...GRAPH_COLORS] as const).map(color => <button key={color} type="button" aria-label={`${menu.kind === "item" ? "Note" : "Trail"} background: ${color || "Default"}`} aria-pressed={((menu.kind === "item" ? colors.items[menu.sourceId] : colors.trails[menu.trailId]) ?? "") === color} onClick={() => setBackground(color)} className="h-7 w-7 rounded-full border border-border aria-pressed:ring-2 aria-pressed:ring-primary" style={{ background: color ? `color-mix(in srgb, var(--ed-${color}) 24%, var(--card))` : "var(--card)" }} />)}</div>
+        <div className="flex flex-wrap gap-2">{(["", ...GRAPH_COLORS] as const).map(color => <button key={color} type="button" disabled={savingColors} aria-label={`${menu.kind === "item" ? "Note" : "Trail"} background: ${color || "Default"}`} aria-pressed={((menu.kind === "item" ? colors.items[menu.sourceId] : colors.trails[menu.trailId]) ?? "") === color} onClick={() => void setBackground(color)} className="h-7 w-7 rounded-full border border-border aria-pressed:ring-2 aria-pressed:ring-primary disabled:opacity-50" style={{ background: color ? `color-mix(in srgb, var(--ed-${color}) 24%, var(--card))` : "var(--card)" }} />)}</div>
       </div>}
     </div>}
     {edgeMenu && <div className="absolute z-20 w-44 rounded-md border border-border bg-card p-2 text-sm" style={{ left: edgeMenu.x, top: edgeMenu.y }}>
