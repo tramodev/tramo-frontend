@@ -21,6 +21,7 @@ test('graph thumbnail includes every trail and one copy of a shared note', () =>
   };
   const thumbnail = exports.ProjectThumbnail({ thumbnailImageUrl: null, thumbnailGraph: graph, title: 'Project' });
   const preview = thumbnail.props.children;
+  expect(preview.props.variant).toBe('thumbnail');
   expect(preview.props.trails.map(trail => trail.id)).toEqual(['first', 'second']);
   expect(Object.keys(preview.props.items)).toEqual(['shared', 'other']);
 });

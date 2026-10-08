@@ -56,7 +56,7 @@ export function ProjectThumbnail({
     const { trails, items } = toGraphProps(thumbnailGraph)
     return (
       <div className={`overflow-hidden ${className}`}>
-        <KnowledgeGraph trails={trails} items={items} onSelectItem={() => {}} variant="preview" />
+        <KnowledgeGraph trails={trails} items={items} onSelectItem={() => {}} variant="thumbnail" />
       </div>
     )
   }
