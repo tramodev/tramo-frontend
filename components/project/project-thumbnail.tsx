@@ -6,6 +6,74 @@ import Image from "next/image"
 import type { GraphPreviewData } from "@/lib/feed"
 import { initial } from "@/components/shared/author-avatar"
 
+const LANE_WIDTH = 180
+const LANE_GAP = 24
+const CARD_WIDTH = 160
+const CARD_HEIGHT = 64
+const CARD_GAP = 12
+const CARD_TOP = 56
+
+function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; className: string }) {
+  const trails = "trails" in graph ? graph.trails : [{ id: graph.trailId, title: graph.trailTitle, itemIds: graph.itemIds }]
+  if (!trails.length) return null
+
+  const width = trails.length * LANE_WIDTH + (trails.length - 1) * LANE_GAP
+  const height = Math.max(132, CARD_TOP + Math.max(...trails.map(trail => trail.itemIds.length)) * (CARD_HEIGHT + CARD_GAP) + 8)
+  const items = new Map(graph.items.map(item => [item.id, item]))
+  const appearances = new Map<string, { key: string; x: number; y: number }[]>()
+  const cards = trails.flatMap((trail, column) => trail.itemIds.map((id, row) => {
+    const card = { id, key: `${trail.id}:${id}`, x: column * (LANE_WIDTH + LANE_GAP) + 10, y: CARD_TOP + row * (CARD_HEIGHT + CARD_GAP) }
+    appearances.set(id, [...(appearances.get(id) ?? []), card])
+    return card
+  }))
+
+  return (
+    <div className={`overflow-hidden ${className}`}>
+      <svg role="img" aria-label={`Graph of ${trails.length} trails`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" className="pointer-events-none h-full w-full select-none">
+        {trails.map((trail, column) => {
+          const x = column * (LANE_WIDTH + LANE_GAP)
+          return <g key={trail.id}>
+            <rect x={x} y={0} width={LANE_WIDTH} height={height} rx={10} fill="var(--popover)" stroke="var(--border)" />
+            <foreignObject x={x + 8} y={8} width={LANE_WIDTH - 16} height={36}>
+              <div className="flex h-full items-center overflow-hidden font-display text-[27px] font-medium leading-tight text-foreground"><span className="truncate">{trail.title}</span></div>
+            </foreignObject>
+          </g>
+        })}
+        {[...appearances.values()].flatMap(copies => copies.slice(1).map((target, index) => {
+          const source = copies[index]
+          const fromX = source.x + CARD_WIDTH
+          const toX = target.x
+          const fromY = source.y + CARD_HEIGHT / 2
+          const toY = target.y + CARD_HEIGHT / 2
+          const middle = (fromX + toX) / 2
+          return <path key={`shared:${source.key}:${target.key}`} d={`M ${fromX} ${fromY} C ${middle} ${fromY}, ${middle} ${toY}, ${toX} ${toY}`} fill="none" stroke="var(--ed-purple)" strokeWidth={2} strokeDasharray="4 5" />
+        }))}
+        {graph.items.flatMap(item => item.associations.map(association => {
+          const source = appearances.get(item.id)?.[0]
+          const target = appearances.get(association.targetId)?.[0]
+          if (!source || !target) return null
+          const sameColumn = source.x === target.x
+          const fromX = sameColumn ? source.x + CARD_WIDTH / 2 : source.x < target.x ? source.x + CARD_WIDTH : source.x
+          const toX = sameColumn ? target.x + CARD_WIDTH / 2 : source.x < target.x ? target.x : target.x + CARD_WIDTH
+          const fromY = sameColumn ? source.y < target.y ? source.y + CARD_HEIGHT : source.y : source.y + CARD_HEIGHT / 2
+          const toY = sameColumn ? source.y < target.y ? target.y : target.y + CARD_HEIGHT : target.y + CARD_HEIGHT / 2
+          const middle = sameColumn ? (fromY + toY) / 2 : (fromX + toX) / 2
+          const path = sameColumn
+            ? `M ${fromX} ${fromY} C ${fromX} ${middle}, ${toX} ${middle}, ${toX} ${toY}`
+            : `M ${fromX} ${fromY} C ${middle} ${fromY}, ${middle} ${toY}, ${toX} ${toY}`
+          return <path key={`${item.id}:${association.id}`} d={path} fill="none" stroke="var(--primary)" strokeWidth={2} />
+        }))}
+        {cards.map(card => <g key={card.key}>
+          <rect x={card.x} y={card.y} width={CARD_WIDTH} height={CARD_HEIGHT} rx={8} fill="var(--card)" stroke="var(--border)" />
+          <foreignObject x={card.x + 8} y={card.y + 7} width={CARD_WIDTH - 16} height={CARD_HEIGHT - 14}>
+            <div className="flex h-full items-center overflow-hidden font-display text-[25px] font-medium leading-tight text-foreground"><span className="line-clamp-2 break-words">{items.get(card.id)?.title || "Untitled note"}</span></div>
+          </foreignObject>
+        </g>)}
+      </svg>
+    </div>
+  )
+}
+
 export function ProjectThumbnail({
   thumbnailImageUrl,
   thumbnailGraph,
@@ -26,28 +94,8 @@ export function ProjectThumbnail({
       </div>
     )
   }
-  if (thumbnailGraph) {
-    const trails = "trails" in thumbnailGraph ? thumbnailGraph.trails : [{ id: thumbnailGraph.trailId, title: thumbnailGraph.trailTitle, itemIds: thumbnailGraph.itemIds }]
-    if (trails.length) {
-      const columns = trails.length <= 2 ? 1 : 2
-      const rows = Math.ceil(trails.length / columns)
-      const noteTitles = new Map(thumbnailGraph.items.map(item => [item.id, item.title]))
-      return (
-        <div className={`overflow-hidden ${className}`}>
-          <div className={`grid h-full w-full ${rows > 2 ? "gap-1 p-2" : "gap-2 p-3"}`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}>
-            {trails.map(trail => (
-              <div key={trail.id} className={`flex min-h-0 min-w-0 flex-col overflow-hidden rounded-md border border-border bg-card ${rows > 2 ? "px-2 py-0.5" : "px-2.5 py-2"}`}>
-                <div className={`truncate font-display font-medium leading-tight text-foreground ${rows === 1 ? "text-2xl" : rows <= 2 ? "text-xl" : rows <= 4 ? "text-sm" : "text-[11px]"}`}>{trail.title}</div>
-                {rows <= 2 && <div className="mt-1 min-h-0 overflow-hidden border-l border-border pl-2 text-sm text-muted-foreground">
-                  {trail.itemIds.slice(0, rows === 1 ? 3 : 1).map(id => <div key={id} className="truncate">{noteTitles.get(id) || "Untitled note"}</div>)}
-                  {!trail.itemIds.length && <div>No notes yet</div>}
-                </div>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    }
+  if (thumbnailGraph && ("trails" in thumbnailGraph ? thumbnailGraph.trails.length > 0 : true)) {
+    return <GraphThumbnail graph={thumbnailGraph} className={className} />
   }
   return (
     <div className={`grid place-items-center overflow-hidden ${className}`}>
