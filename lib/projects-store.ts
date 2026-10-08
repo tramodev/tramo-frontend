@@ -234,7 +234,7 @@ export async function publishProject(id: string): Promise<{ error: string | null
 
 export type ThumbnailChoice =
   | { type: "NONE" }
-  | { type: "GRAPH"; trailId: string }
+  | { type: "GRAPH" }
   | { type: "DEDICATED"; imageUrl: string };
 
 export async function setProjectThumbnail(id: string, choice: ThumbnailChoice): Promise<void> {

@@ -56,7 +56,6 @@ export function ThumbnailPicker({
   onChange: (imageUrl: string | null, graph: Project["thumbnailGraph"]) => void;
   onError: (message: string) => void;
 }) {
-  const [tab, setTab] = useState<"trail" | "upload">("trail");
   const [saving, setSaving] = useState(false);
 
   const apply = async (choice: ThumbnailChoice, optimistic: { imageUrl: string | null; graph: Project["thumbnailGraph"] }) => {
@@ -80,7 +79,6 @@ export function ThumbnailPicker({
     try {
       const url = await uploadImage(file, "thumbnail", projectId);
       await apply({ type: "DEDICATED", imageUrl: url }, { imageUrl: url, graph: null });
-      setTab("upload");
     } catch {
       onError("Upload failed — try again.");
       setSaving(false);
@@ -103,62 +101,31 @@ export function ThumbnailPicker({
 
       <p className="text-xs text-muted-foreground">Thumbnails are public. Do not upload confidential information.</p>
       <div className="grid grid-cols-2 gap-1.5">
-        {([
-          { key: "trail", label: "Trail", icon: Route },
-        ] as const).map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={cn(
-              "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
-              tab === key ? "border-foreground bg-foreground/5" : "border-border hover:bg-muted"
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            {label}
-          </button>
-        ))}
-        <UploadThumbnailTab disabled={saving} active={tab === "upload"} onFile={handleUpload} />
-      </div>
-
-      {tab === "trail" && (
-        <div className="flex flex-wrap gap-1.5">
-          {project.trails.filter((t) => t.itemIds.length > 0).map((trail) => {
-            const isActive = graph?.trailId === trail.id;
-            return (
-              <button
-                key={trail.id}
-                type="button"
-                disabled={saving}
-                onClick={() => {
-                  const next = {
-                    trailId: trail.id,
-                    trailTitle: trail.title,
-                    itemIds: trail.itemIds,
-                    items: trail.itemIds.map((id) => ({
-                      id,
-                      title: project.items[id]?.title ?? "",
-                      associations: project.items[id]?.associations ?? [],
-                    })),
-                  };
-                  apply({ type: "GRAPH", trailId: trail.id }, { imageUrl: null, graph: next });
-                }}
-                className={cn(
-                  "rounded-md border px-2 py-1 text-xs disabled:opacity-50",
-                  isActive ? "border-foreground bg-foreground/5" : "border-border hover:bg-muted"
-                )}
-              >
-                {trail.title}
-              </button>
-            );
-          })}
-          {project.trails.every((t) => t.itemIds.length === 0) && (
-            <p className="text-xs text-muted-foreground">No trails with notes yet.</p>
+        <button
+          type="button"
+          disabled={saving || !project.trails.length}
+          onClick={() => {
+            const ids = new Set(project.trails.flatMap(trail => trail.itemIds));
+            const next = {
+              trails: project.trails.map(trail => ({ id: trail.id, title: trail.title, itemIds: trail.itemIds })),
+              items: [...ids].map(id => ({
+                id,
+                title: project.items[id]?.title ?? "",
+                associations: project.items[id]?.associations ?? [],
+              })),
+            };
+            void apply({ type: "GRAPH" }, { imageUrl: null, graph: next });
+          }}
+          className={cn(
+            "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors disabled:opacity-50",
+            graph && !imageUrl ? "border-foreground bg-foreground/5" : "border-border hover:bg-muted"
           )}
-        </div>
-      )}
-
+        >
+          <Route className="h-3.5 w-3.5" />
+          Trails
+        </button>
+        <UploadThumbnailTab disabled={saving} active={!!imageUrl} onFile={handleUpload} />
+      </div>
     </div>
   );
 }

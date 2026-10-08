@@ -4,9 +4,7 @@
 import type { Association } from "@/app/editor/types";
 
 export interface GraphPreviewData {
-  trailId: string;
-  trailTitle: string;
-  itemIds: string[];
+  trails: { id: string; title: string; itemIds: string[] }[];
   items: { id: string; title: string; associations: Association[] }[];
 }
 

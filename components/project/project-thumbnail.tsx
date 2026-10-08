@@ -9,15 +9,13 @@ import { KnowledgeGraph } from "@/components/editor/knowledge-graph"
 import { initial } from "@/components/shared/author-avatar"
 
 function toGraphProps(graph: GraphPreviewData): { trails: Trail[]; items: Record<string, Item> } {
-  const trail: Trail = {
-    id: graph.trailId,
-    title: graph.trailTitle,
+  const trails: Trail[] = graph.trails.map(trail => ({
+    ...trail,
     description: "",
-    itemIds: graph.itemIds,
     steps: [],
     version: 1,
     forkedFrom: null,
-  }
+  }))
   const items: Record<string, Item> = {}
   for (const item of graph.items) {
     items[item.id] = {
@@ -30,7 +28,7 @@ function toGraphProps(graph: GraphPreviewData): { trails: Trail[]; items: Record
       linkedItemIds: item.associations.map((a) => a.targetId),
     }
   }
-  return { trails: [trail], items }
+  return { trails, items }
 }
 
 export function ProjectThumbnail({
