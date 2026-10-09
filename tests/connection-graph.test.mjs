@@ -85,18 +85,18 @@ test('connections bend around notes between their endpoints', () => {
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, content: '', associations: id === 'a' ? [{ id: 'ac', targetId: 'c', text: null }] : [] }]));
   const trails = ['a', 'b', 'c'].map(id => ({ id, title: id, itemIds: [id] }));
   const flow = renderGraph({ items, trails, onSelectItem() {} });
-  internalNodes = Object.fromEntries(flow.props.nodes.filter(node => node.type === 'card').map(node => [node.id, { id: node.id, measured: { width: 420, height: 132 }, internals: { positionAbsolute: node.position } }]));
+  internalNodes = Object.fromEntries(flow.props.nodes.filter(node => node.type === 'card').map(node => [node.id, { id: node.id, measured: { width: 480, height: 132 }, internals: { positionAbsolute: node.position } }]));
   const edge = flow.props.edges.find(edge => edge.id === 'connection:a:c');
   const path = flatten(flow.props.edgeTypes.floating(edge)).find(node => node.type === 'BaseEdge').props.path;
   expect(path).toContain(' Q ');
   expect(path).toContain(' 68');
 
   const oneTrail = renderGraph({ items, trails: [{ id: 'all', title: 'All', itemIds: ['a', 'b', 'c'] }], onSelectItem() {} });
-  internalNodes = Object.fromEntries(oneTrail.props.nodes.filter(node => node.type === 'card').map(node => [node.id, { id: node.id, measured: { width: 420, height: 132 }, internals: { positionAbsolute: node.position } }]));
+  internalNodes = Object.fromEntries(oneTrail.props.nodes.filter(node => node.type === 'card').map(node => [node.id, { id: node.id, measured: { width: 480, height: 132 }, internals: { positionAbsolute: node.position } }]));
   const verticalEdge = oneTrail.props.edges.find(edge => edge.id === 'connection:a:c');
   const verticalPath = flatten(oneTrail.props.edgeTypes.floating(verticalEdge)).find(node => node.type === 'BaseEdge').props.path;
   expect(verticalPath).toContain(' Q ');
-  expect(verticalPath).toContain('460');
+  expect(verticalPath).toContain('520');
 });
 
 test('repeated and reciprocal note links draw one wire per pair', () => {
@@ -223,20 +223,24 @@ test('measured card height moves the next card down without clipping', () => {
     b: { id: 'b', title: 'B', content: '', associations: [] },
   };
   const props = { items, trails: [{ id: 'first', title: 'First', itemIds: ['a', 'b'] }], onSelectItem() {} };
-  renderGraph(props).props.onNodesChange([{ id: 'card:first:a', type: 'dimensions', dimensions: { width: 420, height: 280 } }]);
+  renderGraph(props).props.onNodesChange([{ id: 'card:first:a', type: 'dimensions', dimensions: { width: 480, height: 280 } }]);
   const second = renderGraph(props).props.nodes.find(node => node.id === 'card:first:b');
   expect(second.position.y).toBe(404);
   const lane = renderGraph(props).props.nodes.find(node => node.id === 'lane:first');
-  expect(lane.style.width).toBe(452);
+  expect(lane.style.width).toBe(512);
   expect(lane.style.height).toBe(560);
 });
 
 test('cards show all nonempty paragraphs up to 256 characters', () => {
   hookValues = [];
-  const content = JSON.stringify({ root: { children: [{ text: '' }, { text: 'First paragraph' }, { text: 'Second paragraph' }, { text: 'Third paragraph' }] } });
+  const content = JSON.stringify({ root: { children: [{ text: '' }, { text: 'First line\nSecond line' }, { text: 'Second paragraph' }, { text: 'Third paragraph' }] } });
   const items = { a: { id: 'a', title: 'A', content, associations: [] } };
   const flow = renderGraph({ items, trails: [{ id: 'first', title: 'First', itemIds: ['a'] }], onSelectItem() {} });
-  expect(flow.props.nodes.find(node => node.type === 'card').data.preview).toBe('First paragraph\n\nSecond paragraph\n\nThird paragraph');
+  const card = flow.props.nodes.find(node => node.type === 'card');
+  expect(card.data.preview).toBe('First line\nSecond line\n\nSecond paragraph\n\nThird paragraph');
+  const rendered = flatten(flow.props.nodeTypes.card({ data: card.data }));
+  expect(rendered.find(node => node.props.className?.includes('space-y-3')).props.className).toContain('leading-[1.6]');
+  expect(rendered.filter(node => node.type === 'p').map(node => node.props.children)).toEqual(['First line\nSecond line', 'Second paragraph', 'Third paragraph']);
 });
 
 test('map previews show cross-trail content and links before notes are opened', () => {
@@ -280,15 +284,17 @@ test('map previews use the same cards and layout as the full map', () => {
   const small = renderGraph({ ...props, variant: 'preview' });
   const cards = small.props.nodes.filter(node => node.type === 'card');
   expect(cards.map(node => node.data.preview)).toEqual(['Draft text', '']);
-  expect(cards.map(node => node.position.x)).toEqual([16, 526]);
-  expect(small.props.nodes.filter(node => node.type === 'lane').map(node => node.style.width)).toEqual([452, 452]);
+  expect(cards.map(node => node.position.x)).toEqual([16, 586]);
+  expect(small.props.nodes.filter(node => node.type === 'lane').map(node => node.style.width)).toEqual([512, 512]);
   const card = flatten(small.props.nodeTypes.card({ data: cards[0].data }));
-  expect(card[0].props.className).toContain('w-[420px]');
-  expect(card.find(node => node.props.children === 'Loaded').props.className).toContain('text-lg');
+  expect(card[0].props.className).toContain('w-[480px]');
+  expect(card.find(node => node.props.children === 'Loaded').props.className).toContain('text-[28px]');
+  expect(card.find(node => node.props.className?.includes('space-y-3')).props.className).toContain('text-[15px]');
   expect(JSON.stringify(card)).toContain('Draft text');
   expect(JSON.stringify(small.props.nodeTypes.card({ data: cards[1].data }))).not.toContain('No preview available');
   expect(small.props.fitView).toBe(true);
   expect(small.props.minZoom).toBe(0.01);
+  expect(full.props.defaultViewport.zoom).toBe(1);
 });
 
 test('Connect starts from the selected appearance and exposes whole-card targets', () => {
