@@ -10,6 +10,7 @@ function setup() {
   const timers = new Map();
   const requests = [];
   const statuses = [];
+  const optimistic = [];
   let refIndex = 0;
   let timerId = 0;
   let cleanups = [];
@@ -17,7 +18,7 @@ function setup() {
   const exports = {};
   const source = readFileSync('app/editor/[projectId]/hooks/useAutoSave.ts', 'utf8');
   runInNewContext(ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText, {
     exports,
     require: (name) => ({
@@ -53,12 +54,12 @@ function setup() {
     refIndex = 0;
     hook = exports.useAutoSave({
       contextId: itemId,
-      onOptimisticUpdate: () => {},
+      onOptimisticUpdate: (itemId, content) => optimistic.push([itemId, content]),
       redirectToLogin: () => {},
     });
   }
   return {
-    requests, statuses, select,
+    requests, statuses, optimistic, select,
     edit: (content) => hook.onChange(currentItemId, { read: (fn) => fn(), toJSON: () => content }),
     flush: () => { for (const [id, fn] of timers) { timers.delete(id); fn(); } },
     unload: (event) => beforeUnload(event),
@@ -72,6 +73,17 @@ function setup() {
 }
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+test('groups rapid edits into one project state update without delaying a flush', () => {
+  const s = setup();
+  s.select('a');
+  s.edit('first');
+  s.edit('latest');
+  expect(s.optimistic).toEqual([]);
+  s.barrier();
+  expect(s.optimistic).toEqual([['a', JSON.stringify('latest')]]);
+  s.requests[0].resolve();
+});
 
 test('saves serially and keeps only the latest pending content per item', async () => {
   const s = setup();
@@ -100,6 +112,7 @@ test('keeps pending changes across item switches and warns during unload', async
   s.flush();
   s.edit('latest a');
   s.select('b');
+  expect(s.optimistic.at(-1)).toEqual(['a', JSON.stringify('latest a')]);
   s.edit('latest b');
   s.flush();
   let warned = false;

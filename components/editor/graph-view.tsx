@@ -35,7 +35,7 @@ export function GraphView({ projectId, graphColors, onSaveColors, trails, items,
       >
         <X className="h-4 w-4" />
       </button>
-      {mapPreviews === null ? <div role="alert" className="flex h-full items-center justify-center gap-3 text-sm text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph
+      {mapPreviews === null ? <div role="alert" className="flex h-full items-center justify-center gap-3 text-sm text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : mapPreviews === undefined && onRetryMapPreviews ? <div role="status" className="flex h-full items-center justify-center text-sm text-muted-foreground">Loading map…</div> : <KnowledgeGraph
         key={projectId}
         graphColors={graphColors}
         onSaveColors={onSaveColors}

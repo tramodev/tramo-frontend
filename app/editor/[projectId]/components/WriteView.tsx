@@ -359,7 +359,7 @@ export function WriteView(props: WriteViewProps) {
       </div>
     </div>
     <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} mapPreviews={props.mapPreviews} onRetryMapPreviews={props.onRetryMapPreviews} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
-      onSelectItem={props.onSelectItem} onUpdateAssociation={props.onUpdateAssociation} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
+      onSelectItem={props.onSelectItem} onUpdateAssociation={props.onUpdateAssociation} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
   </EditorImagesProvider>;
 }

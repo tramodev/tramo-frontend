@@ -21,6 +21,8 @@ export function useAutoSave({
 }: UseAutoSaveParams) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const pendingContentRef = useRef(new Map<string, string>());
+  const optimisticContentRef = useRef(new Map<string, string>());
+  const optimisticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlightRef = useRef<Promise<boolean> | null>(null);
   const incompleteImagesRef = useRef(new Set<string>());
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,10 +32,19 @@ export function useAutoSave({
   const discardItem = useCallback((itemId: string) => {
     deletedItemsRef.current.add(itemId);
     pendingContentRef.current.delete(itemId);
+    optimisticContentRef.current.delete(itemId);
     incompleteImagesRef.current.delete(itemId);
   }, []);
 
+  const flushOptimisticContent = useCallback(() => {
+    if (optimisticTimeoutRef.current) clearTimeout(optimisticTimeoutRef.current);
+    optimisticTimeoutRef.current = null;
+    for (const [itemId, content] of optimisticContentRef.current) onOptimisticUpdate(itemId, content);
+    optimisticContentRef.current.clear();
+  }, [onOptimisticUpdate]);
+
   const flushPendingContent = useCallback((): Promise<boolean> => {
+    flushOptimisticContent();
     if (saveContentTimeoutRef.current) {
       clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = null;
@@ -70,7 +81,7 @@ export function useAutoSave({
     };
     inFlightRef.current = save();
     return inFlightRef.current;
-  }, [redirectToLogin]);
+  }, [flushOptimisticContent, redirectToLogin]);
 
   useEffect(() => {
     return () => { void flushPendingContent(); };
@@ -91,7 +102,8 @@ export function useAutoSave({
     editorState.read(() => {
       if (deletedItemsRef.current.has(itemId)) return;
       const json = JSON.stringify(editorState.toJSON());
-      onOptimisticUpdate(itemId, json);
+      optimisticContentRef.current.set(itemId, json);
+      if (!optimisticTimeoutRef.current) optimisticTimeoutRef.current = setTimeout(flushOptimisticContent, 150);
       if (json.includes('"imageId":""')) {
         incompleteImagesRef.current.add(itemId);
         pendingContentRef.current.delete(itemId);
@@ -104,7 +116,7 @@ export function useAutoSave({
       if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = setTimeout(() => flushPendingContent(), 600);
     });
-  }, [flushPendingContent, onOptimisticUpdate]);
+  }, [flushOptimisticContent, flushPendingContent]);
 
   const pauseItem = (id: string) => { pausedItemsRef.current.add(id); };
   const resumeItem = (id: string) => {
@@ -113,6 +125,7 @@ export function useAutoSave({
   };
   const acceptPersistedItem = (id: string) => {
     pendingContentRef.current.delete(id);
+    optimisticContentRef.current.delete(id);
     incompleteImagesRef.current.delete(id);
     setSaveStatus('saved');
   };

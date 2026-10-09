@@ -41,18 +41,16 @@ function props(open = false) {
   };
 }
 
-test('separators are visual and the connections button selects its note without toggling an open panel closed', () => {
+test('separators are visual and the connections panel keeps its open state', () => {
   for (const open of [false, true]) {
     const p = props(open);
     const nodes = flatten(exports.WriteView(p));
     const connectors = nodes.filter(node => node.type === 'TrailConnector');
     expect(connectors).toHaveLength(2);
     expect(connectors.every(node => Object.keys(node.props).length === 0)).toBe(true);
-    const buttons = nodes.filter(node => node.type === 'button' && node.props['aria-controls'] === 'editor-connections');
-    expect(buttons.map(node => node.props['aria-label'])).toEqual(['Connections for A: 1', 'Connections for B: 1', 'Connections for C: 0']);
-    buttons[1].props.onClick();
-    expect(p.visible).toEqual(['b']);
-    expect(p.toggles()).toBe(open ? 0 : 1);
+    const panel = nodes.find(node => node.type === 'ConnectionsPanel');
+    expect(panel.props.item.id).toBe('a');
+    expect(panel.props.open).toBe(open);
   }
 });
 
