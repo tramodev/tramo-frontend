@@ -150,7 +150,6 @@ export function ExploreCard({
       <div className="flex items-center gap-4 sm:shrink-0 sm:self-center">
         <ProjectThumbnail
           thumbnailImageUrl={project.thumbnailImageUrl}
-          thumbnailGraph={project.thumbnailGraph}
           title={project.title}
           className="rounded-lg w-full h-[180px] sm:w-[156px] sm:h-[128px] bg-surface-container-high"
         />

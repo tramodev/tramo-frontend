@@ -48,7 +48,7 @@ export function UpvotedPanel({
         {items.map((item) => (
           <Row key={item.id}>
             <Link href={`/p/${item.id}`} className="absolute inset-0 z-0" aria-label={item.title} />
-            <Thumbnail thumbnailImageUrl={item.thumbnailImageUrl} thumbnailGraph={item.thumbnailGraph} title={item.title} />
+            <Thumbnail thumbnailImageUrl={item.thumbnailImageUrl} title={item.title} />
             <div className="min-w-0 flex-1">
               <div className="mb-1 font-display text-xl font-medium">{item.title}</div>
               <div className="text-xs text-muted-foreground">

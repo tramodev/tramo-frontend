@@ -54,7 +54,7 @@ interface WriteViewProps {
   projectId: string;
   item: Item;
   items: Record<string, Item>;
-  mapPreviews: MapPreviews | null;
+  mapPreviews: MapPreviews | null | undefined;
   onRetryMapPreviews: () => void;
   trails: Trail[];
   graphColors?: string | null;

@@ -38,6 +38,7 @@ async function setup() {
       'next/navigation': { useRouter: () => router },
       '@/lib/projects-store': {
         getProject: async () => ({ title: 'Project', items, trails: [trail] }),
+        getMapPreviews: async () => ({}),
         reorderTrailItems: () => { requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
         updateAssociation: async (id, associationId, text) => ({ id: associationId, targetId: 'b', text }),
       },

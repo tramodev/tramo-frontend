@@ -57,7 +57,6 @@ export default function PublishPage() {
   const [tags, setTags] = useState("");
   const [visibility, setVisibility] = useState<ProjectVisibility>("private");
   const [thumbnailImageUrl, setThumbnailImageUrl] = useState<string | null>(null);
-  const [thumbnailGraph, setThumbnailGraph] = useState<Project["thumbnailGraph"]>(null);
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [justPublished, setJustPublished] = useState(false);
@@ -72,7 +71,6 @@ export default function PublishPage() {
       setTags(p.tags);
       setVisibility(p.visibility);
       setThumbnailImageUrl(p.thumbnailImageUrl);
-      setThumbnailGraph(p.thumbnailGraph);
     });
     getMyProfile().then((p) => p && setProfile({ username: p.username, imageUrl: p.imageUrl, selectedBadge: p.selectedBadge }));
   }, [projectId]);
@@ -91,7 +89,6 @@ export default function PublishPage() {
     ownerAvatar: profile?.imageUrl ?? null,
     ownerBadge: profile?.selectedBadge ?? null,
     thumbnailImageUrl,
-    thumbnailGraph,
     tags: tagList,
     modifiedDate: project.updatedAt,
     publishedDate: project.visibility === "private" ? null : project.updatedAt,
@@ -253,11 +250,7 @@ export default function PublishPage() {
           projectId={projectId}
           project={project}
           imageUrl={thumbnailImageUrl}
-          graph={thumbnailGraph}
-          onChange={(imageUrl, graph) => {
-            setThumbnailImageUrl(imageUrl);
-            setThumbnailGraph(graph);
-          }}
+          onChange={setThumbnailImageUrl}
           onError={setError}
         />
 

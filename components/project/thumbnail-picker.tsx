@@ -9,14 +9,13 @@ import { toBlob } from "html-to-image"
 import { Label } from "@/components/ui/label"
 import { ProjectThumbnail } from "@/components/project/project-thumbnail"
 import { KnowledgeGraph } from "@/components/editor/knowledge-graph"
-import type { Item } from "@/app/editor/types"
 import {
+  getMapPreviews,
   setProjectThumbnail,
   type Project,
-  type ThumbnailChoice,
+  type MapPreviews,
 } from "@/lib/projects-store"
 import { uploadImage } from "@/lib/upload-image"
-import { getItemContent, getTrailContents } from "@/lib/item-content-client"
 import { cn } from "@/lib/utils"
 
 function UploadThumbnailTab({ disabled, onFile }: { disabled: boolean; onFile: (file: File) => void }) {
@@ -49,28 +48,26 @@ export function ThumbnailPicker({
   projectId,
   project,
   imageUrl,
-  graph,
   onChange,
   onError,
 }: {
   projectId: string;
   project: Project;
   imageUrl: string | null;
-  graph: Project["thumbnailGraph"];
-  onChange: (imageUrl: string | null, graph: Project["thumbnailGraph"]) => void;
+  onChange: (imageUrl: string | null) => void;
   onError: (message: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
-  const [snapshotItems, setSnapshotItems] = useState<Record<string, Item> | null>(null);
+  const [snapshotPreviews, setSnapshotPreviews] = useState<MapPreviews | null>(null);
   const snapshotRef = useRef<HTMLDivElement>(null);
 
-  const apply = async (choice: ThumbnailChoice, optimistic: { imageUrl: string | null; graph: Project["thumbnailGraph"] }) => {
+  const apply = async (nextImageUrl: string) => {
     setSaving(true);
-    onChange(optimistic.imageUrl, optimistic.graph);
+    onChange(nextImageUrl);
     try {
-      await setProjectThumbnail(projectId, choice);
+      await setProjectThumbnail(projectId, nextImageUrl);
     } catch {
-      onChange(imageUrl, graph);
+      onChange(imageUrl);
       onError("Couldn't update the thumbnail — try again.");
     } finally {
       setSaving(false);
@@ -85,7 +82,7 @@ export function ThumbnailPicker({
     setSaving(true);
     try {
       const url = await uploadImage(file, "thumbnail", projectId);
-      await apply({ type: "DEDICATED", imageUrl: url }, { imageUrl: url, graph: null });
+      await apply(url);
     } catch {
       onError("Upload failed — try again.");
       setSaving(false);
@@ -102,13 +99,12 @@ export function ThumbnailPicker({
       <div className="relative">
         <ProjectThumbnail
           thumbnailImageUrl={imageUrl}
-          thumbnailGraph={graph}
           title={project.title}
           className="h-48 w-full rounded-lg border border-border bg-surface-container-high"
         />
-        {snapshotItems && <div className="pointer-events-none absolute left-[-10000px] top-0 h-48 w-full">
+        {snapshotPreviews && <div className="pointer-events-none absolute left-[-10000px] top-0 h-48 w-full">
           <div ref={snapshotRef} className="h-48 w-full overflow-hidden rounded-lg border border-border bg-surface-container-high">
-            <KnowledgeGraph trails={project.trails} items={snapshotItems} graphColors={project.graphColors} onSelectItem={() => {}} variant="preview" />
+            <KnowledgeGraph trails={project.trails} items={project.items} mapPreviews={snapshotPreviews} graphColors={project.graphColors} onSelectItem={() => {}} variant="preview" />
           </div>
         </div>}
       </div>
@@ -121,12 +117,9 @@ export function ThumbnailPicker({
           onClick={async () => {
             setSaving(true);
             try {
+              const previews = await getMapPreviews(projectId);
+              setSnapshotPreviews(previews);
               const filed = new Set(project.trails.flatMap(trail => trail.itemIds));
-              const contents = Object.assign({}, ...await Promise.all([
-                ...project.trails.map(trail => getTrailContents(trail.id)),
-                ...Object.keys(project.items).filter(id => !filed.has(id)).map(async id => ({ [id]: await getItemContent(id) })),
-              ]));
-              setSnapshotItems(Object.fromEntries(Object.entries(project.items).map(([id, item]) => [id, { ...item, content: item.content ?? contents[id] ?? null }])));
               const cardCount = project.trails.reduce((total, trail) => total + trail.itemIds.length, 0) + Object.keys(project.items).filter(id => !filed.has(id)).length;
               for (let frame = 0; frame < 60 && snapshotRef.current?.querySelectorAll(".react-flow__node-card").length !== cardCount; frame++) {
                 await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
@@ -139,11 +132,11 @@ export function ThumbnailPicker({
               const blob = await toBlob(node, { pixelRatio: 2 });
               if (!blob) throw new Error("Could not capture map preview");
               const url = await uploadImage(blob, "thumbnail", projectId);
-              await apply({ type: "DEDICATED", imageUrl: url }, { imageUrl: url, graph: null });
+              await apply(url);
             } catch {
               onError("Couldn't create the map thumbnail — try again.");
             } finally {
-              setSnapshotItems(null);
+              setSnapshotPreviews(null);
               setSaving(false);
             }
           }}

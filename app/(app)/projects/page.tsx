@@ -231,7 +231,6 @@ export default function ProjectsPage() {
                   <CardContent className="mx-2 mt-2 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-sm p-0">
                     <ProjectThumbnail
                       thumbnailImageUrl={project.thumbnailImageUrl}
-                      thumbnailGraph={project.thumbnailGraph}
                       title={project.title}
                       className="h-full w-full"
                       placeholder={<FolderKanban strokeWidth={1.5} className="h-9 w-9 text-muted-foreground" />}
@@ -325,7 +324,6 @@ export default function ProjectsPage() {
                 >
                   <ProjectThumbnail
                     thumbnailImageUrl={project.thumbnailImageUrl}
-                    thumbnailGraph={project.thumbnailGraph}
                     title={project.title}
                     className="h-12 w-12 shrink-0 rounded-md"
                     placeholder={<FolderKanban strokeWidth={1.5} className="h-5 w-5 text-muted-foreground" />}

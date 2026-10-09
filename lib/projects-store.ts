@@ -8,7 +8,6 @@ import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 import { parseResponse, expectOk } from "./http";
 import { anonIdHeader } from "./public-project";
-import type { GraphPreviewData } from "./feed";
 
 export type ProjectVisibility = "private" | "unlisted" | "published";
 export type MapPreviews = Record<string, { text: string; linkedItemIds: string[] }>;
@@ -20,10 +19,8 @@ export interface Project {
   graphColors: string | null;
   trails: Trail[];
   items: Record<string, Item>;
-  mapPreviews: MapPreviews | null;
   visibility: ProjectVisibility;
   thumbnailImageUrl: string | null;
-  thumbnailGraph: GraphPreviewData | null;
   tags: string;
   createdAt: string;
   updatedAt: string;
@@ -41,7 +38,6 @@ interface ProjectDTO {
   graphColors: string | null;
   visibility: ProjectVisibility | null;
   thumbnailImageUrl: string | null;
-  thumbnailGraph: GraphPreviewData | null;
   tags: string[] | null;
   creationDate: string;
   modifiedDate: string;
@@ -113,10 +109,8 @@ function toProjectSummary(dto: ProjectDTO): Project {
     graphColors: dto.graphColors ?? null,
     trails: [],
     items: {},
-    mapPreviews: null,
     visibility: dto.visibility ?? "private",
     thumbnailImageUrl: dto.thumbnailImageUrl,
-    thumbnailGraph: dto.thumbnailGraph,
     tags: dto.tags?.join(", ") ?? "",
     createdAt: dto.creationDate,
     updatedAt: dto.modifiedDate,
@@ -147,20 +141,19 @@ export async function listProjects(): Promise<Project[]> {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export async function getProject(id: string, includeMapPreviews = false): Promise<Project | null> {
+export async function getProject(id: string): Promise<Project | null> {
   const projectResponse = await api(`/api/project/${id}`);
   if (projectResponse.status === 404) return null;
   const projectDto = await parseResponse<ProjectDTO>(projectResponse);
 
   const trailDtos = await apiJson<TrailDTO[]>(`/api/project/${id}/trail`);
 
-  const [trailItemLists, looseDtos, textStats, mapPreviews] = await Promise.all([
+  const [trailItemLists, looseDtos, textStats] = await Promise.all([
     Promise.all(
       trailDtos.map((trail) => apiJson<TrailStepDTO[]>(`/api/trail/${trail.id}/item`))
     ),
     apiJson<ItemDTO[]>(`/api/project/${id}/item`),
     apiJson<{ words: number; characters: number; items: { id: number; words: number; characters: number }[] }>(`/api/project/${id}/text-stats`),
-    includeMapPreviews ? getMapPreviews(id).catch(() => null) : Promise.resolve(null),
   ]);
 
   const itemMap = new Map<number, ItemDTO>();
@@ -202,7 +195,7 @@ export async function getProject(id: string, includeMapPreviews = false): Promis
     forkedFrom: trail.forkedFromId != null ? String(trail.forkedFromId) : null,
   }));
 
-  return { ...toProjectSummary(projectDto), trails, items, mapPreviews };
+  return { ...toProjectSummary(projectDto), trails, items };
 }
 
 export async function getMapPreviews(id: string): Promise<MapPreviews> {
@@ -240,13 +233,8 @@ export async function publishProject(id: string): Promise<{ error: string | null
   return apiResult(`/api/project/${id}/publish`, { method: "POST" });
 }
 
-export type ThumbnailChoice =
-  | { type: "NONE" }
-  | { type: "GRAPH" }
-  | { type: "DEDICATED"; imageUrl: string };
-
-export async function setProjectThumbnail(id: string, choice: ThumbnailChoice): Promise<void> {
-  await apiVoid(`/api/project/${id}/thumbnail`, { method: "PUT", json: choice });
+export async function setProjectThumbnail(id: string, imageUrl: string): Promise<void> {
+  await apiVoid(`/api/project/${id}/thumbnail`, { method: "PUT", json: { type: "DEDICATED", imageUrl } });
 }
 
 export async function searchProjectItems(id: string, q: string): Promise<string[]> {

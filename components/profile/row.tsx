@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import Link from "next/link"
 import { ProjectThumbnail } from "@/components/project/project-thumbnail"
-import type { GraphPreviewData } from "@/lib/feed"
 
 export function Row({ children }: { children: React.ReactNode }) {
   return (
@@ -14,17 +13,14 @@ export function Row({ children }: { children: React.ReactNode }) {
 
 export function Thumbnail({
   thumbnailImageUrl,
-  thumbnailGraph,
   title,
 }: {
   thumbnailImageUrl: string | null
-  thumbnailGraph: GraphPreviewData | null
   title: string
 }) {
   return (
     <ProjectThumbnail
       thumbnailImageUrl={thumbnailImageUrl}
-      thumbnailGraph={thumbnailGraph}
       title={title}
       className="shrink-0 rounded-md w-24 h-16 bg-surface-container-high"
     />

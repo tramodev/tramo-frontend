@@ -32,7 +32,6 @@ import { resolveItemTrail } from '../../trail-navigation';
 import { getItemContent, getTrailContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
 import { getMyProfile } from '@/lib/profile';
-import type { GraphPreviewData } from '@/lib/feed';
 
 export interface ReorderNotice {
   error?: string;
@@ -55,8 +54,6 @@ export function useProjectEditorState(projectId: string) {
   const [description, setDescription] = useState('');
   const [graphColors, setGraphColors] = useState<string | null>(null);
   const [tags, setTags] = useState('');
-  const [thumbnailImageUrl, setThumbnailImageUrl] = useState<string | null>(null);
-  const [thumbnailGraph, setThumbnailGraph] = useState<GraphPreviewData | null>(null);
 
   const [trails, setTrails] = useState<Trail[]>([]);
   const [reorderNotices, setReorderNotices] = useState<Record<string, ReorderNotice>>({});
@@ -67,7 +64,8 @@ export function useProjectEditorState(projectId: string) {
     return next;
   });
   const [items, setItems] = useState<Record<string, Item>>({});
-  const [mapPreviews, setMapPreviews] = useState<MapPreviews | null>(null);
+  const [previewResult, setPreviewResult] = useState<{ projectId: string; data: MapPreviews | null } | null>(null);
+  const mapPreviews = previewResult?.projectId === projectId ? previewResult.data : undefined;
   const [navigation, setNavigation] = useState<{
     itemId?: string;
     trailId?: string;
@@ -91,7 +89,12 @@ export function useProjectEditorState(projectId: string) {
 
   useEffect(() => {
     let cancelled = false;
-    getProject(projectId, true).then((project) => {
+    getMapPreviews(projectId).then((data) => {
+      if (!cancelled) setPreviewResult({ projectId, data });
+    }).catch(() => {
+      if (!cancelled) setPreviewResult({ projectId, data: null });
+    });
+    getProject(projectId).then((project) => {
       if (cancelled) return;
       if (!project) {
         router.replace('/projects');
@@ -102,11 +105,8 @@ export function useProjectEditorState(projectId: string) {
       setDescription(project.description);
       setGraphColors(project.graphColors);
       setTags(project.tags);
-      setThumbnailImageUrl(project.thumbnailImageUrl);
-      setThumbnailGraph(project.thumbnailGraph);
       setTrails(project.trails);
       setItems(project.items);
-      setMapPreviews(project.mapPreviews);
       setLoaded(true);
 
       const entry = new URLSearchParams(window.location.search);
@@ -449,13 +449,9 @@ export function useProjectEditorState(projectId: string) {
     void pendingSaves.current.track("project-title", () => renameProject(projectId, title), true).catch(() => {});
   };
 
-  const handleThumbnailChange = useCallback((imageUrl: string | null, graph: GraphPreviewData | null) => {
-    setThumbnailImageUrl(imageUrl);
-    setThumbnailGraph(graph);
-  }, []);
-
   const retryMapPreviews = useCallback(() => {
-    void getMapPreviews(projectId).then(setMapPreviews).catch(() => setMapPreviews(null));
+    setPreviewResult(null);
+    void getMapPreviews(projectId).then((data) => setPreviewResult({ projectId, data })).catch(() => setPreviewResult({ projectId, data: null }));
   }, [projectId]);
 
   return {
@@ -466,9 +462,6 @@ export function useProjectEditorState(projectId: string) {
     setDescription,
     tags,
     setTags,
-    thumbnailImageUrl,
-    thumbnailGraph,
-    handleThumbnailChange,
     profile,
     trails,
     items,

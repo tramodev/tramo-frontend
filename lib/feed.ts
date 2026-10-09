@@ -1,18 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import type { Association } from "@/app/editor/types";
-
-export type GraphPreviewData = {
-  trails: { id: string; title: string; itemIds: string[] }[];
-  items: { id: string; title: string; associations: Association[] }[];
-} | {
-  trailId: string;
-  trailTitle: string;
-  itemIds: string[];
-  items: { id: string; title: string; associations: Association[] }[];
-};
-
 export interface ProjectFeedItem {
   id: string;
   title: string;
@@ -21,7 +9,6 @@ export interface ProjectFeedItem {
   ownerAvatar: string | null;
   ownerBadge: string | null;
   thumbnailImageUrl: string | null;
-  thumbnailGraph: GraphPreviewData | null;
   tags: string[];
   modifiedDate: string;
   publishedDate: string | null;
@@ -47,7 +34,6 @@ export interface ProjectFeedItemDTO {
   ownerAvatar: string | null;
   ownerBadge: string | null;
   thumbnailImageUrl: string | null;
-  thumbnailGraph: GraphPreviewData | null;
   tags: string[] | null;
   modifiedDate: string;
   publishedDate: string;
@@ -74,7 +60,6 @@ export function toFeedItem(item: ProjectFeedItemDTO): ProjectFeedItem {
     ownerAvatar: item.ownerAvatar,
     ownerBadge: item.ownerBadge,
     thumbnailImageUrl: item.thumbnailImageUrl,
-    thumbnailGraph: item.thumbnailGraph,
     tags: item.tags ?? [],
     modifiedDate: item.modifiedDate,
     publishedDate: item.publishedDate,
