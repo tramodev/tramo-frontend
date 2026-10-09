@@ -28,9 +28,14 @@ test('graph thumbnail shows every trail and note appearance with static connecti
   const svg = renderGraph(graph);
   const nodes = flatten(svg);
   expect(svg.type).toBe('svg');
-  expect(nodes.filter(node => node.type === 'rect')).toHaveLength(5);
+  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--muted)')).toHaveLength(2);
+  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--card)')).toHaveLength(3);
   expect(nodes.filter(node => node.type === 'path' && node.props.strokeDasharray)).toHaveLength(1);
   expect(nodes.filter(node => node.type === 'path' && !node.props.strokeDasharray)).toHaveLength(1);
+  const trailTitle = nodes.find(node => node.type === 'foreignObject' && textOf(node).includes('First'));
+  const noteTitle = nodes.find(node => node.type === 'foreignObject' && textOf(node).includes('Shared'));
+  expect(trailTitle.props.children.props.className).toContain('text-[32px] font-semibold');
+  expect(noteTitle.props.children.props.className).toContain('text-[24px] font-medium');
   expect(textOf(svg).match(/Shared/g)).toHaveLength(2);
   expect(textOf(svg)).toContain('First');
   expect(textOf(svg)).toContain('Second');
@@ -43,7 +48,7 @@ test('graph thumbnail renders a response with the previous single-trail format',
     items: [{ id: 'note', title: 'Note', associations: [] }],
   };
   const svg = renderGraph(graph);
-  expect(flatten(svg).filter(node => node.type === 'rect')).toHaveLength(2);
+  expect(flatten(svg).filter(node => node.type === 'rect' && node.props.fill === 'var(--card)')).toHaveLength(1);
   expect(textOf(svg)).toContain('First');
   expect(textOf(svg)).toContain('Note');
 });
@@ -54,7 +59,7 @@ test('static thumbnail keeps every trail when the graph has several', () => {
     items: [],
   };
   const svg = renderGraph(graph);
-  expect(flatten(svg).filter(node => node.type === 'rect')).toHaveLength(5);
+  expect(flatten(svg).filter(node => node.type === 'rect' && node.props.fill === 'var(--muted)')).toHaveLength(5);
   expect(svg.props.viewBox).toBe('0 0 996 132');
   for (const title of ['One', 'Two', 'Three', 'Four', 'Five']) expect(textOf(svg)).toContain(title);
 });
