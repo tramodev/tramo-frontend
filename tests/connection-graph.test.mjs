@@ -11,13 +11,17 @@ let frames = [];
 let sourceClicks = 0;
 let edgePaths = [];
 const colorExports = {};
+const itemLinkExports = {};
 runInNewContext(ts.transpileModule(readFileSync('app/editor/graph-colors.ts', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText, { exports: colorExports });
+runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/itemLink.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: itemLinkExports });
 runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-graph.tsx', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText, { exports, requestAnimationFrame: callback => frames.push(callback), require: name => ({
-  react: { memo: fn => fn, useMemo: fn => fn(), useRef: () => ({ current: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }), querySelectorAll: selector => selector === '.react-flow__edge-path' ? edgePaths : [{ dataset: { nodeid: 'card:second:a' }, click: () => { sourceClicks++; } }, { dataset: { nodeid: 'card:first:a' }, click: () => { sourceClicks++; } }], focus() {} } }), useState: value => {
+  react: { memo: fn => fn, useMemo: fn => fn(), useCallback: fn => fn, useRef: () => ({ current: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }), querySelectorAll: selector => selector === '.react-flow__edge-path' ? edgePaths : [{ dataset: { nodeid: 'card:second:a' }, click: () => { sourceClicks++; } }, { dataset: { nodeid: 'card:first:a' }, click: () => { sourceClicks++; } }], focus() {} } }), useState: value => {
     const index = hookIndex++;
     if (!(index in hookValues)) hookValues[index] = typeof value === 'function' ? value() : value;
     return [hookValues[index], next => { hookValues[index] = typeof next === 'function' ? next(hookValues[index]) : next; }];
@@ -27,6 +31,7 @@ runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-gra
   '@/hooks/use-mounted': { useMounted: () => true },
   '@/app/editor/editor-utils': { collectPlainText: content => [JSON.parse(content).root.text] },
   '@/app/editor/graph-colors': colorExports,
+  '@/app/editor/plugins/itemLink': itemLinkExports,
   '@xyflow/react': { ReactFlow: 'Flow', Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
 })[name] ?? {} });
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
@@ -57,6 +62,33 @@ test('shared notes have distinct appearances and explicit connections appear onc
   expect(flow.props.edges[0].selectable).toBe(false);
   flow.props.onEdgeClick({}, flow.props.edges[1]);
   expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Context\\n\\nOther context');
+});
+
+test('repeated and reciprocal note links draw one wire per pair', () => {
+  hookValues = [];
+  const content = (...targets) => JSON.stringify({ root: { children: targets.map(target => ({ type: 'paragraph', children: [{ type: 'link', rel: `tramo-idea:${target}`, children: [{ type: 'text', text: target }] }] })) } });
+  const items = {
+    a: { id: 'a', title: 'A', content: content('b', 'b', 'b'), associations: [] },
+    b: { id: 'b', title: 'B', content: content('a'), associations: [] },
+  };
+  const trails = [{ id: 'first', title: 'First', itemIds: ['a', 'b'] }];
+  const calls = [];
+  const props = { items, trails, onSelectItem() {}, onTie: async (...args) => calls.push(args) };
+  let flow = renderGraph(props);
+  expect(flow.props.edges.map(edge => edge.id)).toEqual(['reference:a:b']);
+  flow.props.onConnect({ source: 'card:first:a', target: 'card:first:b' });
+  expect(calls).toEqual([]);
+  flow.props.onEdgeClick({}, flow.props.edges[0]);
+  expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Linked in note.');
+  items.a.associations = [{ id: 'ab', targetId: 'b', text: 'Context' }];
+  flow = renderGraph(props);
+  expect(flow.props.edges.map(edge => edge.id)).toEqual(['a:ab']);
+  flow.props.onEdgeClick({}, flow.props.edges[0]);
+  expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Context');
+  items.a.associations = [];
+  items.a.content = '';
+  items.b.content = '';
+  expect(renderGraph(props).props.edges).toEqual([]);
 });
 
 test('three appearances of one note are connected without duplicating links', () => {

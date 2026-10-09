@@ -1,12 +1,13 @@
 "use client"
 
-import { memo, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { useMounted } from "@/hooks/use-mounted"
 import { ReactFlow, Background, Controls, Handle, Position, type Node, type Edge, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import type { Item, Trail } from "@/app/editor/types"
 import { collectPlainText } from "@/app/editor/editor-utils"
+import { itemIdsFromContent } from "@/app/editor/plugins/itemLink"
 import { GRAPH_COLORS, parseGraphColors, type GraphColor, type GraphColors } from "@/app/editor/graph-colors"
 
 interface KnowledgeGraphProps {
@@ -34,8 +35,7 @@ type LocalConnection = { sourceId: string; targetId: string; sourceVisualId: str
 
 const COLUMN_WIDTH = 420
 const COLUMN_GAP = 90
-const connected = (items: Record<string, Item>, a: string, b: string) =>
-  items[a]?.associations.some(association => association.targetId === b) || items[b]?.associations.some(association => association.targetId === a)
+const pairKey = (a: string, b: string) => [a, b].sort().join(":")
 const locallyConnected = (connections: LocalConnection[], a: string, b: string) =>
   connections.some(connection => connection.sourceId === a && connection.targetId === b || connection.sourceId === b && connection.targetId === a)
 function previewText(content: string | null) {
@@ -82,6 +82,9 @@ const nodeTypes = { card: Card, lane: Lane }
 
 export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, graphColors, onSaveColors, onSelectItem, onTie, onUntie, variant = "full" }: KnowledgeGraphProps) {
   const preview = variant === "preview"
+  const references = useMemo(() => Object.fromEntries(Object.values(items).map(item => [item.id, itemIdsFromContent(item.content)])), [items])
+  const connected = useCallback((a: string, b: string) =>
+    items[a]?.associations.some(association => association.targetId === b) || items[b]?.associations.some(association => association.targetId === a) || references[a]?.includes(b) || references[b]?.includes(a), [items, references])
   const { resolvedTheme } = useTheme()
   const mounted = useMounted()
   const [selectedConnection, setSelectedConnection] = useState<string>()
@@ -123,7 +126,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
         const item = items[itemId]
         const appearance = { id: `card:${column.trailId || "loose"}:${itemId}`, itemId, trailId: column.trailId || undefined, column: columnIndex, row }
         appearances.set(itemId, [...(appearances.get(itemId) ?? []), appearance])
-        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: preview ? "" : previewText(item.content), compact: preview, number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !connected(items, link.sourceId, itemId) && !locallyConnected(localConnections, link.sourceId, itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
+        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: preview ? "" : previewText(item.content), compact: preview, number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !connected(link.sourceId, itemId) && !locallyConnected(localConnections, link.sourceId, itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
         y += (heights[appearance.id] ?? (preview ? 72 : 132)) + (preview ? 16 : 40)
       })
       nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: cardWidth + inset * 2, height: Math.max(preview ? 80 : 104, y - inset) }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
@@ -134,31 +137,38 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     }
     const associations: AssociationView[] = []
     const seenPairs = new Map<string, AssociationView>()
+    const addConnection = (sourceId: string, targetId: string, id: string, associationId: string | undefined, content: string | null) => {
+      const sources = appearances.get(sourceId)
+      const targets = appearances.get(targetId)
+      if (!sources?.length || !targets?.length) return
+      const pairs = sources.flatMap(source => targets.map(target => ({ source, target, distance: Math.abs(source.column - target.column) * 3 + Math.abs(source.row - target.row) })))
+      pairs.sort((a, b) => a.distance - b.distance || a.source.column - b.source.column || a.target.column - b.target.column)
+      const view = { id, associationId, sourceId, targetId, text: content, source: pairs[0].source, target: pairs[0].target }
+      seenPairs.set(pairKey(sourceId, targetId), view)
+      associations.push(view)
+    }
     for (const item of Object.values(items)) for (const association of item.associations ?? []) {
-      const pair = [item.id, association.targetId].sort().join(":")
+      const pair = pairKey(item.id, association.targetId)
       const existing = seenPairs.get(pair)
       if (existing) {
         if (existing.associationId !== association.id && association.text?.trim() && association.text !== existing.text)
           existing.text = existing.text ? `${existing.text}\n\n${association.text}` : association.text
         continue
       }
-      const sources = appearances.get(item.id)
-      const targets = appearances.get(association.targetId)
-      if (!sources?.length || !targets?.length) continue
-      const pairs = sources.flatMap(source => targets.map(target => ({ source, target, distance: Math.abs(source.column - target.column) * 3 + Math.abs(source.row - target.row) })))
-      pairs.sort((a, b) => a.distance - b.distance || a.source.column - b.source.column || a.target.column - b.target.column)
-      const view = { id: `${item.id}:${association.id}`, associationId: association.id, sourceId: item.id, targetId: association.targetId, text: association.text, source: pairs[0].source, target: pairs[0].target }
-      seenPairs.set(pair, view)
-      associations.push(view)
+      addConnection(item.id, association.targetId, `${item.id}:${association.id}`, association.id, association.text)
+    }
+    for (const [sourceId, targets] of Object.entries(references)) for (const targetId of targets) {
+      const pair = pairKey(sourceId, targetId)
+      if (sourceId !== targetId && items[targetId] && !seenPairs.has(pair)) addConnection(sourceId, targetId, `reference:${pair}`, undefined, null)
     }
     for (const connection of localConnections) {
-      if (connected(items, connection.sourceId, connection.targetId)) continue
+      if (connected(connection.sourceId, connection.targetId)) continue
       const source = appearances.get(connection.sourceId)?.find(appearance => appearance.id === connection.sourceVisualId)
       const target = appearances.get(connection.targetId)?.find(appearance => appearance.id === connection.targetVisualId)
       if (source && target) associations.push({ id: `local:${source.id}:${target.id}`, sourceId: connection.sourceId, targetId: connection.targetId, text: null, source, target })
     }
     return { nodes, associations, sharedEdges }
-  }, [trails, items, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections, colors])
+  }, [trails, items, references, connected, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections, colors])
 
   const onNodesChange = (changes: NodeChange<GraphNode>[]) => {
     const measured = changes.filter(change => change.type === "dimensions" && change.id.startsWith("card:") && change.dimensions?.height)
@@ -191,7 +201,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
   }))
   const selected = associations.find(association => association.id === selectedConnection)
   const connectItems = async (sourceId: string, targetId: string, sourceVisualId: string, targetVisualId: string) => {
-    if (!onTie || connecting || !items[sourceId] || !items[targetId] || sourceId === targetId || connected(items, sourceId, targetId) || locallyConnected(localConnections, sourceId, targetId)) return
+    if (!onTie || connecting || !items[sourceId] || !items[targetId] || sourceId === targetId || connected(sourceId, targetId) || locallyConnected(localConnections, sourceId, targetId)) return
     setConnecting(true)
     setError("")
     setLocalConnections(previous => [...previous, { sourceId, targetId, sourceVisualId, targetVisualId }])
@@ -238,12 +248,12 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     } finally { setSavingColors(false) }
   }
   const candidates = menu?.kind === "item" && items[menu.sourceId]
-    ? Object.values(items).filter(item => item.id !== menu.sourceId && !connected(items, menu.sourceId, item.id) && !locallyConnected(localConnections, menu.sourceId, item.id))
+    ? Object.values(items).filter(item => item.id !== menu.sourceId && !connected(menu.sourceId, item.id) && !locallyConnected(localConnections, menu.sourceId, item.id))
     : []
   const edgeAtPoint = (x: number, y: number) => {
     for (const path of graphRef.current?.querySelectorAll<SVGPathElement>(".react-flow__edge-path") ?? []) {
       const id = path.closest(".react-flow__edge")?.getAttribute("data-id")
-      if (!id || !associations.some(association => association.id === id)) continue
+      if (!id || !associations.some(association => association.id === id && !association.id.startsWith("reference:"))) continue
       const matrix = path.getScreenCTM()
       if (!matrix) continue
       const start = path.getPointAtLength(0)
@@ -315,7 +325,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     </div>}
     {!preview && (selected || error) && <div className="shrink-0 border-t border-border px-5 py-3 text-xs text-muted-foreground">
       {error && <p role="alert" className="text-destructive">{error}</p>}
-      {selected && <p role="status" className="max-h-32 overflow-auto whitespace-pre-wrap break-words"><span className="font-medium text-foreground">{items[selected.sourceId].title} — {items[selected.targetId].title}</span><span className="mt-1 block">{selected.text || "No explanation."}</span></p>}
+      {selected && <p role="status" className="max-h-32 overflow-auto whitespace-pre-wrap break-words"><span className="font-medium text-foreground">{items[selected.sourceId].title} — {items[selected.targetId].title}</span><span className="mt-1 block">{selected.text || (selected.id.startsWith("reference:") ? "Linked in note." : "No explanation.")}</span></p>}
     </div>}
   </div>
 }
