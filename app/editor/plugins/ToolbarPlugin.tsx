@@ -88,6 +88,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -302,7 +305,6 @@ export default function ToolbarPlugin({
   const colorSelection = useRef<RangeSelection | null>(null);
   const [elementFormat, setElementFormat] = useState<ElementFormat>('left');
   const [insertMenuOpen, setInsertMenuOpen] = useState(false);
-  const [tableMenuOpen, setTableMenuOpen] = useState(false);
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -680,29 +682,30 @@ export default function ToolbarPlugin({
         disabled={blockType === 'code'}
         onClick={insertLink}
       />
-      <DropdownMenu open={tableMenuOpen} onOpenChange={setTableMenuOpen}>
-        <ToolbarMenuButton label="Insert table" tooltip="Table" className="toolbar-item spaced">
-          <TableIcon size={18} />
-        </ToolbarMenuButton>
-        <DropdownMenuContent align="start">
-          <TableSizePicker
-            onPick={(rows, columns) => {
-              setTableMenuOpen(false);
-              editor.dispatchCommand(INSERT_TABLE_COMMAND, {
-                rows: String(rows),
-                columns: String(columns),
-                includeHeaders: { rows: true, columns: false },
-              });
-            }}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
       <DropdownMenu open={insertMenuOpen} onOpenChange={setInsertMenuOpen}>
         <ToolbarMenuButton label="Insert" tooltip="Insert" className="toolbar-item align-dropdown-trigger spaced">
           <Plus size={18} />
           <ChevronDown size={12} />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start">
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <TableIcon className="h-4 w-4" />
+              Table
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <TableSizePicker
+                onPick={(rows, columns) => {
+                  setInsertMenuOpen(false);
+                  editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+                    rows: String(rows),
+                    columns: String(columns),
+                    includeHeaders: { rows: true, columns: false },
+                  });
+                }}
+              />
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           <DropdownMenuItem
             disabled={blockType === 'code'}
             onSelect={() => fileInputRef.current?.click()}
