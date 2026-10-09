@@ -29,8 +29,8 @@ const TOUR_STEPS = [
   {
     element: '[data-tour="connections-toggle"]',
     popover: {
-      title: 'Connections & graph',
-      description: 'Open this panel to connect notes and preview them on the knowledge graph.',
+      title: 'Connections & map',
+      description: 'Open this panel to connect notes and preview them on the project map.',
     },
   },
   {

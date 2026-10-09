@@ -37,7 +37,7 @@ export const PricingSection: React.FC = () => {
               Tramo is free.
             </h2>
             <p className="mb-7 max-w-[46ch] text-base leading-[1.6] text-muted-foreground text-pretty">
-              Everything you need to connect notes — the editor, trails, the graph, and the full
+              Everything you need to connect notes — the editor, trails, the map, and the full
               social layer. No trial, no tiers gated behind a paywall.
             </p>
             <div className="mb-8 grid grid-cols-1 gap-x-7 gap-y-3 sm:grid-cols-2">

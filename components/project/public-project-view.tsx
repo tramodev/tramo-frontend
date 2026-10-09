@@ -224,10 +224,10 @@ export function PublicProjectView({
               variant={view === 'graph' ? 'secondary' : 'ghost'}
               size="lg"
               onClick={() => setView((v) => (v === 'graph' ? 'content' : 'graph'))}
-              title="See this project as a graph"
+              title="See this project map"
             >
               <ListTree className="h-[15px] w-[15px]" />
-              Graph
+              Map
             </Button>
           )}
           {activeTrail && (

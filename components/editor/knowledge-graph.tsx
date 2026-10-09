@@ -180,7 +180,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     setError("")
     setLocalConnections(previous => [...previous, { sourceId, targetId, sourceVisualId, targetVisualId }])
     try { await onTie(sourceId, targetId, ""); setLocalConnections(previous => previous.filter(connection => connection.sourceId !== sourceId || connection.targetId !== targetId)); setMenu(null) }
-    catch { setError("Connection shown only in this graph. It could not be saved.") }
+    catch { setError("Connection shown only in this map. It could not be saved.") }
     finally { setConnecting(false) }
   }
   const onConnect = (connection: Connection) => {
@@ -218,7 +218,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
       setError("")
     } catch {
       setColors(colors)
-      setError("Could not save graph colors. Please try again.")
+      setError("Could not save map colors. Please try again.")
     } finally { setSavingColors(false) }
   }
   const candidates = menu?.kind === "item" && items[menu.sourceId]

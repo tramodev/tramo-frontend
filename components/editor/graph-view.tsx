@@ -46,7 +46,7 @@ export function GraphView({ projectId, graphColors, onSaveColors, trails, items,
       <button
         type="button"
         onClick={onClose}
-        title="Close graph"
+        title="Close map"
         className="absolute top-6 right-6 z-10 flex h-9 w-9 items-center justify-center rounded-md bg-card hover:bg-muted"
       >
         <X className="h-4 w-4" />

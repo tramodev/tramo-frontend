@@ -323,7 +323,7 @@ export const BrowserMockup: React.FC = () => {
 
           <div className="mt-1.5 flex items-center justify-between border-t border-border pt-2.5">
             <h3 className="text-[11px] font-medium text-muted-foreground">
-              Graph preview
+              Map preview
             </h3>
             <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
               <GraphIcon className="w-3 h-3" />

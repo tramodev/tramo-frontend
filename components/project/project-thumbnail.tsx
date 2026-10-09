@@ -36,7 +36,7 @@ function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; classNa
 
   return (
     <div className={`overflow-hidden ${className}`}>
-      <svg role="img" aria-label={`Graph of ${trails.length} trails`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" className="pointer-events-none h-full w-full select-none">
+      <svg role="img" aria-label={`Map of ${trails.length} trails`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" className="pointer-events-none h-full w-full select-none">
         {trails.map((trail, column) => {
           const x = column * (laneWidth + LANE_GAP)
           return <g key={trail.id}>
