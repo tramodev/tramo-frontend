@@ -165,6 +165,7 @@ export default function EditorPage() {
                 item={project.selectedItem}
                 items={project.items}
                 trails={project.trails}
+                graphColors={project.graphColors}
                 activeTrailId={project.activeTrailId}
                 trail={project.activeTrail}
                 reorderNotice={project.activeTrailId ? project.reorderNotices[project.activeTrailId] : undefined}

@@ -54,6 +54,7 @@ interface WriteViewProps {
   item: Item;
   items: Record<string, Item>;
   trails: Trail[];
+  graphColors?: string | null;
   activeTrailId: string | undefined;
   trail: Trail | undefined;
   reorderNotice?: ReorderNotice;
@@ -354,7 +355,7 @@ export function WriteView(props: WriteViewProps) {
         </div>
       </div>
     </div>
-    <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} activeTrailId={props.activeTrailId}
+    <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
       onSelectItem={props.onSelectItem} onUpdateAssociation={props.onUpdateAssociation} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
   </EditorImagesProvider>;

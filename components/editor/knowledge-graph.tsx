@@ -27,7 +27,7 @@ interface KnowledgeGraphProps {
 }
 
 type GraphMenu = { x: number; y: number } & ({ kind: "item"; sourceId: string; sourceVisualId: string; sourceX: number; sourceY: number } | { kind: "trail"; trailId: string })
-type CardData = { itemId: string; trailId?: string; title: string; preview: string; compact: boolean; number: number; selected: boolean; shared: boolean; color?: GraphColor; connectRole?: "source" | "target" }
+type CardData = { itemId: string; trailId?: string; title: string; preview: string; number: number; selected: boolean; shared: boolean; color?: GraphColor; connectRole?: "source" | "target" }
 type CardNode = Node<CardData, "card">
 type LaneNode = Node<{ title: string; color?: GraphColor }, "lane">
 type GraphNode = CardNode | LaneNode
@@ -59,7 +59,7 @@ function previewText(content: string | null) {
 }
 
 const Card = memo(function Card({ data }: NodeProps<CardNode>) {
-  return <div className={`relative rounded-md border bg-card ${data.compact ? "min-h-[72px] w-[140px] p-2" : "min-h-[132px] w-[420px] p-4"} ${data.selected ? "border-primary" : "border-border"}`} style={data.color ? { background: `color-mix(in srgb, var(--ed-${data.color}) 16%, var(--card))` } : undefined}>
+  return <div className={`relative min-h-[132px] w-[420px] rounded-md border bg-card p-4 ${data.selected ? "border-primary" : "border-border"}`} style={data.color ? { background: `color-mix(in srgb, var(--ed-${data.color}) 16%, var(--card))` } : undefined}>
     <Handle id="target-top" type="target" position={Position.Top} className="!h-5 !w-5 !opacity-0" />
     <Handle id="source-bottom" type="source" position={Position.Bottom} className="!h-5 !w-5 !opacity-0" />
     <Handle id="target-left" type="target" position={Position.Left} className="!h-5 !w-5 !opacity-0" />
@@ -69,10 +69,10 @@ const Card = memo(function Card({ data }: NodeProps<CardNode>) {
     <Handle id="target-bottom" type="target" position={Position.Bottom} className="!pointer-events-none !opacity-0" />
     <Handle id="source-top" type="source" position={Position.Top} className="!pointer-events-none !opacity-0" />
     <div className="flex items-baseline justify-between gap-2">
-      <div className={`min-w-0 break-words font-display font-medium leading-tight text-foreground ${data.compact ? "line-clamp-2 text-[22px]" : "text-lg"}`}>{data.title}</div>
-      <div className="flex shrink-0 items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{data.shared && !data.compact && <span>Shared</span>}<span>{data.number}</span></div>
+      <div className="min-w-0 break-words font-display text-lg font-medium leading-tight text-foreground">{data.title}</div>
+      <div className="flex shrink-0 items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{data.shared && <span>Shared</span>}<span>{data.number}</span></div>
     </div>
-    {!data.compact && <div className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">{data.preview || "No preview available"}</div>}
+    {data.preview && <div className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">{data.preview}</div>}
     {data.connectRole && <Handle id={`easy-${data.connectRole}`} type={data.connectRole} position={data.connectRole === "source" ? Position.Right : Position.Left} className={`easy-connect-${data.connectRole} !absolute !left-0 !top-0 !h-full !w-full !translate-x-0 !translate-y-0 !rounded-none !border-0 !bg-transparent !opacity-0`} isConnectableStart={data.connectRole === "source"} isConnectableEnd={data.connectRole === "target"} />}
   </div>
 })
@@ -189,9 +189,9 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
   }
 
   const { nodes, associations, sharedEdges } = useMemo(() => {
-    const cardWidth = preview ? 140 : COLUMN_WIDTH
-    const columnGap = preview ? 36 : COLUMN_GAP
-    const inset = preview ? 8 : 16
+    const cardWidth = COLUMN_WIDTH
+    const columnGap = COLUMN_GAP
+    const inset = 16
     const columns = trails.map(trail => ({ title: trail.title, trailId: trail.id, ids: trail.itemIds.filter(id => items[id]) }))
     const filed = new Set(columns.flatMap(column => column.ids))
     const loose = Object.keys(items).filter(id => !filed.has(id))
@@ -202,15 +202,15 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     const nodes: GraphNode[] = []
     columns.forEach((column, columnIndex) => {
       const x = columnIndex * (cardWidth + columnGap)
-      let y = preview ? 64 : 84
+      let y = 84
       column.ids.forEach((itemId, row) => {
         const item = items[itemId]
         const appearance = { id: `card:${column.trailId || "loose"}:${itemId}`, itemId, trailId: column.trailId || undefined, column: columnIndex, row }
         appearances.set(itemId, [...(appearances.get(itemId) ?? []), appearance])
-        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: preview ? "" : previewText(item.content), compact: preview, number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !connected(link.sourceId, itemId) && !locallyConnected(localConnections, link.sourceId, itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
-        y += (heights[appearance.id] ?? (preview ? 72 : 132)) + (preview ? 16 : 40)
+        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: previewText(item.content), number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !connected(link.sourceId, itemId) && !locallyConnected(localConnections, link.sourceId, itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
+        y += (heights[appearance.id] ?? 132) + 40
       })
-      nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: cardWidth + inset * 2, height: Math.max(preview ? 80 : 104, y - inset) }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
+      nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: cardWidth + inset * 2, height: Math.max(104, y - inset) }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
     })
     const sharedEdges: Edge[] = []
     for (const [itemId, copies] of appearances) for (let index = 1; index < copies.length; index++) {
@@ -265,7 +265,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     })
   }
 
-  const cards = nodes.filter((node): node is CardNode => node.type === "card").map(node => ({ id: node.id, x: node.position.x, y: node.position.y, width: preview ? 140 : COLUMN_WIDTH, height: heights[node.id] ?? (preview ? 72 : 132) }))
+  const cards = nodes.filter((node): node is CardNode => node.type === "card").map(node => ({ id: node.id, x: node.position.x, y: node.position.y, width: COLUMN_WIDTH, height: heights[node.id] ?? 132 }))
   const edges: Edge[] = sharedEdges.map(edge => ({ ...edge, data: { cards } })).concat(associations.map(association => {
     const { source, target } = association
     return {
@@ -368,7 +368,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     setCursor({ x: event.clientX - bounds.left, y: event.clientY - bounds.top })
   }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
     <div className="min-h-0 flex-1">
-      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 0.85 }} minZoom={0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={!preview && !!onTie} onConnect={onConnect} onClickConnectEnd={() => setLink(null)} onEdgeClick={(_, edge) => { if (!associations.some(association => association.id === edge.id)) return; setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 0.85 }} minZoom={preview ? 0.01 : 0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={!preview && !!onTie} onConnect={onConnect} onClickConnectEnd={() => setLink(null)} onEdgeClick={(_, edge) => { if (!associations.some(association => association.id === edge.id)) return; setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
         setMenu(null)
         setEdgeMenu(null)
         if (node.type !== "card") return

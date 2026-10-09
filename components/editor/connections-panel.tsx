@@ -12,6 +12,7 @@ interface ConnectionsPanelProps {
   item: Item;
   items: Record<string, Item>;
   trails: Trail[];
+  graphColors?: string | null;
   activeTrailId?: string;
   onSelectItem: (item: Item) => void;
   onTie: (itemId: string, targetId: string, text: string) => Promise<void>;
@@ -24,7 +25,7 @@ interface ConnectionsPanelProps {
 
 type Draft = { sourceId: string; targetId: string; text: string; associationId?: string };
 
-export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectItem, onTie, onUntie, onUpdateAssociation, onOpenGraph, open, onToggleOpen }: ConnectionsPanelProps) {
+export function ConnectionsPanel({ item, items, trails, graphColors, activeTrailId, onSelectItem, onTie, onUntie, onUpdateAssociation, onOpenGraph, open, onToggleOpen }: ConnectionsPanelProps) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState(false);
@@ -90,7 +91,7 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
         <div className="flex gap-2"><button disabled={!source || !items[draft.targetId]} className="rounded-full bg-primary px-4 py-2 text-xs text-primary-foreground disabled:opacity-50">{pending ? 'Saving…' : 'Save'}</button><button type="button" onClick={() => { setDraft(null); setError(''); }} className="px-3 text-xs">Cancel</button></div>
       </fieldset>
     </form>}
-    <div className="border-t border-border pt-3"><button type="button" onClick={onOpenGraph} className="mb-3 text-sm text-primary">Open map</button><div className="h-44 overflow-hidden rounded-lg border border-border"><KnowledgeGraph trails={trails} items={items} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" /></div></div>
+    <div className="border-t border-border pt-3"><button type="button" onClick={onOpenGraph} className="mb-3 text-sm text-primary">Open map</button><div className="h-44 overflow-hidden rounded-lg border border-border"><KnowledgeGraph trails={trails} items={items} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" /></div></div>
     {utilities}
   </aside>;
 }

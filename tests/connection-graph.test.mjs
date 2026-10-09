@@ -249,7 +249,7 @@ test('cards add an ellipsis only when content exceeds 256 characters', () => {
   expect(renderGraph(props).props.nodes.find(node => node.type === 'card').data.preview).toBe(`${'a'.repeat(256)}...`);
 });
 
-test('small map preview shows uniform title-only cards when some contents are unloaded', () => {
+test('map previews use the same cards and layout as the full map', () => {
   hookValues = [];
   const items = {
     a: { id: 'a', title: 'Loaded', content: JSON.stringify({ root: { children: [{ text: 'Draft text' }] } }), associations: [] },
@@ -260,14 +260,16 @@ test('small map preview shows uniform title-only cards when some contents are un
   expect(full.props.nodes.find(node => node.id === 'card:first:a').data.preview).toBe('Draft text');
   const small = renderGraph({ ...props, variant: 'preview' });
   const cards = small.props.nodes.filter(node => node.type === 'card');
-  expect(cards.map(node => [node.data.compact, node.data.preview])).toEqual([[true, ''], [true, '']]);
-  expect(cards.map(node => node.position.x)).toEqual([8, 184]);
-  expect(small.props.nodes.filter(node => node.type === 'lane').map(node => node.style.width)).toEqual([156, 156]);
+  expect(cards.map(node => node.data.preview)).toEqual(['Draft text', '']);
+  expect(cards.map(node => node.position.x)).toEqual([16, 526]);
+  expect(small.props.nodes.filter(node => node.type === 'lane').map(node => node.style.width)).toEqual([452, 452]);
   const card = flatten(small.props.nodeTypes.card({ data: cards[0].data }));
-  expect(card[0].props.className).toContain('w-[140px]');
-  expect(card.find(node => node.props.children === 'Loaded').props.className).toContain('text-[22px]');
-  expect(JSON.stringify(card)).not.toContain('Draft text');
+  expect(card[0].props.className).toContain('w-[420px]');
+  expect(card.find(node => node.props.children === 'Loaded').props.className).toContain('text-lg');
+  expect(JSON.stringify(card)).toContain('Draft text');
   expect(JSON.stringify(small.props.nodeTypes.card({ data: cards[1].data }))).not.toContain('No preview available');
+  expect(small.props.fitView).toBe(true);
+  expect(small.props.minZoom).toBe(0.01);
 });
 
 test('Connect starts from the selected appearance and exposes whole-card targets', () => {
