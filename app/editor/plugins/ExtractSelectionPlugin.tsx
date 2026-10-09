@@ -25,7 +25,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
   projectId: string; itemId: string; trail?: Trail; sharedCount: number; history: HistoryState; actions: ExtractionActions; onOpen: (result: ExtractionResult) => void;
 }) {
   const [editor] = useLexicalComposerContext();
-  const [available, setAvailable] = useState<{ capture?: CapturedSelection; reason?: string; top: number; left: number } | null>(null);
+  const [available, setAvailable] = useState<{ local: boolean; reason?: string; top: number; left: number; above: boolean } | null>(null);
   const [capture, setCapture] = useState<CapturedSelection | null>(null);
   const [title, setTitle] = useState('');
   const [placement, setPlacement] = useState<'next' | 'last' | 'outside'>('outside');
@@ -40,7 +40,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
   const request = useRef<ExtractionRequest | null>(null);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
+    let frame: number;
     const inspect = () => {
       if (opened.current || busy.current) return;
       const selection = window.getSelection();
@@ -49,18 +49,18 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
           || !root.contains(selection.anchorNode) && !root.contains(selection.focusNode)) { setAvailable(null); return; }
       const range = selection.getRangeAt(0), rect = range.getBoundingClientRect();
       const local = root.contains(selection.anchorNode) && root.contains(selection.focusNode);
-      const result = local ? captureSelection(editor) : { reason: 'Select content inside one note. Selections across notes cannot be extracted.' };
-      if (!result.capture && !result.reason) { setAvailable(null); return; }
-      setAvailable({ ...result, top: Math.min(window.innerHeight - 44, rect.bottom + 6), left: Math.max(8, Math.min(rect.left, window.innerWidth - 220)) });
+      const above = rect.top >= 44;
+      setAvailable({ local, reason: local ? undefined : 'Select content inside one note. Selections across notes cannot be extracted.', top: above ? rect.top - 8 : rect.bottom + 8, left: Math.max(8, Math.min(rect.left, window.innerWidth - 220)), above });
     };
     const schedule = () => {
-      clearTimeout(timer);
-      setAvailable(null);
-      if (!opened.current && !busy.current) timer = setTimeout(inspect, 500);
+      cancelAnimationFrame(frame);
+      if (!opened.current && !busy.current) frame = requestAnimationFrame(inspect);
     };
     document.addEventListener('selectionchange', schedule);
+    document.addEventListener('scroll', schedule, true);
+    window.addEventListener('resize', schedule);
     const unregister = editor.registerUpdateListener(schedule);
-    return () => { clearTimeout(timer); document.removeEventListener('selectionchange', schedule); unregister(); };
+    return () => { cancelAnimationFrame(frame); document.removeEventListener('selectionchange', schedule); document.removeEventListener('scroll', schedule, true); window.removeEventListener('resize', schedule); unregister(); };
   }, [editor]);
 
   const close = () => {
@@ -102,11 +102,13 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
     }
   };
   return <>
-    {available && !capture && createPortal(<div className="fixed z-40" style={{ top: available.top, left: available.left }}>
-      <Button size="sm" variant="ghost" className="rounded-full border border-border bg-popover shadow-elevation-2" disabled={!available.capture} title={available.reason} onMouseDown={event => event.preventDefault()} onClick={() => {
-        if (!available.capture) return;
+    {available && !capture && createPortal(<div className={`fixed z-40 ${available.above ? '-translate-y-full' : ''}`} style={{ top: available.top, left: available.left }}>
+      <Button size="sm" variant="ghost" className="rounded-md border border-border bg-popover shadow-elevation-2" disabled={!available.local || !!available.reason} title={available.reason} onMouseDown={event => event.preventDefault()} onClick={() => {
+        if (!available.local) return;
+        const result = captureSelection(editor);
+        if (!result.capture) { setAvailable(result.reason ? { ...available, reason: result.reason } : null); return; }
         opened.current = true; request.current = null; setDialogTrail(trail); setSubmitted(false);
-        setCapture(available.capture); setTitle(''); setPlacement(trail ? 'next' : 'outside'); setError(''); setCreated(null);
+        setCapture(result.capture); setTitle(''); setPlacement(trail ? 'next' : 'outside'); setError(''); setCreated(null);
         setUsage(null);
         void getExtractionTrailCount(projectId, itemId).then(count => { if (opened.current) setUsage(count); })
           .catch(failure => { if (opened.current) setError(failure instanceof Error ? failure.message : 'Could not check note usage. Close and try again.'); });

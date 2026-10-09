@@ -5,7 +5,8 @@ import ts from 'typescript';
 
 function setup() {
   const states = [], refs = [], effects = [], requests = [], accepted = [], applied = [], history = [], saves = [];
-  let si = 0, ri = 0, initialized = false, inspect, now = 0, timerId = 0;
+  let si = 0, ri = 0, initialized = false, inspect, now = 0, timerId = 0, collapsed = false, captures = 0;
+  let rect = { top: 80, bottom: 100, left: 100 };
   const timers = new Map();
   const advance = ms => { now += ms; for (const [id, timer] of timers) if (timer.at <= now) { timers.delete(id); timer.fn(); } };
   const original = { root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'original' }] }] } };
@@ -20,27 +21,27 @@ function setup() {
   };
   const jsx = (type, props) => ({ type, props }); const exports = {};
   runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/ExtractSelectionPlugin.tsx', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
-    exports, Error, setTimeout: (fn, ms) => { const id = ++timerId; timers.set(id, { fn, at: now + ms }); return id; }, clearTimeout: id => timers.delete(id), crypto: { randomUUID: () => 'fixed-operation-id' },
+    exports, Error, requestAnimationFrame: fn => { const id = ++timerId; timers.set(id, { fn, at: now + 16 }); return id; }, cancelAnimationFrame: id => timers.delete(id), crypto: { randomUUID: () => 'fixed-operation-id' },
     require: name => ({
       react: { useRef: value => refs[ri++] ?? (refs[ri - 1] = { current: value }), useState: value => { const index = si++; if (!(index in states)) states[index] = value; return [states[index], next => { states[index] = next; }]; }, useEffect: effect => { if (!initialized) effects.push(effect); } },
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' }, 'react-dom': { createPortal: element => element },
       '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] }, lexical: { CLEAR_HISTORY_COMMAND: 'clear-history' },
       '@/components/ui/button': { Button: 'Button' }, '@/components/ui/input': { Input: 'Input' },
       '@/components/ui/dialog': Object.fromEntries(['Dialog', 'DialogContent', 'DialogDescription', 'DialogHeader', 'DialogTitle'].map(name => [name, name])),
-      './extract-selection': { applyExtractedContent: (editor, _history, content) => { editor.setEditorState(editor.parseEditorState(content)); editor.dispatchCommand('clear-history'); }, captureSelection: () => ({ capture: captured }), prepareExtraction: () => ({ expectedContent: captured.content, sourceContent: 'replacement draft', extractedContent: 'extracted draft' }) },
+      './extract-selection': { applyExtractedContent: (editor, _history, content) => { editor.setEditorState(editor.parseEditorState(content)); editor.dispatchCommand('clear-history'); }, captureSelection: () => { captures++; return { capture: captured }; }, prepareExtraction: () => ({ expectedContent: captured.content, sourceContent: 'replacement draft', extractedContent: 'extracted draft' }) },
       '@/lib/item-content-client': { getExtractionEpoch: () => 0, acceptExtractionEpoch: (...args) => accepted.push(args) },
       '@/lib/extract-selection-client': { getExtractionTrailCount: async () => 2, extractSelection: (...args) => new Promise((resolve, reject) => requests.push({ args, resolve, reject })) },
     })[name],
-    window: { innerWidth: 1000, innerHeight: 800, getSelection: () => ({ isCollapsed: false, rangeCount: 1, anchorNode: {}, focusNode: {}, getRangeAt: () => ({ getBoundingClientRect: () => ({ bottom: 100, left: 100 }) }) }) },
+    window: { innerWidth: 1000, getSelection: () => ({ get isCollapsed() { return collapsed; }, rangeCount: 1, anchorNode: {}, focusNode: {}, getRangeAt: () => ({ getBoundingClientRect: () => rect }) }), addEventListener: () => {}, removeEventListener: () => {} },
     document: { body: {}, addEventListener: (_, fn) => { inspect = fn; }, removeEventListener: () => {} },
   });
   const actions = { beforeExtract: async () => { saves.push('save'); if (failSave) throw new Error('Save failed'); }, pauseItem: () => {}, resumeItem: () => {}, acceptPersistedItem: () => {}, onExtracted: (...args) => applied.push(args) };
   const flatten = element => Array.isArray(element) ? element.flatMap(flatten) : element?.props ? [element, ...flatten(element.props.children)] : [];
   function render() { si = ri = 0; const elements = flatten(exports.default({ projectId: 'project', itemId: 'source', trail: { id: '1', itemIds: ['2', '3'] }, sharedCount: 2, actions, onOpen: () => {} })); if (!initialized) { initialized = true; effects.forEach(fn => fn()); } return elements; }
   function button(label) { return render().find(node => node.type === 'Button' && node.props.children === label); }
-  function open() { render(); inspect(); advance(500); button('Extract to new note').props.onClick(); render().find(node => node.type === 'Input').props.onChange({ target: { value: 'New note' } }); }
+  function open() { render(); inspect(); advance(16); button('Extract to new note').props.onClick(); render().find(node => node.type === 'Input').props.onChange({ target: { value: 'New note' } }); }
   const result = { item: { id: 'new', title: 'New note', content: 'extracted' }, sourceContent: JSON.stringify({ root: { children: [{ text: 'replacement' }] } }), extractionEpoch: 1, steps: [] };
-  return { render, button, open, advance, inspect: () => inspect(), result, requests, accepted, applied, history, saves, failSave: () => { failSave = true; }, change: () => { current = { root: { children: [{ text: 'later edit' }] } }; }, content: () => current, editable: () => editable };
+  return { render, button, open, advance, inspect: () => inspect(), setRect: next => { rect = next; }, collapse: () => { collapsed = true; }, captures: () => captures, result, requests, accepted, applied, history, saves, failSave: () => { failSave = true; }, change: () => { current = { root: { children: [{ text: 'later edit' }] } }; }, content: () => current, editable: () => editable };
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
@@ -66,12 +67,29 @@ test('late response does not discard content changed after submission', async ()
   expect(s.applied[0][3]).toBe(false); expect(s.accepted).toHaveLength(0); expect(s.history).toHaveLength(0); expect(s.content().root.children[0].text).toBe('later edit'); expect(s.render().find(node => node.props.role === 'alert').props.children).toContain('local text was kept');
 });
 
-test('waits for a stable selection and hides the action while selection changes', () => {
+test('floats above the selection without debounce and stays anchored while extending down', () => {
   const s = setup(); s.render(); s.inspect();
-  s.advance(499); expect(s.button('Extract to new note')).toBeUndefined();
-  s.inspect(); s.advance(499); expect(s.button('Extract to new note')).toBeUndefined();
-  s.advance(1); expect(s.button('Extract to new note')).toBeDefined();
-  s.inspect(); expect(s.button('Extract to new note')).toBeUndefined();
+  s.advance(16);
+  let floating = s.render().find(node => node.props.className?.includes('fixed z-40'));
+  expect(floating.props.style.top).toBe(72);
+  expect(floating.props.className).toContain('-translate-y-full');
+  expect(s.captures()).toBe(0);
+  s.setRect({ top: 80, bottom: 200, left: 100 });
+  s.inspect(); s.advance(16);
+  floating = s.render().find(node => node.props.className?.includes('fixed z-40'));
+  expect(floating.props.style.top).toBe(72);
+  s.setRect({ top: 60, bottom: 200, left: 100 });
+  s.inspect(); s.advance(16);
+  floating = s.render().find(node => node.props.className?.includes('fixed z-40'));
+  expect(floating.props.style.top).toBe(52);
+  s.setRect({ top: 40, bottom: 200, left: 100 });
+  s.inspect(); s.advance(16);
+  floating = s.render().find(node => node.props.className?.includes('fixed z-40'));
+  expect(floating.props.style.top).toBe(208);
+  expect(floating.props.className).not.toContain('-translate-y-full');
+  s.collapse(); s.inspect(); s.advance(16);
+  expect(s.button('Extract to new note')).toBeUndefined();
+  expect(s.captures()).toBe(0);
 });
 
 test('offers next, last and outside in order and sends last placement with the trail snapshot', async () => {
