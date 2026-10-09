@@ -17,19 +17,12 @@ function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; classNa
   const trails = "trails" in graph ? graph.trails : [{ id: graph.trailId, title: graph.trailTitle, itemIds: graph.itemIds }]
   if (!trails.length) return null
 
-  const singleTrail = trails.length === 1
-  const laneWidth = singleTrail ? LANE_WIDTH * 2 : LANE_WIDTH
-  const width = trails.length * laneWidth + (trails.length - 1) * LANE_GAP
-  const noteRows = singleTrail ? Math.ceil(trails[0].itemIds.length / 2) : Math.max(...trails.map(trail => trail.itemIds.length))
-  const height = Math.max(132, CARD_TOP + noteRows * (CARD_HEIGHT + CARD_GAP) + 8)
+  const width = trails.length * LANE_WIDTH + (trails.length - 1) * LANE_GAP
+  const height = Math.max(132, CARD_TOP + Math.max(...trails.map(trail => trail.itemIds.length)) * (CARD_HEIGHT + CARD_GAP) + 8)
   const items = new Map(graph.items.map(item => [item.id, item]))
   const appearances = new Map<string, { key: string; x: number; y: number }[]>()
   const cards = trails.flatMap((trail, column) => trail.itemIds.map((id, row) => {
-    const x = singleTrail
-      ? trail.itemIds.length === 1 ? (laneWidth - CARD_WIDTH) / 2 : 10 + row % 2 * LANE_WIDTH
-      : column * (laneWidth + LANE_GAP) + 10
-    const y = CARD_TOP + (singleTrail ? Math.floor(row / 2) : row) * (CARD_HEIGHT + CARD_GAP)
-    const card = { id, key: `${trail.id}:${id}`, x, y }
+    const card = { id, key: `${trail.id}:${id}`, x: column * (LANE_WIDTH + LANE_GAP) + 10, y: CARD_TOP + row * (CARD_HEIGHT + CARD_GAP) }
     appearances.set(id, [...(appearances.get(id) ?? []), card])
     return card
   }))
@@ -38,23 +31,13 @@ function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; classNa
     <div className={`overflow-hidden ${className}`}>
       <svg role="img" aria-label={`Map of ${trails.length} trails`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" className="pointer-events-none h-full w-full select-none">
         {trails.map((trail, column) => {
-          const x = column * (laneWidth + LANE_GAP)
+          const x = column * (LANE_WIDTH + LANE_GAP)
           return <g key={trail.id}>
-            <rect x={x} y={0} width={laneWidth} height={height} rx={10} fill="var(--popover)" stroke="var(--border)" />
-            <foreignObject x={x + 8} y={5} width={laneWidth - 16} height={40}>
+            <rect x={x} y={0} width={LANE_WIDTH} height={height} rx={10} fill="var(--popover)" stroke="var(--border)" />
+            <foreignObject x={x + 8} y={5} width={LANE_WIDTH - 16} height={40}>
               <div className="flex h-full items-center overflow-hidden font-display text-[32px] font-semibold leading-tight text-primary"><span className="truncate">{trail.title}</span></div>
             </foreignObject>
           </g>
-        })}
-        {singleTrail && cards.slice(1).map((target, index) => {
-          const source = cards[index]
-          const sameRow = source.y === target.y
-          const fromX = sameRow ? source.x + CARD_WIDTH : source.x + CARD_WIDTH / 2
-          const fromY = sameRow ? source.y + CARD_HEIGHT / 2 : source.y + CARD_HEIGHT
-          const toX = sameRow ? target.x : target.x + CARD_WIDTH / 2
-          const toY = sameRow ? target.y + CARD_HEIGHT / 2 : target.y
-          const middleY = (fromY + toY) / 2
-          return <path key={`order:${source.key}:${target.key}`} d={sameRow ? `M ${fromX} ${fromY} L ${toX} ${toY}` : `M ${fromX} ${fromY} C ${fromX} ${middleY}, ${toX} ${middleY}, ${toX} ${toY}`} fill="none" stroke="var(--border)" strokeWidth={2} strokeDasharray="3 5" />
         })}
         {[...appearances.values()].flatMap(copies => copies.slice(1).map((target, index) => {
           const source = copies[index]

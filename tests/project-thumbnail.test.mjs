@@ -51,23 +51,23 @@ test('graph thumbnail renders a response with the previous single-trail format',
   const svg = renderGraph(graph);
   const cards = flatten(svg).filter(node => node.type === 'rect' && node.props.fill === 'var(--card)');
   expect(cards).toHaveLength(1);
-  expect(cards[0].props.x).toBe(100);
-  expect(svg.props.viewBox).toBe('0 0 360 152');
+  expect(cards[0].props.x).toBe(10);
+  expect(svg.props.viewBox).toBe('0 0 180 152');
   expect(flatten(svg).filter(node => node.type === 'rect' && node.props.fill === 'var(--muted)')).toHaveLength(0);
   expect(textOf(svg)).toContain('First');
   expect(textOf(svg)).toContain('Note');
 });
 
-test('a single trail fills the thumbnail with notes in reading order', () => {
+test('a single trail stacks notes in sequence', () => {
   const graph = {
     trails: [{ id: 'one', title: 'One', itemIds: ['a', 'b', 'c'] }],
     items: ['a', 'b', 'c'].map(id => ({ id, title: id, associations: [] })),
   };
   const svg = renderGraph(graph);
   const nodes = flatten(svg);
-  expect(svg.props.viewBox).toBe('0 0 360 228');
-  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--card)').map(node => [node.props.x, node.props.y])).toEqual([[10, 68], [190, 68], [10, 144]]);
-  expect(nodes.filter(node => node.type === 'path' && node.props.stroke === 'var(--border)')).toHaveLength(2);
+  expect(svg.props.viewBox).toBe('0 0 180 304');
+  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--card)').map(node => [node.props.x, node.props.y])).toEqual([[10, 68], [10, 144], [10, 220]]);
+  expect(nodes.filter(node => node.type === 'path')).toHaveLength(0);
   const trailTitle = nodes.find(node => node.type === 'foreignObject' && textOf(node).includes('One'));
   const noteTitle = nodes.find(node => node.type === 'foreignObject' && textOf(node).includes('a'));
   expect(trailTitle.props.children.props.className).toContain('text-[32px] font-semibold');
