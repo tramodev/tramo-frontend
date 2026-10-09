@@ -191,7 +191,12 @@ test('small map preview shows uniform title-only cards when some contents are un
   const small = renderGraph({ ...props, variant: 'preview' });
   const cards = small.props.nodes.filter(node => node.type === 'card');
   expect(cards.map(node => [node.data.compact, node.data.preview])).toEqual([[true, ''], [true, '']]);
-  expect(JSON.stringify(small.props.nodeTypes.card({ data: cards[0].data }))).not.toContain('Draft text');
+  expect(cards.map(node => node.position.x)).toEqual([8, 184]);
+  expect(small.props.nodes.filter(node => node.type === 'lane').map(node => node.style.width)).toEqual([156, 156]);
+  const card = flatten(small.props.nodeTypes.card({ data: cards[0].data }));
+  expect(card[0].props.className).toContain('w-[140px]');
+  expect(card.find(node => node.props.children === 'Loaded').props.className).toContain('text-[22px]');
+  expect(JSON.stringify(card)).not.toContain('Draft text');
   expect(JSON.stringify(small.props.nodeTypes.card({ data: cards[1].data }))).not.toContain('No preview available');
 });
 
