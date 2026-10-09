@@ -3,27 +3,32 @@
 import { X } from 'lucide-react';
 import { OverviewReader } from '@/components/editor/overview-reader';
 import { Trail, Item } from '@/app/editor/types';
+import type { MapPreviews } from '@/lib/projects-store';
 
 interface OverviewViewProps {
-  trail: Trail | undefined;
+  trails: Trail[];
+  activeTrailId: string | undefined;
   items: Record<string, Item>;
+  mapPreviews?: MapPreviews | null;
   selectedItemId: string | undefined;
-  onSelectItem: (item: Item) => void;
+  onSelectItem: (item: Item, trailId?: string) => void;
   onSetDescription?: (trailId: string, description: string) => void;
   onClose: () => void;
   emptyState: React.ReactNode;
 }
 
 export function OverviewView({
-  trail,
+  trails,
+  activeTrailId,
   items,
+  mapPreviews,
   selectedItemId,
   onSelectItem,
   onSetDescription,
   onClose,
   emptyState,
 }: OverviewViewProps) {
-  if (!trail || trail.itemIds.length === 0) {
+  if (!trails.length) {
     return emptyState;
   }
   return (
@@ -37,8 +42,10 @@ export function OverviewView({
         <X className="h-4 w-4" />
       </button>
       <OverviewReader
-        trail={trail}
+        trails={trails}
+        activeTrailId={activeTrailId}
         items={items}
+        mapPreviews={mapPreviews}
         selectedItemId={selectedItemId}
         onSelectItem={onSelectItem}
         onSetDescription={onSetDescription}

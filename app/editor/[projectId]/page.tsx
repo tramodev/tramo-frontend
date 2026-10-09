@@ -153,8 +153,10 @@ export default function EditorPage() {
               />
             ) : project.view === 'overview' ? (
               <OverviewView
-                trail={project.activeTrail}
+                trails={project.trails}
+                activeTrailId={project.activeTrailId}
                 items={project.items}
+                mapPreviews={project.mapPreviews}
                 selectedItemId={project.selectedItemId}
                 onSelectItem={project.handleSelectItem}
                 onSetDescription={project.handleSetTrailDescription}

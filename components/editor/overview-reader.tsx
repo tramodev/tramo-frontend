@@ -2,17 +2,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { Plus } from "lucide-react"
 
 import { Item, Trail } from "@/app/editor/types"
+import { itemIdsFromContent } from "@/app/editor/plugins/itemLink"
 import { TrailConnector } from "@/components/editor/trail-connector"
+import type { MapPreviews } from "@/lib/projects-store"
 
 interface OverviewReaderProps {
-  trail: Trail;
+  trails: Trail[];
+  activeTrailId?: string;
   items: Record<string, Item>;
+  mapPreviews?: MapPreviews | null;
   selectedItemId?: string;
-  onSelectItem: (item: Item) => void;
+  onSelectItem: (item: Item, trailId?: string) => void;
   onSetDescription?: (trailId: string, description: string) => void;
 }
 
@@ -55,14 +59,19 @@ function TrailDescriptionEditor({ trailId, description, onSave }: { trailId: str
   );
 }
 
-export function OverviewReader({ trail, items, selectedItemId, onSelectItem, onSetDescription }: OverviewReaderProps) {
+export function OverviewReader({ trails, activeTrailId, items, mapPreviews, selectedItemId, onSelectItem, onSetDescription }: OverviewReaderProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = activeRef.current?.offsetTop ?? 0;
+  }, [activeTrailId]);
+
   return (
-    <div className="flex-1 overflow-y-auto rounded-2xl bg-popover">
+    <div ref={scrollRef} className="relative flex-1 overflow-y-auto rounded-2xl bg-popover">
+      {trails.map(trail => <section key={trail.id} ref={trail.id === activeTrailId ? activeRef : undefined} className="border-b border-border last:border-b-0">
       <div className="mx-auto max-w-[640px] px-5 py-10">
-        <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-          A trail through the Memex
-        </p>
-        <h1 className="mt-1 font-display text-[40px] font-medium leading-[1.08]">{trail.title}</h1>
+        <h1 className="font-display text-[40px] font-medium leading-[1.08]">{trail.title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {trail.forkedFrom && <span className="italic">forked · </span>}
           version {trail.version} · {trail.itemIds.length} notes
@@ -79,17 +88,21 @@ export function OverviewReader({ trail, items, selectedItemId, onSelectItem, onS
 
 
         <div className="mt-8 flex flex-col">
+          {!trail.steps.length && <p className="text-sm text-muted-foreground">No notes in this trail.</p>}
           {trail.steps.map((step, i) => {
             const item = items[step.itemId];
             if (!item) return null;
-            const on = step.itemId === selectedItemId;
+            const on = step.itemId === selectedItemId && trail.id === activeTrailId;
+            const mentioned = (item.content != null ? itemIdsFromContent(item.content) : mapPreviews?.[item.id]?.linkedItemIds ?? [])
+              .filter(id => id !== item.id && items[id])
+              .map(id => items[id]);
 
             return (
               <div key={step.itemId}>
                 {i > 0 && <TrailConnector />}
                 <button
                   type="button"
-                  onClick={() => onSelectItem(item)}
+                  onClick={() => onSelectItem(item, trail.id)}
                   className={`w-full rounded-lg border px-4 py-3.5 text-left transition-colors ${
                     on ? "border-primary bg-muted/50" : "border-border hover:border-primary"
                   }`}
@@ -98,12 +111,14 @@ export function OverviewReader({ trail, items, selectedItemId, onSelectItem, onS
                     Step {i + 1}
                   </span>
                   <span className="mt-0.5 block font-display text-[22px] font-medium leading-tight">{item.title}</span>
+                  {!!mentioned.length && <span className="mt-2 block break-words text-xs text-muted-foreground">{mentioned.map(note => `@${note.title}`).join(' · ')}</span>}
                 </button>
               </div>
             );
           })}
         </div>
       </div>
+      </section>)}
     </div>
   );
 }

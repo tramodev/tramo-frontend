@@ -287,7 +287,8 @@ export function PublicProjectView({
             />
           ) : view === 'overview' ? (
             <OverviewView
-              trail={activeTrail}
+              trails={trails}
+              activeTrailId={activeTrailId}
               items={items}
               selectedItemId={selectedItem?.id}
               onSelectItem={handleSelectMappedItem}
