@@ -179,6 +179,22 @@ test('cards add an ellipsis only when content exceeds 256 characters', () => {
   expect(renderGraph(props).props.nodes.find(node => node.type === 'card').data.preview).toBe(`${'a'.repeat(256)}...`);
 });
 
+test('small map preview shows uniform title-only cards when some contents are unloaded', () => {
+  hookValues = [];
+  const items = {
+    a: { id: 'a', title: 'Loaded', content: JSON.stringify({ root: { children: [{ text: 'Draft text' }] } }), associations: [] },
+    b: { id: 'b', title: 'Unloaded', content: null, associations: [] },
+  };
+  const props = { items, trails: [{ id: 'first', title: 'First', itemIds: ['a'] }, { id: 'second', title: 'Second', itemIds: ['b'] }], onSelectItem() {} };
+  const full = renderGraph(props);
+  expect(full.props.nodes.find(node => node.id === 'card:first:a').data.preview).toBe('Draft text');
+  const small = renderGraph({ ...props, variant: 'preview' });
+  const cards = small.props.nodes.filter(node => node.type === 'card');
+  expect(cards.map(node => [node.data.compact, node.data.preview])).toEqual([[true, ''], [true, '']]);
+  expect(JSON.stringify(small.props.nodeTypes.card({ data: cards[0].data }))).not.toContain('Draft text');
+  expect(JSON.stringify(small.props.nodeTypes.card({ data: cards[1].data }))).not.toContain('No preview available');
+});
+
 test('Connect starts from the selected appearance and exposes whole-card targets', () => {
   hookValues = [];
   frames = [];
@@ -242,7 +258,7 @@ test('a failed save keeps the new connection visible as a temporary graph edge',
   await new Promise(resolve => setImmediate(resolve));
   const tree = renderTree(props);
   expect(renderGraph(props).props.edges.map(edge => edge.id)).toEqual(['local:card:first:a:card:first:b']);
-  expect(tree.find(node => node.props.role === 'alert').props.children).toContain('only in this graph');
+  expect(tree.find(node => node.props.role === 'alert').props.children).toContain('only in this map');
   expect(items.a.associations).toEqual([]);
 });
 
