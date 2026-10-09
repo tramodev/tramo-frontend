@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { useMounted } from "@/hooks/use-mounted"
-import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, EdgeLabelRenderer, getStraightPath, type Node, type Edge, type EdgeProps, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
+import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, EdgeLabelRenderer, getStraightPath, useInternalNode, type InternalNode, type Node, type Edge, type EdgeProps, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
 import { MessageSquareText } from "lucide-react"
 import "@xyflow/react/dist/style.css"
 import type { Item, Trail } from "@/app/editor/types"
@@ -82,8 +82,27 @@ const Lane = memo(function Lane({ data }: NodeProps<LaneNode>) {
 })
 
 type CommentEdgeData = { hasComment: boolean; onSelect: () => void }
-const CommentEdge = memo(function CommentEdge({ sourceX, sourceY, targetX, targetY, style, data, interactionWidth }: EdgeProps<Edge<CommentEdgeData>>) {
-  const [path, labelX, labelY] = getStraightPath({ sourceX, sourceY, targetX, targetY })
+function edgePoint(node: InternalNode, other: InternalNode) {
+  const width = node.measured.width ?? 0
+  const height = node.measured.height ?? 0
+  const otherWidth = other.measured.width ?? 0
+  const otherHeight = other.measured.height ?? 0
+  const x = node.internals.positionAbsolute.x + width / 2
+  const y = node.internals.positionAbsolute.y + height / 2
+  const dx = other.internals.positionAbsolute.x + otherWidth / 2 - x
+  const dy = other.internals.positionAbsolute.y + otherHeight / 2 - y
+  const scale = Math.max(Math.abs(dx) / (width / 2), Math.abs(dy) / (height / 2))
+  if (!scale) return { x, y }
+  return { x: x + dx / scale, y: y + dy / scale }
+}
+
+const FloatingEdge = memo(function FloatingEdge({ source, target, style, data, interactionWidth }: EdgeProps<Edge<CommentEdgeData>>) {
+  const sourceNode = useInternalNode(source)
+  const targetNode = useInternalNode(target)
+  if (!sourceNode?.measured.width || !sourceNode.measured.height || !targetNode?.measured.width || !targetNode.measured.height) return null
+  const start = edgePoint(sourceNode, targetNode)
+  const end = edgePoint(targetNode, sourceNode)
+  const [path, labelX, labelY] = getStraightPath({ sourceX: start.x, sourceY: start.y, targetX: end.x, targetY: end.y })
   return <>
     <BaseEdge path={path} style={style} interactionWidth={interactionWidth} />
     {data?.hasComment && <EdgeLabelRenderer><button type="button" aria-label="View connection comment" title="Connection comment" onClick={event => { event.stopPropagation(); data.onSelect() }} className="nodrag nopan pointer-events-auto absolute flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm" style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}><MessageSquareText className="h-3 w-3" /></button></EdgeLabelRenderer>}
@@ -91,7 +110,7 @@ const CommentEdge = memo(function CommentEdge({ sourceX, sourceY, targetX, targe
 })
 
 const nodeTypes = { card: Card, lane: Lane }
-const edgeTypes = { comment: CommentEdge }
+const edgeTypes = { floating: FloatingEdge }
 
 export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, graphColors, onSaveColors, onSelectItem, onTie, onUpdateAssociation, onUntie, variant = "full" }: KnowledgeGraphProps) {
   const preview = variant === "preview"
@@ -146,7 +165,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     })
     const sharedEdges: Edge[] = []
     for (const [itemId, copies] of appearances) for (let index = 1; index < copies.length; index++) {
-      sharedEdges.push({ id: `shared:${copies[index - 1].id}:${copies[index].id}`, source: copies[index - 1].id, target: copies[index].id, sourceHandle: "source-right", targetHandle: "target-left", type: "straight", selectable: false, focusable: false, interactionWidth: 0, style: { stroke: "var(--ed-purple)", strokeWidth: 1.5, strokeDasharray: "2 6", strokeLinecap: "round", opacity: 0.75 }, ariaLabel: `${items[itemId].title} appears in both trails` })
+      sharedEdges.push({ id: `shared:${copies[index - 1].id}:${copies[index].id}`, source: copies[index - 1].id, target: copies[index].id, sourceHandle: "source-right", targetHandle: "target-left", type: "floating", selectable: false, focusable: false, interactionWidth: 0, style: { stroke: "var(--ed-purple)", strokeWidth: 1.5, strokeDasharray: "2 6", strokeLinecap: "round", opacity: 0.75 }, ariaLabel: `${items[itemId].title} appears in both trails` })
     }
     const associations: AssociationView[] = []
     const seenPairs = new Map<string, AssociationView>()
@@ -199,13 +218,10 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
 
   const edges: Edge[] = sharedEdges.concat(associations.map(association => {
     const { source, target } = association
-    const sameColumn = source.column === target.column
-    const downward = source.row < target.row
-    const rightward = source.column < target.column
     return {
-      id: association.id, source: source.id, target: target.id, type: "comment",
-      sourceHandle: sameColumn ? downward ? "source-bottom" : "source-top" : rightward ? "source-right" : "source-left",
-      targetHandle: sameColumn ? downward ? "target-top" : "target-bottom" : rightward ? "target-left" : "target-right",
+      id: association.id, source: source.id, target: target.id, type: "floating",
+      sourceHandle: "source-right",
+      targetHandle: "target-left",
       selected: selectedConnection === association.id,
       interactionWidth: 40,
       style: { stroke: "var(--primary)", strokeWidth: selectedConnection === association.id ? 2 : 1.5 },

@@ -10,6 +10,7 @@ let hookIndex = 0;
 let frames = [];
 let sourceClicks = 0;
 let edgePaths = [];
+let internalNodes = {};
 const colorExports = {};
 const itemLinkExports = {};
 runInNewContext(ts.transpileModule(readFileSync('app/editor/graph-colors.ts', 'utf8'), {
@@ -34,7 +35,7 @@ runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-gra
   '@/app/editor/plugins/itemLink': itemLinkExports,
   '@/components/editor/connection-comment': { ConnectionComment: 'ConnectionComment' },
   'lucide-react': { MessageSquareText: 'MessageSquareText' },
-  '@xyflow/react': { ReactFlow: 'Flow', BaseEdge: 'BaseEdge', EdgeLabelRenderer: 'EdgeLabelRenderer', getStraightPath: () => ['M 0 0 L 100 0', 50, 0], Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
+  '@xyflow/react': { ReactFlow: 'Flow', BaseEdge: 'BaseEdge', EdgeLabelRenderer: 'EdgeLabelRenderer', useInternalNode: id => internalNodes[id], getStraightPath: ({ sourceX, sourceY, targetX, targetY }) => [`M ${sourceX} ${sourceY} L ${targetX} ${targetY}`, (sourceX + targetX) / 2, (sourceY + targetY) / 2], Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
 })[name] ?? {} });
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 const renderTree = props => {
@@ -56,15 +57,23 @@ test('shared notes have distinct appearances and explicit connections appear onc
   expect(flow.props.nodes.filter(node => node.type === 'card').map(node => node.id)).toEqual(['card:first:a', 'card:first:b', 'card:second:a']);
   expect(flow.props.nodes.filter(node => node.type === 'lane').map(node => node.data.title)).toEqual(['First', 'Second']);
   expect(flow.props.edges.map(edge => edge.id)).toEqual(['shared:card:first:a:card:second:a', 'connection:a:b']);
-  expect(flow.props.edges.map(edge => edge.type)).toEqual(['straight', 'comment']);
+  expect(flow.props.edges.map(edge => edge.type)).toEqual(['floating', 'floating']);
   expect(flow.props.edges[1].data.hasComment).toBe(true);
-  const marker = flatten(flow.props.edgeTypes.comment({ sourceX: 0, sourceY: 0, targetX: 100, targetY: 0, data: flow.props.edges[1].data })).find(node => node.props['aria-label'] === 'View connection comment');
+  internalNodes = {
+    'card:first:a': { measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 0, y: 0 } } },
+    'card:first:b': { measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 200, y: 100 } } },
+    'card:second:a': { measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 400, y: 0 } } },
+  };
+  const renderedEdge = flatten(flow.props.edgeTypes.floating({ source: flow.props.edges[1].source, target: flow.props.edges[1].target, data: flow.props.edges[1].data }));
+  expect(renderedEdge.find(node => node.type === 'BaseEdge').props.path).toBe('M 100 75 L 200 125');
+  const marker = renderedEdge.find(node => node.props['aria-label'] === 'View connection comment');
   expect(marker).toBeDefined();
   marker.props.onClick({ stopPropagation() {} });
   expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Context');
   expect(flow.props.edges.map(edge => [edge.source, edge.target])).toEqual([['card:first:a', 'card:second:a'], ['card:first:a', 'card:first:b']]);
   expect(flow.props.edges.every(edge => edge.markerEnd === undefined)).toBe(true);
   expect(flow.props.edges[0].style.strokeDasharray).toBe('2 6');
+  expect(flatten(flow.props.edgeTypes.floating({ source: flow.props.edges[0].source, target: flow.props.edges[0].target, style: flow.props.edges[0].style })).find(node => node.type === 'BaseEdge').props.style.strokeDasharray).toBe('2 6');
   expect(flow.props.edges[0].style.stroke).toBe('var(--ed-purple)');
   expect(flow.props.edges[0].selectable).toBe(false);
   flow.props.onEdgeClick({}, flow.props.edges[1]);
