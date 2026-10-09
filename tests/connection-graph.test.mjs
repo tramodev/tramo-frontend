@@ -35,7 +35,7 @@ runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-gra
   '@/app/editor/plugins/itemLink': itemLinkExports,
   '@/components/editor/connection-comment': { ConnectionComment: 'ConnectionComment' },
   'lucide-react': { MessageSquareText: 'MessageSquareText' },
-  '@xyflow/react': { ReactFlow: 'Flow', BaseEdge: 'BaseEdge', EdgeLabelRenderer: 'EdgeLabelRenderer', useInternalNode: id => internalNodes[id], getStraightPath: ({ sourceX, sourceY, targetX, targetY }) => [`M ${sourceX} ${sourceY} L ${targetX} ${targetY}`, (sourceX + targetX) / 2, (sourceY + targetY) / 2], Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
+  '@xyflow/react': { ReactFlow: 'Flow', BaseEdge: 'BaseEdge', EdgeLabelRenderer: 'EdgeLabelRenderer', useInternalNode: id => internalNodes[id], getBezierPath: ({ sourceX, sourceY, targetX, targetY }) => [`M ${sourceX} ${sourceY} C ${targetX} ${targetY}`, (sourceX + targetX) / 2, (sourceY + targetY) / 2], Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
 })[name] ?? {} });
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 const renderTree = props => {
@@ -60,12 +60,12 @@ test('shared notes have distinct appearances and explicit connections appear onc
   expect(flow.props.edges.map(edge => edge.type)).toEqual(['floating', 'floating']);
   expect(flow.props.edges[1].data.hasComment).toBe(true);
   internalNodes = {
-    'card:first:a': { measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 0, y: 0 } } },
-    'card:first:b': { measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 200, y: 100 } } },
-    'card:second:a': { measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 400, y: 0 } } },
+    'card:first:a': { id: 'card:first:a', measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 0, y: 0 } } },
+    'card:first:b': { id: 'card:first:b', measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 0, y: 180 } } },
+    'card:second:a': { id: 'card:second:a', measured: { width: 100, height: 100 }, internals: { positionAbsolute: { x: 400, y: 0 } } },
   };
   const renderedEdge = flatten(flow.props.edgeTypes.floating({ source: flow.props.edges[1].source, target: flow.props.edges[1].target, data: flow.props.edges[1].data }));
-  expect(renderedEdge.find(node => node.type === 'BaseEdge').props.path).toBe('M 100 75 L 200 125');
+  expect(renderedEdge.find(node => node.type === 'BaseEdge').props.path).toContain(' C ');
   const marker = renderedEdge.find(node => node.props['aria-label'] === 'View connection comment');
   expect(marker).toBeDefined();
   marker.props.onClick({ stopPropagation() {} });
@@ -78,6 +78,25 @@ test('shared notes have distinct appearances and explicit connections appear onc
   expect(flow.props.edges[0].selectable).toBe(false);
   flow.props.onEdgeClick({}, flow.props.edges[1]);
   expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Context\\n\\nOther context');
+});
+
+test('connections bend around notes between their endpoints', () => {
+  hookValues = [];
+  const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, content: '', associations: id === 'a' ? [{ id: 'ac', targetId: 'c', text: null }] : [] }]));
+  const trails = ['a', 'b', 'c'].map(id => ({ id, title: id, itemIds: [id] }));
+  const flow = renderGraph({ items, trails, onSelectItem() {} });
+  internalNodes = Object.fromEntries(flow.props.nodes.filter(node => node.type === 'card').map(node => [node.id, { id: node.id, measured: { width: 420, height: 132 }, internals: { positionAbsolute: node.position } }]));
+  const edge = flow.props.edges.find(edge => edge.id === 'connection:a:c');
+  const path = flatten(flow.props.edgeTypes.floating(edge)).find(node => node.type === 'BaseEdge').props.path;
+  expect(path).toContain(' Q ');
+  expect(path).toContain(' 68');
+
+  const oneTrail = renderGraph({ items, trails: [{ id: 'all', title: 'All', itemIds: ['a', 'b', 'c'] }], onSelectItem() {} });
+  internalNodes = Object.fromEntries(oneTrail.props.nodes.filter(node => node.type === 'card').map(node => [node.id, { id: node.id, measured: { width: 420, height: 132 }, internals: { positionAbsolute: node.position } }]));
+  const verticalEdge = oneTrail.props.edges.find(edge => edge.id === 'connection:a:c');
+  const verticalPath = flatten(oneTrail.props.edgeTypes.floating(verticalEdge)).find(node => node.type === 'BaseEdge').props.path;
+  expect(verticalPath).toContain(' Q ');
+  expect(verticalPath).toContain('460');
 });
 
 test('repeated and reciprocal note links draw one wire per pair', () => {

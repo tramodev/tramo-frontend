@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { useMounted } from "@/hooks/use-mounted"
-import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, EdgeLabelRenderer, getStraightPath, useInternalNode, type InternalNode, type Node, type Edge, type EdgeProps, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
+import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, EdgeLabelRenderer, getBezierPath, useInternalNode, type InternalNode, type Node, type Edge, type EdgeProps, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
 import { MessageSquareText } from "lucide-react"
 import "@xyflow/react/dist/style.css"
 import type { Item, Trail } from "@/app/editor/types"
@@ -81,31 +81,80 @@ const Lane = memo(function Lane({ data }: NodeProps<LaneNode>) {
   return <div className="relative h-full w-full text-foreground"><div className="absolute inset-x-0 bottom-0 top-14 rounded-md border border-border bg-muted/20" style={data.color ? { background: `color-mix(in srgb, var(--ed-${data.color}) 12%, var(--popover))` } : undefined} /><div className="absolute left-4 right-4 top-2 truncate font-display text-xl font-medium">{data.title}</div></div>
 })
 
-type CommentEdgeData = { hasComment: boolean; onSelect: () => void }
-function edgePoint(node: InternalNode, other: InternalNode) {
-  const width = node.measured.width ?? 0
-  const height = node.measured.height ?? 0
-  const otherWidth = other.measured.width ?? 0
-  const otherHeight = other.measured.height ?? 0
-  const x = node.internals.positionAbsolute.x + width / 2
-  const y = node.internals.positionAbsolute.y + height / 2
-  const dx = other.internals.positionAbsolute.x + otherWidth / 2 - x
-  const dy = other.internals.positionAbsolute.y + otherHeight / 2 - y
-  const scale = Math.max(Math.abs(dx) / (width / 2), Math.abs(dy) / (height / 2))
-  if (!scale) return { x, y }
-  return { x: x + dx / scale, y: y + dy / scale }
+type CardBounds = { id: string; x: number; y: number; width: number; height: number }
+type CommentEdgeData = { hasComment?: boolean; onSelect?: () => void; cards: CardBounds[] }
+
+function roundedPath(points: { x: number; y: number }[]) {
+  let path = `M ${points[0].x} ${points[0].y}`
+  for (let index = 1; index < points.length - 1; index++) {
+    const previous = points[index - 1]
+    const current = points[index]
+    const next = points[index + 1]
+    const before = Math.hypot(current.x - previous.x, current.y - previous.y)
+    const after = Math.hypot(next.x - current.x, next.y - current.y)
+    if (!before || !after) continue
+    const radius = Math.min(18, before / 2, after / 2)
+    path += ` L ${current.x + (previous.x - current.x) * radius / before} ${current.y + (previous.y - current.y) * radius / before} Q ${current.x} ${current.y} ${current.x + (next.x - current.x) * radius / after} ${current.y + (next.y - current.y) * radius / after}`
+  }
+  const last = points[points.length - 1]
+  return `${path} L ${last.x} ${last.y}`
+}
+
+function curvedPath(start: { x: number; y: number }, end: { x: number; y: number }, sourcePosition: Position, targetPosition: Position) {
+  if (start.y === end.y) {
+    const third = (end.x - start.x) / 3
+    return [`M ${start.x} ${start.y} C ${start.x + third} ${start.y - 18}, ${end.x - third} ${end.y - 18}, ${end.x} ${end.y}`, (start.x + end.x) / 2, start.y - 13.5] as const
+  }
+  if (start.x === end.x) {
+    const third = (end.y - start.y) / 3
+    return [`M ${start.x} ${start.y} C ${start.x + 18} ${start.y + third}, ${end.x + 18} ${end.y - third}, ${end.x} ${end.y}`, start.x + 13.5, (start.y + end.y) / 2] as const
+  }
+  return getBezierPath({ sourceX: start.x, sourceY: start.y, sourcePosition, targetX: end.x, targetY: end.y, targetPosition })
+}
+
+function routeEdge(source: InternalNode, target: InternalNode, cards: CardBounds[]) {
+  const sx = source.internals.positionAbsolute.x
+  const sy = source.internals.positionAbsolute.y
+  const sw = source.measured.width ?? 0
+  const sh = source.measured.height ?? 0
+  const tx = target.internals.positionAbsolute.x
+  const ty = target.internals.positionAbsolute.y
+  const tw = target.measured.width ?? 0
+  const th = target.measured.height ?? 0
+  const others = cards.filter(card => card.id !== source.id && card.id !== target.id)
+  if (sx + sw <= tx || tx + tw <= sx) {
+    const direction = sx < tx ? 1 : -1
+    const start = { x: sx + (direction > 0 ? sw : 0), y: sy + sh / 2 }
+    const end = { x: tx + (direction > 0 ? 0 : tw), y: ty + th / 2 }
+    const left = Math.min(start.x, end.x)
+    const right = Math.max(start.x, end.x)
+    const between = others.filter(card => card.x < right && card.x + card.width > left)
+    if (!between.length) return curvedPath(start, end, direction > 0 ? Position.Right : Position.Left, direction > 0 ? Position.Left : Position.Right)
+    const firstX = start.x + direction * 24
+    const lastX = end.x - direction * 24
+    const candidates = [(start.y + end.y) / 2, ...between.flatMap(card => [card.y - 16, card.y + card.height + 16])]
+    const clear = candidates.filter(y => between.every(card => y < card.y - 12 || y > card.y + card.height + 12))
+    const y = clear.sort((a, b) => Math.abs(start.y - a) + Math.abs(end.y - a) - Math.abs(start.y - b) - Math.abs(end.y - b))[0]
+    const points = [start, { x: firstX, y: start.y }, { x: firstX, y }, { x: lastX, y }, { x: lastX, y: end.y }, end]
+    return [roundedPath(points), (firstX + lastX) / 2, y] as const
+  }
+  const down = sy < ty
+  const start = { x: sx + sw / 2, y: sy + (down ? sh : 0) }
+  const end = { x: tx + tw / 2, y: ty + (down ? 0 : th) }
+  const between = others.some(card => card.x < sx + sw && card.x + card.width > sx && card.y < Math.max(start.y, end.y) && card.y + card.height > Math.min(start.y, end.y))
+  if (!between) return curvedPath(start, end, down ? Position.Bottom : Position.Top, down ? Position.Top : Position.Bottom)
+  const gutter = Math.max(sx + sw, tx + tw) + 24
+  return [roundedPath([{ x: sx + sw, y: sy + sh / 2 }, { x: gutter, y: sy + sh / 2 }, { x: gutter, y: ty + th / 2 }, { x: tx + tw, y: ty + th / 2 }]), gutter, (sy + sh / 2 + ty + th / 2) / 2] as const
 }
 
 const FloatingEdge = memo(function FloatingEdge({ source, target, style, data, interactionWidth }: EdgeProps<Edge<CommentEdgeData>>) {
   const sourceNode = useInternalNode(source)
   const targetNode = useInternalNode(target)
   if (!sourceNode?.measured.width || !sourceNode.measured.height || !targetNode?.measured.width || !targetNode.measured.height) return null
-  const start = edgePoint(sourceNode, targetNode)
-  const end = edgePoint(targetNode, sourceNode)
-  const [path, labelX, labelY] = getStraightPath({ sourceX: start.x, sourceY: start.y, targetX: end.x, targetY: end.y })
+  const [path, labelX, labelY] = routeEdge(sourceNode, targetNode, data?.cards ?? [])
   return <>
     <BaseEdge path={path} style={style} interactionWidth={interactionWidth} />
-    {data?.hasComment && <EdgeLabelRenderer><button type="button" aria-label="View connection comment" title="Connection comment" onClick={event => { event.stopPropagation(); data.onSelect() }} className="nodrag nopan pointer-events-auto absolute flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm" style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}><MessageSquareText className="h-3 w-3" /></button></EdgeLabelRenderer>}
+    {data?.hasComment && <EdgeLabelRenderer><button type="button" aria-label="View connection comment" title="Connection comment" onClick={event => { event.stopPropagation(); data.onSelect?.() }} className="nodrag nopan pointer-events-auto absolute flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm" style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}><MessageSquareText className="h-3 w-3" /></button></EdgeLabelRenderer>}
   </>
 })
 
@@ -216,7 +265,8 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     })
   }
 
-  const edges: Edge[] = sharedEdges.concat(associations.map(association => {
+  const cards = nodes.filter((node): node is CardNode => node.type === "card").map(node => ({ id: node.id, x: node.position.x, y: node.position.y, width: preview ? 140 : COLUMN_WIDTH, height: heights[node.id] ?? (preview ? 72 : 132) }))
+  const edges: Edge[] = sharedEdges.map(edge => ({ ...edge, data: { cards } })).concat(associations.map(association => {
     const { source, target } = association
     return {
       id: association.id, source: source.id, target: target.id, type: "floating",
@@ -225,7 +275,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
       selected: selectedConnection === association.id,
       interactionWidth: 40,
       style: { stroke: "var(--primary)", strokeWidth: selectedConnection === association.id ? 2 : 1.5 },
-      data: { hasComment: !!association.text?.trim(), onSelect: () => { setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(association.id) } },
+      data: { cards, hasComment: !!association.text?.trim(), onSelect: () => { setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(association.id) } },
       ariaLabel: `${items[association.sourceId].title} connected to ${items[association.targetId].title}`,
     }
   }))
@@ -286,16 +336,19 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
       if (!id || !associations.some(association => association.id === id && (association.associationId || association.id.startsWith("local:")))) continue
       const matrix = path.getScreenCTM()
       if (!matrix) continue
-      const start = path.getPointAtLength(0)
-      const end = path.getPointAtLength(path.getTotalLength())
-      const x1 = start.x * matrix.a + start.y * matrix.c + matrix.e
-      const y1 = start.x * matrix.b + start.y * matrix.d + matrix.f
-      const x2 = end.x * matrix.a + end.y * matrix.c + matrix.e
-      const y2 = end.x * matrix.b + end.y * matrix.d + matrix.f
-      const dx = x2 - x1
-      const dy = y2 - y1
-      const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy || 1)))
-      if (Math.hypot(x - x1 - t * dx, y - y1 - t * dy) <= 20) return id
+      const length = path.getTotalLength()
+      for (let offset = 0; offset < length; offset += 12) {
+        const start = path.getPointAtLength(offset)
+        const end = path.getPointAtLength(Math.min(offset + 12, length))
+        const x1 = start.x * matrix.a + start.y * matrix.c + matrix.e
+        const y1 = start.x * matrix.b + start.y * matrix.d + matrix.f
+        const x2 = end.x * matrix.a + end.y * matrix.c + matrix.e
+        const y2 = end.x * matrix.b + end.y * matrix.d + matrix.f
+        const dx = x2 - x1
+        const dy = y2 - y1
+        const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy || 1)))
+        if (Math.hypot(x - x1 - t * dx, y - y1 - t * dy) <= 20) return id
+      }
     }
   }
   return <div ref={graphRef} tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") { setMenu(null); setEdgeMenu(null); cancelLink() } }} onContextMenuCapture={event => {
