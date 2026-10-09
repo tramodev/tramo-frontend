@@ -50,8 +50,6 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
     <button type="button" aria-label="Open map" title="Open map" onClick={onOpenGraph} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Network className="h-4 w-4" /></button>
     {utilities}
   </aside>;
-  const incoming = Object.values(items).flatMap(source => source.associations.filter(a => a.targetId === item.id).map(association => ({ source, association })));
-  const outgoing = item.associations.map(association => ({ source: item, association }));
   const source = draft ? items[draft.sourceId] : undefined;
   const tied = new Set(source?.associations.map(a => a.targetId));
   const candidates = Object.values(items).filter(note => note.id !== source?.id && !tied.has(note.id) && note.title.toLowerCase().includes(query.trim().toLowerCase()));
@@ -59,22 +57,20 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
     <div className="flex items-center justify-between gap-2"><h2 className="text-sm font-medium">Connections</h2><button type="button" aria-label="Close connections" onClick={onToggleOpen} className="rounded p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
     <p className="text-xs text-muted-foreground">Connections involving “{item.title}”.</p>
     {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-    {[{ title: 'Outgoing', connections: outgoing }, { title: 'Incoming', connections: incoming }].map(group => <section key={group.title} className="space-y-2">
-      <h3 className="text-xs font-medium">{group.title}</h3>
-      {!group.connections.length && <p className="text-xs text-muted-foreground">No connections.</p>}
-      {group.connections.map(({ source, association }) => {
+    <section className="space-y-2">
+      {!item.associations.length && <p className="text-xs text-muted-foreground">No connections.</p>}
+      {item.associations.map((association) => {
         const target = items[association.targetId];
-        const related = source.id === item.id ? target : source;
         return <div key={association.id} className="space-y-2 rounded-lg border border-border p-3 text-sm">
-          <button type="button" disabled={!related} className="text-left hover:text-primary" onClick={() => related && onSelectItem(related)}>{source.title} → {target?.title ?? association.targetTitle}</button>
+          <button type="button" disabled={!target} className="text-left hover:text-primary" onClick={() => target && onSelectItem(target)}>{item.title} — {target?.title ?? association.targetTitle}</button>
           {association.text && <p className="whitespace-pre-wrap break-words text-xs text-muted-foreground">{association.text}</p>}
           <div className="flex gap-3 text-xs">
-            <button type="button" disabled={pending || !!draft} className="text-primary disabled:opacity-50" onClick={() => { setError(''); setDraft({ sourceId: source.id, targetId: association.targetId, text: association.text ?? '', associationId: association.id }); }}>Edit explanation</button>
-            <button type="button" disabled={pending || !!draft} className="text-destructive disabled:opacity-50" aria-label={`Remove connection ${source.title} to ${target?.title ?? association.targetTitle}`} onClick={() => void run(() => onUntie(source.id, association.id))}>Remove</button>
+            <button type="button" disabled={pending || !!draft} className="text-primary disabled:opacity-50" onClick={() => { setError(''); setDraft({ sourceId: item.id, targetId: association.targetId, text: association.text ?? '', associationId: association.id }); }}>Edit explanation</button>
+            <button type="button" disabled={pending || !!draft} className="text-destructive disabled:opacity-50" aria-label={`Remove connection between ${item.title} and ${target?.title ?? association.targetTitle}`} onClick={() => void run(() => onUntie(item.id, association.id))}>Remove</button>
           </div>
         </div>;
       })}
-    </section>)}
+    </section>
     {!draft ? <button type="button" onClick={() => { setError(''); setQuery(''); setDraft({ sourceId: item.id, targetId: '', text: '' }); }} className="rounded-full border border-input px-3 py-2 text-sm">Connect notes</button> : <form className="flex flex-col gap-3" onSubmit={event => {
       event.preventDefault();
       if (!source || !items[draft.targetId]) return;
@@ -89,7 +85,7 @@ export function ConnectionsPanel({ item, items, trails, activeTrailId, onSelectI
           <label className="text-xs">Find a note<input type="search" value={query} onChange={event => setQuery(event.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm" placeholder="Search by name" /></label>
           <label className="text-xs">Connect to<select required value={draft.targetId} onChange={event => setDraft({ ...draft, targetId: event.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"><option value="">Choose a destination</option>{candidates.map(note => <option key={note.id} value={note.id}>{note.title}</option>)}{draft.targetId && !candidates.some(note => note.id === draft.targetId) && <option value={draft.targetId}>{items[draft.targetId]?.title}</option>}</select></label>
         </>}
-        {draft.targetId && <p className="text-sm">{source?.title ?? 'Deleted note'} → {items[draft.targetId]?.title ?? 'Deleted note'}</p>}
+        {draft.targetId && <p className="text-sm">{source?.title ?? 'Deleted note'} — {items[draft.targetId]?.title ?? 'Deleted note'}</p>}
         {draft.targetId && <label className="text-xs">Explanation (optional)<textarea value={draft.text} maxLength={CONNECTION_TEXT_LIMIT} rows={4} onChange={event => setDraft({ ...draft, text: event.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm" /><span className="text-muted-foreground">{draft.text.length}/{CONNECTION_TEXT_LIMIT}</span></label>}
         <div className="flex gap-2"><button disabled={!source || !items[draft.targetId]} className="rounded-full bg-primary px-4 py-2 text-xs text-primary-foreground disabled:opacity-50">{pending ? 'Saving…' : 'Save'}</button><button type="button" onClick={() => { setDraft(null); setError(''); }} className="px-3 text-xs">Cancel</button></div>
       </fieldset>

@@ -96,7 +96,7 @@ export function VersionHistorySheet({ projectId }: VersionHistorySheetProps) {
                     <div key={item.id} className="flex flex-col gap-1">
                       <p className="text-sm font-medium">{item.title}</p>
                       {item.associations.map(a => <div key={a.id} className="text-xs text-muted-foreground">
-                        <p>{item.title} → {a.targetTitle}</p>
+                        <p>{item.title} — {a.targetTitle}</p>
                         {a.text && <p className="whitespace-pre-wrap break-words">{a.text}</p>}
                       </div>)}
                       {item.content && (

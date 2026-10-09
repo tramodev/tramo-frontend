@@ -3,7 +3,7 @@
 import { memo, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { useMounted } from "@/hooks/use-mounted"
-import { ReactFlow, Background, Controls, Handle, Position, MarkerType, type Node, type Edge, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
+import { ReactFlow, Background, Controls, Handle, Position, type Node, type Edge, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import type { Item, Trail } from "@/app/editor/types"
 import { collectPlainText } from "@/app/editor/editor-utils"
@@ -34,6 +34,10 @@ type LocalConnection = { sourceId: string; targetId: string; sourceVisualId: str
 
 const COLUMN_WIDTH = 420
 const COLUMN_GAP = 90
+const connected = (items: Record<string, Item>, a: string, b: string) =>
+  items[a]?.associations.some(association => association.targetId === b) || items[b]?.associations.some(association => association.targetId === a)
+const locallyConnected = (connections: LocalConnection[], a: string, b: string) =>
+  connections.some(connection => connection.sourceId === a && connection.targetId === b || connection.sourceId === b && connection.targetId === a)
 function previewText(content: string | null) {
   if (!content) return ""
   try {
@@ -119,7 +123,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
         const item = items[itemId]
         const appearance = { id: `card:${column.trailId || "loose"}:${itemId}`, itemId, trailId: column.trailId || undefined, column: columnIndex, row }
         appearances.set(itemId, [...(appearances.get(itemId) ?? []), appearance])
-        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: preview ? "" : previewText(item.content), compact: preview, number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !items[link.sourceId]?.associations.some(association => association.targetId === itemId) && !localConnections.some(connection => connection.sourceId === link.sourceId && connection.targetId === itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
+        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: preview ? "" : previewText(item.content), compact: preview, number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !connected(items, link.sourceId, itemId) && !locallyConnected(localConnections, link.sourceId, itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
         y += (heights[appearance.id] ?? (preview ? 72 : 132)) + (preview ? 16 : 40)
       })
       nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: cardWidth + inset * 2, height: Math.max(preview ? 80 : 104, y - inset) }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
@@ -129,16 +133,26 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
       sharedEdges.push({ id: `shared:${copies[index - 1].id}:${copies[index].id}`, source: copies[index - 1].id, target: copies[index].id, sourceHandle: "source-right", targetHandle: "target-left", type: "straight", selectable: false, focusable: false, interactionWidth: 0, style: { stroke: "var(--ed-purple)", strokeWidth: 1.5, strokeDasharray: "2 6", strokeLinecap: "round", opacity: 0.75 }, ariaLabel: `${items[itemId].title} appears in both trails` })
     }
     const associations: AssociationView[] = []
+    const seenPairs = new Map<string, AssociationView>()
     for (const item of Object.values(items)) for (const association of item.associations ?? []) {
+      const pair = [item.id, association.targetId].sort().join(":")
+      const existing = seenPairs.get(pair)
+      if (existing) {
+        if (existing.associationId !== association.id && association.text?.trim() && association.text !== existing.text)
+          existing.text = existing.text ? `${existing.text}\n\n${association.text}` : association.text
+        continue
+      }
       const sources = appearances.get(item.id)
       const targets = appearances.get(association.targetId)
       if (!sources?.length || !targets?.length) continue
       const pairs = sources.flatMap(source => targets.map(target => ({ source, target, distance: Math.abs(source.column - target.column) * 3 + Math.abs(source.row - target.row) })))
       pairs.sort((a, b) => a.distance - b.distance || a.source.column - b.source.column || a.target.column - b.target.column)
-      associations.push({ id: `${item.id}:${association.id}`, associationId: association.id, sourceId: item.id, targetId: association.targetId, text: association.text, source: pairs[0].source, target: pairs[0].target })
+      const view = { id: `${item.id}:${association.id}`, associationId: association.id, sourceId: item.id, targetId: association.targetId, text: association.text, source: pairs[0].source, target: pairs[0].target }
+      seenPairs.set(pair, view)
+      associations.push(view)
     }
     for (const connection of localConnections) {
-      if (items[connection.sourceId]?.associations.some(association => association.targetId === connection.targetId)) continue
+      if (connected(items, connection.sourceId, connection.targetId)) continue
       const source = appearances.get(connection.sourceId)?.find(appearance => appearance.id === connection.sourceVisualId)
       const target = appearances.get(connection.targetId)?.find(appearance => appearance.id === connection.targetVisualId)
       if (source && target) associations.push({ id: `local:${source.id}:${target.id}`, sourceId: connection.sourceId, targetId: connection.targetId, text: null, source, target })
@@ -169,16 +183,15 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
       id: association.id, source: source.id, target: target.id, type: "straight",
       sourceHandle: sameColumn ? downward ? "source-bottom" : "source-top" : rightward ? "source-right" : "source-left",
       targetHandle: sameColumn ? downward ? "target-top" : "target-bottom" : rightward ? "target-left" : "target-right",
-      markerEnd: { type: MarkerType.Arrow, color: "var(--primary)", width: 16, height: 16, markerUnits: "userSpaceOnUse", strokeWidth: 1.5 },
       selected: selectedConnection === association.id,
       interactionWidth: 40,
       style: { stroke: "var(--primary)", strokeWidth: selectedConnection === association.id ? 2 : 1.5 },
-      ariaLabel: `${items[association.sourceId].title} → ${items[association.targetId].title}`,
+      ariaLabel: `${items[association.sourceId].title} connected to ${items[association.targetId].title}`,
     }
   }))
   const selected = associations.find(association => association.id === selectedConnection)
   const connectItems = async (sourceId: string, targetId: string, sourceVisualId: string, targetVisualId: string) => {
-    if (!onTie || connecting || !items[sourceId] || !items[targetId] || sourceId === targetId || items[sourceId].associations.some(a => a.targetId === targetId) || localConnections.some(connection => connection.sourceId === sourceId && connection.targetId === targetId)) return
+    if (!onTie || connecting || !items[sourceId] || !items[targetId] || sourceId === targetId || connected(items, sourceId, targetId) || locallyConnected(localConnections, sourceId, targetId)) return
     setConnecting(true)
     setError("")
     setLocalConnections(previous => [...previous, { sourceId, targetId, sourceVisualId, targetVisualId }])
@@ -225,7 +238,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     } finally { setSavingColors(false) }
   }
   const candidates = menu?.kind === "item" && items[menu.sourceId]
-    ? Object.values(items).filter(item => item.id !== menu.sourceId && !items[menu.sourceId].associations.some(association => association.targetId === item.id) && !localConnections.some(connection => connection.sourceId === menu.sourceId && connection.targetId === item.id))
+    ? Object.values(items).filter(item => item.id !== menu.sourceId && !connected(items, menu.sourceId, item.id) && !locallyConnected(localConnections, menu.sourceId, item.id))
     : []
   const edgeAtPoint = (x: number, y: number) => {
     for (const path of graphRef.current?.querySelectorAll<SVGPathElement>(".react-flow__edge-path") ?? []) {
@@ -289,7 +302,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
         {!preview && !link && <Controls position="bottom-right" showInteractive={false} />}
       </ReactFlow>
     </div>
-    {link && <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true"><defs><marker id="graph-connection-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M 1 1 L 7 4.5 L 1 8" fill="none" stroke="var(--primary)" strokeWidth="1.5" /></marker></defs><line x1={link.x} y1={link.y} x2={cursor.x} y2={cursor.y} stroke="var(--primary)" strokeWidth="1.5" markerEnd="url(#graph-connection-arrow)" /></svg>}
+    {link && <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true"><line x1={link.x} y1={link.y} x2={cursor.x} y2={cursor.y} stroke="var(--primary)" strokeWidth="1.5" /></svg>}
     {menu && <div className="absolute z-20 w-64 rounded-md border border-border bg-card p-2 text-sm" style={{ left: menu.x, top: menu.y }} onKeyDown={event => { if (event.key === "Escape") setMenu(null) }}>
       {menu.kind === "item" && onTie && <button type="button" disabled={!candidates.length} onClick={() => { setLink({ sourceId: menu.sourceId, sourceVisualId: menu.sourceVisualId, x: menu.sourceX, y: menu.sourceY }); setCursor({ x: menu.x, y: menu.y }); setMenu(null); graphRef.current?.focus(); requestAnimationFrame(() => sourceHandle(menu.sourceVisualId)?.click()) }} className="w-full rounded-md px-2 py-2 text-left hover:bg-muted disabled:opacity-50">Connect to another note</button>}
       {onSaveColors && <div className={`${menu.kind === "item" && onTie ? "border-t border-border " : ""}px-2 pt-2`}>
@@ -302,7 +315,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
     </div>}
     {!preview && (selected || error) && <div className="shrink-0 border-t border-border px-5 py-3 text-xs text-muted-foreground">
       {error && <p role="alert" className="text-destructive">{error}</p>}
-      {selected && <p role="status" className="max-h-32 overflow-auto whitespace-pre-wrap break-words"><span className="font-medium text-foreground">{items[selected.sourceId].title} → {items[selected.targetId].title}</span><span className="mt-1 block">{selected.text || "No explanation."}</span></p>}
+      {selected && <p role="status" className="max-h-32 overflow-auto whitespace-pre-wrap break-words"><span className="font-medium text-foreground">{items[selected.sourceId].title} — {items[selected.targetId].title}</span><span className="mt-1 block">{selected.text || "No explanation."}</span></p>}
     </div>}
   </div>
 }

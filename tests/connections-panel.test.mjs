@@ -23,7 +23,7 @@ function setup() {
       useRef: value => refs[ref++] ?? (refs[ref - 1] = { current: value }),
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    '@/app/editor/associations': { CONNECTION_TEXT_LIMIT: 2000 },
+    '@/app/editor/associations': { CONNECTION_TEXT_LIMIT: 4002 },
   })[name] ?? {} });
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id.toUpperCase(), associations: [] }]));
   let props = { items, item: items.a, trails: [], open: true };
@@ -42,7 +42,7 @@ test('creation fixes source, keeps draft on error, rejects double submit and ret
   nodes = render();
   find(nodes, 'textarea').props.onChange({ target: { value: 'Context' } });
   nodes = render({ item: items.b });
-  expect(find(nodes, 'textarea').props.maxLength).toBe(2000);
+  expect(find(nodes, 'textarea').props.maxLength).toBe(4002);
   const form = find(nodes, 'form');
   form.props.onSubmit({ preventDefault() {} });
   form.props.onSubmit({ preventDefault() {} });
@@ -58,9 +58,10 @@ test('creation fixes source, keeps draft on error, rejects double submit and ret
   expect(find(render(), 'form')).toBeUndefined();
 });
 
-test('incoming connections edit and remove the original directed connection', async () => {
+test('connections can be edited and removed from either note', async () => {
   const { render, items, find } = setup();
   items.a.associations = [{ id: 'ab', targetId: 'b', text: 'Shared', targetTitle: 'B' }];
+  items.b.associations = [{ id: 'ab', targetId: 'a', text: 'Shared', targetTitle: 'A' }];
   const edits = [], removals = [];
   let nodes = render({ item: items.b, onUpdateAssociation: async (...args) => edits.push(args), onUntie: async (...args) => removals.push(args) });
   find(nodes, 'button', 'Edit explanation').props.onClick();
@@ -69,8 +70,8 @@ test('incoming connections edit and remove the original directed connection', as
   find(nodes, 'textarea').props.onChange({ target: { value: '' } });
   find(render(), 'form').props.onSubmit({ preventDefault() {} });
   await settle();
-  expect(edits).toEqual([['a', 'ab', '']]);
+  expect(edits).toEqual([['b', 'ab', '']]);
   find(render(), 'button', 'Remove').props.onClick();
   await settle();
-  expect(removals).toEqual([['a', 'ab']]);
+  expect(removals).toEqual([['b', 'ab']]);
 });

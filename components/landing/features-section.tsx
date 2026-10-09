@@ -28,11 +28,10 @@ function ConnectionsMockup() {
     <div className="mb-4 flex items-center justify-between"><span className="font-display text-lg font-medium">Connections</span><Waypoints className="h-4 w-4 text-muted-foreground" /></div>
     <p className="mb-4 text-xs text-muted-foreground">Connections involving “Memex”.</p>
     <div className="rounded-xl border border-border bg-background p-4">
-      <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-primary">Outgoing</span>
-      <p className="text-[13px] font-medium">Memex → As We May Think</p>
+      <p className="text-[13px] font-medium">Memex — As We May Think</p>
     </div>
     <div className="mt-3 rounded-xl border border-border bg-background p-4">
-      <p className="text-[13px] font-medium">Associative trails → Memex</p>
+      <p className="text-[13px] font-medium">Associative trails — Memex</p>
     </div>
     <div className="mt-4 flex items-center gap-2 text-xs text-primary"><Link2 className="h-3.5 w-3.5" />Connect notes when they add context</div>
   </div>;

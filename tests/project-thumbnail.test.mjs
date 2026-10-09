@@ -23,7 +23,7 @@ const renderGraph = graph => {
 test('graph thumbnail shows every trail and note appearance with static connections', () => {
   const graph = {
     trails: [{ id: 'first', title: 'First', itemIds: ['shared'] }, { id: 'second', title: 'Second', itemIds: ['shared', 'other'] }],
-    items: [{ id: 'shared', title: 'Shared', associations: [{ id: 'link', targetId: 'other' }] }, { id: 'other', title: 'Other', associations: [] }],
+    items: [{ id: 'shared', title: 'Shared', associations: [{ id: 'link', targetId: 'other' }] }, { id: 'other', title: 'Other', associations: [{ id: 'link', targetId: 'shared' }] }],
   };
   const svg = renderGraph(graph);
   const nodes = flatten(svg);

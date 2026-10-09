@@ -1,1 +1,1 @@
-export const CONNECTION_TEXT_LIMIT = 2000;
+export const CONNECTION_TEXT_LIMIT = 4002;

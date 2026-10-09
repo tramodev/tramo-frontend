@@ -21,6 +21,7 @@ function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; classNa
   const height = Math.max(132, CARD_TOP + Math.max(...trails.map(trail => trail.itemIds.length)) * (CARD_HEIGHT + CARD_GAP) + 8)
   const items = new Map(graph.items.map(item => [item.id, item]))
   const appearances = new Map<string, { key: string; x: number; y: number }[]>()
+  const connectionPairs = new Set<string>()
   const cards = trails.flatMap((trail, column) => trail.itemIds.map((id, row) => {
     const card = { id, key: `${trail.id}:${id}`, x: column * (LANE_WIDTH + LANE_GAP) + 10, y: CARD_TOP + row * (CARD_HEIGHT + CARD_GAP) }
     appearances.set(id, [...(appearances.get(id) ?? []), card])
@@ -49,9 +50,12 @@ function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; classNa
           return <path key={`shared:${source.key}:${target.key}`} d={`M ${fromX} ${fromY} C ${middle} ${fromY}, ${middle} ${toY}, ${toX} ${toY}`} fill="none" stroke="var(--ed-purple)" strokeWidth={2} strokeDasharray="4 5" />
         }))}
         {graph.items.flatMap(item => item.associations.map(association => {
+          const pair = [item.id, association.targetId].sort().join(":")
+          if (connectionPairs.has(pair)) return null
           const source = appearances.get(item.id)?.[0]
           const target = appearances.get(association.targetId)?.[0]
           if (!source || !target) return null
+          connectionPairs.add(pair)
           const sameColumn = source.x === target.x
           const fromX = sameColumn ? source.x + CARD_WIDTH / 2 : source.x < target.x ? source.x + CARD_WIDTH : source.x
           const toX = sameColumn ? target.x + CARD_WIDTH / 2 : source.x < target.x ? target.x : target.x + CARD_WIDTH

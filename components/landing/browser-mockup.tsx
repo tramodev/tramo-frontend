@@ -127,7 +127,7 @@ const LOOSE_ITEMS = Object.values(GRAPH_ITEMS).map(item => ({
 }));
 
 const CONNECTIONS = [
-  { type: 'INCOMING → MEMEX', Icon: Waypoints, title: 'Associative trails' },
+  { type: 'CONNECTED TO MEMEX', Icon: Waypoints, title: 'Associative trails' },
 ];
 
 export const BrowserMockup: React.FC = () => {

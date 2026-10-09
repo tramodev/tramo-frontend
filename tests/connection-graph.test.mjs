@@ -27,7 +27,7 @@ runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-gra
   '@/hooks/use-mounted': { useMounted: () => true },
   '@/app/editor/editor-utils': { collectPlainText: content => [JSON.parse(content).root.text] },
   '@/app/editor/graph-colors': colorExports,
-  '@xyflow/react': { ReactFlow: 'Flow', MarkerType: { Arrow: 'arrow' }, Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
+  '@xyflow/react': { ReactFlow: 'Flow', Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
 })[name] ?? {} });
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 const renderTree = props => {
@@ -41,20 +41,22 @@ test('shared notes have distinct appearances and explicit connections appear onc
   hookValues = [];
   const items = {
     a: { id: 'a', title: 'A', content: '', associations: [{ id: 'ab', targetId: 'b', text: 'Context' }] },
-    b: { id: 'b', title: 'B', content: '', associations: [{ id: 'ba', targetId: 'a', text: null }] },
+    b: { id: 'b', title: 'B', content: '', associations: [{ id: 'ba', targetId: 'a', text: 'Other context' }] },
   };
   const trails = [{ id: 'first', title: 'First', itemIds: ['a', 'b'] }, { id: 'second', title: 'Second', itemIds: ['a'] }];
-  const flow = renderGraph({ items, trails, onSelectItem() {} });
+  const props = { items, trails, onSelectItem() {} };
+  const flow = renderGraph(props);
   expect(flow.props.nodes.filter(node => node.type === 'card').map(node => node.id)).toEqual(['card:first:a', 'card:first:b', 'card:second:a']);
   expect(flow.props.nodes.filter(node => node.type === 'lane').map(node => node.data.title)).toEqual(['First', 'Second']);
-  expect(flow.props.edges.map(edge => edge.id)).toEqual(['shared:card:first:a:card:second:a', 'a:ab', 'b:ba']);
+  expect(flow.props.edges.map(edge => edge.id)).toEqual(['shared:card:first:a:card:second:a', 'a:ab']);
   expect(flow.props.edges.every(edge => edge.type === 'straight')).toBe(true);
-  expect(flow.props.edges.map(edge => [edge.source, edge.target])).toEqual([['card:first:a', 'card:second:a'], ['card:first:a', 'card:first:b'], ['card:first:b', 'card:first:a']]);
-  expect(flow.props.edges.slice(1).every(edge => edge.markerEnd.type === 'arrow')).toBe(true);
-  expect(flow.props.edges[0].markerEnd).toBeUndefined();
+  expect(flow.props.edges.map(edge => [edge.source, edge.target])).toEqual([['card:first:a', 'card:second:a'], ['card:first:a', 'card:first:b']]);
+  expect(flow.props.edges.every(edge => edge.markerEnd === undefined)).toBe(true);
   expect(flow.props.edges[0].style.strokeDasharray).toBe('2 6');
   expect(flow.props.edges[0].style.stroke).toBe('var(--ed-purple)');
   expect(flow.props.edges[0].selectable).toBe(false);
+  flow.props.onEdgeClick({}, flow.props.edges[1]);
+  expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Context\\n\\nOther context');
 });
 
 test('three appearances of one note are connected without duplicating links', () => {
@@ -143,7 +145,7 @@ test('dragging between cards uses original note IDs and ignores duplicate connec
   await flow.props.onConnect({ source: 'card:first:a', target: 'card:second:a' });
   expect(calls).toEqual([]);
   await flow.props.onConnect({ source: 'card:second:b', target: 'card:first:a' });
-  expect(calls).toEqual([['b', 'a', '']]);
+  expect(calls).toEqual([]);
 });
 
 test('measured card height moves the next card down without clipping', () => {

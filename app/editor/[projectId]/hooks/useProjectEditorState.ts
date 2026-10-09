@@ -384,11 +384,17 @@ export function useProjectEditorState(projectId: string) {
     }
   }, false);
 
-  const handleTie = (itemId: string, targetId: string, text: string) => pendingSaves.current.track(`tie:${itemId}:${targetId}`, async () => {
+  const handleTie = (itemId: string, targetId: string, text: string) => pendingSaves.current.track(`tie:${[itemId, targetId].sort().join(':')}`, async () => {
     const association = await tie(itemId, targetId, text);
     setItems(prev => {
       const item = prev[itemId];
-      return item ? { ...prev, [itemId]: { ...item, associations: [...item.associations, association] } } : prev;
+      const target = prev[targetId];
+      if (!item || !target) return prev;
+      return {
+        ...prev,
+        [itemId]: { ...item, associations: [...item.associations, association] },
+        [targetId]: { ...target, associations: [...target.associations, { ...association, targetId: itemId, targetTitle: item.title }] },
+      };
     });
   }, false);
 
@@ -396,7 +402,14 @@ export function useProjectEditorState(projectId: string) {
     const association = await updateAssociation(itemId, associationId, text);
     setItems(prev => {
       const item = prev[itemId];
-      return item ? { ...prev, [itemId]: { ...item, associations: item.associations.map(a => a.id === associationId ? association : a) } } : prev;
+      const targetId = item?.associations.find(a => a.id === associationId)?.targetId;
+      const target = targetId && prev[targetId];
+      if (!item || !targetId || !target) return prev;
+      return {
+        ...prev,
+        [itemId]: { ...item, associations: item.associations.map(a => a.id === associationId ? { ...a, text: association.text } : a) },
+        [targetId]: { ...target, associations: target.associations.map(a => a.id === associationId ? { ...a, text: association.text } : a) },
+      };
     });
   }, false);
 
@@ -404,7 +417,14 @@ export function useProjectEditorState(projectId: string) {
     await untie(itemId, associationId);
     setItems(prev => {
       const item = prev[itemId];
-      return item ? { ...prev, [itemId]: { ...item, associations: item.associations.filter(a => a.id !== associationId) } } : prev;
+      const targetId = item?.associations.find(a => a.id === associationId)?.targetId;
+      const target = targetId && prev[targetId];
+      if (!item || !targetId || !target) return prev;
+      return {
+        ...prev,
+        [itemId]: { ...item, associations: item.associations.filter(a => a.id !== associationId) },
+        [targetId]: { ...target, associations: target.associations.filter(a => a.id !== associationId) },
+      };
     });
   }, false);
 
