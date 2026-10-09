@@ -52,6 +52,7 @@ import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Baseline,
   Bold,
+  Highlighter,
   Italic,
   Underline,
   Strikethrough,
@@ -164,6 +165,7 @@ const TEXT_FORMATS = [
   { format: 'italic', label: 'Format Italics', tooltip: 'Italic', Icon: Italic },
   { format: 'underline', label: 'Format Underline', tooltip: 'Underline', Icon: Underline },
   { format: 'strikethrough', label: 'Format Strikethrough', tooltip: 'Strikethrough', Icon: Strikethrough },
+  { format: 'highlight', label: 'Format Highlight', tooltip: 'Highlight', Icon: Highlighter },
 ] as const;
 
 const INLINE_CODE_FORMAT = { format: 'code', label: 'Format Code', tooltip: 'Inline code', Icon: Code } as const;

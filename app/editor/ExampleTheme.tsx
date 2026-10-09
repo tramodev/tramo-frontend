@@ -73,6 +73,7 @@ export default{
     bold: 'editor-text-bold',
     code: 'editor-text-code',
     hashtag: 'editor-text-hashtag',
+    highlight: 'editor-text-highlight',
     italic: 'editor-text-italic',
     overflowed: 'editor-text-overflowed',
     strikethrough: 'editor-text-strikethrough',
