@@ -28,14 +28,15 @@ test('graph thumbnail shows every trail and note appearance with static connecti
   const svg = renderGraph(graph);
   const nodes = flatten(svg);
   expect(svg.type).toBe('svg');
-  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--muted)')).toHaveLength(2);
+  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--muted)')).toHaveLength(0);
   expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--card)')).toHaveLength(3);
+  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--card)').map(node => node.props.y)).toEqual([68, 68, 144]);
   expect(nodes.filter(node => node.type === 'path' && node.props.strokeDasharray)).toHaveLength(1);
   expect(nodes.filter(node => node.type === 'path' && !node.props.strokeDasharray)).toHaveLength(1);
   const trailTitle = nodes.find(node => node.type === 'foreignObject' && textOf(node).includes('First'));
   const noteTitle = nodes.find(node => node.type === 'foreignObject' && textOf(node).includes('Shared'));
   expect(trailTitle.props.children.props.className).toContain('text-[32px] font-semibold');
-  expect(noteTitle.props.children.props.className).toContain('text-[24px] font-medium');
+  expect(noteTitle.props.children.props.className).toContain('text-[20px] font-medium');
   expect(textOf(svg).match(/Shared/g)).toHaveLength(2);
   expect(textOf(svg)).toContain('First');
   expect(textOf(svg)).toContain('Second');
@@ -51,7 +52,8 @@ test('graph thumbnail renders a response with the previous single-trail format',
   const cards = flatten(svg).filter(node => node.type === 'rect' && node.props.fill === 'var(--card)');
   expect(cards).toHaveLength(1);
   expect(cards[0].props.x).toBe(100);
-  expect(svg.props.viewBox).toBe('0 0 360 140');
+  expect(svg.props.viewBox).toBe('0 0 360 152');
+  expect(flatten(svg).filter(node => node.type === 'rect' && node.props.fill === 'var(--muted)')).toHaveLength(0);
   expect(textOf(svg)).toContain('First');
   expect(textOf(svg)).toContain('Note');
 });
@@ -63,9 +65,13 @@ test('a single trail fills the thumbnail with notes in reading order', () => {
   };
   const svg = renderGraph(graph);
   const nodes = flatten(svg);
-  expect(svg.props.viewBox).toBe('0 0 360 216');
-  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--card)').map(node => [node.props.x, node.props.y])).toEqual([[10, 56], [190, 56], [10, 132]]);
+  expect(svg.props.viewBox).toBe('0 0 360 228');
+  expect(nodes.filter(node => node.type === 'rect' && node.props.fill === 'var(--card)').map(node => [node.props.x, node.props.y])).toEqual([[10, 68], [190, 68], [10, 144]]);
   expect(nodes.filter(node => node.type === 'path' && node.props.stroke === 'var(--border)')).toHaveLength(2);
+  const trailTitle = nodes.find(node => node.type === 'foreignObject' && textOf(node).includes('One'));
+  const noteTitle = nodes.find(node => node.type === 'foreignObject' && textOf(node).includes('a'));
+  expect(trailTitle.props.children.props.className).toContain('text-[32px] font-semibold');
+  expect(noteTitle.props.children.props.className).toContain('text-[20px]');
 });
 
 test('static thumbnail keeps every trail when the graph has several', () => {
@@ -74,7 +80,7 @@ test('static thumbnail keeps every trail when the graph has several', () => {
     items: [],
   };
   const svg = renderGraph(graph);
-  expect(flatten(svg).filter(node => node.type === 'rect' && node.props.fill === 'var(--muted)')).toHaveLength(5);
+  expect(flatten(svg).filter(node => node.type === 'rect' && node.props.fill === 'var(--muted)')).toHaveLength(0);
   expect(svg.props.viewBox).toBe('0 0 996 132');
   for (const title of ['One', 'Two', 'Three', 'Four', 'Five']) expect(textOf(svg)).toContain(title);
 });

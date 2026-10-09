@@ -11,7 +11,7 @@ const LANE_GAP = 24
 const CARD_WIDTH = 160
 const CARD_HEIGHT = 64
 const CARD_GAP = 12
-const CARD_TOP = 56
+const CARD_TOP = 68
 
 function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; className: string }) {
   const trails = "trails" in graph ? graph.trails : [{ id: graph.trailId, title: graph.trailTitle, itemIds: graph.itemIds }]
@@ -41,7 +41,6 @@ function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; classNa
           const x = column * (laneWidth + LANE_GAP)
           return <g key={trail.id}>
             <rect x={x} y={0} width={laneWidth} height={height} rx={10} fill="var(--popover)" stroke="var(--border)" />
-            <rect x={x} y={0} width={laneWidth} height={48} rx={10} fill="var(--muted)" />
             <foreignObject x={x + 8} y={5} width={laneWidth - 16} height={40}>
               <div className="flex h-full items-center overflow-hidden font-display text-[32px] font-semibold leading-tight text-primary"><span className="truncate">{trail.title}</span></div>
             </foreignObject>
@@ -84,7 +83,7 @@ function GraphThumbnail({ graph, className }: { graph: GraphPreviewData; classNa
         {cards.map(card => <g key={card.key}>
           <rect x={card.x} y={card.y} width={CARD_WIDTH} height={CARD_HEIGHT} rx={8} fill="var(--card)" stroke="var(--border)" />
           <foreignObject x={card.x + 8} y={card.y + 7} width={CARD_WIDTH - 16} height={CARD_HEIGHT - 14}>
-            <div className="flex h-full items-center overflow-hidden font-display text-[24px] font-medium leading-tight text-foreground"><span className="line-clamp-2 break-words">{items.get(card.id)?.title || "Untitled note"}</span></div>
+            <div className="flex h-full items-center overflow-hidden font-display text-[20px] font-medium leading-tight text-foreground"><span className="line-clamp-2 break-words">{items.get(card.id)?.title || "Untitled note"}</span></div>
           </foreignObject>
         </g>)}
       </svg>
