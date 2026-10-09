@@ -550,7 +550,7 @@ export default function ToolbarPlugin({
       <DropdownMenu>
         <ToolbarMenuButton label="Text Styles" tooltip="Text Styles" className="toolbar-item align-dropdown-trigger spaced">
           <ActiveBlockIcon size={18} />
-          <span className="grid">
+          <span className="grid text-left">
             <span className="col-start-1 row-start-1">{activeBlock.label}</span>
             <span aria-hidden="true" className="invisible col-start-1 row-start-1">Numbered list</span>
           </span>
