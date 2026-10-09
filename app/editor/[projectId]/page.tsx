@@ -145,6 +145,7 @@ export default function EditorPage() {
                 selectedItemId={project.selectedItemId}
                 onSelectItem={project.handleSelectItem}
                 onTie={project.handleTie}
+                onUpdateAssociation={project.handleUpdateAssociation}
                 onUntie={project.handleUntie}
                 onClose={() => project.setView('write')}
               />

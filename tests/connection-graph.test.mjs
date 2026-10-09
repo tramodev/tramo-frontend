@@ -32,7 +32,9 @@ runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-gra
   '@/app/editor/editor-utils': { collectPlainText: content => [JSON.parse(content).root.text] },
   '@/app/editor/graph-colors': colorExports,
   '@/app/editor/plugins/itemLink': itemLinkExports,
-  '@xyflow/react': { ReactFlow: 'Flow', Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
+  '@/components/editor/connection-comment': { ConnectionComment: 'ConnectionComment' },
+  'lucide-react': { MessageSquareText: 'MessageSquareText' },
+  '@xyflow/react': { ReactFlow: 'Flow', BaseEdge: 'BaseEdge', EdgeLabelRenderer: 'EdgeLabelRenderer', getStraightPath: () => ['M 0 0 L 100 0', 50, 0], Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' } },
 })[name] ?? {} });
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 const renderTree = props => {
@@ -53,8 +55,13 @@ test('shared notes have distinct appearances and explicit connections appear onc
   const flow = renderGraph(props);
   expect(flow.props.nodes.filter(node => node.type === 'card').map(node => node.id)).toEqual(['card:first:a', 'card:first:b', 'card:second:a']);
   expect(flow.props.nodes.filter(node => node.type === 'lane').map(node => node.data.title)).toEqual(['First', 'Second']);
-  expect(flow.props.edges.map(edge => edge.id)).toEqual(['shared:card:first:a:card:second:a', 'a:ab']);
-  expect(flow.props.edges.every(edge => edge.type === 'straight')).toBe(true);
+  expect(flow.props.edges.map(edge => edge.id)).toEqual(['shared:card:first:a:card:second:a', 'connection:a:b']);
+  expect(flow.props.edges.map(edge => edge.type)).toEqual(['straight', 'comment']);
+  expect(flow.props.edges[1].data.hasComment).toBe(true);
+  const marker = flatten(flow.props.edgeTypes.comment({ sourceX: 0, sourceY: 0, targetX: 100, targetY: 0, data: flow.props.edges[1].data })).find(node => node.props['aria-label'] === 'View connection comment');
+  expect(marker).toBeDefined();
+  marker.props.onClick({ stopPropagation() {} });
+  expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Context');
   expect(flow.props.edges.map(edge => [edge.source, edge.target])).toEqual([['card:first:a', 'card:second:a'], ['card:first:a', 'card:first:b']]);
   expect(flow.props.edges.every(edge => edge.markerEnd === undefined)).toBe(true);
   expect(flow.props.edges[0].style.strokeDasharray).toBe('2 6');
@@ -75,14 +82,15 @@ test('repeated and reciprocal note links draw one wire per pair', () => {
   const calls = [];
   const props = { items, trails, onSelectItem() {}, onTie: async (...args) => calls.push(args) };
   let flow = renderGraph(props);
-  expect(flow.props.edges.map(edge => edge.id)).toEqual(['reference:a:b']);
+  expect(flow.props.edges.map(edge => edge.id)).toEqual(['connection:a:b']);
+  expect(flow.props.edges[0].data.hasComment).toBe(false);
   flow.props.onConnect({ source: 'card:first:a', target: 'card:first:b' });
   expect(calls).toEqual([]);
   flow.props.onEdgeClick({}, flow.props.edges[0]);
   expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Linked in note.');
   items.a.associations = [{ id: 'ab', targetId: 'b', text: 'Context' }];
   flow = renderGraph(props);
-  expect(flow.props.edges.map(edge => edge.id)).toEqual(['a:ab']);
+  expect(flow.props.edges.map(edge => edge.id)).toEqual(['connection:a:b']);
   flow.props.onEdgeClick({}, flow.props.edges[0]);
   expect(JSON.stringify(renderTree(props).find(node => node.props.role === 'status'))).toContain('Context');
   items.a.associations = [];
@@ -303,7 +311,7 @@ test('a failed save keeps the new connection visible as a temporary graph edge',
 
 test('right-clicking a saved arrow removes its association through the existing handler', async () => {
   hookValues = [];
-  edgePaths = [edgePath('a:ab')];
+  edgePaths = [edgePath('connection:a:b')];
   const calls = [];
   const items = {
     a: { id: 'a', title: 'A', content: '', associations: [{ id: 'ab', targetId: 'b', text: null }] },

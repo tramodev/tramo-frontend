@@ -18,11 +18,12 @@ interface GraphViewProps {
   selectedItemId: string | undefined;
   onSelectItem: (item: Item, trailId?: string) => void;
   onTie?: (itemId: string, targetId: string, text: string) => Promise<void>;
+  onUpdateAssociation?: (itemId: string, associationId: string, text: string) => Promise<void>;
   onUntie?: (itemId: string, associationId: string) => Promise<void>;
   onClose: () => void;
 }
 
-export function GraphView({ projectId, graphColors, onSaveColors, trails, items, activeTrailId, selectedItemId, onSelectItem, onTie, onUntie, onClose }: GraphViewProps) {
+export function GraphView({ projectId, graphColors, onSaveColors, trails, items, activeTrailId, selectedItemId, onSelectItem, onTie, onUpdateAssociation, onUntie, onClose }: GraphViewProps) {
   const [contents, setContents] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState(false);
   useEffect(() => {
@@ -61,6 +62,7 @@ export function GraphView({ projectId, graphColors, onSaveColors, trails, items,
         selectedItemId={selectedItemId}
         onSelectItem={onSelectItem}
         onTie={onTie}
+        onUpdateAssociation={onUpdateAssociation}
         onUntie={onUntie}
       />
     </div>

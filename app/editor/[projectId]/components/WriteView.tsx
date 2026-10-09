@@ -157,7 +157,7 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
         <ListPlugin />
         <CheckListPlugin />
         <LinkPlugin />
-        <ItemLinkClickPlugin onNavigate={(id) => { const target = props.items[id]; if (target) props.onSelectItem(target); }} />
+        <ItemLinkClickPlugin items={props.items} sourceId={item.id} onNavigate={(id) => { const target = props.items[id]; if (target) props.onSelectItem(target); }} onTie={props.onTie} onUpdateAssociation={props.onUpdateAssociation} />
         <ClickableLinkPlugin newTab />
         <ImagesPlugin projectId={props.projectId} />
         <EquationsPlugin />
