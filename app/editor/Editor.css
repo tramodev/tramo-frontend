@@ -198,7 +198,7 @@ a[rel^="mypath-idea:"] {
 
 .item-mention-menu-item {
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: 4px;
   font-size: 13px;
   color: var(--foreground);
   cursor: pointer;
