@@ -11,6 +11,7 @@ import { anonIdHeader } from "./public-project";
 import type { GraphPreviewData } from "./feed";
 
 export type ProjectVisibility = "private" | "unlisted" | "published";
+export type MapPreviews = Record<string, { text: string; linkedItemIds: string[] }>;
 
 export interface Project {
   id: string;
@@ -19,6 +20,7 @@ export interface Project {
   graphColors: string | null;
   trails: Trail[];
   items: Record<string, Item>;
+  mapPreviews: MapPreviews | null;
   visibility: ProjectVisibility;
   thumbnailImageUrl: string | null;
   thumbnailGraph: GraphPreviewData | null;
@@ -111,6 +113,7 @@ function toProjectSummary(dto: ProjectDTO): Project {
     graphColors: dto.graphColors ?? null,
     trails: [],
     items: {},
+    mapPreviews: null,
     visibility: dto.visibility ?? "private",
     thumbnailImageUrl: dto.thumbnailImageUrl,
     thumbnailGraph: dto.thumbnailGraph,
@@ -144,19 +147,20 @@ export async function listProjects(): Promise<Project[]> {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export async function getProject(id: string): Promise<Project | null> {
+export async function getProject(id: string, includeMapPreviews = false): Promise<Project | null> {
   const projectResponse = await api(`/api/project/${id}`);
   if (projectResponse.status === 404) return null;
   const projectDto = await parseResponse<ProjectDTO>(projectResponse);
 
   const trailDtos = await apiJson<TrailDTO[]>(`/api/project/${id}/trail`);
 
-  const [trailItemLists, looseDtos, textStats] = await Promise.all([
+  const [trailItemLists, looseDtos, textStats, mapPreviews] = await Promise.all([
     Promise.all(
       trailDtos.map((trail) => apiJson<TrailStepDTO[]>(`/api/trail/${trail.id}/item`))
     ),
     apiJson<ItemDTO[]>(`/api/project/${id}/item`),
     apiJson<{ words: number; characters: number; items: { id: number; words: number; characters: number }[] }>(`/api/project/${id}/text-stats`),
+    includeMapPreviews ? getMapPreviews(id).catch(() => null) : Promise.resolve(null),
   ]);
 
   const itemMap = new Map<number, ItemDTO>();
@@ -198,7 +202,11 @@ export async function getProject(id: string): Promise<Project | null> {
     forkedFrom: trail.forkedFromId != null ? String(trail.forkedFromId) : null,
   }));
 
-  return { ...toProjectSummary(projectDto), trails, items };
+  return { ...toProjectSummary(projectDto), trails, items, mapPreviews };
+}
+
+export async function getMapPreviews(id: string): Promise<MapPreviews> {
+  return apiJson<MapPreviews>(`/api/project/${id}/map-preview`);
 }
 
 export async function startExampleProject(): Promise<{ projectId: string; trailId: number | null; itemId: number }> {

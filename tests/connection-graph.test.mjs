@@ -239,6 +239,25 @@ test('cards show all nonempty paragraphs up to 256 characters', () => {
   expect(flow.props.nodes.find(node => node.type === 'card').data.preview).toBe('First paragraph\n\nSecond paragraph\n\nThird paragraph');
 });
 
+test('map previews show cross-trail content and links before notes are opened', () => {
+  hookValues = [];
+  const items = {
+    a: { id: 'a', title: 'A', content: null, associations: [] },
+    b: { id: 'b', title: 'B', content: null, associations: [] },
+  };
+  const trails = [{ id: 'first', title: 'First', itemIds: ['a'] }, { id: 'second', title: 'Second', itemIds: ['b'] }];
+  const mapPreviews = { a: { text: 'First note', linkedItemIds: ['b'] }, b: { text: 'Second note', linkedItemIds: [] } };
+  const props = { items, trails, mapPreviews, onSelectItem() {} };
+  const flow = renderGraph(props);
+  expect(flow.props.nodes.filter(node => node.type === 'card').map(node => node.data.preview)).toEqual(['First note', 'Second note']);
+  expect(flow.props.edges.map(edge => edge.id)).toEqual(['connection:a:b']);
+
+  items.a.content = JSON.stringify({ root: { children: [{ text: 'Edited note' }] } });
+  const edited = renderGraph(props);
+  expect(edited.props.nodes.find(node => node.id === 'card:first:a').data.preview).toBe('Edited note');
+  expect(edited.props.edges).toEqual([]);
+});
+
 test('cards add an ellipsis only when content exceeds 256 characters', () => {
   hookValues = [];
   const content = text => JSON.stringify({ root: { children: [{ text }] } });

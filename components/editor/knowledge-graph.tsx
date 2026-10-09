@@ -7,6 +7,7 @@ import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, EdgeLabelR
 import { MessageSquareText } from "lucide-react"
 import "@xyflow/react/dist/style.css"
 import type { Item, Trail } from "@/app/editor/types"
+import type { MapPreviews } from "@/lib/projects-store"
 import { collectPlainText } from "@/app/editor/editor-utils"
 import { itemIdsFromContent } from "@/app/editor/plugins/itemLink"
 import { GRAPH_COLORS, parseGraphColors, type GraphColor, type GraphColors } from "@/app/editor/graph-colors"
@@ -15,6 +16,7 @@ import { ConnectionComment } from "@/components/editor/connection-comment"
 interface KnowledgeGraphProps {
   trails: Trail[]
   items: Record<string, Item>
+  mapPreviews?: MapPreviews | null
   activeTrailId?: string
   selectedItemId?: string
   graphColors?: string | null
@@ -161,9 +163,9 @@ const FloatingEdge = memo(function FloatingEdge({ source, target, style, data, i
 const nodeTypes = { card: Card, lane: Lane }
 const edgeTypes = { floating: FloatingEdge }
 
-export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, graphColors, onSaveColors, onSelectItem, onTie, onUpdateAssociation, onUntie, variant = "full" }: KnowledgeGraphProps) {
+export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, selectedItemId, graphColors, onSaveColors, onSelectItem, onTie, onUpdateAssociation, onUntie, variant = "full" }: KnowledgeGraphProps) {
   const preview = variant === "preview"
-  const references = useMemo(() => Object.fromEntries(Object.values(items).map(item => [item.id, itemIdsFromContent(item.content)])), [items])
+  const references = useMemo(() => Object.fromEntries(Object.values(items).map(item => [item.id, item.content != null ? itemIdsFromContent(item.content) : mapPreviews?.[item.id]?.linkedItemIds ?? []])), [items, mapPreviews])
   const connected = useCallback((a: string, b: string) =>
     items[a]?.associations.some(association => association.targetId === b) || items[b]?.associations.some(association => association.targetId === a) || references[a]?.includes(b) || references[b]?.includes(a), [items, references])
   const { resolvedTheme } = useTheme()
@@ -207,7 +209,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
         const item = items[itemId]
         const appearance = { id: `card:${column.trailId || "loose"}:${itemId}`, itemId, trailId: column.trailId || undefined, column: columnIndex, row }
         appearances.set(itemId, [...(appearances.get(itemId) ?? []), appearance])
-        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: previewText(item.content), number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !connected(link.sourceId, itemId) && !locallyConnected(localConnections, link.sourceId, itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
+        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: item.content != null ? previewText(item.content) : mapPreviews?.[itemId]?.text ?? "", number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !connected(link.sourceId, itemId) && !locallyConnected(localConnections, link.sourceId, itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
         y += (heights[appearance.id] ?? 132) + 40
       })
       nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: cardWidth + inset * 2, height: Math.max(104, y - inset) }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
@@ -249,7 +251,7 @@ export function KnowledgeGraph({ trails, items, activeTrailId, selectedItemId, g
       if (source && target) associations.push({ id: `local:${source.id}:${target.id}`, sourceId: connection.sourceId, targetId: connection.targetId, text: null, source, target })
     }
     return { nodes, associations, sharedEdges }
-  }, [trails, items, references, connected, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections, colors])
+  }, [trails, items, mapPreviews, references, connected, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections, colors])
 
   const onNodesChange = (changes: NodeChange<GraphNode>[]) => {
     const measured = changes.filter(change => change.type === "dimensions" && change.id.startsWith("card:") && change.dimensions?.height)

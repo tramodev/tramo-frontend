@@ -48,11 +48,14 @@ import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
 import type { ReorderNotice } from '../hooks/useProjectEditorState';
 import { Trail, Item, TitleAlign } from '../../types';
+import type { MapPreviews } from '@/lib/projects-store';
 
 interface WriteViewProps {
   projectId: string;
   item: Item;
   items: Record<string, Item>;
+  mapPreviews: MapPreviews | null;
+  onRetryMapPreviews: () => void;
   trails: Trail[];
   graphColors?: string | null;
   activeTrailId: string | undefined;
@@ -355,7 +358,7 @@ export function WriteView(props: WriteViewProps) {
         </div>
       </div>
     </div>
-    <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
+    <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} mapPreviews={props.mapPreviews} onRetryMapPreviews={props.onRetryMapPreviews} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
       onSelectItem={props.onSelectItem} onUpdateAssociation={props.onUpdateAssociation} onTie={props.onTie} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
   </EditorImagesProvider>;

@@ -141,6 +141,8 @@ export default function EditorPage() {
                 onSaveColors={project.handleSetGraphColors}
                 trails={project.trails}
                 items={project.items}
+                mapPreviews={project.mapPreviews}
+                onRetryMapPreviews={project.retryMapPreviews}
                 activeTrailId={project.activeTrailId}
                 selectedItemId={project.selectedItemId}
                 onSelectItem={project.handleSelectItem}
@@ -164,6 +166,8 @@ export default function EditorPage() {
                 projectId={projectId}
                 item={project.selectedItem}
                 items={project.items}
+                mapPreviews={project.mapPreviews}
+                onRetryMapPreviews={project.retryMapPreviews}
                 trails={project.trails}
                 graphColors={project.graphColors}
                 activeTrailId={project.activeTrailId}

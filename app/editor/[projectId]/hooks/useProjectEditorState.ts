@@ -7,6 +7,7 @@ import { Trail, Item, TitleAlign } from '../../types';
 import { countTextStats, lastItemStorageKey } from '../../editor-utils';
 import {
   getProject,
+  getMapPreviews,
   setProjectGraphColors,
   renameProject,
   createTrail,
@@ -25,6 +26,7 @@ import {
   tie,
   untie,
   type ProjectVisibility,
+  type MapPreviews,
 } from '@/lib/projects-store';
 import { resolveItemTrail } from '../../trail-navigation';
 import { getItemContent, getTrailContents } from '@/lib/item-content-client';
@@ -65,6 +67,7 @@ export function useProjectEditorState(projectId: string) {
     return next;
   });
   const [items, setItems] = useState<Record<string, Item>>({});
+  const [mapPreviews, setMapPreviews] = useState<MapPreviews | null>(null);
   const [navigation, setNavigation] = useState<{
     itemId?: string;
     trailId?: string;
@@ -88,7 +91,7 @@ export function useProjectEditorState(projectId: string) {
 
   useEffect(() => {
     let cancelled = false;
-    getProject(projectId).then((project) => {
+    getProject(projectId, true).then((project) => {
       if (cancelled) return;
       if (!project) {
         router.replace('/projects');
@@ -103,6 +106,7 @@ export function useProjectEditorState(projectId: string) {
       setThumbnailGraph(project.thumbnailGraph);
       setTrails(project.trails);
       setItems(project.items);
+      setMapPreviews(project.mapPreviews);
       setLoaded(true);
 
       const entry = new URLSearchParams(window.location.search);
@@ -450,6 +454,10 @@ export function useProjectEditorState(projectId: string) {
     setThumbnailGraph(graph);
   }, []);
 
+  const retryMapPreviews = useCallback(() => {
+    void getMapPreviews(projectId).then(setMapPreviews).catch(() => setMapPreviews(null));
+  }, [projectId]);
+
   return {
     loaded,
     projectTitle,
@@ -464,6 +472,8 @@ export function useProjectEditorState(projectId: string) {
     profile,
     trails,
     items,
+    mapPreviews,
+    retryMapPreviews,
     selectedItem,
     selectedItemId,
     activeTrail,

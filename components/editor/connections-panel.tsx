@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { CircleHelp, Network, PanelRightOpen, X } from 'lucide-react';
 import type { Item, Trail } from '@/app/editor/types';
+import type { MapPreviews } from '@/lib/projects-store';
 import { CONNECTION_TEXT_LIMIT } from '@/app/editor/associations';
 import { KnowledgeGraph } from '@/components/editor/knowledge-graph';
 import { ShortcutsDialog } from '@/components/editor/shortcuts-dialog';
@@ -12,6 +13,8 @@ interface ConnectionsPanelProps {
   item: Item;
   items: Record<string, Item>;
   trails: Trail[];
+  mapPreviews?: MapPreviews | null;
+  onRetryMapPreviews?: () => void;
   graphColors?: string | null;
   activeTrailId?: string;
   onSelectItem: (item: Item) => void;
@@ -25,7 +28,7 @@ interface ConnectionsPanelProps {
 
 type Draft = { sourceId: string; targetId: string; text: string; associationId?: string };
 
-export function ConnectionsPanel({ item, items, trails, graphColors, activeTrailId, onSelectItem, onTie, onUntie, onUpdateAssociation, onOpenGraph, open, onToggleOpen }: ConnectionsPanelProps) {
+export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapPreviews, graphColors, activeTrailId, onSelectItem, onTie, onUntie, onUpdateAssociation, onOpenGraph, open, onToggleOpen }: ConnectionsPanelProps) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState(false);
@@ -91,7 +94,7 @@ export function ConnectionsPanel({ item, items, trails, graphColors, activeTrail
         <div className="flex gap-2"><button disabled={!source || !items[draft.targetId]} className="rounded-full bg-primary px-4 py-2 text-xs text-primary-foreground disabled:opacity-50">{pending ? 'Saving…' : 'Save'}</button><button type="button" onClick={() => { setDraft(null); setError(''); }} className="px-3 text-xs">Cancel</button></div>
       </fieldset>
     </form>}
-    <div className="border-t border-border pt-3"><button type="button" onClick={onOpenGraph} className="mb-3 text-sm text-primary">Open map</button><div className="h-44 overflow-hidden rounded-lg border border-border"><KnowledgeGraph trails={trails} items={items} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" /></div></div>
+    <div className="border-t border-border pt-3"><button type="button" onClick={onOpenGraph} className="mb-3 text-sm text-primary">Open map</button><div className="h-44 overflow-hidden rounded-lg border border-border">{mapPreviews === null ? <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph trails={trails} items={items} mapPreviews={mapPreviews} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" />}</div></div>
     {utilities}
   </aside>;
 }
