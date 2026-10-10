@@ -11,9 +11,8 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
 async function setup() {
   const states = [], refs = [], effects = [];
   let stateIndex = 0, refIndex = 0, initial = true;
-  let resolveSave, rejectSave, requests = 0;
-  const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, associations: [], content: '' }]));
-  items.a.associations = [{ id: 'ab', targetId: 'b', text: 'Shared context' }];
+  let resolveSave, rejectSave, requests = 0, bootstraps = 0, previews = 0;
+  const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, content: '' }]));
   const steps = ['a', 'b', 'c'].map(id => ({ itemId: id }));
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
   const navigation = {};
@@ -37,13 +36,11 @@ async function setup() {
       },
       'next/navigation': { useRouter: () => router },
       '@/lib/projects-store': {
-        getProject: async () => ({ title: 'Project', items, trails: [trail] }),
-        getMapPreviews: async () => ({}),
+        getEditorBootstrap: async () => { bootstraps++; return { project: { title: 'Project', visibility: 'private', description: '', graphColors: null, tags: '', items, trails: [trail] }, contents: [], profile: { username: 'owner', imageUrl: null }, selectedItemId: 'a', selectedTrailId: 'trail' }; },
+        getMapPreviews: async () => { previews++; return {}; },
         reorderTrailItems: () => { requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
-        updateAssociation: async (id, associationId, text) => ({ id: associationId, targetId: 'b', text }),
       },
-      '@/lib/profile': { getMyProfile: async () => ({ username: 'owner' }) },
-      '@/lib/item-content-client': { getTrailContents: async () => ({}), getItemContent: async () => '' },
+      '@/lib/item-content-client': { acceptLoadedContents: contents => contents, getTrailContents: async () => ({}), getItemContent: async () => '' },
       '../../editor-utils': { lastItemStorageKey: () => 'last', countTextStats: () => ({ words: 0, characters: 0 }) },
       '../../trail-navigation': navigation,
       '@/lib/pending-saves': saves,
@@ -54,16 +51,22 @@ async function setup() {
   });
   function render() {
     stateIndex = refIndex = 0;
-    const hook = exports.useProjectEditorState('project');
+    const hook = exports.useProjectEditorState('project', false);
     if (initial) { initial = false; effects.forEach(fn => fn()); }
     return hook;
   }
   render();
   await settle();
-  return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), requests: () => requests };
+  return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews };
 }
 
-test('reorder preserves connections and rejects concurrent requests', async () => {
+test('startup uses one bootstrap request and defers map previews', async () => {
+  const s = await setup();
+  expect(s.bootstraps()).toBe(1);
+  expect(s.previews()).toBe(0);
+});
+
+test('reorder preserves note content and rejects concurrent requests', async () => {
   const s = await setup();
   const pending = s.render().handleReorderTrailItems('trail', ['b', 'a', 'c']);
   await s.render().handleReorderTrailItems('trail', ['c', 'a', 'b']);
@@ -72,18 +75,16 @@ test('reorder preserves connections and rejects concurrent requests', async () =
   await pending;
   const hook = s.render();
   expect(Array.from(hook.trails[0].itemIds)).toEqual(['b', 'a', 'c']);
-  expect(hook.items.a.associations[0].text).toBe('Shared context');
+  expect(hook.items.a.content).toBe('');
 });
 
-test('failed reorder restores order without overwriting a connection edited during the request', async () => {
+test('failed reorder restores the previous order', async () => {
   const s = await setup();
   const pending = s.render().handleReorderTrailItems('trail', ['a', 'c', 'b']);
-  await s.render().handleUpdateAssociation('a', 'ab', 'Updated during save');
   s.fail();
   await pending;
   const hook = s.render();
   expect(Array.from(hook.trails[0].itemIds)).toEqual(['a', 'b', 'c']);
-  expect(hook.items.a.associations[0].text).toBe('Updated during save');
   expect(hook.reorderNotices.trail.error).toContain('previous order was restored');
 });
 

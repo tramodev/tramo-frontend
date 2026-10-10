@@ -34,7 +34,7 @@ export default function EditorPage() {
     localStorage.setItem(CONNECTIONS_OPEN_STORAGE_KEY, String(connectionsPanelOpen));
   }, [connectionsPanelOpen]);
 
-  const project = useProjectEditorState(projectId);
+  const project = useProjectEditorState(projectId, connectionsPanelOpen);
   const autoSave = useAutoSave({
     contextId: project.activeTrailId,
     onOptimisticUpdate: project.updateItemContentLocally,

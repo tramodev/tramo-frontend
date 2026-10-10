@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Trail, Item, TitleAlign } from '../../types';
 import { countTextStats, lastItemStorageKey } from '../../editor-utils';
 import {
-  getProject,
+  getEditorBootstrap,
   getMapPreviews,
   setProjectGraphColors,
   renameProject,
@@ -26,15 +26,14 @@ import {
   type MapPreviews,
 } from '@/lib/projects-store';
 import { resolveItemTrail } from '../../trail-navigation';
-import { getItemContent, getTrailContents } from '@/lib/item-content-client';
+import { acceptLoadedContents, getItemContent, getTrailContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
-import { getMyProfile } from '@/lib/profile';
 
 export interface ReorderNotice {
   error?: string;
 }
 
-export function useProjectEditorState(projectId: string) {
+export function useProjectEditorState(projectId: string, connectionsPanelOpen: boolean) {
   const router = useRouter();
   const pendingSaves = useRef(createPendingSaves());
 
@@ -76,26 +75,19 @@ export function useProjectEditorState(projectId: string) {
 
   useEffect(() => {
     let cancelled = false;
-    getMyProfile().then((p) => {
-      if (!cancelled) setProfile(p);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    getMapPreviews(projectId).then((data) => {
-      if (!cancelled) setPreviewResult({ projectId, data });
-    }).catch(() => {
-      if (!cancelled) setPreviewResult({ projectId, data: null });
-    });
-    getProject(projectId).then((project) => {
+    const entry = new URLSearchParams(window.location.search);
+    const preferredItemId = entry.get('note') ?? localStorage.getItem(lastItemStorageKey(projectId));
+    getEditorBootstrap(projectId, preferredItemId, entry.get('trail')).then((result) => {
       if (cancelled) return;
-      if (!project) {
+      if (!result) {
         router.replace('/projects');
         return;
+      }
+      const { project } = result;
+      const contents = acceptLoadedContents(result.contents);
+      for (const [itemId, content] of Object.entries(contents)) {
+        const item = project.items[itemId];
+        if (item) project.items[itemId] = { ...item, content, textStats: countTextStats(content) };
       }
       setProjectTitle(project.title);
       setVisibility(project.visibility);
@@ -104,15 +96,10 @@ export function useProjectEditorState(projectId: string) {
       setTags(project.tags);
       setTrails(project.trails);
       setItems(project.items);
+      setProfile(result.profile);
       setLoaded(true);
-
-      const entry = new URLSearchParams(window.location.search);
-      const savedItemId = entry.get('note') ?? localStorage.getItem(lastItemStorageKey(projectId));
-      const savedItem = savedItemId ? project.items[savedItemId] : undefined;
-      const host = savedItem ? project.trails.find((t) => t.id === entry.get('trail') && t.itemIds.includes(savedItem.id)) ?? project.trails.find((t) => t.itemIds.includes(savedItem.id)) : undefined;
-      const trail = host ?? project.trails[0];
-      const itemId = savedItem?.id ?? trail?.itemIds[0] ?? Object.values(project.items)[0]?.id;
-      setNavigation({ trailId: savedItem && !host ? undefined : trail?.id, itemId,
+      const itemId = result.selectedItemId;
+      setNavigation({ trailId: result.selectedTrailId, itemId,
         request: itemId ? { itemId, sequence: ++navigationSequence.current, focus: entry.get('write') === '1' } : undefined });
 
       if (entry.has('note')) window.history.replaceState(window.history.state, '', window.location.pathname);
@@ -123,6 +110,17 @@ export function useProjectEditorState(projectId: string) {
       cancelled = true;
     };
   }, [projectId, router, redirectToLogin]);
+
+  useEffect(() => {
+    if (!loaded || (!connectionsPanelOpen && view !== 'graph') || mapPreviews !== undefined) return;
+    let cancelled = false;
+    getMapPreviews(projectId).then((data) => {
+      if (!cancelled) setPreviewResult({ projectId, data });
+    }).catch(() => {
+      if (!cancelled) setPreviewResult({ projectId, data: null });
+    });
+    return () => { cancelled = true; };
+  }, [projectId, loaded, connectionsPanelOpen, view, mapPreviews]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -164,7 +162,7 @@ export function useProjectEditorState(projectId: string) {
 
   useEffect(() => {
     let cancelled = false;
-    if (!activeTrailId) return;
+    if (!activeTrailId || activeTrail?.itemIds.every((id) => items[id]?.content != null)) return;
     getTrailContents(activeTrailId)
       .then((byId) => {
         if (cancelled) return;
@@ -179,11 +177,11 @@ export function useProjectEditorState(projectId: string) {
       })
       .catch(() => { if (!cancelled) setContentLoadError(true); });
     return () => { cancelled = true; };
-  }, [activeTrailId, trailContentIds, contentRetry]);
+  }, [activeTrailId, trailContentIds, contentRetry, activeTrail, items]);
 
   useEffect(() => {
     let cancelled = false;
-    if (activeTrailId || !selectedItemId) return;
+    if (activeTrailId || !selectedItemId || items[selectedItemId]?.content != null) return;
     getItemContent(selectedItemId).then((content) => {
       if (cancelled) return;
       setContentLoadError(false);
@@ -191,7 +189,7 @@ export function useProjectEditorState(projectId: string) {
         ? { ...prev, [selectedItemId]: { ...prev[selectedItemId], content, textStats: countTextStats(content) } } : prev);
     }).catch(() => { if (!cancelled) setContentLoadError(true); });
     return () => { cancelled = true; };
-  }, [activeTrailId, selectedItemId, contentRetry]);
+  }, [activeTrailId, selectedItemId, contentRetry, items]);
 
   const handleVisibleItem = useCallback((itemId: string) => {
     setNavigation((prev) => prev.itemId === itemId ? prev : { ...prev, itemId });
