@@ -449,7 +449,7 @@ export function SidebarCustom({
                                 ) : (
                                   <>
                                     <CollapsibleTrigger asChild>
-                                      <SidebarMenuButton onDoubleClick={() => startEditTrail(trail)} className="font-semibold">
+                                      <SidebarMenuButton className="font-semibold">
                                         <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
                                         <span className="flex-1 truncate">{trail.title}</span>
                                         <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
@@ -580,7 +580,6 @@ export function SidebarCustom({
                                             <SidebarMenuSubButton
                                               isActive={selectedItemId === item.id && activeTrailId === trail.id}
                                               onClick={() => onSelectItem(item, trail.id)}
-                                              onDoubleClick={() => startEditItem(item)}
                                               className={
                                                 selectedItemId === item.id && activeTrailId === trail.id
                                                   ? "bg-secondary text-secondary-foreground"
@@ -723,7 +722,6 @@ export function SidebarCustom({
                               <SidebarMenuButton
                                 isActive={isActive}
                                 onClick={() => onSelectItem(item)}
-                                onDoubleClick={() => startEditItem(item)}
                                 className={isActive ? "bg-secondary text-secondary-foreground" : undefined}
                               >
                                 <span
