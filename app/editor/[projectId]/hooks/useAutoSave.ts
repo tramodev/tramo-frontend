@@ -129,5 +129,14 @@ export function useAutoSave({
     incompleteImagesRef.current.delete(id);
     setSaveStatus('saved');
   };
-  return { saveStatus, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem };
+  const renameItemId = useCallback((oldId: string, newId: string) => {
+    if (oldId === newId) return;
+    for (const ref of [pendingContentRef, optimisticContentRef]) {
+      const content = ref.current.get(oldId);
+      if (content !== undefined) { ref.current.delete(oldId); ref.current.set(newId, content); }
+    }
+    if (pausedItemsRef.current.has(oldId)) { pausedItemsRef.current.delete(oldId); pausedItemsRef.current.add(newId); }
+    if (incompleteImagesRef.current.has(oldId)) { incompleteImagesRef.current.delete(oldId); incompleteImagesRef.current.add(newId); }
+  }, []);
+  return { saveStatus, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
 }

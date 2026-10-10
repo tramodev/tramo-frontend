@@ -10,7 +10,6 @@ import { SidebarCustom } from '@/components/editor/sidebar-custom';
 import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sidebar';
 import { countProjectTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '../editor-utils';
 import { useProjectEditorState } from './hooks/useProjectEditorState';
-import { useAutoSave } from './hooks/useAutoSave';
 import { EditorTitleSlot, EditorActions } from './components/EditorHeader';
 import { WriteView } from './components/WriteView';
 import { startExistingProject } from '@/lib/projects-store';
@@ -35,11 +34,6 @@ export default function EditorPage() {
   }, [connectionsPanelOpen]);
 
   const project = useProjectEditorState(projectId, connectionsPanelOpen);
-  const autoSave = useAutoSave({
-    contextId: project.activeTrailId,
-    onOptimisticUpdate: project.updateItemContentLocally,
-    redirectToLogin: project.redirectToLogin,
-  });
 
   const textStats = useMemo(
     () => countProjectTextStats(project.items),
@@ -88,7 +82,7 @@ export default function EditorPage() {
           project.loaded ? <EditorTitleSlot
             projectTitle={project.projectTitle}
             onRenameProject={project.handleRenameProject}
-            saveStatus={autoSave.saveStatus}
+            saveStatus={project.saveStatus}
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={
@@ -99,10 +93,10 @@ export default function EditorPage() {
             onToggleOverview={() => project.setView((v) => (v === 'overview' ? 'write' : 'overview'))}
             projectId={projectId}
             beforeExport={async () => {
-              if (!await autoSave.flushPendingContent()) throw new Error('Could not save note content. Wait for image uploads to finish or retry before exporting.');
+              if (!await project.flushPendingContent()) throw new Error('Could not save note content. Wait for image uploads to finish or retry before exporting.');
               try { await project.flushProjectChanges(); }
               catch { throw new Error('Could not save project changes. Retry the failed edit or refresh the project before exporting.'); }
-              if (!await autoSave.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
+              if (!await project.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
             }}
             profile={project.profile}
           />
@@ -124,7 +118,7 @@ export default function EditorPage() {
             onRenameItem={project.handleRenameItem}
             onDeleteTrail={project.handleDeleteTrail}
             onUnlinkItemFromTrail={project.handleUnlinkItemFromTrail}
-            onDeleteItem={async (itemId) => { await project.handleDeleteItem(itemId); autoSave.discardItem(itemId); }}
+            onDeleteItem={async (itemId) => { await project.handleDeleteItem(itemId); project.discardItem(itemId); }}
             onReorderTrailItems={project.handleReorderTrailItems}
           /> : <Sidebar><SidebarContent><div className="m-6 h-5 w-32 animate-pulse rounded bg-muted" /></SidebarContent></Sidebar>
         }
@@ -183,18 +177,18 @@ export default function EditorPage() {
                 onSelectItem={project.handleSelectItem}
                 onCreateItem={project.handleCreateItem}
                 onOpenGraph={() => project.setView('graph')}
-                onChange={autoSave.onChange}
+                onChange={project.onChange}
                 extractionActions={{
                   beforeExtract: async (id, state) => {
-                    autoSave.onChange(id, state);
-                    if (!await autoSave.flushPendingContent()) throw new Error('Could not save note content. Your selection is kept; wait for image uploads or retry.');
+                    project.onChange(id, state);
+                    if (!await project.flushPendingContent()) throw new Error('Could not save note content. Your selection is kept; wait for image uploads or retry.');
                     try { await project.flushProjectChanges(); }
                     catch { throw new Error('Could not save project changes. Your selection is kept; retry the failed edit before extracting.'); }
-                    if (!await autoSave.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
+                    if (!await project.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
                   },
-                  pauseItem: autoSave.pauseItem,
-                  resumeItem: autoSave.resumeItem,
-                  acceptPersistedItem: autoSave.acceptPersistedItem,
+                  pauseItem: project.pauseItem,
+                  resumeItem: project.resumeItem,
+                  acceptPersistedItem: project.acceptPersistedItem,
                   onExtracted: project.applyExtraction,
                 }}
                 connectionsPanelOpen={connectionsPanelOpen}

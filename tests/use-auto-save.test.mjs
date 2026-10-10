@@ -68,6 +68,7 @@ function setup() {
     pause: (id) => hook.pauseItem(id),
     resume: (id) => hook.resumeItem(id),
     acceptPersisted: (id) => hook.acceptPersistedItem(id),
+    renameItem: (oldId, newId) => hook.renameItemId(oldId, newId),
     editItem: (id, content) => hook.onChange(id, { read: (fn) => fn(), toJSON: () => content }),
   };
 }
@@ -227,4 +228,14 @@ test('accepting a confirmed extraction discards obsolete pending snapshots and s
   expect(await s.barrier()).toBe(true); expect(s.requests).toHaveLength(0);
   s.edit('after extraction'); const saved = s.barrier(); expect(s.requests[0].content).toBe(JSON.stringify('after extraction'));
   s.requests[0].resolve(); expect(await saved).toBe(true);
+});
+
+test('renameItemId migrates pending content to the real id', () => {
+  const s = setup();
+  s.select('a');
+  s.editItem('a', 'text');
+  s.renameItem('a', 'b');
+  s.flush();
+  expect(s.optimistic).toEqual([['b', JSON.stringify('text')]]);
+  expect(s.requests[0].itemId).toBe('b');
 });

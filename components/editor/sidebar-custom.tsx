@@ -449,14 +449,16 @@ export function SidebarCustom({
                                 ) : (
                                   <>
                                     <CollapsibleTrigger asChild>
-                                      <SidebarMenuButton onDoubleClick={() => startEditTrail(trail)} className="font-semibold">
-                                        <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                                        <span className="flex-1 truncate">{trail.title}</span>
-                                        <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
-                                          {trailItems.length}
-                                        </span>
-                                      </SidebarMenuButton>
+                                      <button type="button" className="flex h-7 w-6 shrink-0 items-center justify-center rounded-md hover:bg-muted" aria-label={`Toggle ${trail.title}`}>
+                                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                                      </button>
                                     </CollapsibleTrigger>
+                                    <SidebarMenuButton onDoubleClick={() => startEditTrail(trail)} className="flex-1 truncate font-semibold">
+                                      <span className="flex-1 truncate">{trail.title}</span>
+                                      <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
+                                        {trailItems.length}
+                                      </span>
+                                    </SidebarMenuButton>
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -610,9 +612,13 @@ export function SidebarCustom({
                                                     Add to another trail
                                                   </DropdownMenuItem>
                                                 )}
-                                                <DropdownMenuItem onSelect={() => onUnlinkItemFromTrail(trail.id, item.id)}>
+                                                <DropdownMenuItem onSelect={() => setPendingConfirm({
+                                                  title: `Remove "${item.title}" from this trail?`,
+                                                  description: "The note is kept in your Notes list. This can't be undone.",
+                                                  onConfirm: () => onUnlinkItemFromTrail(trail.id, item.id),
+                                                })}>
                                                   <X className="h-3.5 w-3.5" />
-                                                  Remove from this trail (keep note)
+                                                  Remove from this trail
                                                 </DropdownMenuItem>
                                               </DropdownMenuContent>
                                             </DropdownMenu>

@@ -28,6 +28,7 @@ import {
 import { resolveItemTrail } from '../../trail-navigation';
 import { acceptLoadedContents, getItemContent, getTrailContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
+import { useAutoSave } from './useAutoSave';
 
 export interface ReorderNotice {
   error?: string;
@@ -254,19 +255,43 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   }, false);
 
   const handleCreateItem = (trailId: string, title: string) => pendingSaves.current.track(`create-item:${trailId}:${title}`, async () => {
-    const newItem = await createItem(trailId, title);
-    setItems(prevItems => ({ ...prevItems, [newItem.id]: newItem }));
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimisticItem: Item = { id: tempId, title, titleAlign: 'center', unfiled: false, content: '', textStats: { words: 0, characters: 0 } };
+    setItems(prevItems => ({ ...prevItems, [tempId]: optimisticItem }));
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId
         ? {
             ...trail,
-            itemIds: [...trail.itemIds, newItem.id],
-            steps: [...trail.steps, { itemId: newItem.id }],
+            itemIds: [...trail.itemIds, tempId],
+            steps: [...trail.steps, { itemId: tempId }],
           }
         : trail
     ));
     setView('write');
-    setNavigation({ trailId, itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } });
+    setNavigation({ trailId, itemId: tempId, request: { itemId: tempId, sequence: ++navigationSequence.current, focus: true } });
+    let newItem: Item;
+    try {
+      newItem = await createItem(trailId, title);
+    } catch (err) {
+      setItems(prev => { const next = { ...prev }; delete next[tempId]; return next; });
+      setTrails(prev => prev.map(t => t.id === trailId ? { ...t, itemIds: t.itemIds.filter(id => id !== tempId), steps: t.steps.filter(s => s.itemId !== tempId) } : t));
+      setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: undefined, request: undefined } : prev);
+      throw err;
+    }
+    autoSave.renameItemId(tempId, newItem.id);
+    setItems(prev => {
+      const next = { ...prev };
+      const tempItem = next[tempId];
+      delete next[tempId];
+      next[newItem.id] = tempItem?.content ? { ...newItem, content: tempItem.content } : newItem;
+      return next;
+    });
+    setTrails(prev => prev.map(t => t.id === trailId ? {
+      ...t,
+      itemIds: t.itemIds.map(id => id === tempId ? newItem.id : id),
+      steps: t.steps.map(s => s.itemId === tempId ? { itemId: newItem.id } : s),
+    } : t));
+    setNavigation(prev => prev.itemId === tempId ? { trailId, itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } } : prev);
   }, false);
 
   const handleLinkItemToTrail = (trailId: string, itemId: string) => pendingSaves.current.track(`attach:${trailId}:${itemId}`, async () => {
@@ -307,10 +332,28 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   }, false);
 
   const handleCreateLooseItem = (title: string) => pendingSaves.current.track(`create-loose:${title}`, async () => {
-    const newItem = await createLooseItem(projectId, title);
-    setItems(prevItems => ({ ...prevItems, [newItem.id]: newItem }));
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimisticItem: Item = { id: tempId, title, titleAlign: 'center', unfiled: true, content: '', textStats: { words: 0, characters: 0 } };
+    setItems(prevItems => ({ ...prevItems, [tempId]: optimisticItem }));
     setView('write');
-    setNavigation({ itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } });
+    setNavigation({ itemId: tempId, request: { itemId: tempId, sequence: ++navigationSequence.current, focus: true } });
+    let newItem: Item;
+    try {
+      newItem = await createLooseItem(projectId, title);
+    } catch (err) {
+      setItems(prev => { const next = { ...prev }; delete next[tempId]; return next; });
+      setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: undefined, request: undefined } : prev);
+      throw err;
+    }
+    autoSave.renameItemId(tempId, newItem.id);
+    setItems(prev => {
+      const next = { ...prev };
+      const tempItem = next[tempId];
+      delete next[tempId];
+      next[newItem.id] = tempItem?.content ? { ...newItem, content: tempItem.content } : newItem;
+      return next;
+    });
+    setNavigation(prev => prev.itemId === tempId ? { itemId: newItem.id, request: { itemId: newItem.id, sequence: ++navigationSequence.current, focus: true } } : prev);
   }, false);
 
   const handleDeleteItem = (itemId: string) => pendingSaves.current.track(`delete-item:${itemId}`, async () => {
@@ -392,6 +435,12 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     });
   }, []);
 
+  const autoSave = useAutoSave({
+    contextId: activeTrailId,
+    onOptimisticUpdate: updateItemContentLocally,
+    redirectToLogin,
+  });
+
   const handleRenameProject = (title: string) => {
     setProjectTitle(title);
     void pendingSaves.current.track("project-title", () => renameProject(projectId, title), true).catch(() => {});
@@ -457,5 +506,6 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     handleVisibilityChange,
     updateItemContentLocally,
     handleRenameProject,
+    ...autoSave,
   };
 }
