@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Plus, Search, Trash2, X } from "lucide-react"
+import { ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Mark } from "@/components/layout/logo"
@@ -449,16 +449,14 @@ export function SidebarCustom({
                                 ) : (
                                   <>
                                     <CollapsibleTrigger asChild>
-                                      <button type="button" className="flex h-7 w-6 shrink-0 items-center justify-center rounded-md hover:bg-muted" aria-label={`Toggle ${trail.title}`}>
-                                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                                      </button>
+                                      <SidebarMenuButton onDoubleClick={() => startEditTrail(trail)} className="font-semibold">
+                                        <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                                        <span className="flex-1 truncate">{trail.title}</span>
+                                        <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
+                                          {trailItems.length}
+                                        </span>
+                                      </SidebarMenuButton>
                                     </CollapsibleTrigger>
-                                    <SidebarMenuButton onDoubleClick={() => startEditTrail(trail)} className="flex-1 truncate font-semibold">
-                                      <span className="flex-1 truncate">{trail.title}</span>
-                                      <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
-                                        {trailItems.length}
-                                      </span>
-                                    </SidebarMenuButton>
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -579,22 +577,21 @@ export function SidebarCustom({
                                           />
                                         ) : (
                                           <div className="flex items-center">
-                                            <div className="flex flex-1 items-center" onDoubleClick={() => startEditItem(item)}>
-                                              <SidebarMenuSubButton
-                                                isActive={selectedItemId === item.id && activeTrailId === trail.id}
-                                                onClick={() => onSelectItem(item, trail.id)}
-                                                className={
-                                                  selectedItemId === item.id && activeTrailId === trail.id
-                                                    ? "bg-secondary text-secondary-foreground"
-                                                    : undefined
-                                                }
-                                              >
-                                                <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
-                                                  {index + 1}
-                                                </span>
-                                                <span className="truncate">{item.title}</span>
-                                              </SidebarMenuSubButton>
-                                            </div>
+                                            <SidebarMenuSubButton
+                                              isActive={selectedItemId === item.id && activeTrailId === trail.id}
+                                              onClick={() => onSelectItem(item, trail.id)}
+                                              onDoubleClick={() => startEditItem(item)}
+                                              className={
+                                                selectedItemId === item.id && activeTrailId === trail.id
+                                                  ? "bg-secondary text-secondary-foreground"
+                                                  : undefined
+                                              }
+                                            >
+                                              <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+                                                {index + 1}
+                                              </span>
+                                              <span className="truncate">{item.title}</span>
+                                            </SidebarMenuSubButton>
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Button
@@ -607,6 +604,10 @@ export function SidebarCustom({
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent align="start">
+                                                <DropdownMenuItem onSelect={() => startEditItem(item)}>
+                                                  <Pencil className="h-3.5 w-3.5" />
+                                                  Rename note
+                                                </DropdownMenuItem>
                                                 {addableTrails.length > 0 && (
                                                   <DropdownMenuItem onSelect={() => setAddToTrailItemId(item.id)}>
                                                     <ListPlus className="h-3.5 w-3.5" />
@@ -719,10 +720,10 @@ export function SidebarCustom({
                             />
                           ) : (
                             <div className="flex items-center">
-                              <div className="flex flex-1 items-center" onDoubleClick={() => startEditItem(item)}>
                               <SidebarMenuButton
                                 isActive={isActive}
                                 onClick={() => onSelectItem(item)}
+                                onDoubleClick={() => startEditItem(item)}
                                 className={isActive ? "bg-secondary text-secondary-foreground" : undefined}
                               >
                                 <span
@@ -749,7 +750,6 @@ export function SidebarCustom({
                                   </Tooltip>
                                 )}
                               </SidebarMenuButton>
-                              </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
@@ -762,6 +762,10 @@ export function SidebarCustom({
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start">
+                                  <DropdownMenuItem onSelect={() => startEditItem(item)}>
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    Rename note
+                                  </DropdownMenuItem>
                                   {addableTrails.length > 0 && (
                                     <DropdownMenuItem onSelect={() => setAddToTrailItemId(item.id)}>
                                       <ListPlus className="h-3.5 w-3.5" />
