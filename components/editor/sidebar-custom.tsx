@@ -579,21 +579,22 @@ export function SidebarCustom({
                                           />
                                         ) : (
                                           <div className="flex items-center">
-                                            <SidebarMenuSubButton
-                                              isActive={selectedItemId === item.id && activeTrailId === trail.id}
-                                              onClick={() => onSelectItem(item, trail.id)}
-                                              onDoubleClick={() => startEditItem(item)}
-                                              className={
-                                                selectedItemId === item.id && activeTrailId === trail.id
-                                                  ? "bg-secondary text-secondary-foreground"
-                                                  : undefined
-                                              }
-                                            >
-                                              <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
-                                                {index + 1}
-                                              </span>
-                                              <span className="truncate">{item.title}</span>
-                                            </SidebarMenuSubButton>
+                                            <div className="flex flex-1 items-center" onDoubleClick={() => startEditItem(item)}>
+                                              <SidebarMenuSubButton
+                                                isActive={selectedItemId === item.id && activeTrailId === trail.id}
+                                                onClick={() => onSelectItem(item, trail.id)}
+                                                className={
+                                                  selectedItemId === item.id && activeTrailId === trail.id
+                                                    ? "bg-secondary text-secondary-foreground"
+                                                    : undefined
+                                                }
+                                              >
+                                                <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+                                                  {index + 1}
+                                                </span>
+                                                <span className="truncate">{item.title}</span>
+                                              </SidebarMenuSubButton>
+                                            </div>
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Button
@@ -619,6 +620,10 @@ export function SidebarCustom({
                                                 })}>
                                                   <X className="h-3.5 w-3.5" />
                                                   Remove from this trail
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => confirmDeleteItem(item)}>
+                                                  <Trash2 className="h-3.5 w-3.5" />
+                                                  Delete note
                                                 </DropdownMenuItem>
                                               </DropdownMenuContent>
                                             </DropdownMenu>
@@ -714,10 +719,10 @@ export function SidebarCustom({
                             />
                           ) : (
                             <div className="flex items-center">
+                              <div className="flex flex-1 items-center" onDoubleClick={() => startEditItem(item)}>
                               <SidebarMenuButton
                                 isActive={isActive}
                                 onClick={() => onSelectItem(item)}
-                                onDoubleClick={() => startEditItem(item)}
                                 className={isActive ? "bg-secondary text-secondary-foreground" : undefined}
                               >
                                 <span
@@ -744,6 +749,7 @@ export function SidebarCustom({
                                   </Tooltip>
                                 )}
                               </SidebarMenuButton>
+                              </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
