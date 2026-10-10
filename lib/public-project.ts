@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { API_BASE_URL, EXPLORE_PAGE_SIZE } from "./config";
 import { authHeaders } from "./auth";
 import { toFeedItem, type ProjectFeedItem, type ProjectFeedItemDTO } from "./feed";
-import type { Association, TitleAlign } from "@/app/editor/types";
+import type { TitleAlign } from "@/app/editor/types";
 
 export type { ProjectFeedItem } from "./feed";
 
@@ -21,7 +21,6 @@ export interface PublicItem {
   type: string | null;
   content: string;
   titleAlign: TitleAlign;
-  associations: Association[];
 }
 
 export interface PublicTrail {
@@ -55,20 +54,12 @@ export interface PublicProject {
   canComment: boolean;
 }
 
-interface AssociationDTO {
-  id: string;
-  text: string | null;
-  targetId: string;
-  targetTitle: string;
-}
-
 interface PublicItemDTO {
   id: number;
   title: string;
   type: string | null;
   content: string;
   titleAlign: TitleAlign | null;
-  associations: AssociationDTO[];
 }
 
 interface PublicTrailDTO {
@@ -207,11 +198,5 @@ function toPublicItem(item: PublicItemDTO): PublicItem {
     type: item.type,
     content: item.content,
     titleAlign: item.titleAlign ?? "center",
-    associations: item.associations.map((a) => ({
-      id: a.id,
-      text: a.text,
-      targetId: a.targetId,
-      targetTitle: a.targetTitle,
-    })),
   };
 }

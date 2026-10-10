@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-const settle = () => new Promise(resolve => setImmediate(resolve));
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 function setup() {
   const states = [], refs = [];
@@ -28,39 +27,20 @@ function setup() {
       useRef: value => refs[ref++] ?? (refs[ref - 1] = { current: value }),
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    '@/app/editor/associations': { CONNECTION_TEXT_LIMIT: 4002 },
     '@/app/editor/plugins/itemLink': itemLink,
     '@/components/editor/knowledge-graph': { KnowledgeGraph: 'KnowledgeGraph' },
   })[name] ?? {} });
-  const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id.toUpperCase(), associations: [] }]));
+  const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id.toUpperCase(), content: '' }]));
   let props = { items, item: items.a, trails: [], open: true };
   const render = changes => { props = { ...props, ...changes }; state = ref = 0; return flatten(exports.ConnectionsPanel(props)); };
   const find = (nodes, type, text) => nodes.find(node => node.type === type && (text === undefined || node.props.children === text));
   return { render, items, find };
 }
 
-test('connections can be edited and removed from either note', async () => {
-  const { render, items, find } = setup();
-  items.a.associations = [{ id: 'ab', targetId: 'b', text: 'Shared', targetTitle: 'B' }];
-  items.b.associations = [{ id: 'ab', targetId: 'a', text: 'Shared', targetTitle: 'A' }];
-  const edits = [], removals = [];
-  let nodes = render({ item: items.b, onUpdateAssociation: async (...args) => edits.push(args), onUntie: async (...args) => removals.push(args) });
-  find(nodes, 'button', 'Edit explanation').props.onClick();
-  nodes = render();
-  expect(find(nodes, 'select')).toBeUndefined();
-  expect(find(nodes, 'textarea').props.maxLength).toBe(4002);
-  find(nodes, 'textarea').props.onChange({ target: { value: '' } });
-  find(render(), 'form').props.onSubmit({ preventDefault() {} });
-  await settle();
-  expect(edits).toEqual([['b', 'ab', '']]);
-  find(render(), 'button', 'Remove').props.onClick();
-  await settle();
-  expect(removals).toEqual([['b', 'ab']]);
-});
-
-test('@ mentions appear from both notes and do not duplicate saved connections', () => {
+test('@ mentions appear from both notes without duplicates', () => {
   const { render, items, find } = setup();
   items.a.content = JSON.stringify({ root: { children: [{ type: 'link', rel: 'tramo-idea:b' }] } });
+  items.c.content = null;
   const selected = [];
   let nodes = render({ onSelectItem: note => selected.push(note.id), mapPreviews: { c: { text: '', linkedItemIds: ['a'] } } });
   expect([find(nodes, 'h2').props.children].flat().join('')).toBe('Connections (2)');
@@ -76,15 +56,13 @@ test('@ mentions appear from both notes and do not duplicate saved connections',
   find(nodes, 'button', 'A — B').props.onClick();
   expect(selected).toEqual(['c', 'a']);
 
-  items.a.associations = [{ id: 'ab', targetId: 'b', text: null, targetTitle: 'B' }];
   nodes = render({ item: items.a });
   expect(nodes.filter(node => node.type === 'button' && [node.props.children].flat().join('') === 'A — B')).toHaveLength(1);
-  expect(find(nodes, 'button', 'Remove')).toBeDefined();
+  expect(find(nodes, 'button', 'Remove')).toBeUndefined();
 });
 
 test('map waits for previews and offers retry after a failed load', () => {
   const { render, items, find } = setup();
-  items.a.associations = [{ id: 'ab', targetId: 'b', text: null, targetTitle: 'B' }];
   let retried = false;
   let nodes = render({ mapPreviews: undefined, onRetryMapPreviews: () => { retried = true; } });
   expect(nodes.some(node => node.props.role === 'status' && node.props.children === 'Loading map…')).toBe(true);
@@ -100,7 +78,7 @@ test('map waits for previews and offers retry after a failed load', () => {
   expect(find(nodes, 'section').props.className).toContain('overflow-y-auto');
   expect(nodes.some(node => node.type === 'div' && node.props.className?.includes('h-40 shrink-0'))).toBe(true);
   expect(find(nodes, 'KnowledgeGraph').props.variant).toBe('preview');
-  items.a.associations = [];
+  items.a.content = '';
   nodes = render();
   expect([find(nodes, 'h2').props.children].flat().join('')).toBe('Connections (0)');
   expect(find(nodes, 'p', 'Use @ to connect notes.')).toBeDefined();

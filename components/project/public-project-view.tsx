@@ -37,8 +37,6 @@ function toEditorShape(project: PublicProject): { trails: Trail[]; items: Record
       titleAlign: item.titleAlign,
       unfiled,
       content: item.content,
-      associations: item.associations,
-      linkedItemIds: item.associations.map((a) => a.targetId),
     };
   };
   project.looseItems.forEach((item) => addItem(item, true));

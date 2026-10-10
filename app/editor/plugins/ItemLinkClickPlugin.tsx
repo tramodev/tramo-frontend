@@ -7,7 +7,6 @@ import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import type { Item } from '@/app/editor/types';
 import { collectPlainText } from '@/app/editor/editor-utils';
-import { ConnectionComment } from '@/components/editor/connection-comment';
 import { getItemContent } from '@/lib/item-content-client';
 import { ITEM_LINK_REL_PREFIX, itemIdFromRel } from './itemLink';
 
@@ -21,12 +20,9 @@ function briefPreview(content: string | null) {
   }
 }
 
-export default function ItemLinkClickPlugin({ items, sourceId, onNavigate, onTie, onUpdateAssociation }: {
+export default function ItemLinkClickPlugin({ items, onNavigate }: {
   items?: Record<string, Item>;
-  sourceId?: string;
   onNavigate: (itemId: string) => void;
-  onTie?: (sourceId: string, targetId: string, text: string) => Promise<void>;
-  onUpdateAssociation?: (itemId: string, associationId: string, text: string) => Promise<void>;
 }) {
   const [editor] = useLexicalComposerContext();
   const [open, setOpen] = useState<{ targetId: string; left: number; top: number } | null>(null);
@@ -41,7 +37,7 @@ export default function ItemLinkClickPlugin({ items, sourceId, onNavigate, onTie
       if (!itemId) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (!items?.[itemId] || !sourceId || !onTie || !onUpdateAssociation) {
+      if (!items?.[itemId]) {
         onNavigate(itemId);
         return;
       }
@@ -53,7 +49,7 @@ export default function ItemLinkClickPlugin({ items, sourceId, onNavigate, onTie
       prevRootElement?.removeEventListener('click', handleClick, true);
       rootElement?.addEventListener('click', handleClick, true);
     });
-  }, [editor, items, sourceId, onTie, onUpdateAssociation, onNavigate]);
+  }, [editor, items, onNavigate]);
 
   const targetId = open?.targetId;
   useEffect(() => {
@@ -89,11 +85,10 @@ export default function ItemLinkClickPlugin({ items, sourceId, onNavigate, onTie
   }, [open]);
 
   const target = open && items?.[open.targetId];
-  if (!open || !target || !sourceId || !onTie || !onUpdateAssociation || !items) return null;
+  if (!open || !target || !items) return null;
   return createPortal(<div data-item-connection-popover role="dialog" aria-label={`Connection to ${target.title}`} className="fixed z-50 w-80 max-w-[calc(100vw-16px)] space-y-3 rounded-lg border border-border bg-popover p-4 shadow-elevation-2" style={{ left: open.left, top: open.top }}>
     <div className="flex items-start justify-between gap-2"><div className="font-medium">{target.title}</div><button type="button" aria-label="Close note preview" onClick={() => setOpen(null)} className="text-muted-foreground hover:text-foreground">×</button></div>
     <p className="line-clamp-3 text-sm text-muted-foreground">{preview}</p>
     <button type="button" autoFocus className="text-sm text-primary" onClick={() => { setOpen(null); onNavigate(target.id); }}>Open note</button>
-    <div className="border-t border-border pt-3"><ConnectionComment key={`${sourceId}:${target.id}`} items={items} sourceId={sourceId} targetId={target.id} onTie={onTie} onUpdateAssociation={onUpdateAssociation} /></div>
   </div>, document.body);
 }

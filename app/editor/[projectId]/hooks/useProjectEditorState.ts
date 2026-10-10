@@ -21,10 +21,7 @@ import {
   setItemTitleAlign,
   attachItemToTrail,
   detachItemFromTrail,
-  updateAssociation,
   reorderTrailItems,
-  tie,
-  untie,
   type ProjectVisibility,
   type MapPreviews,
 } from '@/lib/projects-store';
@@ -328,9 +325,6 @@ export function useProjectEditorState(projectId: string) {
     setItems(prevItems => {
       const next = { ...prevItems };
       delete next[itemId];
-      for (const [id, note] of Object.entries(next)) {
-        next[id] = { ...note, associations: note.associations.filter(a => a.targetId !== itemId) };
-      }
       return next;
     });
     setNavigation((prev) => {
@@ -386,50 +380,6 @@ export function useProjectEditorState(projectId: string) {
         return next;
       });
     }
-  }, false);
-
-  const handleTie = (itemId: string, targetId: string, text: string) => pendingSaves.current.track(`tie:${[itemId, targetId].sort().join(':')}`, async () => {
-    const association = await tie(itemId, targetId, text);
-    setItems(prev => {
-      const item = prev[itemId];
-      const target = prev[targetId];
-      if (!item || !target) return prev;
-      return {
-        ...prev,
-        [itemId]: { ...item, associations: [...item.associations, association] },
-        [targetId]: { ...target, associations: [...target.associations, { ...association, targetId: itemId, targetTitle: item.title }] },
-      };
-    });
-  }, false);
-
-  const handleUpdateAssociation = (itemId: string, associationId: string, text: string) => pendingSaves.current.track(`connection:${associationId}`, async () => {
-    const association = await updateAssociation(itemId, associationId, text);
-    setItems(prev => {
-      const item = prev[itemId];
-      const targetId = item?.associations.find(a => a.id === associationId)?.targetId;
-      const target = targetId && prev[targetId];
-      if (!item || !targetId || !target) return prev;
-      return {
-        ...prev,
-        [itemId]: { ...item, associations: item.associations.map(a => a.id === associationId ? { ...a, text: association.text } : a) },
-        [targetId]: { ...target, associations: target.associations.map(a => a.id === associationId ? { ...a, text: association.text } : a) },
-      };
-    });
-  }, false);
-
-  const handleUntie = (itemId: string, associationId: string) => pendingSaves.current.track(`connection:${associationId}`, async () => {
-    await untie(itemId, associationId);
-    setItems(prev => {
-      const item = prev[itemId];
-      const targetId = item?.associations.find(a => a.id === associationId)?.targetId;
-      const target = targetId && prev[targetId];
-      if (!item || !targetId || !target) return prev;
-      return {
-        ...prev,
-        [itemId]: { ...item, associations: item.associations.filter(a => a.id !== associationId) },
-        [targetId]: { ...target, associations: target.associations.filter(a => a.id !== associationId) },
-      };
-    });
   }, false);
 
   const handleVisibilityChange = async (next: ProjectVisibility) => {
@@ -489,7 +439,6 @@ export function useProjectEditorState(projectId: string) {
       if (result.trailId) setTrails(previous => previous.map(trail => trail.id === result.trailId
         ? { ...trail, steps: result.steps, itemIds: result.steps.map(step => step.itemId) } : trail));
     },
-    handleUpdateAssociation,
     commitItemTitle,
     handleSetItemTitleAlign,
     handleSetGraphColors,
@@ -507,8 +456,6 @@ export function useProjectEditorState(projectId: string) {
     handleSetTrailDescription,
     handleRenameItem,
     handleDeleteTrail,
-    handleTie,
-    handleUntie,
     handleVisibilityChange,
     updateItemContentLocally,
     handleRenameProject,

@@ -1,17 +1,15 @@
 "use client"
 
-import { memo, useCallback, useMemo, useRef, useState } from "react"
+import { memo, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { useMounted } from "@/hooks/use-mounted"
-import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, EdgeLabelRenderer, getBezierPath, useInternalNode, type InternalNode, type Node, type Edge, type EdgeProps, type NodeProps, type Connection, type NodeChange } from "@xyflow/react"
-import { MessageSquareText } from "lucide-react"
+import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, getBezierPath, useInternalNode, type InternalNode, type Node, type Edge, type EdgeProps, type NodeProps, type NodeChange } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import type { Item, Trail } from "@/app/editor/types"
 import type { MapPreviews } from "@/lib/projects-store"
 import { collectPlainText } from "@/app/editor/editor-utils"
 import { itemIdsFromContent } from "@/app/editor/plugins/itemLink"
 import { GRAPH_COLORS, parseGraphColors, type GraphColor, type GraphColors } from "@/app/editor/graph-colors"
-import { ConnectionComment } from "@/components/editor/connection-comment"
 
 interface KnowledgeGraphProps {
   trails: Trail[]
@@ -22,27 +20,21 @@ interface KnowledgeGraphProps {
   graphColors?: string | null
   onSaveColors?: (colors: string) => Promise<void>
   onSelectItem: (item: Item, trailId?: string) => void
-  onTie?: (itemId: string, targetId: string, text: string) => Promise<void>
-  onUpdateAssociation?: (itemId: string, associationId: string, text: string) => Promise<void>
-  onUntie?: (itemId: string, associationId: string) => Promise<void>
   variant?: "full" | "preview"
 }
 
-type GraphMenu = { x: number; y: number } & ({ kind: "item"; sourceId: string; sourceVisualId: string; sourceX: number; sourceY: number } | { kind: "trail"; trailId: string })
-type CardData = { itemId: string; trailId?: string; title: string; preview: string; number: number; selected: boolean; shared: boolean; color?: GraphColor; connectRole?: "source" | "target" }
+type GraphMenu = { x: number; y: number } & ({ kind: "item"; sourceId: string } | { kind: "trail"; trailId: string })
+type CardData = { itemId: string; trailId?: string; title: string; preview: string; number: number; selected: boolean; shared: boolean; color?: GraphColor }
 type CardNode = Node<CardData, "card">
 type LaneNode = Node<{ title: string; color?: GraphColor }, "lane">
 type GraphNode = CardNode | LaneNode
 
 type Appearance = { id: string; itemId: string; trailId?: string; column: number; row: number }
-type AssociationView = { id: string; associationId?: string; sourceId: string; targetId: string; text: string | null; source: Appearance; target: Appearance }
-type LocalConnection = { sourceId: string; targetId: string; sourceVisualId: string; targetVisualId: string }
+type ReferenceView = { id: string; sourceId: string; targetId: string; source: Appearance; target: Appearance }
 
 const COLUMN_WIDTH = 480
 const COLUMN_GAP = 90
 const pairKey = (a: string, b: string) => [a, b].sort().join(":")
-const locallyConnected = (connections: LocalConnection[], a: string, b: string) =>
-  connections.some(connection => connection.sourceId === a && connection.targetId === b || connection.sourceId === b && connection.targetId === a)
 function previewText(content: string | null) {
   if (!content) return ""
   try {
@@ -75,7 +67,6 @@ const Card = memo(function Card({ data }: NodeProps<CardNode>) {
       <div className="flex shrink-0 items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{data.shared && <span>Shared</span>}<span>{data.number}</span></div>
     </div>
     {data.preview && <div className="mt-2 space-y-3 break-words text-[15px] leading-[1.6] text-foreground">{data.preview.split("\n\n").map((paragraph, index) => <p key={index} className="whitespace-pre-wrap">{paragraph}</p>)}</div>}
-    {data.connectRole && <Handle id={`easy-${data.connectRole}`} type={data.connectRole} position={data.connectRole === "source" ? Position.Right : Position.Left} className={`easy-connect-${data.connectRole} !absolute !left-0 !top-0 !h-full !w-full !translate-x-0 !translate-y-0 !rounded-none !border-0 !bg-transparent !opacity-0`} isConnectableStart={data.connectRole === "source"} isConnectableEnd={data.connectRole === "target"} />}
   </div>
 })
 
@@ -84,7 +75,7 @@ const Lane = memo(function Lane({ data }: NodeProps<LaneNode>) {
 })
 
 type CardBounds = { id: string; x: number; y: number; width: number; height: number }
-type CommentEdgeData = { hasComment?: boolean; onSelect?: () => void; cards: CardBounds[] }
+type ReferenceEdgeData = { cards: CardBounds[] }
 
 function roundedPath(points: { x: number; y: number }[]) {
   let path = `M ${points[0].x} ${points[0].y}`
@@ -149,25 +140,20 @@ function routeEdge(source: InternalNode, target: InternalNode, cards: CardBounds
   return [roundedPath([{ x: sx + sw, y: sy + sh / 2 }, { x: gutter, y: sy + sh / 2 }, { x: gutter, y: ty + th / 2 }, { x: tx + tw, y: ty + th / 2 }]), gutter, (sy + sh / 2 + ty + th / 2) / 2] as const
 }
 
-const FloatingEdge = memo(function FloatingEdge({ source, target, style, data, interactionWidth }: EdgeProps<Edge<CommentEdgeData>>) {
+const FloatingEdge = memo(function FloatingEdge({ source, target, style, data, interactionWidth }: EdgeProps<Edge<ReferenceEdgeData>>) {
   const sourceNode = useInternalNode(source)
   const targetNode = useInternalNode(target)
   if (!sourceNode?.measured.width || !sourceNode.measured.height || !targetNode?.measured.width || !targetNode.measured.height) return null
-  const [path, labelX, labelY] = routeEdge(sourceNode, targetNode, data?.cards ?? [])
-  return <>
-    <BaseEdge path={path} style={style} interactionWidth={interactionWidth} />
-    {data?.hasComment && <EdgeLabelRenderer><button type="button" aria-label="View connection comment" title="Connection comment" onClick={event => { event.stopPropagation(); data.onSelect?.() }} className="nodrag nopan pointer-events-auto absolute flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm" style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}><MessageSquareText className="h-3 w-3" /></button></EdgeLabelRenderer>}
-  </>
+  const [path] = routeEdge(sourceNode, targetNode, data?.cards ?? [])
+  return <BaseEdge path={path} style={style} interactionWidth={interactionWidth} />
 })
 
 const nodeTypes = { card: Card, lane: Lane }
 const edgeTypes = { floating: FloatingEdge }
 
-export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, selectedItemId, graphColors, onSaveColors, onSelectItem, onTie, onUpdateAssociation, onUntie, variant = "full" }: KnowledgeGraphProps) {
+export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, selectedItemId, graphColors, onSaveColors, onSelectItem, variant = "full" }: KnowledgeGraphProps) {
   const preview = variant === "preview"
   const references = useMemo(() => Object.fromEntries(Object.values(items).map(item => [item.id, item.content != null ? itemIdsFromContent(item.content) : mapPreviews?.[item.id]?.linkedItemIds ?? []])), [items, mapPreviews])
-  const connected = useCallback((a: string, b: string) =>
-    items[a]?.associations.some(association => association.targetId === b) || items[b]?.associations.some(association => association.targetId === a) || references[a]?.includes(b) || references[b]?.includes(a), [items, references])
   const { resolvedTheme } = useTheme()
   const mounted = useMounted()
   const [selectedConnection, setSelectedConnection] = useState<string>()
@@ -177,20 +163,9 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
   const [menu, setMenu] = useState<GraphMenu | null>(null)
   const [colors, setColors] = useState<GraphColors>(() => parseGraphColors(graphColors))
   const [savingColors, setSavingColors] = useState(false)
-  const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null)
-  const [link, setLink] = useState<{ sourceId: string; sourceVisualId: string; x: number; y: number } | null>(null)
-  const [cursor, setCursor] = useState({ x: 0, y: 0 })
-  const [connecting, setConnecting] = useState(false)
-  const [removing, setRemoving] = useState(false)
-  const [localConnections, setLocalConnections] = useState<LocalConnection[]>([])
   const graphRef = useRef<HTMLDivElement>(null)
-  const sourceHandle = (sourceVisualId: string) => Array.from(graphRef.current?.querySelectorAll<HTMLElement>(".easy-connect-source") ?? []).find(handle => handle.dataset.nodeid === sourceVisualId)
-  const cancelLink = () => {
-    if (link) sourceHandle(link.sourceVisualId)?.click()
-    setLink(null)
-  }
 
-  const { nodes, associations, sharedEdges } = useMemo(() => {
+  const { nodes, references: graphReferences, sharedEdges } = useMemo(() => {
     const cardWidth = COLUMN_WIDTH
     const columnGap = COLUMN_GAP
     const inset = 16
@@ -209,7 +184,7 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
         const item = items[itemId]
         const appearance = { id: `card:${column.trailId || "loose"}:${itemId}`, itemId, trailId: column.trailId || undefined, column: columnIndex, row }
         appearances.set(itemId, [...(appearances.get(itemId) ?? []), appearance])
-        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: item.content != null ? previewText(item.content) : mapPreviews?.[itemId]?.text ?? "", number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]), connectRole: link?.sourceVisualId === appearance.id ? "source" : link && itemId !== link.sourceId && !connected(link.sourceId, itemId) && !locallyConnected(localConnections, link.sourceId, itemId) ? "target" : undefined }, draggable: false, zIndex: 1 })
+        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: item.content != null ? previewText(item.content) : mapPreviews?.[itemId]?.text ?? "", number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]) }, draggable: false, zIndex: 1 })
         y += (heights[appearance.id] ?? 132) + 40
       })
       nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: cardWidth + inset * 2, height: Math.max(104, y - inset) }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
@@ -218,40 +193,24 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
     for (const [itemId, copies] of appearances) for (let index = 1; index < copies.length; index++) {
       sharedEdges.push({ id: `shared:${copies[index - 1].id}:${copies[index].id}`, source: copies[index - 1].id, target: copies[index].id, sourceHandle: "source-right", targetHandle: "target-left", type: "floating", selectable: false, focusable: false, interactionWidth: 0, style: { stroke: "var(--ed-purple)", strokeWidth: 1.5, strokeDasharray: "2 6", strokeLinecap: "round", opacity: 0.75 }, ariaLabel: `${items[itemId].title} appears in both trails` })
     }
-    const associations: AssociationView[] = []
-    const seenPairs = new Map<string, AssociationView>()
-    const addConnection = (sourceId: string, targetId: string, associationId: string | undefined, content: string | null) => {
+    const graphReferences: ReferenceView[] = []
+    const seenPairs = new Set<string>()
+    const addConnection = (sourceId: string, targetId: string) => {
       const sources = appearances.get(sourceId)
       const targets = appearances.get(targetId)
       if (!sources?.length || !targets?.length) return
       const pairs = sources.flatMap(source => targets.map(target => ({ source, target, distance: Math.abs(source.column - target.column) * 3 + Math.abs(source.row - target.row) })))
       pairs.sort((a, b) => a.distance - b.distance || a.source.column - b.source.column || a.target.column - b.target.column)
-      const view = { id: `connection:${pairKey(sourceId, targetId)}`, associationId, sourceId, targetId, text: content, source: pairs[0].source, target: pairs[0].target }
-      seenPairs.set(pairKey(sourceId, targetId), view)
-      associations.push(view)
-    }
-    for (const item of Object.values(items)) for (const association of item.associations ?? []) {
-      const pair = pairKey(item.id, association.targetId)
-      const existing = seenPairs.get(pair)
-      if (existing) {
-        if (existing.associationId !== association.id && association.text?.trim() && association.text !== existing.text)
-          existing.text = existing.text ? `${existing.text}\n\n${association.text}` : association.text
-        continue
-      }
-      addConnection(item.id, association.targetId, association.id, association.text)
+      const view = { id: `connection:${pairKey(sourceId, targetId)}`, sourceId, targetId, source: pairs[0].source, target: pairs[0].target }
+      seenPairs.add(pairKey(sourceId, targetId))
+      graphReferences.push(view)
     }
     for (const [sourceId, targets] of Object.entries(references)) for (const targetId of targets) {
       const pair = pairKey(sourceId, targetId)
-      if (sourceId !== targetId && items[targetId] && !seenPairs.has(pair)) addConnection(sourceId, targetId, undefined, null)
+      if (sourceId !== targetId && items[targetId] && !seenPairs.has(pair)) addConnection(sourceId, targetId)
     }
-    for (const connection of localConnections) {
-      if (connected(connection.sourceId, connection.targetId)) continue
-      const source = appearances.get(connection.sourceId)?.find(appearance => appearance.id === connection.sourceVisualId)
-      const target = appearances.get(connection.targetId)?.find(appearance => appearance.id === connection.targetVisualId)
-      if (source && target) associations.push({ id: `local:${source.id}:${target.id}`, sourceId: connection.sourceId, targetId: connection.targetId, text: null, source, target })
-    }
-    return { nodes, associations, sharedEdges }
-  }, [trails, items, mapPreviews, references, connected, selectedItemId, activeTrailId, selectedCardId, preview, heights, link, localConnections, colors])
+    return { nodes, references: graphReferences, sharedEdges }
+  }, [trails, items, mapPreviews, references, selectedItemId, activeTrailId, selectedCardId, preview, heights, colors])
 
   const onNodesChange = (changes: NodeChange<GraphNode>[]) => {
     const measured = changes.filter(change => change.type === "dimensions" && change.id.startsWith("card:") && change.dimensions?.height)
@@ -268,49 +227,20 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
   }
 
   const cards = nodes.filter((node): node is CardNode => node.type === "card").map(node => ({ id: node.id, x: node.position.x, y: node.position.y, width: COLUMN_WIDTH, height: heights[node.id] ?? 132 }))
-  const edges: Edge[] = sharedEdges.map(edge => ({ ...edge, data: { cards } })).concat(associations.map(association => {
-    const { source, target } = association
+  const edges: Edge[] = sharedEdges.map(edge => ({ ...edge, data: { cards } })).concat(graphReferences.map(reference => {
+    const { source, target } = reference
     return {
-      id: association.id, source: source.id, target: target.id, type: "floating",
+      id: reference.id, source: source.id, target: target.id, type: "floating",
       sourceHandle: "source-right",
       targetHandle: "target-left",
-      selected: selectedConnection === association.id,
+      selected: selectedConnection === reference.id,
       interactionWidth: 40,
-      style: { stroke: "var(--primary)", strokeWidth: selectedConnection === association.id ? 2 : 1.5 },
-      data: { cards, hasComment: !!association.text?.trim(), onSelect: () => { setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(association.id) } },
-      ariaLabel: `${items[association.sourceId].title} connected to ${items[association.targetId].title}`,
+      style: { stroke: "var(--primary)", strokeWidth: selectedConnection === reference.id ? 2 : 1.5 },
+      data: { cards },
+      ariaLabel: `${items[reference.sourceId].title} connected to ${items[reference.targetId].title}`,
     }
   }))
-  const selected = associations.find(association => association.id === selectedConnection)
-  const connectItems = async (sourceId: string, targetId: string, sourceVisualId: string, targetVisualId: string) => {
-    if (!onTie || connecting || !items[sourceId] || !items[targetId] || sourceId === targetId || connected(sourceId, targetId) || locallyConnected(localConnections, sourceId, targetId)) return
-    setConnecting(true)
-    setError("")
-    setLocalConnections(previous => [...previous, { sourceId, targetId, sourceVisualId, targetVisualId }])
-    try { await onTie(sourceId, targetId, ""); setLocalConnections(previous => previous.filter(connection => connection.sourceId !== sourceId || connection.targetId !== targetId)); setMenu(null) }
-    catch { setError("Connection shown only in this map. It could not be saved.") }
-    finally { setConnecting(false) }
-  }
-  const onConnect = (connection: Connection) => {
-    setLink(null)
-    const source = nodes.find(node => node.id === connection.source)
-    const target = nodes.find(node => node.id === connection.target)
-    if (source?.type === "card" && target?.type === "card") void connectItems(source.data.itemId, target.data.itemId, source.id, target.id)
-  }
-  const removeConnection = async (association: AssociationView) => {
-    setEdgeMenu(null)
-    setError("")
-    if (!association.associationId) {
-      setLocalConnections(previous => previous.filter(connection => `local:${connection.sourceVisualId}:${connection.targetVisualId}` !== association.id))
-      setSelectedConnection(undefined)
-      return
-    }
-    if (!onUntie || removing) return
-    setRemoving(true)
-    try { await onUntie(association.sourceId, association.associationId); setSelectedConnection(undefined) }
-    catch { setError("Could not remove this connection. Please try again.") }
-    finally { setRemoving(false) }
-  }
+  const selected = graphReferences.find(reference => reference.id === selectedConnection)
   const setBackground = async (color: GraphColor | "") => {
     if (!onSaveColors || !menu || savingColors) return
     const group = menu.kind === "item" ? "items" : "trails"
@@ -329,88 +259,39 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
       setError("Could not save map colors. Please try again.")
     } finally { setSavingColors(false) }
   }
-  const candidates = menu?.kind === "item" && items[menu.sourceId]
-    ? Object.values(items).filter(item => item.id !== menu.sourceId && !connected(menu.sourceId, item.id) && !locallyConnected(localConnections, menu.sourceId, item.id))
-    : []
-  const edgeAtPoint = (x: number, y: number) => {
-    for (const path of graphRef.current?.querySelectorAll<SVGPathElement>(".react-flow__edge-path") ?? []) {
-      const id = path.closest(".react-flow__edge")?.getAttribute("data-id")
-      if (!id || !associations.some(association => association.id === id && (association.associationId || association.id.startsWith("local:")))) continue
-      const matrix = path.getScreenCTM()
-      if (!matrix) continue
-      const length = path.getTotalLength()
-      for (let offset = 0; offset < length; offset += 12) {
-        const start = path.getPointAtLength(offset)
-        const end = path.getPointAtLength(Math.min(offset + 12, length))
-        const x1 = start.x * matrix.a + start.y * matrix.c + matrix.e
-        const y1 = start.x * matrix.b + start.y * matrix.d + matrix.f
-        const x2 = end.x * matrix.a + end.y * matrix.c + matrix.e
-        const y2 = end.x * matrix.b + end.y * matrix.d + matrix.f
-        const dx = x2 - x1
-        const dy = y2 - y1
-        const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy || 1)))
-        if (Math.hypot(x - x1 - t * dx, y - y1 - t * dy) <= 20) return id
-      }
-    }
-  }
-  return <div ref={graphRef} tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") { setMenu(null); setEdgeMenu(null); cancelLink() } }} onContextMenuCapture={event => {
-    if (preview || !onUntie || !graphRef.current || (event.target as Element).closest(".react-flow__node")) return
-    const id = edgeAtPoint(event.clientX, event.clientY)
-    if (!id) return
-    event.preventDefault()
-    event.stopPropagation()
-    const bounds = graphRef.current.getBoundingClientRect()
-    setMenu(null)
-    cancelLink()
-    setSelectedConnection(id)
-    setEdgeMenu({ id, x: Math.max(8, Math.min(event.clientX - bounds.left, bounds.width - 180)), y: Math.max(8, Math.min(event.clientY - bounds.top, bounds.height - 56)) })
-  }} onPointerMove={event => {
-    if (!link || !graphRef.current) return
-    const bounds = graphRef.current.getBoundingClientRect()
-    setCursor({ x: event.clientX - bounds.left, y: event.clientY - bounds.top })
-  }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
+  return <div ref={graphRef} tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") setMenu(null) }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
     <div className="min-h-0 flex-1">
-      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 1 }} minZoom={preview ? 0.01 : 0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={!preview && !!onTie} onConnect={onConnect} onClickConnectEnd={() => setLink(null)} onEdgeClick={(_, edge) => { if (!associations.some(association => association.id === edge.id)) return; setMenu(null); setEdgeMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 1 }} minZoom={preview ? 0.01 : 0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={false} onEdgeClick={(_, edge) => { if (!graphReferences.some(reference => reference.id === edge.id)) return; setMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
         setMenu(null)
-        setEdgeMenu(null)
         if (node.type !== "card") return
         event.stopPropagation()
-        if (link) return
         if (preview || selectedCardId === node.id) onSelectItem(items[node.data.itemId], node.data.trailId)
         else { setSelectedCardId(node.id); setSelectedConnection(undefined) }
       }} onNodeContextMenu={(event, node) => {
         if (preview || !graphRef.current) return
-        if (node.type === "card" && !onTie && !onSaveColors) return
+        if (node.type === "card" && !onSaveColors) return
         if (node.type === "lane" && (!onSaveColors || !trails.some(trail => trail.id === node.id.slice(5)))) return
         event.preventDefault()
-        setEdgeMenu(null)
         const bounds = graphRef.current.getBoundingClientRect()
-        cancelLink()
         const x = Math.max(8, Math.min(event.clientX - bounds.left, bounds.width - 264))
         const y = Math.max(8, Math.min(event.clientY - bounds.top, bounds.height - 172))
         if (node.type === "card") {
-          const card = event.currentTarget.getBoundingClientRect()
-          setMenu({ kind: "item", sourceId: node.data.itemId, sourceVisualId: node.id, x, y, sourceX: (card.left + card.right) / 2 - bounds.left, sourceY: (card.top + card.bottom) / 2 - bounds.top })
+          setMenu({ kind: "item", sourceId: node.data.itemId, x, y })
         } else if (node.type === "lane") setMenu({ kind: "trail", trailId: node.id.slice(5), x, y })
-      }} onPaneClick={() => { setMenu(null); setEdgeMenu(null); setSelectedCardId(null); cancelLink() }} panOnDrag={!preview && !link} zoomOnScroll={!preview && !link} zoomOnPinch={!preview && !link} zoomOnDoubleClick={!preview && !link} elementsSelectable={!preview} nodesFocusable={!preview} edgesFocusable={!preview} proOptions={preview ? { hideAttribution: true } : undefined}>
+      }} onPaneClick={() => { setMenu(null); setSelectedCardId(null) }} panOnDrag={!preview} zoomOnScroll={!preview} zoomOnPinch={!preview} zoomOnDoubleClick={!preview} elementsSelectable={!preview} nodesFocusable={!preview} edgesFocusable={!preview} proOptions={preview ? { hideAttribution: true } : undefined}>
         {!preview && <Background color="var(--border)" gap={22} size={1} />}
-        {!preview && !link && <Controls position="bottom-right" showInteractive={false} />}
+        {!preview && <Controls position="bottom-right" showInteractive={false} />}
       </ReactFlow>
     </div>
-    {link && <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true"><line x1={link.x} y1={link.y} x2={cursor.x} y2={cursor.y} stroke="var(--primary)" strokeWidth="1.5" /></svg>}
     {menu && <div className="absolute z-20 w-64 rounded-md border border-border bg-card p-2 text-sm" style={{ left: menu.x, top: menu.y }} onKeyDown={event => { if (event.key === "Escape") setMenu(null) }}>
-      {menu.kind === "item" && onTie && <button type="button" disabled={!candidates.length} onClick={() => { setLink({ sourceId: menu.sourceId, sourceVisualId: menu.sourceVisualId, x: menu.sourceX, y: menu.sourceY }); setCursor({ x: menu.x, y: menu.y }); setMenu(null); graphRef.current?.focus(); requestAnimationFrame(() => sourceHandle(menu.sourceVisualId)?.click()) }} className="w-full rounded-md px-2 py-2 text-left hover:bg-muted disabled:opacity-50">Connect to another note</button>}
-      {onSaveColors && <div className={`${menu.kind === "item" && onTie ? "border-t border-border " : ""}px-2 pt-2`}>
+      {onSaveColors && <div className="px-2 pt-2">
         <p className="mb-2 text-xs text-muted-foreground">Background color</p>
         <div className="flex flex-wrap gap-2">{(["", ...GRAPH_COLORS] as const).map(color => <button key={color} type="button" disabled={savingColors} aria-label={`${menu.kind === "item" ? "Note" : "Trail"} background: ${color || "Default"}`} aria-pressed={((menu.kind === "item" ? colors.items[menu.sourceId] : colors.trails[menu.trailId]) ?? "") === color} onClick={() => void setBackground(color)} className="h-7 w-7 rounded-full border border-border aria-pressed:ring-2 aria-pressed:ring-primary disabled:opacity-50" style={{ background: color ? `color-mix(in srgb, var(--ed-${color}) 24%, var(--card))` : "var(--card)" }} />)}</div>
       </div>}
     </div>}
-    {edgeMenu && <div className="absolute z-20 w-44 rounded-md border border-border bg-card p-2 text-sm" style={{ left: edgeMenu.x, top: edgeMenu.y }}>
-      <button type="button" disabled={removing || connecting} onClick={() => { const association = associations.find(association => association.id === edgeMenu.id); if (association) void removeConnection(association) }} className="w-full rounded-md px-2 py-2 text-left text-destructive hover:bg-muted disabled:opacity-50">Remove connection</button>
-    </div>}
     {!preview && (selected || error) && <div className="shrink-0 border-t border-border px-5 py-3 text-xs text-muted-foreground">
       {error && <p role="alert" className="text-destructive">{error}</p>}
-      {selected && <div role="status" className="max-h-48 overflow-auto break-words"><p className="mb-2 font-medium text-foreground">{items[selected.sourceId].title} — {items[selected.targetId].title}</p>{onTie && onUpdateAssociation ? <ConnectionComment key={selected.id} items={items} sourceId={selected.sourceId} targetId={selected.targetId} displayText={selected.text} onTie={onTie} onUpdateAssociation={onUpdateAssociation} /> : <p className="whitespace-pre-wrap">{selected.text || (selected.associationId ? "No comment." : "Linked in note.")}</p>}</div>}
+      {selected && <div role="status" className="max-h-48 overflow-auto break-words"><p className="mb-2 font-medium text-foreground">{items[selected.sourceId].title} — {items[selected.targetId].title}</p><p>Linked in note.</p></div>}
     </div>}
   </div>
 }

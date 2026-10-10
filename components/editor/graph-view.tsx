@@ -18,13 +18,10 @@ interface GraphViewProps {
   activeTrailId: string | undefined;
   selectedItemId: string | undefined;
   onSelectItem: (item: Item, trailId?: string) => void;
-  onTie?: (itemId: string, targetId: string, text: string) => Promise<void>;
-  onUpdateAssociation?: (itemId: string, associationId: string, text: string) => Promise<void>;
-  onUntie?: (itemId: string, associationId: string) => Promise<void>;
   onClose: () => void;
 }
 
-export function GraphView({ projectId, graphColors, onSaveColors, trails, items, mapPreviews, onRetryMapPreviews, activeTrailId, selectedItemId, onSelectItem, onTie, onUpdateAssociation, onUntie, onClose }: GraphViewProps) {
+export function GraphView({ projectId, graphColors, onSaveColors, trails, items, mapPreviews, onRetryMapPreviews, activeTrailId, selectedItemId, onSelectItem, onClose }: GraphViewProps) {
   return (
     <div className="relative flex-1 overflow-hidden rounded-md">
       <button
@@ -45,9 +42,6 @@ export function GraphView({ projectId, graphColors, onSaveColors, trails, items,
         activeTrailId={activeTrailId}
         selectedItemId={selectedItemId}
         onSelectItem={onSelectItem}
-        onTie={onTie}
-        onUpdateAssociation={onUpdateAssociation}
-        onUntie={onUntie}
       />}
     </div>
   );

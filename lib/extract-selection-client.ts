@@ -27,7 +27,7 @@ export async function extractSelection(projectId: string, sourceId: string, requ
   const response = await fetch(`/api/projects/${projectId}/items/${sourceId}/extract`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data) throw new Error(data?.message ?? 'Could not extract this selection. Your local content is unchanged. Retry the same request.');
-  return { item: { id: String(data.item.id), title: data.item.title, titleAlign: data.item.titleAlign ?? 'center', unfiled: data.item.unfiled, content: data.content, associations: [], linkedItemIds: [] },
+  return { item: { id: String(data.item.id), title: data.item.title, titleAlign: data.item.titleAlign ?? 'center', unfiled: data.item.unfiled, content: data.content },
     sourceContent: data.sourceContent, extractionEpoch: data.extractionEpoch, trailId: data.trailId == null ? undefined : String(data.trailId),
     steps: data.steps.map((step: { id: number }) => ({ itemId: String(step.id) })) };
 }

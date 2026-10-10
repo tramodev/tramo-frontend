@@ -6,8 +6,6 @@ import ts from 'typescript';
 const source = path => ts.transpileModule(readFileSync(path, 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
-const associations = {};
-runInNewContext(source('app/editor/associations.ts'), { exports: associations, require: () => ({}) });
 const exports = {};
 const jsx = (type, props) => ({ type, props });
 runInNewContext(source('app/editor/[projectId]/components/WriteView.tsx'), {
@@ -16,7 +14,6 @@ runInNewContext(source('app/editor/[projectId]/components/WriteView.tsx'), {
     react: { useState: value => [value, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useCallback: fn => fn, useEffect: () => {} },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
-    '@/app/editor/associations': associations,
     '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
     '@/components/editor/trail-connector': { TrailConnector: 'TrailConnector' },
     '@/components/editor/editor-images-provider': { EditorImagesProvider: 'EditorImagesProvider' },
@@ -30,8 +27,7 @@ function flatten(element) {
 function props(open = false) {
   const visible = [], selected = [];
   let toggles = 0, dismissals = 0;
-  const ab = { id: 'ab', text: null, targetId: 'b', targetTitle: 'B' };
-  const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id.toUpperCase(), content: '', associations: id === 'a' ? [ab] : [] }]));
+  const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id.toUpperCase(), content: '' }]));
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps: ['a', 'b', 'c'].map(itemId => ({ itemId })) };
   return {
     item: items.a, items, trail, trails: [trail], projectId: 'project', connectionsPanelOpen: open,

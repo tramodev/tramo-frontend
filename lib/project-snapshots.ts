@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 
-import type { Association } from "@/app/editor/types";
 import { authenticatedFetch } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/config";
 import { parseResponse } from "@/lib/http";
@@ -18,7 +17,6 @@ export interface ProjectSnapshotItem {
   title: string;
   type: string | null;
   content: string | null;
-  associations: Association[];
 }
 
 export interface ProjectSnapshotTrail {
@@ -44,7 +42,6 @@ interface SnapshotItemDTO {
   title: string;
   type: string | null;
   content: string | null;
-  associations: { id: number; targetId: number; targetTitle: string; text: string | null }[];
 }
 
 interface SnapshotTrailDTO {
@@ -72,7 +69,7 @@ export async function getProjectSnapshots(projectId: string): Promise<ProjectSna
 }
 
 function toItem(item: SnapshotItemDTO): ProjectSnapshotItem {
-  return { ...item, id: String(item.id), associations: item.associations.map(a => ({ ...a, id: String(a.id), targetId: String(a.targetId) })) };
+  return { ...item, id: String(item.id) };
 }
 
 function toDetail(dto: ProjectSnapshotDetailDTO): ProjectSnapshotDetail {

@@ -42,8 +42,6 @@ const GRAPH_ITEMS: Record<string, Item> = {
     titleAlign: 'left',
     unfiled: false,
     content: null,
-    linkedItemIds: [],
-    associations: [],
   },
   'as-we-may-think': {
     id: 'as-we-may-think',
@@ -51,10 +49,6 @@ const GRAPH_ITEMS: Record<string, Item> = {
     titleAlign: 'left',
     unfiled: false,
     content: null,
-    linkedItemIds: ['vannevar-bush'],
-    associations: [
-      { id: 'a1', text: null, targetId: 'vannevar-bush', targetTitle: 'Vannevar Bush' },
-    ],
   },
   memex: {
     id: 'memex',
@@ -62,8 +56,6 @@ const GRAPH_ITEMS: Record<string, Item> = {
     titleAlign: 'left',
     unfiled: false,
     content: null,
-    linkedItemIds: [],
-    associations: [],
   },
   'associative-trails': {
     id: 'associative-trails',
@@ -71,10 +63,6 @@ const GRAPH_ITEMS: Record<string, Item> = {
     titleAlign: 'left',
     unfiled: false,
     content: null,
-    linkedItemIds: ['memex'],
-    associations: [
-      { id: 'a2', text: null, targetId: 'memex', targetTitle: 'Memex' },
-    ],
   },
   'sharing-a-trail': {
     id: 'sharing-a-trail',
@@ -82,8 +70,6 @@ const GRAPH_ITEMS: Record<string, Item> = {
     titleAlign: 'left',
     unfiled: false,
     content: null,
-    linkedItemIds: [],
-    associations: [],
   },
 };
 
@@ -115,6 +101,14 @@ const GRAPH_TRAILS: Trail[] = [
     forkedFrom: null,
   },
 ];
+
+const GRAPH_PREVIEWS = {
+  'vannevar-bush': { text: '', linkedItemIds: [] },
+  'as-we-may-think': { text: '', linkedItemIds: ['vannevar-bush'] },
+  memex: { text: '', linkedItemIds: [] },
+  'associative-trails': { text: '', linkedItemIds: ['memex'] },
+  'sharing-a-trail': { text: '', linkedItemIds: [] },
+};
 
 const TRAILS = GRAPH_TRAILS.map(trail => ({
   title: trail.title,
@@ -334,6 +328,7 @@ export const BrowserMockup: React.FC = () => {
             <KnowledgeGraph
               trails={GRAPH_TRAILS}
               items={GRAPH_ITEMS}
+              mapPreviews={GRAPH_PREVIEWS}
               activeTrailId="bushs-vision"
               onSelectItem={() => {}}
               variant="preview"

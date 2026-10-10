@@ -146,9 +146,6 @@ export default function EditorPage() {
                 activeTrailId={project.activeTrailId}
                 selectedItemId={project.selectedItemId}
                 onSelectItem={project.handleSelectItem}
-                onTie={project.handleTie}
-                onUpdateAssociation={project.handleUpdateAssociation}
-                onUntie={project.handleUntie}
                 onClose={() => project.setView('write')}
               />
             ) : project.view === 'overview' ? (
@@ -181,13 +178,10 @@ export default function EditorPage() {
                 navigationRequest={project.navigationRequest}
                 onVisibleItem={project.handleVisibleItem}
                 onSelectTrail={project.handleSelectTrail}
-                onUpdateAssociation={project.handleUpdateAssociation}
                 onCommitTitle={project.commitItemTitle}
                 onSetTitleAlign={project.handleSetItemTitleAlign}
                 onSelectItem={project.handleSelectItem}
                 onCreateItem={project.handleCreateItem}
-                onTie={project.handleTie}
-                onUntie={project.handleUntie}
                 onOpenGraph={() => project.setView('graph')}
                 onChange={autoSave.onChange}
                 extractionActions={{

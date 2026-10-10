@@ -3,7 +3,7 @@
 'use server';
 
 import { headers } from "next/headers";
-import { Item, Trail, TitleAlign, Association } from "@/app/editor/types";
+import { Item, Trail, TitleAlign } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 import { parseResponse, expectOk } from "./http";
@@ -71,7 +71,6 @@ interface ItemDTO {
 
 type TrailStepDTO = ItemDTO;
 
-type AssociationDTO = Association;
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -121,7 +120,7 @@ function toProjectSummary(dto: ProjectDTO): Project {
   };
 }
 
-function toItem(dto: ItemDTO, unfiled: boolean, associations: Association[] = []): Item {
+function toItem(dto: ItemDTO, unfiled: boolean): Item {
   return {
     id: String(dto.id),
     title: dto.title,
@@ -129,8 +128,6 @@ function toItem(dto: ItemDTO, unfiled: boolean, associations: Association[] = []
     unfiled,
     content: "",
     textStats: { words: 0, characters: 0 },
-    associations,
-    linkedItemIds: associations.map((a) => a.targetId),
   };
 }
 
@@ -162,22 +159,12 @@ export async function getProject(id: string): Promise<Project | null> {
   const uniqueItemIds = Array.from(itemMap.keys());
   const unfiledIds = new Set(looseDtos.filter((it) => it.unfiled).map((it) => it.id));
 
-  const associationLists = await Promise.all(
-    uniqueItemIds.map((itemId) => apiJson<AssociationDTO[]>(`/api/item/${itemId}/association`))
-  );
-
   const statsById = new Map(textStats.items.map((stats) => [stats.id, { words: stats.words, characters: stats.characters }]));
   const items: Record<string, Item> = {};
-  uniqueItemIds.forEach((itemId, index) => {
+  uniqueItemIds.forEach((itemId) => {
     const dto = itemMap.get(itemId)!;
-    const associations: Association[] = associationLists[index].map((a) => ({
-      id: String(a.id),
-      text: a.text,
-      targetId: a.targetId,
-      targetTitle: a.targetTitle,
-    }));
     items[String(itemId)] = {
-      ...toItem(dto, unfiledIds.has(itemId), associations),
+      ...toItem(dto, unfiledIds.has(itemId)),
       content: null,
       textStats: statsById.get(itemId) ?? { words: 0, characters: 0 },
     };
@@ -354,20 +341,4 @@ export async function attachItemToTrail(trailId: string, itemId: string): Promis
 
 export async function detachItemFromTrail(trailId: string, itemId: string): Promise<void> {
   await apiVoid(`/api/trail/${trailId}/item/${itemId}`, { method: "DELETE" });
-}
-
-export async function tie(itemId: string, targetId: string, text: string): Promise<Association> {
-  return apiJson<Association>(`/api/item/${itemId}/tie`, {
-    method: "POST", json: { targetId: Number(targetId), text },
-  });
-}
-
-export async function updateAssociation(itemId: string, associationId: string, text: string): Promise<Association> {
-  return apiJson<Association>(`/api/item/${itemId}/association/${associationId}`, {
-    method: "PUT", json: { text },
-  });
-}
-
-export async function untie(itemId: string, associationId: string): Promise<void> {
-  await apiVoid(`/api/item/${itemId}/association/${associationId}`, { method: "DELETE" });
 }

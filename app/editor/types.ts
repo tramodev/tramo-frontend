@@ -2,13 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 export type TitleAlign = "left" | "center" | "right";
 
-export interface Association {
-    id: string;
-    targetId: string;
-    targetTitle: string;
-    text: string | null;
-}
-
 export interface Item {
     id: string;
     title: string;
@@ -16,8 +9,6 @@ export interface Item {
     unfiled: boolean;
     content: string | null;
     textStats?: { words: number; characters: number };
-    associations: Association[];
-    linkedItemIds: string[];
 }
 
 export interface TrailStep {

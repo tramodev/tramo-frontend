@@ -71,9 +71,6 @@ interface WriteViewProps {
   onSetTitleAlign: (itemId: string, titleAlign: TitleAlign) => void;
   onSelectItem: (item: Item, trailId?: string) => void;
   onCreateItem: (trailId: string, title: string) => void;
-  onTie: (itemId: string, targetId: string, text: string) => Promise<void>;
-  onUntie: (itemId: string, associationId: string) => Promise<void>;
-  onUpdateAssociation: (itemId: string, associationId: string, text: string) => Promise<void>;
   onOpenGraph: () => void;
   onChange: (itemId: string, editorState: EditorState) => void;
   extractionActions: ExtractionActions;
@@ -161,7 +158,7 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
         <ListPlugin />
         <CheckListPlugin />
         <LinkPlugin />
-        <ItemLinkClickPlugin items={props.items} sourceId={item.id} onNavigate={(id) => { const target = props.items[id]; if (target) props.onSelectItem(target); }} onTie={props.onTie} onUpdateAssociation={props.onUpdateAssociation} />
+        <ItemLinkClickPlugin items={props.items} onNavigate={(id) => { const target = props.items[id]; if (target) props.onSelectItem(target); }} />
         <ClickableLinkPlugin newTab />
         <ImagesPlugin projectId={props.projectId} />
         <EquationsPlugin />
@@ -359,7 +356,7 @@ export function WriteView(props: WriteViewProps) {
       </div>
     </div>
     <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} mapPreviews={props.mapPreviews} onRetryMapPreviews={props.onRetryMapPreviews} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
-      onSelectItem={props.onSelectItem} onUpdateAssociation={props.onUpdateAssociation} onUntie={props.onUntie} onOpenGraph={props.onOpenGraph}
+      onSelectItem={props.onSelectItem} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
   </EditorImagesProvider>;
 }
