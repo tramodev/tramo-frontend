@@ -993,7 +993,8 @@ pre::-webkit-scrollbar-thumb {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 3px;
   flex: none;
   padding: 8px 12px;
   flex-wrap: wrap;
