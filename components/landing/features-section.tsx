@@ -5,12 +5,12 @@ import { FadeUp } from '@/components/landing/landing-motion';
 
 function WriteMockup() {
   return <div className="w-full overflow-hidden rounded-[20px] border border-border bg-background shadow-elevation-2">
-    <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 text-xs">
+    <div className="flex items-center justify-between gap-3 bg-background px-4 py-3 text-xs">
       <span className="font-medium">Memex and Vannevar Bush</span>
       <span className="flex shrink-0 items-center gap-1 text-primary"><Check className="h-3 w-3" />Saved</span>
     </div>
-    <div className="p-3"><div className="overflow-hidden rounded-[14px] bg-popover">
-      <div className="flex gap-4 border-b border-border px-4 py-2.5 text-muted-foreground">
+    <div className="p-3"><div className="overflow-hidden bg-background">
+      <div className="mx-auto flex w-fit justify-center gap-4 rounded-full bg-muted px-4 py-2.5 text-muted-foreground">
         {[Undo2, Bold, Italic, Link2, List].map((Icon, i) => <Icon key={i} className="h-3.5 w-3.5" />)}
       </div>
       <div className="px-5 py-6">

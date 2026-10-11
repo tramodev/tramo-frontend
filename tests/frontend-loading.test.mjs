@@ -59,6 +59,14 @@ test('an unmounted projects page ignores late request results', async () => {
   expect(s.render().some(node => node.props.role === 'alert')).toBe(false);
 });
 
+test('landing mockup uses an accessible static image without importing the graph runtime', () => {
+  const source = readFileSync('components/landing/browser-mockup.tsx', 'utf8');
+  expect(source).not.toContain('KnowledgeGraph');
+  expect(source).not.toContain('use client');
+  const mockup = load('components/landing/browser-mockup.tsx', name => name === 'react/jsx-runtime' ? { jsx, jsxs: jsx } : {});
+  expect(flatten(mockup.BrowserMockup()).find(node => node.type === 'svg' && node.props.role === 'img').props['aria-label']).toBeTruthy();
+});
+
 test('bootstrap GET preserves preferred note, trail, contents and profile', async () => {
   const requests = [];
   const dto = { id: 'project', title: 'Project', description: null, graphColors: null, visibility: 'private', tags: [],

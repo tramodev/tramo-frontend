@@ -1,6 +1,5 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-'use client';
 
 import React from 'react';
 import {
@@ -9,7 +8,6 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  ChevronRight,
   Bold,
   Italic,
   Underline,
@@ -17,21 +15,20 @@ import {
   Code,
   Baseline,
   Link as LinkIcon,
-  Image as ImageIcon,
-  List,
-  ListOrdered,
-  CheckSquare,
-  Quote,
-  Minus,
   Plus,
   Share2,
   Check,
-  Route,
-  Waypoints,
-  Share as GraphIcon,
+  Download,
+  History,
+  Type,
+  AlignLeft,
+  Highlighter,
+  PanelLeft,
+  Keyboard,
+  CircleHelp,
+  X,
   Lock,
 } from 'lucide-react';
-import { KnowledgeGraph } from '@/components/editor/knowledge-graph';
 import { Mark } from '@/components/layout/logo';
 import type { Item, Trail } from '@/app/editor/types';
 
@@ -102,14 +99,6 @@ const GRAPH_TRAILS: Trail[] = [
   },
 ];
 
-const GRAPH_PREVIEWS = {
-  'vannevar-bush': { text: '', linkedItemIds: [] },
-  'as-we-may-think': { text: '', linkedItemIds: ['vannevar-bush'] },
-  memex: { text: '', linkedItemIds: [] },
-  'associative-trails': { text: '', linkedItemIds: ['memex'] },
-  'sharing-a-trail': { text: '', linkedItemIds: [] },
-};
-
 const TRAILS = GRAPH_TRAILS.map(trail => ({
   title: trail.title,
   items: trail.itemIds.map(id => ({ title: GRAPH_ITEMS[id].title, active: id === 'memex' && trail.id === 'bushs-vision' })),
@@ -121,7 +110,8 @@ const LOOSE_ITEMS = Object.values(GRAPH_ITEMS).map(item => ({
 }));
 
 const CONNECTIONS = [
-  { type: 'CONNECTED TO MEMEX', Icon: Waypoints, title: 'Associative trails' },
+  'Memex — As We May Think',
+  'Memex — Associative trails',
 ];
 
 export const BrowserMockup: React.FC = () => {
@@ -129,9 +119,9 @@ export const BrowserMockup: React.FC = () => {
     <div className="w-full flex flex-col overflow-hidden rounded-[28px] border border-border bg-background shadow-elevation-2">
       <div className="h-9 flex items-center gap-2 px-4 shrink-0 bg-card border-b border-border">
         <span className="flex gap-1.5 shrink-0">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--ed-red)' }} />
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--ed-orange)' }} />
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--ed-green)' }} />
         </span>
         <div className="mx-auto flex items-center gap-1.5 rounded-full bg-popover px-3 py-1 text-[11px] text-muted-foreground max-w-[60%] truncate">
           <Lock className="w-2.5 h-2.5 shrink-0" />
@@ -147,7 +137,7 @@ export const BrowserMockup: React.FC = () => {
             <Mark size={22} className="shrink-0" />
             <div className="flex flex-1 items-center gap-1.5 rounded-full bg-popover px-2.5 py-1.5 text-[11px] text-muted-foreground">
               <Search className="w-3 h-3 shrink-0" />
-              Search
+              Search this project
             </div>
           </div>
 
@@ -161,14 +151,14 @@ export const BrowserMockup: React.FC = () => {
             {TRAILS.map((trail) => (
               <div key={trail.title}>
                 <div className="flex items-center gap-1.5 px-2 text-[13px] font-medium">
-                  <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground" />
+                  <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
                   {trail.title}
                 </div>
                 <ul className="mt-1 flex flex-col gap-0.5 pl-2.5">
                   {trail.items.map((item, i) => (
                     <li
                       key={item.title}
-                      className={`flex items-center gap-2 rounded-full text-[13px] font-medium truncate px-2.5 py-[5px] ${
+                      className={`flex items-center gap-2 rounded-md text-[13px] font-medium truncate px-2.5 py-[5px] ${
                         item.active
                           ? 'bg-secondary text-secondary-foreground'
                           : 'text-muted-foreground'
@@ -193,7 +183,7 @@ export const BrowserMockup: React.FC = () => {
             {LOOSE_ITEMS.map((item) => (
               <li
                 key={item.title}
-                className="flex items-center gap-2 rounded-full text-[13px] font-medium truncate px-2.5 py-[5px] text-muted-foreground"
+                className="flex items-center gap-2 rounded-md text-[13px] font-medium truncate px-2.5 py-[5px] text-muted-foreground"
               >
                 <span className="w-[7px] h-[7px] shrink-0 rounded-full box-border border-[1.5px] border-input" />
                 <span className="truncate flex-1">{item.title}</span>
@@ -204,38 +194,33 @@ export const BrowserMockup: React.FC = () => {
         </div>
 
         <div className="flex flex-1 flex-col min-w-0">
-      <div className="h-12 flex items-center gap-3 px-5 shrink-0 bg-card border-b border-border">
-        <span className="lg:hidden font-display font-semibold text-[14px]">
-          Tramo<span className="text-primary"> ●</span>
+      <div className="h-12 flex items-center gap-3 px-5 shrink-0 bg-background">
+        <PanelLeft className="lg:hidden w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 truncate text-[13px] font-medium">Memex and Vannevar Bush</span>
+        <span className="flex items-center gap-1 text-[11px] text-primary">
+          <Check className="w-3 h-3" />Saved
         </span>
-        <span className="text-[13px] font-medium">Memex and Vannevar Bush</span>
-        <div className="flex-1" />
-        <span className="text-[11px] hidden md:inline text-muted-foreground">
-          5 notes · 2 trails
-        </span>
-        <span className="flex items-center gap-1 text-[11px] font-medium shrink-0">
-          <Route className="w-3 h-3" />
-          Trail
-        </span>
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+        <span className="hidden xl:inline text-[11px] text-muted-foreground">123 words · 645 characters</span>
+        <Download className="w-3.5 h-3.5 text-muted-foreground" />
+        <History className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-[12px] font-medium text-secondary-foreground">
           <Share2 className="w-3 h-3" />
-          Share
-        </span>
-        <span className="flex items-center gap-1 text-[11px] font-medium text-primary">
-          <Check className="w-3 h-3" />
-          Saved
+          Publish &amp; Share
         </span>
         <span className="w-[26px] h-[26px] shrink-0 rounded-full flex items-center justify-center text-[11px] font-medium bg-primary text-primary-foreground">
           A
         </span>
+        </div>
       </div>
 
       <div className="flex flex-1 min-h-0 gap-3 p-3">
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden rounded-2xl bg-popover">
-          <div className="flex flex-wrap items-center gap-2.5 px-4 py-1.5 shrink-0 overflow-hidden border-b border-border text-muted-foreground">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background" data-mock-editor>
+          <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2 rounded-[24px] bg-muted px-3 py-2 shrink-0 text-muted-foreground" data-mock-toolbar>
             <Undo className="w-3.5 h-3.5" />
             <Redo className="w-3.5 h-3.5" />
-            <Search className="w-3.5 h-3.5" />
+            <span className="h-3.5 w-px shrink-0 bg-border" />
+            <span className="flex items-center gap-1 text-[11px] shrink-0"><Type className="w-3.5 h-3.5" />Normal<ChevronDown className="w-3 h-3" /></span>
             <span className="h-3.5 w-px shrink-0 bg-border" />
             <span className="flex items-center gap-1 text-[11px] font-medium shrink-0">
               Arial
@@ -247,27 +232,31 @@ export const BrowserMockup: React.FC = () => {
               <ChevronUp className="w-3 h-3" />
             </span>
             <span className="h-3.5 w-px shrink-0 bg-border" />
+            <Baseline className="w-3.5 h-3.5" />
+            <span className="h-3.5 w-px shrink-0 bg-border" />
+            <AlignLeft className="w-3.5 h-3.5" />
+            <ChevronDown className="w-3 h-3" />
+            <span className="h-3.5 w-px shrink-0 bg-border" />
             <Bold className="w-3.5 h-3.5" />
             <Italic className="w-3.5 h-3.5" />
             <Underline className="w-3.5 h-3.5" />
             <Strikethrough className="w-3.5 h-3.5" />
+            <Highlighter className="w-3.5 h-3.5" />
             <Code className="w-3.5 h-3.5" />
             <span className="h-3.5 w-px shrink-0 bg-border" />
-            <Baseline className="w-3.5 h-3.5" />
             <LinkIcon className="w-3.5 h-3.5" />
-            <ImageIcon className="w-3.5 h-3.5" />
-            <span className="h-3.5 w-px shrink-0 bg-border hidden md:block" />
-            <List className="w-3.5 h-3.5" />
-            <ListOrdered className="w-3.5 h-3.5" />
-            <CheckSquare className="w-3.5 h-3.5" />
-            <Quote className="w-3.5 h-3.5" />
-            <Minus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5" />
+            <ChevronDown className="w-3 h-3" />
+            <span className="h-3.5 w-px shrink-0 bg-border" />
+            <Search className="w-3.5 h-3.5" />
           </div>
 
-          <div className="flex-1 overflow-hidden p-6">
-            <h1 className="font-display font-medium text-xl mb-2.5">
+          <div className="flex-1 overflow-hidden px-8 py-6">
+            <p className="mb-3 text-[10px] font-medium uppercase tracking-widest text-foreground">Step 3</p>
+            <h1 className="font-display font-medium text-[28px] mb-2.5">
               Memex
             </h1>
+            <p className="mb-5 text-[11px] text-muted-foreground">Used in 2 trails. Edits appear in both.</p>
             <p className="text-[13px] leading-6 mb-3 text-muted-foreground">
               Bush&apos;s Memex is a proposed personal library for books, records and communications.
               Introduced in{' '}
@@ -288,51 +277,42 @@ export const BrowserMockup: React.FC = () => {
           </div>
         </div>
 
-        <div className="w-[204px] hidden lg:flex flex-col shrink-0 p-4 gap-2 overflow-hidden rounded-2xl bg-card">
+        <div className="w-[204px] hidden lg:flex flex-col shrink-0 p-4 gap-3 overflow-hidden rounded-2xl border border-border bg-popover">
           <div className="flex items-center justify-between gap-1">
-            <h3 className="text-[11px] font-medium text-muted-foreground truncate">
-              Connections involving &quot;Memex&quot;
-            </h3>
-            <Plus className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+            <h3 className="text-[12px] font-medium">Connections (2)</h3>
+            <X className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
-          <div className="flex flex-col gap-1.5">
-            {CONNECTIONS.map(({ type, Icon, title }) => (
-              <div
-                key={title}
-                className="flex flex-col gap-1 min-w-0 rounded-sm border border-border bg-popover py-[7px] px-2.5"
-              >
-                <span className="flex items-center gap-1 text-[9px] font-medium uppercase tracking-[0.08em] text-primary">
-                  <Icon className="w-2.5 h-2.5" />
-                  {type}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-[12px] font-medium flex-1">{title}</span>
-                  <span className="shrink-0 rounded-sm bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-secondary-foreground">
-                    note
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="flex-1 min-h-0 overflow-hidden space-y-2">
+            <p className="text-[10px] text-muted-foreground">Connections involving “Memex”.</p>
+            {CONNECTIONS.map(title => <div key={title} className="space-y-1 rounded-lg border border-border p-2.5">
+              <p className="text-[11px]">{title}</p>
+              <p className="text-[9px] text-muted-foreground">@ mention in Memex</p>
+            </div>)}
           </div>
-
-          <div className="mt-1.5 flex items-center justify-between border-t border-border pt-2.5">
-            <h3 className="text-[11px] font-medium text-muted-foreground">
-              Map preview
-            </h3>
-            <span className="flex items-center gap-1 text-[10px] font-medium text-primary">
-              <GraphIcon className="w-3 h-3" />
-              Open
-            </span>
+          <div className="flex h-36 shrink-0 flex-col border-t border-border pt-2">
+            <span className="mb-1 text-[11px] text-primary">Open map</span>
+            <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
+              <svg viewBox="-64 -12 1260 620" role="img" aria-label="Two trails sharing the Memex note" className="h-full w-full">
+                {GRAPH_TRAILS.map((trail, column) => <g key={trail.id} transform={`translate(${column * 570}, 0)`}>
+                  <rect y="56" width="512" height="528" rx="6" fill="var(--muted)" fillOpacity="0.2" stroke="var(--border)" />
+                  <text x="16" y="28" fill="var(--foreground)" fontSize="20">{trail.title}</text>
+                </g>)}
+                <g fill="none" stroke="var(--primary)" strokeWidth="1.5">
+                  <path d="M16 494 C-44 494 -44 322 16 322" />
+                  <path d="M1066 150 C1126 150 1126 322 1066 322" />
+                  <path d="M496 494 C552 494 530 150 586 150" stroke="var(--ed-purple)" strokeDasharray="2 6" strokeLinecap="round" opacity="0.75" />
+                </g>
+                {GRAPH_TRAILS.map((trail, column) => trail.itemIds.map((id, row) => <g key={`${trail.id}:${id}`} transform={`translate(${column * 570 + 16}, ${84 + row * 172})`}>
+                  <rect width="480" height="132" rx="6" fill="var(--card)" stroke={id === 'memex' && column === 0 ? 'var(--primary)' : 'var(--border)'} />
+                  <text x="16" y="70" fill="var(--foreground)" fontSize="28">{GRAPH_ITEMS[id].title}</text>
+                  <text x="464" y="28" fill="var(--muted-foreground)" fontSize="12" textAnchor="end">{id === 'memex' ? 'Shared · ' : ''}{row + 1}</text>
+                </g>))}
+              </svg>
+            </div>
           </div>
-          <div className="relative h-[210px] shrink-0 rounded-xl bg-popover">
-            <KnowledgeGraph
-              trails={GRAPH_TRAILS}
-              items={GRAPH_ITEMS}
-              mapPreviews={GRAPH_PREVIEWS}
-              activeTrailId="bushs-vision"
-              onSelectItem={() => {}}
-              variant="preview"
-            />
+          <div className="mt-auto flex items-center justify-center gap-3 border-t border-border pt-2 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Keyboard className="w-3 h-3" />Shortcuts</span>
+            <span className="flex items-center gap-1"><CircleHelp className="w-3 h-3" />Help</span>
           </div>
         </div>
       </div>
