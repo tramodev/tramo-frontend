@@ -3,14 +3,16 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-function setup() {
+function setup(project = { items: {}, loaded: false }) {
   const effects = [], listeners = [], removed = [];
+  const document = { title: 'Editor | Tramo' };
   const exports = {};
   const jsx = (type, props) => ({ type, props });
   runInNewContext(ts.transpileModule(readFileSync('app/editor/[projectId]/page.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, {
     exports,
+    document,
     localStorage: { getItem: () => null, setItem() {} },
     window: {
       addEventListener: (...args) => listeners.push(args),
@@ -21,7 +23,7 @@ function setup() {
       'react/jsx-runtime': { jsx, jsxs: jsx },
       'next/navigation': { useParams: () => ({ projectId: 'project' }) },
       '../editor-utils': { countProjectTextStats: () => null },
-      './hooks/useProjectEditorState': { useProjectEditorState: () => ({ items: {}, loaded: false }) },
+      './hooks/useProjectEditorState': { useProjectEditorState: () => project },
     })[name] ?? {},
   });
   exports.default();
@@ -32,7 +34,7 @@ function setup() {
     listener[1]({ ...keys, target, stopImmediatePropagation: () => { stopped = true; }, preventDefault: () => { throw new Error('Native formatting must not be prevented'); } });
     return stopped;
   };
-  return { listener, removed, send, cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
+  return { listener, removed, send, document, cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
 
 test.each([{ key: 'b', metaKey: true }, { key: 'b', ctrlKey: true }, { key: 'B', metaKey: true }])('blocks the global shortcut before it reaches the sidebar listener: %j', keys => {
@@ -56,4 +58,12 @@ test.each([{ key: 'b' }, { key: 'p', metaKey: true }, { key: 'Enter', ctrlKey: t
 test('removes the capture listener when leaving the editor', () => {
   const s = setup(); s.cleanup();
   expect(s.removed).toEqual([s.listener]);
+});
+
+test.each(['My project', 'Renamed project', '<script>alert(1)</script>'])('uses the loaded project name in the browser tab: %s', projectTitle => {
+  expect(setup({ items: {}, loaded: true, projectTitle }).document.title).toBe(`${projectTitle} | Tramo`);
+});
+
+test('keeps the default browser title while the project is loading', () => {
+  expect(setup({ items: {}, loaded: false, projectTitle: '' }).document.title).toBe('Editor | Tramo');
 });

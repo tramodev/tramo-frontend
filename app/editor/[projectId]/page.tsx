@@ -43,6 +43,9 @@ export default function EditorPage() {
   }, []);
 
   const project = useProjectEditorState(projectId, connectionsPanelOpen);
+  useEffect(() => {
+    if (project.loaded) document.title = `${project.projectTitle} | Tramo`;
+  }, [project.loaded, project.projectTitle]);
 
   const textStats = useMemo(
     () => countProjectTextStats(project.items),
