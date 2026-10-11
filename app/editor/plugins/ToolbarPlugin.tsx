@@ -161,9 +161,9 @@ const FONT_FAMILY_OPTIONS: Array<[string, string]> = [
 ];
 
 const TEXT_FORMATS = [
-  { format: 'bold', label: 'Format Bold', tooltip: 'Bold', Icon: Bold },
-  { format: 'italic', label: 'Format Italics', tooltip: 'Italic', Icon: Italic },
-  { format: 'underline', label: 'Format Underline', tooltip: 'Underline', Icon: Underline },
+  { format: 'bold', label: 'Format Bold', tooltip: 'Bold (⌘B / Ctrl+B)', Icon: Bold },
+  { format: 'italic', label: 'Format Italics', tooltip: 'Italic (⌘I / Ctrl+I)', Icon: Italic },
+  { format: 'underline', label: 'Format Underline', tooltip: 'Underline (⌘U / Ctrl+U)', Icon: Underline },
   { format: 'strikethrough', label: 'Format Strikethrough', tooltip: 'Strikethrough', Icon: Strikethrough },
   { format: 'highlight', label: 'Format Highlight', tooltip: 'Highlight', Icon: Highlighter },
 ] as const;
@@ -533,14 +533,14 @@ export default function ToolbarPlugin({
     >
       <ToolbarButton
         label="Undo"
-        tooltip="Undo"
+        tooltip="Undo (⌘Z / Ctrl+Z)"
         Icon={Undo}
         disabled={!canUndo}
         onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
       />
       <ToolbarButton
         label="Redo"
-        tooltip="Redo"
+        tooltip="Redo (⌘⇧Z / Ctrl+Shift+Z)"
         Icon={Redo}
         spaced={false}
         disabled={!canRedo}
@@ -681,7 +681,7 @@ export default function ToolbarPlugin({
       <Divider />
       <ToolbarButton
         label="Insert Link"
-        tooltip="Link"
+        tooltip="Link (⌘K / Ctrl+K)"
         Icon={LinkIcon}
         active={isLink}
         disabled={blockType === 'code'}
@@ -753,7 +753,7 @@ export default function ToolbarPlugin({
       <Divider />
       <ToolbarButton
         label="Find and replace"
-        tooltip="Find and replace"
+        tooltip="Find and replace (⌘F / Ctrl+F)"
         Icon={Search}
         onClick={() => editor.dispatchCommand(OPEN_FIND_REPLACE_COMMAND, undefined)}
       />
