@@ -61,6 +61,23 @@ test('@ mentions appear from both notes without duplicates', () => {
   expect(find(nodes, 'button', 'Remove')).toBeUndefined();
 });
 
+test('public connections use published content without editor tools or preview requests', () => {
+  const { render, items, find } = setup();
+  items.a.content = JSON.stringify({ root: { children: [{ type: 'link', rel: 'tramo-idea:b' }] } });
+  let nodes = render({ readOnly: true });
+  expect(find(nodes, 'button', 'A — B')).toBeDefined();
+  expect(find(nodes, 'KnowledgeGraph').props.items).toBe(items);
+  expect(nodes.some(node => node.props.role === 'status')).toBe(false);
+  expect(nodes.some(node => node.props['aria-label'] === 'Help')).toBe(false);
+  nodes = render({ item: items.c });
+  expect(find(nodes, 'p', 'No connections for this note.')).toBeDefined();
+  expect(find(nodes, 'p', 'Use @ to connect notes.')).toBeUndefined();
+  nodes = render({ open: false });
+  expect(nodes.some(node => node.props['aria-label'] === 'Connections')).toBe(true);
+  expect(nodes.some(node => node.props['aria-label'] === 'Open map')).toBe(true);
+  expect(nodes.some(node => node.props['aria-label'] === 'Help')).toBe(false);
+});
+
 test('map waits for previews and offers retry after a failed load', () => {
   const { render, items, find } = setup();
   let retried = false;

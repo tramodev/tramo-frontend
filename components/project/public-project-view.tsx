@@ -4,14 +4,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { Eye, FolderPlus, ListTree, MessageCircle } from "lucide-react"
+import { Eye, FolderPlus, MessageCircle } from "lucide-react"
 
 import { PublicSidebar } from "@/components/project/public-sidebar"
 import { EditorImagesProvider } from "@/components/editor/editor-images-provider"
 import { LexicalReadOnly } from "@/components/project/lexical-read-only"
 import { ProjectShell } from "@/components/editor/project-shell"
 import { TrailConnector } from "@/components/editor/trail-connector"
+import { NextTrailButton } from "@/components/editor/next-trail-button"
 import { GraphView } from "@/components/editor/graph-view"
+import { ConnectionsPanel } from "@/components/editor/connections-panel"
 import { VoteButton } from "@/components/social/vote-button"
 import { ForkButton } from "@/components/social/fork-button"
 import { BookmarkButton } from "@/components/social/bookmark-button"
@@ -21,7 +23,6 @@ import { ShareToFollowersButton } from "@/components/social/share-to-followers-b
 import { ProfileHoverCard } from "@/components/social/profile-hover-card"
 import { CommentsSection } from "@/components/project/comments-section"
 import { UserMenu } from "@/components/layout/user-menu"
-import { Button } from "@/components/ui/button"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Item, Trail } from "@/app/editor/types"
 import { firstReadableTrail, resolveItemTrail } from "@/app/editor/trail-navigation"
@@ -77,6 +78,7 @@ export function PublicProjectView({
   const [activeTrailId, setActiveTrailId] = useState<string | undefined>(firstTrail?.id)
   const [view, setView] = useState<'content' | 'graph'>('content')
   const [commentCount, setCommentCount] = useState(project.commentCount)
+  const [connectionsPanelOpen, setConnectionsPanelOpen] = useState(false)
 
   const { trails, items } = useMemo(() => toEditorShape(project), [project])
 
@@ -85,6 +87,7 @@ export function PublicProjectView({
 
 
   const inTrail = !!(selectedItem && activeTrail?.itemIds.includes(selectedItem.id))
+  const nextTrail = inTrail && activeTrail ? trails[trails.findIndex(trail => trail.id === activeTrail.id) + 1] : undefined
   const steps = inTrail && activeTrail
     ? activeTrail.steps
     : selectedItem
@@ -93,7 +96,7 @@ export function PublicProjectView({
   const stacked = steps.length > 1
 
   const columnRef = useRef<HTMLDivElement>(null)
-  const slotRefs = useRef(new Map<string, HTMLDivElement>())
+  const slotRefs = useRef(new Map<string, HTMLElement>())
   const shouldScrollRef = useRef(false)
 
   useEffect(() => {
@@ -216,17 +219,6 @@ export function PublicProjectView({
               {commentCount}
             </a>
           )}
-          {allItems.length > 0 && (
-            <Button
-              variant={view === 'graph' ? 'secondary' : 'ghost'}
-              size="lg"
-              onClick={() => setView((v) => (v === 'graph' ? 'content' : 'graph'))}
-              title="See this project map"
-            >
-              <ListTree className="h-[15px] w-[15px]" />
-              Map
-            </Button>
-          )}
           {isLoggedIn ? (
             <>
               {!isOwnProject && <ReportButton projectId={project.id} isLoggedIn={isLoggedIn} />}
@@ -258,10 +250,11 @@ export function PublicProjectView({
           selectedItemId={selectedItem?.id}
           onSelectItem={handleSelectItem}
           activeTrailId={activeTrailId}
+          onSelectTrail={handleSelectTrail}
         />
       }
       content={
-        <div className="flex min-w-0 flex-1 gap-3 overflow-hidden">
+        <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
           {view === 'graph' ? (
             <GraphView
               trails={trails}
@@ -272,88 +265,79 @@ export function PublicProjectView({
               onClose={() => setView('content')}
             />
           ) : (
-            <div ref={columnRef} className="flex min-w-0 flex-1 flex-col gap-3 overflow-auto">
-              <section aria-label="About this project" className="rounded-2xl bg-popover">
-                <div className="mx-auto w-full max-w-[800px] px-6 py-6">
-                  <div className="pl-7">
-                  <h1 className="font-display text-3xl font-medium">{project.title}</h1>
-                  {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
-                  {project.trails.length > 0 && <><p className="mt-5 text-xs text-muted-foreground">Trails are ordered sequences of notes. Choose where to begin.</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{project.trails.map(trail => <button type="button" key={trail.id} aria-pressed={activeTrailId === trail.id} onClick={() => handleSelectTrail(trail.id)} className={`rounded-lg border p-3 text-left ${activeTrailId === trail.id ? 'border-primary bg-muted' : 'border-border hover:bg-muted'}`}><span className="block text-sm font-medium">{trail.title}</span>{trail.description?.trim() && <span className="mt-1 block text-xs text-muted-foreground">{trail.description}</span>}<span className="mt-1 block text-xs text-muted-foreground">{trail.items.length} notes</span></button>)}</div></>}
-                  {project.looseItems.length > 0 && <button type="button" className="mt-3 text-sm underline" onClick={() => { setActiveTrailId(undefined); setSelectedItem(project.looseItems[0]); }}>Notes outside trails</button>}
-                  </div>
-                </div>
-              </section>
-              {selectedItem ? (
-                <div className="rounded-2xl bg-popover">
-                  <div className="public-trail-column mx-auto w-full max-w-[800px] px-6 py-8">
-                    {steps.map((step, i) => {
-                      const stepItem = items[step.itemId]
-                      if (!stepItem) return null
-                      const isActive = step.itemId === selectedItem.id
+            <div className="editor-container flex min-h-0 min-w-0 flex-1 flex-col">
+              <div ref={columnRef} className="editor-inner">
+                <div className="editor-content-column">
+                  <section aria-label="About this project" className="border-b border-border py-6 pl-7">
+                    <h1 className="font-display text-3xl font-medium">{project.title}</h1>
+                    {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
+                    {project.trails.length > 0 && <>
+                      <p className="mt-5 text-xs text-muted-foreground">Trails are ordered sequences of notes. Choose where to begin.</p>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {project.trails.map(trail => <button type="button" key={trail.id} aria-pressed={activeTrailId === trail.id} onClick={() => handleSelectTrail(trail.id)} className={`rounded-lg border p-3 text-left ${activeTrailId === trail.id ? 'border-primary bg-muted' : 'border-border hover:bg-muted'}`}>
+                          <span className="block text-sm font-medium">{trail.title}</span>
+                          {trail.description?.trim() && <span className="mt-1 block text-xs text-muted-foreground">{trail.description}</span>}
+                          <span className="mt-1 block text-xs text-muted-foreground">{trail.items.length} notes</span>
+                        </button>)}
+                      </div>
+                    </>}
+                    {project.looseItems.length > 0 && <button type="button" className="mt-3 text-sm underline" onClick={() => { setActiveTrailId(undefined); setSelectedItem(project.looseItems[0]); }}>Notes outside trails</button>}
+                  </section>
+                  {selectedItem ? steps.map((step, i) => {
+                    const stepItem = items[step.itemId]
+                    if (!stepItem) return null
+                    const isActive = step.itemId === selectedItem.id
 
-                      return (
+                    return (
+                      <section
+                        key={step.itemId}
+                        tabIndex={-1}
+                        aria-label={`Step ${i + 1}: ${stepItem.title}`}
+                        ref={(el) => {
+                          if (el) slotRefs.current.set(step.itemId, el)
+                          else slotRefs.current.delete(step.itemId)
+                        }}
+                      >
+                        {i > 0 && <div className="trail-divider mt-4"><TrailConnector /></div>}
                         <div
-                          key={step.itemId}
-                          tabIndex={-1}
-                          aria-label={stepItem.title}
-                          ref={(el) => {
-                            if (el) slotRefs.current.set(step.itemId, el)
-                            else slotRefs.current.delete(step.itemId)
+                          onClick={(e) => {
+                            if (isActive) return
+                            if ((e.target as HTMLElement).closest('a')) return
+                            const target = allItems.find((candidate) => candidate.id === step.itemId)
+                            if (target) setSelectedItem(target)
                           }}
+                          className={stacked && !isActive ? 'group cursor-pointer' : undefined}
                         >
-                          {i > 0 && (
-                            <div className="trail-divider mt-4">
-                              <TrailConnector />
-                            </div>
-                          )}
-                          <div
-                            onClick={(e) => {
-                              if (isActive) return
-                              if ((e.target as HTMLElement).closest('a')) return
-                              const target = allItems.find((candidate) => candidate.id === step.itemId)
-                              if (target) setSelectedItem(target)
-                            }}
-                            className={stacked && !isActive ? 'group cursor-pointer' : undefined}
-                          >
-                            {stacked && (
-                              <div
-                                className={`flex items-center gap-2 pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${
-                                  isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                                }`}
-                              >
-                                <span
-                                  className={
-                                    isActive
-                                      ? 'h-[7px] w-[7px] shrink-0 rounded-full bg-primary'
-                                      : 'h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border group-hover:border-primary'
-                                  }
-                                />
-                                Step {i + 1}
-                              </div>
-                            )}
-                            <h1
-                              className={`font-display text-[28px] font-medium ${stacked ? 'pl-7 pt-1' : 'pl-7'}`}
-                              style={{ textAlign: stepItem.titleAlign }}
-                            >
-                              {stepItem.title}
-                            </h1>
-                            <LexicalReadOnly
-                              key={step.itemId}
-                              content={stepItem.content ?? ''}
-                              onItemClick={handleItemLinkClick}
-                            />
+                          <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                            Step {i + 1}
                           </div>
+                          <h2 className="pl-7 pt-2 font-display text-[28px] font-medium leading-normal" style={{ textAlign: stepItem.titleAlign }}>
+                            {stepItem.title}
+                          </h2>
+                          <LexicalReadOnly key={step.itemId} content={stepItem.content ?? ''} onItemClick={handleItemLinkClick} />
                         </div>
-                      )
-                    })}
+                        {i === steps.length - 1 && nextTrail && <NextTrailButton trail={nextTrail} onSelectTrail={handleSelectTrail} />}
+                      </section>
+                    )
+                  }) : emptyState}
+                  <div className="mt-8 border-t border-border">
+                    <CommentsSection projectId={project.id} projectTitle={project.title} isLoggedIn={isLoggedIn} username={username} commentCount={commentCount} onCommentCountChange={setCommentCount} canComment={project.canComment} />
                   </div>
                 </div>
-              ) : emptyState}
-              <div className="mt-8 border-t border-border">
-                <CommentsSection projectId={project.id} projectTitle={project.title} isLoggedIn={isLoggedIn} username={username} commentCount={commentCount} onCommentCountChange={setCommentCount} canComment={project.canComment} />
               </div>
             </div>
           )}
+          {view === 'content' && selectedItem && <ConnectionsPanel
+            item={items[selectedItem.id]}
+            items={items}
+            trails={trails}
+            activeTrailId={activeTrailId}
+            onSelectItem={handleSelectMappedItem}
+            onOpenGraph={() => setView('graph')}
+            open={connectionsPanelOpen}
+            onToggleOpen={() => setConnectionsPanelOpen(open => !open)}
+            readOnly
+          />}
         </div>
       }
     />

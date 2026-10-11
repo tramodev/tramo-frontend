@@ -54,14 +54,6 @@
   left: 28px;
 }
 
-.public-trail-column .editor-input {
-  padding-left: 28px;
-}
-
-.public-trail-column .trail-divider {
-  margin-inline: -24px;
-}
-
 .draggable-block-menu {
   position: absolute;
   left: 0;
