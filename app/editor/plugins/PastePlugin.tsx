@@ -27,7 +27,8 @@ export default function PastePlugin(): null {
         if (clipboardData.types.includes('application/x-lexical-editor')) return false;
         if (Array.from(clipboardData.items || []).some((item) => item.kind === 'file')) return false;
         const html = clipboardData.getData('text/html');
-        if (!html) return false;
+        // Match Lexical's plain-text fallback so HTML whitespace does not swallow paragraph breaks.
+        if (!html || html === clipboardData.getData('text/plain')) return false;
         const selection = $getSelection();
         if (!$isRangeSelection(selection)) return false;
 
