@@ -12,7 +12,6 @@ import {
   renameProject,
   createTrail,
   renameTrail,
-  setTrailDescription,
   deleteTrail as deleteTrailRequest,
   createItem,
   createLooseItem,
@@ -71,7 +70,7 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   const navigationSequence = useRef(0);
   const selectedItemId = navigation.itemId;
   const activeTrailId = navigation.trailId;
-  const [view, setView] = useState<'write' | 'overview' | 'graph'>('write');
+  const [view, setView] = useState<'write' | 'graph'>('write');
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
 
   useEffect(() => {
@@ -382,13 +381,6 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     ));
   }, true);
 
-  const handleSetTrailDescription = (trailId: string, description: string) => pendingSaves.current.track(`trail-description:${trailId}`, async () => {
-    setTrails(prevTrails => prevTrails.map(trail =>
-      trail.id === trailId ? { ...trail, description } : trail
-    ));
-    await setTrailDescription(trailId, description);
-  }, true);
-
   const handleRenameItem = (itemId: string, title: string) => pendingSaves.current.track(`item-title:${itemId}`, async () => {
     await renameItem(itemId, title);
     setItems(prevItems => {
@@ -500,7 +492,6 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     handleCreateLooseItem,
     handleDeleteItem,
     handleRenameTrail,
-    handleSetTrailDescription,
     handleRenameItem,
     handleDeleteTrail,
     handleVisibilityChange,

@@ -34,13 +34,6 @@ const TOUR_STEPS = [
     },
   },
   {
-    element: '[data-tour="overview-toggle"]',
-    popover: {
-      title: 'Trail overview',
-      description: 'Switch to Trail overview to see the whole trail at a glance.',
-    },
-  },
-  {
     element: '[data-tour="share"]',
     popover: {
       title: 'Share',

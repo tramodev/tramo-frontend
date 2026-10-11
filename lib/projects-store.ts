@@ -347,10 +347,6 @@ export async function renameTrail(trailId: string, title: string): Promise<void>
   await apiVoid(`/api/trail/${trailId}`, { method: "PUT", json: { title } });
 }
 
-export async function setTrailDescription(trailId: string, description: string): Promise<void> {
-  await apiVoid(`/api/trail/${trailId}`, { method: "PUT", json: { description } });
-}
-
 export async function deleteTrail(trailId: string): Promise<void> {
   await apiVoid(`/api/trail/${trailId}`, { method: "DELETE" });
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Check, Loader2, Route, Share2 } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserMenu } from '@/components/layout/user-menu';
@@ -84,9 +84,6 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus }: E
 
 interface EditorActionsProps {
   textStats: { words: number; characters: number } | null;
-  hasActiveTrail: boolean;
-  overviewActive: boolean;
-  onToggleOverview: () => void;
   projectId: string;
   beforeExport: () => Promise<void>;
   profile: { username: string; imageUrl: string | null } | null;
@@ -94,9 +91,6 @@ interface EditorActionsProps {
 
 export function EditorActions({
   textStats,
-  hasActiveTrail,
-  overviewActive,
-  onToggleOverview,
   projectId,
   profile,
   beforeExport,
@@ -108,19 +102,6 @@ export function EditorActions({
           {textStats.words} words · {textStats.characters} characters
         </span>
       ) : <span className="text-xs text-muted-foreground" role="status">Counting project…</span>}
-      {hasActiveTrail && (
-        <Button
-          data-tour="overview-toggle"
-          variant={overviewActive ? 'secondary' : 'ghost'}
-          size="icon"
-          onClick={onToggleOverview}
-          title="Overview"
-          aria-label="Overview"
-          aria-pressed={overviewActive}
-        >
-          <Route className="h-[15px] w-[15px]" />
-        </Button>
-      )}
       <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />
       <VersionHistorySheet projectId={projectId} />
       <Button data-tour="share" variant="secondary" size="lg" asChild>

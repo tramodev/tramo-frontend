@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { Eye, FolderPlus, ListTree, MessageCircle, Route } from "lucide-react"
+import { Eye, FolderPlus, ListTree, MessageCircle } from "lucide-react"
 
 import { PublicSidebar } from "@/components/project/public-sidebar"
 import { EditorImagesProvider } from "@/components/editor/editor-images-provider"
@@ -12,7 +12,6 @@ import { LexicalReadOnly } from "@/components/project/lexical-read-only"
 import { ProjectShell } from "@/components/editor/project-shell"
 import { TrailConnector } from "@/components/editor/trail-connector"
 import { GraphView } from "@/components/editor/graph-view"
-import { OverviewView } from "@/components/editor/overview-view"
 import { VoteButton } from "@/components/social/vote-button"
 import { ForkButton } from "@/components/social/fork-button"
 import { BookmarkButton } from "@/components/social/bookmark-button"
@@ -76,7 +75,7 @@ export function PublicProjectView({
   const firstTrail = firstReadableTrail(project.trails)
   const [selectedItem, setSelectedItem] = useState<PublicItem | undefined>(firstTrail?.items[0] ?? project.looseItems[0])
   const [activeTrailId, setActiveTrailId] = useState<string | undefined>(firstTrail?.id)
-  const [view, setView] = useState<'content' | 'overview' | 'graph'>('content')
+  const [view, setView] = useState<'content' | 'graph'>('content')
   const [commentCount, setCommentCount] = useState(project.commentCount)
 
   const { trails, items } = useMemo(() => toEditorShape(project), [project])
@@ -228,17 +227,6 @@ export function PublicProjectView({
               Map
             </Button>
           )}
-          {activeTrail && (
-            <Button
-              variant={view === 'overview' ? 'secondary' : 'ghost'}
-              size="lg"
-              onClick={() => setView((v) => (v === 'overview' ? 'content' : 'overview'))}
-              title="See the whole trail at a glance"
-            >
-              <Route className="h-[15px] w-[15px]" />
-              Overview
-            </Button>
-          )}
           {isLoggedIn ? (
             <>
               {!isOwnProject && <ReportButton projectId={project.id} isLoggedIn={isLoggedIn} />}
@@ -282,16 +270,6 @@ export function PublicProjectView({
               selectedItemId={selectedItem?.id}
               onSelectItem={handleSelectMappedItem}
               onClose={() => setView('content')}
-            />
-          ) : view === 'overview' ? (
-            <OverviewView
-              trails={trails}
-              activeTrailId={activeTrailId}
-              items={items}
-              selectedItemId={selectedItem?.id}
-              onSelectItem={handleSelectMappedItem}
-              onClose={() => setView('content')}
-              emptyState={emptyState}
             />
           ) : (
             <div ref={columnRef} className="flex min-w-0 flex-1 flex-col gap-3 overflow-auto">

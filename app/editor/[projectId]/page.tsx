@@ -14,7 +14,6 @@ import { EditorTitleSlot, EditorActions } from './components/EditorHeader';
 import { WriteView } from './components/WriteView';
 import { startExistingProject } from '@/lib/projects-store';
 import { TaskHint } from '@/components/editor/task-hint';
-import { OverviewView } from '@/components/editor/overview-view';
 import { GraphView } from '@/components/editor/graph-view';
 
 export default function EditorPage() {
@@ -88,9 +87,6 @@ export default function EditorPage() {
         actions={
           project.loaded && <EditorActions
             textStats={textStats}
-            hasActiveTrail={!!project.activeTrail}
-            overviewActive={project.view === 'overview'}
-            onToggleOverview={() => project.setView((v) => (v === 'overview' ? 'write' : 'overview'))}
             projectId={projectId}
             beforeExport={async () => {
               if (!await project.flushPendingContent()) throw new Error('Could not save note content. Wait for image uploads to finish or retry before exporting.');
@@ -141,18 +137,6 @@ export default function EditorPage() {
                 selectedItemId={project.selectedItemId}
                 onSelectItem={project.handleSelectItem}
                 onClose={() => project.setView('write')}
-              />
-            ) : project.view === 'overview' ? (
-              <OverviewView
-                trails={project.trails}
-                activeTrailId={project.activeTrailId}
-                items={project.items}
-                mapPreviews={project.mapPreviews}
-                selectedItemId={project.selectedItemId}
-                onSelectItem={project.handleSelectItem}
-                onSetDescription={project.handleSetTrailDescription}
-                onClose={() => project.setView('write')}
-                emptyState={emptyState}
               />
             ) : project.selectedItem ? (
               <WriteView
