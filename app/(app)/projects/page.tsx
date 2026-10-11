@@ -238,7 +238,7 @@ export default function ProjectsPage() {
             </p>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-4">
-              {sortedProjects.map((project) => (
+              {sortedProjects.map((project, index) => (
                 <Card
                   key={project.id}
                   className="group/card flex h-[300px] flex-col cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
@@ -247,6 +247,7 @@ export default function ProjectsPage() {
                   <CardContent className="mx-2 mt-2 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-sm p-0">
                     <ProjectThumbnail
                       thumbnailImageUrl={project.thumbnailImageUrl}
+                      loading={index < 3 ? "eager" : "lazy"}
                       title={project.title}
                       className="h-full w-full"
                       placeholder={<FolderKanban strokeWidth={1.5} className="h-9 w-9 text-muted-foreground" />}
@@ -332,7 +333,7 @@ export default function ProjectsPage() {
                 <div className="w-32 shrink-0">Edited</div>
                 <div className="w-8 shrink-0" />
               </div>
-              {sortedProjects.map((project) => (
+              {sortedProjects.map((project, index) => (
                 <div
                   key={project.id}
                   className="relative flex cursor-pointer items-center gap-4 px-4 py-3 transition-colors hover:bg-muted"
@@ -340,6 +341,7 @@ export default function ProjectsPage() {
                 >
                   <ProjectThumbnail
                     thumbnailImageUrl={project.thumbnailImageUrl}
+                    loading={index < 3 ? "eager" : "lazy"}
                     title={project.title}
                     className="h-12 w-12 shrink-0 rounded-md"
                     placeholder={<FolderKanban strokeWidth={1.5} className="h-5 w-5 text-muted-foreground" />}

@@ -57,8 +57,8 @@ export function ExploreFeed({
         </div>
       )}
       <div className="flex flex-col gap-3">
-        {items.map((project) => (
-          <ExploreCard key={project.id} project={project} loggedIn={loggedIn} username={username} />
+        {items.map((project, index) => (
+          <ExploreCard key={project.id} project={project} loggedIn={loggedIn} username={username} loading={index === 0 && !featuredId ? "eager" : "lazy"} />
         ))}
       </div>
 

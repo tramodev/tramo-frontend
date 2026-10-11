@@ -8,16 +8,18 @@ export function ProjectThumbnail({
   title,
   className = "",
   placeholder,
+  loading = "lazy",
 }: {
   thumbnailImageUrl: string | null;
   title: string;
   className?: string;
   placeholder?: React.ReactNode;
+  loading?: "eager" | "lazy";
 }) {
   if (thumbnailImageUrl) {
     return (
       <div className={`relative overflow-hidden ${className}`}>
-        <Image src={thumbnailImageUrl} alt="" fill sizes="(max-width: 768px) 100vw, 400px" className="object-cover object-top" />
+        <Image src={thumbnailImageUrl} alt="" fill loading={loading} sizes="(max-width: 768px) 100vw, 400px" className="object-cover object-top" />
       </div>
     )
   }

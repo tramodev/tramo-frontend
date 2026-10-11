@@ -184,6 +184,7 @@ export default async function ExplorePage({
           </div>
           <ProjectThumbnail
             thumbnailImageUrl={featured.thumbnailImageUrl}
+            loading="eager"
             title={featured.title}
             className="rounded-[20px] h-[250px] bg-accent"
             placeholder={

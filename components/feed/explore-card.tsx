@@ -23,11 +23,13 @@ export function ExploreCard({
   loggedIn,
   username,
   interactive = true,
+  loading,
 }: {
   project: ProjectFeedItem
   loggedIn: boolean
   username: string | null
   interactive?: boolean
+  loading?: "eager" | "lazy"
 }) {
   return (
     <div className="relative flex flex-col sm:flex-row sm:justify-between gap-5 rounded-lg border border-border bg-popover p-6 transition-shadow hover:shadow-elevation-1">
@@ -150,6 +152,7 @@ export function ExploreCard({
       <div className="flex items-center gap-4 sm:shrink-0 sm:self-center">
         <ProjectThumbnail
           thumbnailImageUrl={project.thumbnailImageUrl}
+          loading={loading}
           title={project.title}
           className="rounded-lg w-full h-[180px] sm:w-[156px] sm:h-[128px] bg-surface-container-high"
         />
