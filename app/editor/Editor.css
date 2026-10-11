@@ -11,6 +11,14 @@
   border-radius: 20;
  }
 
+.project-sidebar [data-active="true"] {
+  background-color: color-mix(in srgb, var(--primary) 15%, var(--sidebar));
+  color: var(--foreground);
+  font-weight: 600;
+  outline: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  outline-offset: -1px;
+}
+
 .editor-container {
   margin: 0;
   max-width: none;

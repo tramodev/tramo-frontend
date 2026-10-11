@@ -308,7 +308,7 @@ export function SidebarCustom({
       collapsible="icon"
       className="border-r"
     >
-      <SidebarContent className="gap-0.5">
+      <SidebarContent className="project-sidebar gap-0.5">
         {state !== "collapsed" && (
           <div className="flex items-center gap-2 px-2.5 pt-4">
             <Link href={homeHref} title="Back to projects" className="shrink-0">
@@ -366,7 +366,6 @@ export function SidebarCustom({
                         onSelectItem(item);
                         setQuery("");
                       }}
-                      className={selectedItemId === item.id ? "bg-secondary text-secondary-foreground" : undefined}
                     >
                       <span
                         className={
@@ -580,11 +579,6 @@ export function SidebarCustom({
                                             <SidebarMenuSubButton
                                               isActive={selectedItemId === item.id && activeTrailId === trail.id}
                                               onClick={() => onSelectItem(item, trail.id)}
-                                              className={
-                                                selectedItemId === item.id && activeTrailId === trail.id
-                                                  ? "bg-secondary text-secondary-foreground"
-                                                  : undefined
-                                              }
                                             >
                                               <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
                                                 {index + 1}
@@ -722,7 +716,6 @@ export function SidebarCustom({
                               <SidebarMenuButton
                                 isActive={isActive}
                                 onClick={() => onSelectItem(item)}
-                                className={isActive ? "bg-secondary text-secondary-foreground" : undefined}
                               >
                                 <span
                                   className={

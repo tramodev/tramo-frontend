@@ -50,7 +50,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
 
   return (
     <Sidebar variant="sidebar" collapsible="icon" className="border-r">
-      <SidebarContent className="gap-0.5">
+      <SidebarContent className="project-sidebar gap-0.5">
         {state !== "collapsed" && <>
           <div className="flex items-center gap-2 px-2.5 pt-4">
             <Link href={homeHref} title="Back to projects" className="shrink-0"><Mark size={26} /></Link>
@@ -71,7 +71,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                 </SidebarMenuItem>)}
                 {resultItems.length > 0 && <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Notes</p>}
                 {resultItems.map(item => <SidebarMenuItem key={`result-item-${item.id}`}>
-                  <SidebarMenuButton isActive={selectedItemId === item.id} className={selectedItemId === item.id ? "bg-secondary text-secondary-foreground" : undefined} onClick={() => selectItem(item)}>
+                  <SidebarMenuButton isActive={selectedItemId === item.id} onClick={() => selectItem(item)}>
                     <span className={selectedItemId === item.id ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary" : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"} />
                     <span className="truncate">{item.title}</span>
                   </SidebarMenuButton>
@@ -104,7 +104,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                               {trail.items.map((item, index) => {
                                 const isActive = selectedItemId === item.id && activeTrailId === trail.id;
                                 return <SidebarMenuSubItem key={item.id} className="border-t-2 border-transparent">
-                                  <SidebarMenuSubButton asChild isActive={isActive} className={isActive ? "bg-secondary text-secondary-foreground" : undefined}>
+                                  <SidebarMenuSubButton asChild isActive={isActive}>
                                     <button type="button" onClick={() => selectItem(item, trail.id)}>
                                       <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{index + 1}</span>
                                       <span className="truncate">{item.title}</span>
@@ -135,7 +135,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                       {looseItems.map(item => {
                         const isActive = selectedItemId === item.id && !activeTrailId;
                         return <SidebarMenuItem key={item.id}>
-                          <SidebarMenuButton isActive={isActive} className={isActive ? "bg-secondary text-secondary-foreground" : undefined} onClick={() => selectItem(item)}>
+                          <SidebarMenuButton isActive={isActive} onClick={() => selectItem(item)}>
                             <span className={isActive ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary" : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"} />
                             <span className="truncate">{item.title}</span>
                           </SidebarMenuButton>
