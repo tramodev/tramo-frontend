@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Waypoints, Copy, Share2, Check, Bold, Italic, Link2, List, Undo2 } from 'lucide-react';
+import { Waypoints, Copy, Share2, Check, Bold, Italic, Underline, Strikethrough, Highlighter, Code, AlignLeft, Link2, Type, Undo2, Redo2, Plus, Search } from 'lucide-react';
 import { FadeUp } from '@/components/landing/landing-motion';
 
 function WriteMockup() {
@@ -10,8 +10,8 @@ function WriteMockup() {
       <span className="flex shrink-0 items-center gap-1 text-primary"><Check className="h-3 w-3" />Saved</span>
     </div>
     <div className="p-3"><div className="overflow-hidden bg-background">
-      <div className="mx-auto flex w-fit justify-center gap-4 rounded-full bg-muted px-4 py-2.5 text-muted-foreground">
-        {[Undo2, Bold, Italic, Link2, List].map((Icon, i) => <Icon key={i} className="h-3.5 w-3.5" />)}
+      <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2.5 rounded-[24px] bg-muted px-4 py-2.5 text-muted-foreground">
+        {[Undo2, Redo2, Type, AlignLeft, Bold, Italic, Underline, Strikethrough, Highlighter, Code, Link2, Plus, Search].map((Icon, i) => <Icon key={i} className="h-3.5 w-3.5 shrink-0" />)}
       </div>
       <div className="px-5 py-6">
         <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Step 1</p>
