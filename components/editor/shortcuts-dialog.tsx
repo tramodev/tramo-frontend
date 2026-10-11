@@ -18,7 +18,8 @@ const GROUPS: { title: string; shortcuts: [string, string][] }[] = [
     title: "Navigate",
     shortcuts: [
       ["⌘P", "Find a note in this project"],
-      ["↑ / ↓ at start or end", "Previous / next note"],
+      ["↑ / ↓ on first / last line", "Move between content and note titles"],
+      ["↑ / ↓ in a title", "Previous note / note content"],
       ["⌘⌥↑ / ⌘⌥↓", "Previous / next note in the trail"],
       ["⌘⌥→", "Next trail from its last note"],
       ["⌘/", "Keyboard shortcuts"],

@@ -87,10 +87,49 @@ function focusEditor(editor: LexicalEditor, edge: 'start' | 'end' = 'start') {
   }, { discrete: true });
 }
 
+function focusTitle(editor: LexicalEditor) {
+  const title = editor.getRootElement()?.closest('.trail-item-editor')?.querySelector<HTMLInputElement>('[data-note-title]');
+  if (!title) return;
+  title.focus({ preventScroll: true });
+  title.setSelectionRange(0, 0);
+  title.scrollIntoView({ block: 'nearest' });
+}
+
+function isOnBoundaryLine(editor: LexicalEditor, direction: -1 | 1): boolean | null {
+  const root = editor.getRootElement();
+  const selection = window.getSelection();
+  if (!root || !selection?.isCollapsed || !selection.rangeCount || !root.contains(selection.anchorNode)) return null;
+  const caret = selection.getRangeAt(0).cloneRange();
+  let rect = caret.getBoundingClientRect();
+  if (!rect.height && caret.startContainer.nodeType === Node.TEXT_NODE) {
+    const length = caret.startContainer.textContent?.length ?? 0;
+    const offset = caret.startOffset;
+    if (offset < length) caret.setEnd(caret.startContainer, offset + 1);
+    else if (offset > 0) caret.setStart(caret.startContainer, offset - 1);
+    rect = caret.getBoundingClientRect();
+  }
+  if (!rect.height) {
+    const container = caret.startContainer;
+    const element = container.nodeType === Node.ELEMENT_NODE ? container as Element : container.parentElement;
+    if (!element || element === root || element.textContent) return null;
+    rect = element.getBoundingClientRect();
+  }
+  if (!rect.height) return null;
+  const contents = document.createRange();
+  const block = direction === -1 ? root.firstElementChild : root.lastElementChild;
+  if (!block) return null;
+  contents.selectNodeContents(block);
+  const lines = Array.from(contents.getClientRects()).filter(line => line.height > 0);
+  if (!lines.length) return null;
+  return lines.every(line => direction === -1
+    ? rect.top - line.top < rect.height / 2
+    : line.bottom - rect.bottom < rect.height / 2);
+}
+
 function ItemNavigationPlugin({ itemId, register, move }: {
   itemId: string;
   register: (itemId: string, editor: LexicalEditor | null) => void;
-  move: (itemId: string, direction: -1 | 1) => boolean;
+  move: (itemId: string, direction: -1 | 1, title?: boolean) => boolean;
 }) {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
@@ -102,16 +141,20 @@ function ItemNavigationPlugin({ itemId, register, move }: {
       if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.isComposing || editor.isComposing()) return false;
       const target = event.target as HTMLElement | null;
       if (target?.closest('table, pre, [role="dialog"], [role="menu"], [data-lexical-decorator="true"]')) return false;
-      if (document.querySelector('.item-mention-menu, [role="dialog"], [role="menu"]')) return false;
+      if (document.querySelector('.item-mention-menu, [role="dialog"], [role="menu"], [role="listbox"]')) return false;
       const selection = $getSelection();
       if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
       const root = $getRoot();
       const boundary = direction === -1 ? root.getFirstDescendant() : root.getLastDescendant();
       const node = selection.anchor.getNode();
-      if (['table', 'code', 'image', 'equation', 'music'].includes(node.getTopLevelElement()?.getType() ?? '')) return false;
+      const block = node.getTopLevelElement();
+      if (!block || ['table', 'code', 'image', 'equation', 'music'].includes(block.getType())) return false;
+      if (!block.is(direction === -1 ? root.getFirstChild() : root.getLastChild())) return false;
       const offset = direction === -1 ? 0 : node.getTextContentSize();
       const atBoundary = root.getTextContentSize() === 0 || (boundary?.is(node) && selection.anchor.offset === offset);
-      if (!atBoundary || !move(itemId, direction)) return false;
+      if (!(isOnBoundaryLine(editor, direction) ?? atBoundary)) return false;
+      if (direction === -1) requestAnimationFrame(() => focusTitle(editor));
+      else if (!move(itemId, direction, true)) return false;
       event.preventDefault();
       return true;
     };
@@ -130,7 +173,7 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
   toolbar: HTMLDivElement | null;
   onFocus: (itemId: string) => void;
   register: (itemId: string, editor: LexicalEditor | null) => void;
-  move: (itemId: string, direction: -1 | 1) => boolean;
+  move: (itemId: string, direction: -1 | 1, title?: boolean) => boolean;
 }) {
   const [titleFocused, setTitleFocused] = useState(false);
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
@@ -139,7 +182,7 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
   return (
     <LexicalComposer initialConfig={{ ...editorConfig, editorState: initialContent || undefined }}>
       <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor}>
-        <ItemTitle item={item} onCommitTitle={props.onCommitTitle} onFocus={() => {
+        <ItemTitle item={item} move={move} onCommitTitle={props.onCommitTitle} onFocus={() => {
           setTitleFocused(true);
           onFocus(item.id);
         }} />
@@ -195,10 +238,11 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
   );
 }
 
-function ItemTitle({ item, onCommitTitle, onFocus }: {
+function ItemTitle({ item, onCommitTitle, onFocus, move }: {
   item: Item;
   onCommitTitle: WriteViewProps['onCommitTitle'];
   onFocus: () => void;
+  move: (itemId: string, direction: -1 | 1) => boolean;
 }) {
   const [editor] = useLexicalComposerContext();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -207,9 +251,21 @@ function ItemTitle({ item, onCommitTitle, onFocus }: {
     if (input && input !== document.activeElement) input.value = item.title;
   }, [item.title]);
   return <div className="pl-7 pt-2">
-    <input ref={inputRef} defaultValue={item.title} aria-label="Note title" onFocus={onFocus}
+    <input ref={inputRef} data-note-title defaultValue={item.title} aria-label="Note title" onFocus={onFocus}
       onBlur={(event) => onCommitTitle(item.id, item.title, event.target.value)}
       onKeyDown={(event) => {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.nativeEvent.isComposing || editor.isComposing()) return;
+          if (event.currentTarget.selectionStart !== event.currentTarget.selectionEnd) return;
+          if (document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+          if (event.key === 'ArrowUp') {
+            if (move(item.id, -1)) event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          requestAnimationFrame(() => focusEditor(editor));
+          return;
+        }
         if (event.key !== 'Enter' || event.metaKey || event.ctrlKey || event.nativeEvent.isComposing) return;
         event.preventDefault();
         event.currentTarget.blur();
@@ -254,13 +310,14 @@ export function WriteView(props: WriteViewProps) {
     if (editor) editors.current.set(id, editor);
     else editors.current.delete(id);
   }, []);
-  const move = useCallback((id: string, direction: -1 | 1) => {
+  const move = useCallback((id: string, direction: -1 | 1, title = false) => {
     const next = ids[ids.indexOf(id) + direction];
     const editor = next && editors.current.get(next);
     if (!editor) return false;
     requestAnimationFrame(() => {
       slotRefs.current.get(next)?.scrollIntoView({ block: 'nearest' });
-      focusEditor(editor, direction === -1 ? 'end' : 'start');
+      if (title) focusTitle(editor);
+      else focusEditor(editor, direction === -1 ? 'end' : 'start');
     });
     return true;
   }, [ids]);
