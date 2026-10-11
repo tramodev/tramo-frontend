@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Trail, Item, TitleAlign } from '../../types';
 import { countTextStats, lastItemStorageKey } from '../../editor-utils';
 import {
-  getEditorBootstrap,
   getMapPreviews,
   setProjectGraphColors,
   renameProject,
@@ -25,6 +24,7 @@ import {
   type MapPreviews,
 } from '@/lib/projects-store';
 import { resolveItemTrail } from '../../trail-navigation';
+import { getEditorBootstrap } from '@/lib/editor-bootstrap-client';
 import { acceptLoadedContents, getItemContent, getTrailContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
 import { useAutoSave } from './useAutoSave';

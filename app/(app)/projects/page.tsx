@@ -59,6 +59,8 @@ export default function ProjectsPage() {
   const [createError, setCreateError] = useState("")
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState("")
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
@@ -66,11 +68,16 @@ export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
 
   useEffect(() => {
+    let cancelled = false
     listProjects().then((loaded) => {
-      setProjects(loaded)
-      setLoading(false)
+      if (!cancelled) setProjects(loaded)
+    }).catch(() => {
+      if (!cancelled) setLoadError("Could not load your projects. Please try again.")
+    }).finally(() => {
+      if (!cancelled) setLoading(false)
     })
-  }, [])
+    return () => { cancelled = true }
+  }, [loadAttempt])
 
   const sortedProjects = useMemo(() => {
     const copy = [...projects]
@@ -216,6 +223,15 @@ export default function ProjectsPage() {
             <p className="text-sm text-muted-foreground">
               Loading...
             </p>
+          ) : loadError ? (
+            <div role="alert" className="flex items-center gap-3 text-sm text-destructive">
+              {loadError}
+              <Button variant="outline" size="sm" onClick={() => {
+                setLoadError("")
+                setLoading(true)
+                setLoadAttempt(attempt => attempt + 1)
+              }}>Retry</Button>
+            </div>
           ) : sortedProjects.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No projects yet. Start writing or try an example.

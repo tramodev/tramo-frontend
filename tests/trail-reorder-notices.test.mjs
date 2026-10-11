@@ -71,8 +71,10 @@ async function setup() {
         useEffect: fn => { if (initial) effects.push(fn); },
       },
       'next/navigation': { useRouter: () => router },
-      '@/lib/projects-store': {
+      '@/lib/editor-bootstrap-client': {
         getEditorBootstrap: async () => { bootstraps++; return { project: { title: 'Project', visibility: 'private', description: '', graphColors: null, tags: '', items, trails: [trail] }, contents: [], profile: { username: 'owner', imageUrl: null }, selectedItemId: 'a', selectedTrailId: 'trail' }; },
+      },
+      '@/lib/projects-store': {
         getMapPreviews: async () => { previews++; return {}; },
         reorderTrailItems: () => { requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
         createItem: () => { creates++; return new Promise((resolve, reject) => { createResolve = resolve; createReject = reject; }); },
