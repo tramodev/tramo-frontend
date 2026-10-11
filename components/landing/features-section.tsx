@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Waypoints, Copy, Share2, Check, Bold, Italic, Underline, Strikethrough, Highlighter, Code, AlignLeft, Link2, Type, Undo2, Redo2, Plus, Search } from 'lucide-react';
+import { Waypoints, Copy, Share2, Check, Bold, Italic, Underline, Strikethrough, Highlighter, Code, AlignLeft, Link2, Type, Undo2, Redo2, Plus, Search, ArrowRight } from 'lucide-react';
 import { FadeUp } from '@/components/landing/landing-motion';
 
 function WriteMockup() {
@@ -56,16 +56,17 @@ function ReuseMockup() {
 }
 
 function ReadingMockup() {
-  return <div className="w-full rounded-[18px] border border-border bg-popover p-5 shadow-elevation-2">
+  return <div className="w-full rounded-[18px] border border-border bg-background p-5 shadow-elevation-2">
     <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground"><Share2 className="h-3 w-3" />Published snapshot</div>
     <p className="font-display text-2xl font-medium leading-tight">Memex and Vannevar Bush</p>
-    <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">Explore a personal knowledge library and the trails that connect its ideas.</p>
-    <div className="mt-4 rounded-xl border border-primary bg-background p-3">
-      <p className="text-sm font-medium">Bush’s vision</p><p className="mt-1 text-xs text-muted-foreground">Vannevar Bush, his essay and the Memex · 3 notes</p>
+    <p className="mt-3 border-b border-border pb-4 text-[13px] leading-relaxed text-muted-foreground">Explore a personal knowledge library and the trails that connect its ideas.</p>
+    <div className="mt-4 flex flex-wrap items-baseline gap-2">
+      <p className="text-sm font-medium">Bush’s vision</p><span className="text-xs text-muted-foreground">· 3 notes</span>
     </div>
-    <div className="mt-2 rounded-xl border border-border bg-background p-3">
-      <p className="text-sm font-medium">Thinking in trails</p><p className="mt-1 text-xs text-muted-foreground">Connections, reuse and sharing · 3 notes</p>
-    </div>
+    <p className="mt-5 text-[10px] uppercase tracking-widest text-muted-foreground">Step 3</p>
+    <p className="mt-2 font-display text-2xl font-medium">Memex</p>
+    <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">Bush imagined a personal library where ideas could be connected into trails and revisited later.</p>
+    <div className="mt-6 flex justify-end"><span className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs">Next trail: Thinking in trails<ArrowRight className="h-3.5 w-3.5 shrink-0" /></span></div>
   </div>;
 }
 
@@ -73,7 +74,7 @@ const STEPS = [
   { Mockup: WriteMockup, color: '--ed-blue', label: 'Write notes', title: 'Start with one idea', description: 'Open a project and start writing. Add a title, more notes and structure when they help.' },
   { Mockup: ConnectionsMockup, color: '--ed-orange', label: 'Connect them', title: 'Explain how ideas relate', description: 'Connect notes when a relationship adds context. Choose a destination and add an optional explanation.' },
   { Mockup: ReuseMockup, color: '--ed-purple', label: 'Reuse them', title: 'One note, more than one trail', description: 'A trail is an ordered sequence of notes. Use the same note in different trails, in a different reading order.' },
-  { Mockup: ReadingMockup, color: '--ed-green', label: 'Share an explanation', title: 'Give readers a place to begin', description: 'Describe your project and publish a readable snapshot. Share its link, then keep working privately until you publish an update.' },
+  { Mockup: ReadingMockup, color: '--ed-green', label: 'Share your thinking', title: 'Let readers follow your thinking', description: 'Publish a snapshot readers can follow, note by note. Share the link and keep working privately until your next update.' },
 ];
 
 export function FeaturesSection() {
