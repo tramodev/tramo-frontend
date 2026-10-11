@@ -17,7 +17,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   `connect-src 'self' https://accounts.google.com ${privateOrigin} https://*.r2.cloudflarestorage.com`,
-  "frame-src https://accounts.google.com https://www.google.com",
+  "frame-src https://accounts.google.com https://www.google.com https://www.youtube-nocookie.com https://platform.twitter.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -20,7 +20,7 @@ export function captureSelection(editor: LexicalEditor): { capture?: CapturedSel
     for (const node of selection.getNodes()) {
       let current = node;
       while (current) {
-        if (!supported.has(current.getType())) return { reason: 'Select text, paragraphs, headings, quotes or lists. Tables, code, images, equations and music cannot be extracted yet.' };
+        if (!supported.has(current.getType())) return { reason: 'Select text, paragraphs, headings, quotes or lists. Tables, code, images, equations, music and embeds cannot be extracted yet.' };
         const parent = current.getParent();
         if (!parent) break;
         current = parent;

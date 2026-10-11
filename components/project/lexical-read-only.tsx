@@ -19,6 +19,7 @@ import ExampleTheme from "@/app/editor/ExampleTheme"
 import { ImageNode } from "@/app/editor/nodes/ImageNode"
 import { EquationNode } from "@/app/editor/nodes/EquationNode"
 import { MusicNode } from "@/app/editor/nodes/MusicNode"
+import { EmbedNode } from "@/app/editor/nodes/EmbedNode"
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table"
 import ItemLinkClickPlugin from "@/app/editor/plugins/ItemLinkClickPlugin"
 import CodeHighlightPlugin from "@/app/editor/plugins/CodeHighlightPlugin"
@@ -38,6 +39,7 @@ const nodes = [
   ImageNode,
   EquationNode,
   MusicNode,
+  EmbedNode,
   TableNode,
   TableRowNode,
   TableCellNode,

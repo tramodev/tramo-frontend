@@ -859,6 +859,33 @@ div.editor-equation {
   position: relative;
 }
 
+.editor-embed {
+  margin: 20px 0;
+  padding: 8px;
+}
+
+.editor-embed-selected {
+  outline: 2px solid var(--primary);
+}
+
+.editor-embed iframe {
+  display: block;
+  width: 100%;
+  margin: 0 auto 8px;
+  border: 0;
+}
+
+.editor-embed-video {
+  max-width: 640px;
+  aspect-ratio: 16 / 9;
+}
+
+.editor-embed-tweet {
+  max-width: 550px;
+  /* shortcut: tweet height is fixed; use provider resize messages when variable-height embeds are needed. */
+  height: 560px;
+}
+
 .editor-paragraph:last-child {
   margin-bottom: 0;
 }

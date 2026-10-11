@@ -83,6 +83,7 @@ import {
   Radical,
   Music,
   Table as TableIcon,
+  Video,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -100,6 +101,7 @@ import { OPEN_LINK_EDITOR_COMMAND } from './FloatingLinkEditorPlugin';
 import { OPEN_FIND_REPLACE_COMMAND } from './FindReplacePlugin';
 import { INSERT_EQUATION_COMMAND } from './EquationsPlugin';
 import { INSERT_MUSIC_COMMAND } from './MusicPlugin';
+import { OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/plugins/EmbedsPlugin';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
 import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
 
@@ -740,6 +742,13 @@ export default function ToolbarPlugin({
           >
             <Music className="h-4 w-4" />
             Music score
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={blockType === 'code'}
+            onSelect={() => editor.dispatchCommand(OPEN_EMBED_DIALOG_COMMAND, undefined)}
+          >
+            <Video className="h-4 w-4" />
+            Tweet or YouTube video
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code'}

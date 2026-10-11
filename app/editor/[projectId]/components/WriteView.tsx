@@ -28,6 +28,7 @@ import { EditorImagesProvider } from '@/components/editor/editor-images-provider
 import ImagesPlugin from '../../plugins/ImagesPlugin';
 import EquationsPlugin from '../../plugins/EquationsPlugin';
 import MusicPlugin from '../../plugins/MusicPlugin';
+import EmbedsPlugin from '@/app/editor/plugins/EmbedsPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { CodeBlockGuardPlugin } from '../../plugins/CodeBlockGuardPlugin';
 import ListTabPlugin from '../../plugins/ListTabPlugin';
@@ -148,7 +149,7 @@ function ItemNavigationPlugin({ itemId, register, move }: {
       const boundary = direction === -1 ? root.getFirstDescendant() : root.getLastDescendant();
       const node = selection.anchor.getNode();
       const block = node.getTopLevelElement();
-      if (!block || ['table', 'code', 'image', 'equation', 'music'].includes(block.getType())) return false;
+      if (!block || ['table', 'code', 'image', 'equation', 'music', 'embed'].includes(block.getType())) return false;
       if (!block.is(direction === -1 ? root.getFirstChild() : root.getLastChild())) return false;
       const offset = direction === -1 ? 0 : node.getTextContentSize();
       const atBoundary = root.getTextContentSize() === 0 || (boundary?.is(node) && selection.anchor.offset === offset);
@@ -206,6 +207,7 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
         <ImagesPlugin projectId={props.projectId} />
         <EquationsPlugin />
         <MusicPlugin />
+        <EmbedsPlugin />
         <TablePlugin hasHorizontalScroll />
         <CodeBlockGuardPlugin />
         <PastePlugin />

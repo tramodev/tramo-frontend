@@ -36,10 +36,12 @@ import {
   Sigma,
   SquareCode,
   Type,
+  Video,
 } from 'lucide-react';
 import { insertImageWithUpload } from './ImagesPlugin';
 import { INSERT_EQUATION_COMMAND } from './EquationsPlugin';
 import { INSERT_MUSIC_COMMAND } from './MusicPlugin';
+import { OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/plugins/EmbedsPlugin';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
 
 class SlashOption extends MenuOption {
@@ -114,6 +116,9 @@ export default function SlashMenuPlugin({ projectId }: { projectId?: string } = 
       ),
       new SlashOption('Music', Music, 'music score sheet abc notation partitura', (e) =>
         e.dispatchCommand(INSERT_MUSIC_COMMAND, undefined),
+      ),
+      new SlashOption('Embed', Video, 'embed tweet twitter x youtube video', (e) =>
+        e.dispatchCommand(OPEN_EMBED_DIALOG_COMMAND, undefined),
       ),
       new SlashOption('Table', TableIcon, 'table grid rows columns tabla', (e) =>
         e.dispatchCommand(INSERT_TABLE_COMMAND, {
