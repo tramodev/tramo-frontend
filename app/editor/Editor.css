@@ -74,7 +74,8 @@
   color: var(--muted-foreground);
   cursor: grab;
   opacity: 0;
-  will-change: transform;
+  will-change: transform, opacity;
+  transition: transform 140ms ease-in-out, opacity 160ms ease-in-out;
 }
 
 .draggable-block-menu:hover {
@@ -194,17 +195,46 @@ a[rel^="mypath-idea:"] {
   box-shadow: var(--shadow-elevation-2);
 }
 
+.item-mention-menu,
+[data-item-connection-popover] {
+  transform-origin: top left;
+  animation: editor-menu-in 150ms ease-out;
+}
+
+@keyframes editor-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .item-mention-menu-item {
   padding: 6px 10px;
   border-radius: 4px;
   font-size: 13px;
   color: var(--foreground);
   cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
 }
 
 .item-mention-menu-item.selected {
   background: var(--secondary);
   color: var(--secondary-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draggable-block-menu,
+  .item-mention-menu-item {
+    transition: none;
+  }
+  .item-mention-menu,
+  [data-item-connection-popover] {
+    animation: none;
+  }
 }
 
 .slash-menu-item {
