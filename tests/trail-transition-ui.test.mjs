@@ -11,9 +11,10 @@ const jsx = (type, props) => ({ type, props });
 runInNewContext(source('app/editor/[projectId]/components/WriteView.tsx'), {
   exports,
   require: name => ({
-    react: { useState: value => [value, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useCallback: fn => fn, useEffect: () => {} },
+    react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useCallback: fn => fn, useEffect: () => {} },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
+    '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(['a']), selectionIds: new Set(), heights: new Map() }) },
     '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
     '@/components/editor/trail-connector': { TrailConnector: 'TrailConnector' },
     '@/components/editor/editor-images-provider': { EditorImagesProvider: 'EditorImagesProvider' },

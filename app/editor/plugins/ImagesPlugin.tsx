@@ -120,7 +120,7 @@ async function insertImageFiles(
   );
 }
 
-export default function ImagesPlugin({ projectId }: { projectId?: string }): null {
+export default function ImagesPlugin({ projectId, previewUrls }: { projectId?: string; previewUrls?: Set<string> }): null {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -128,9 +128,10 @@ export default function ImagesPlugin({ projectId }: { projectId?: string }): nul
       throw new Error('ImagesPlugin: ImageNode not registered on editor');
     }
 
+    if (previewUrls) previews.set(editor, previewUrls);
     return mergeRegister(
       () => {
-        previews.get(editor)?.forEach(url => URL.revokeObjectURL(url));
+        if (!previewUrls) previews.get(editor)?.forEach(url => URL.revokeObjectURL(url));
         previews.delete(editor);
       },
       editor.registerCommand<InsertImagePayload>(
@@ -183,7 +184,7 @@ export default function ImagesPlugin({ projectId }: { projectId?: string }): nul
         COMMAND_PRIORITY_HIGH,
       ),
     );
-  }, [editor, projectId]);
+  }, [editor, projectId, previewUrls]);
 
   return null;
 }

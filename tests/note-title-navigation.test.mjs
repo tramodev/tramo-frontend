@@ -8,7 +8,7 @@ const require = createRequire(import.meta.url);
 const lexical = require('lexical');
 const code = require('@lexical/code');
 const source = readFileSync('app/editor/[projectId]/components/WriteView.tsx', 'utf8')
-  + '\nexport { ItemNavigationPlugin, ItemTitle, isOnBoundaryLine, focusTitle };';
+  + '\nexport { ItemNavigationPlugin, ItemTitle, ItemEditorContent, isOnBoundaryLine, focusTitle };';
 
 function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, codeBlock = false, emptyListbox = false } = {}) {
   const frames = [], moves = [], saves = [], focused = [];
@@ -42,9 +42,10 @@ function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, c
     window: { getSelection: () => ({ isCollapsed: true, rangeCount: 1, anchorNode: {}, getRangeAt: () => range }) },
     document: { querySelector: selector => menu || emptyListbox && selector.includes('[role="listbox"]') && !selector.includes('[role="listbox"]:not(:empty)') ? {} : null, createRange: () => ({ selectNodeContents() {}, getClientRects: () => lines.map(rect) }) },
     require: name => {
-      if (name === 'react') return { useEffect: fn => fn(), useRef: value => ({ current: value }) };
+      if (name === 'react') return { useEffect: fn => fn(), useRef: value => ({ current: value }), useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === '@lexical/react/LexicalComposerContext') return { useLexicalComposerContext: () => [editor] };
+      if (name === '@/app/editor/item-editor-session') return { restoreItemHistory: () => ({ current: null, undoStack: [], redoStack: [] }) };
       if (name === 'lexical' || name === '@lexical/utils') return require(name);
       return {};
     },
@@ -151,6 +152,19 @@ test('empty typeahead containers do not block note navigation', () => {
   const s = setup({ emptyListbox: true });
   expect(s.arrow(-1).handled).toBe(true);
   expect(s.titleArrow('ArrowDown')).toBe(true);
+});
+
+test('toolbar portal focus does not override the visible note selected by the scroll spy', () => {
+  const s = setup(), selected = [];
+  const node = s.exports.ItemEditorContent({
+    item: { id: 'note', title: 'Note' }, props: { trails: [] }, session: { previewUrls: new Set() },
+    onFocus: id => selected.push(id), onPendingImages() {}, focused: false,
+  });
+  const currentTarget = { contains: target => target === 'note-input' };
+  node.props.onFocusCapture({ currentTarget, target: 'toolbar-button' });
+  expect(selected).toEqual([]);
+  node.props.onFocusCapture({ currentTarget, target: 'note-input' });
+  expect(selected).toEqual(['note']);
 });
 
 test('zero-height caret rectangles use adjacent text geometry', () => {

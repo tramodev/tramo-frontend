@@ -5,13 +5,13 @@ import { Plus } from 'lucide-react';
 import type { EditorState } from 'lexical';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $getSelection, $isRangeSelection, COMMAND_PRIORITY_HIGH, KEY_ARROW_UP_COMMAND, KEY_ARROW_DOWN_COMMAND, type LexicalEditor } from 'lexical';
+import { $getRoot, $getSelection, $isRangeSelection, $nodesOfType, COMMAND_PRIORITY_HIGH, KEY_ARROW_UP_COMMAND, KEY_ARROW_DOWN_COMMAND, type LexicalEditor } from 'lexical';
 import { mergeRegister } from '@lexical/utils';
 import { useScrollSpy } from '@/hooks/use-scroll-spy';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
-import { HistoryPlugin, createEmptyHistoryState } from '@lexical/react/LexicalHistoryPlugin';
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin';
@@ -45,6 +45,9 @@ import ExtractSelectionPlugin, { type ExtractionActions } from '../../plugins/Ex
 import WikiLinkPlugin from '../../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
+import { ImageNode } from '@/app/editor/nodes/ImageNode';
+import { restoreItemHistory, saveItemSession, type ItemEditorSession } from '@/app/editor/item-editor-session';
+import { useVirtualNotes } from '@/app/editor/[projectId]/hooks/useVirtualNotes';
 import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
 import { NextTrailButton } from '@/components/editor/next-trail-button';
@@ -168,7 +171,7 @@ function ItemNavigationPlugin({ itemId, register, move }: {
   return null;
 }
 
-function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: {
+interface ItemEditorProps {
   item: Item;
   props: WriteViewProps;
   focused: boolean;
@@ -176,14 +179,33 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
   onFocus: (itemId: string) => void;
   register: (itemId: string, editor: LexicalEditor | null) => void;
   move: (itemId: string, direction: -1 | 1, title?: boolean) => boolean;
-}) {
+  session: ItemEditorSession;
+  onPendingImages: (itemId: string, pending: boolean) => void;
+}
+
+function ItemEditor(props: ItemEditorProps) {
+  const [initialContent] = useState(() => props.session.state?.clone(null) ?? props.item.content);
+  return <LexicalComposer initialConfig={{ ...editorConfig, editorState: initialContent || undefined }}>
+    <ItemEditorContent {...props} />
+  </LexicalComposer>;
+}
+
+function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, move, session, onPendingImages }: ItemEditorProps) {
+  const [editor] = useLexicalComposerContext();
   const [titleFocused, setTitleFocused] = useState(false);
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
-  const [initialContent] = useState(item.content);
-  const [history] = useState(createEmptyHistoryState);
+  const [history] = useState(() => restoreItemHistory(session, editor));
+  useEffect(() => {
+    const unregister = editor.registerUpdateListener(({ editorState }) => {
+      session.state = editorState;
+      onPendingImages(item.id, editorState.read(() => $nodesOfType(ImageNode).some(node => !node.__imageId)));
+    });
+    return () => { unregister(); saveItemSession(session, editor, history); };
+  }, [editor, history, item.id, session, onPendingImages]);
   return (
-    <LexicalComposer initialConfig={{ ...editorConfig, editorState: initialContent || undefined }}>
-      <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor}>
+      <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor} onFocusCapture={event => {
+        if (event.currentTarget.contains(event.target)) onFocus(item.id);
+      }}>
         <ItemTitle item={item} move={move} onCommitTitle={props.onCommitTitle} onFocus={() => {
           setTitleFocused(true);
           onFocus(item.id);
@@ -205,7 +227,7 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
         <LinkPlugin />
         <ItemLinkClickPlugin items={props.items} onNavigate={(id) => { const target = props.items[id]; if (target) props.onSelectItem(target); }} />
         <ClickableLinkPlugin newTab />
-        <ImagesPlugin projectId={props.projectId} />
+        <ImagesPlugin projectId={props.projectId} previewUrls={session.previewUrls} />
         <EquationsPlugin />
         <MusicPlugin />
         <EmbedsPlugin />
@@ -237,7 +259,6 @@ function ItemEditor({ item, props, focused, toolbar, onFocus, register, move }: 
           {anchor && <DraggableBlockPlugin anchorElem={anchor} />}
         </>}
       </div>
-    </LexicalComposer>
   );
 }
 
@@ -292,6 +313,9 @@ export function WriteView(props: WriteViewProps) {
   const editorInnerRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef(new Map<string, HTMLElement>());
   const editors = useRef(new Map<string, LexicalEditor>());
+  const [sessions] = useState(() => new Map<string, ItemEditorSession>());
+  const [busyItems, setBusyItems] = useState<Set<string>>(() => new Set());
+  const [pendingMove, setPendingMove] = useState<{ itemId: string; direction: -1 | 1; title: boolean; context: string; sequence?: number } | null>(null);
   const handledRequest = useRef<number | null>(null);
   const inTrail = !!trail?.itemIds.includes(item.id);
   const nextTrail = inTrail && trail ? props.trails[props.trails.findIndex(candidate => candidate.id === trail.id) + 1] : undefined;
@@ -301,6 +325,18 @@ export function WriteView(props: WriteViewProps) {
   const contentReady = ids.every((id) => items[id]?.content != null);
   const context = inTrail ? `trail:${trail!.id}` : `item:${item.id}`;
   const revealed = contentReady && positionedContext === context;
+  const { visibleIds, selectionIds, heights } = useVirtualNotes(editorInnerRef, slotRefs, ids, contentReady);
+  const moveTarget = pendingMove?.context === context && pendingMove.sequence === navigationRequest?.sequence ? pendingMove : null;
+  useEffect(() => () => {
+    for (const session of sessions.values()) session.previewUrls.forEach(url => URL.revokeObjectURL(url));
+  }, [sessions]);
+  useEffect(() => {
+    for (const [id, session] of sessions) {
+      if (items[id]) continue;
+      session.previewUrls.forEach(url => URL.revokeObjectURL(url));
+      sessions.delete(id);
+    }
+  }, [items, sessions]);
   useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: revealed, onVisible: (id) => {
     if (!navigationRequest || handledRequest.current === navigationRequest.sequence) onVisibleItem(id);
   } });
@@ -309,21 +345,37 @@ export function WriteView(props: WriteViewProps) {
     setFocusedItemId(itemId);
     onVisibleItem(itemId);
   }, [onVisibleItem]);
+  const onPendingImages = useCallback((id: string, pending: boolean) => {
+    setBusyItems(previous => {
+      if (previous.has(id) === pending) return previous;
+      const next = new Set(previous);
+      if (pending) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
   const register = useCallback((id: string, editor: LexicalEditor | null) => {
     if (editor) editors.current.set(id, editor);
     else editors.current.delete(id);
   }, []);
   const move = useCallback((id: string, direction: -1 | 1, title = false) => {
     const next = ids[ids.indexOf(id) + direction];
-    const editor = next && editors.current.get(next);
-    if (!editor) return false;
-    requestAnimationFrame(() => {
-      slotRefs.current.get(next)?.scrollIntoView({ block: 'nearest' });
-      if (title) focusTitle(editor);
-      else focusEditor(editor, direction === -1 ? 'end' : 'start');
-    });
+    if (!next || items[next]?.content == null) return false;
+    setPendingMove({ itemId: next, direction, title, context, sequence: navigationRequest?.sequence });
     return true;
-  }, [ids]);
+  }, [ids, items, context, navigationRequest?.sequence]);
+  useEffect(() => {
+    if (!moveTarget) return;
+    const frame = requestAnimationFrame(() => {
+      const editor = editors.current.get(moveTarget.itemId);
+      if (!editor) return;
+      slotRefs.current.get(moveTarget.itemId)?.scrollIntoView({ block: 'nearest' });
+      if (moveTarget.title) focusTitle(editor);
+      else focusEditor(editor, moveTarget.direction === -1 ? 'end' : 'start');
+      setPendingMove(previous => previous === moveTarget ? null : previous);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [moveTarget, visibleIds]);
 
   useEffect(() => {
     const request = navigationRequest;
@@ -340,7 +392,7 @@ export function WriteView(props: WriteViewProps) {
       if (request?.focus) requestAnimationFrame(() => focusEditor(editor));
     });
     return () => cancelAnimationFrame(frame);
-  }, [navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id]);
+  }, [navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id, visibleIds]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -385,7 +437,14 @@ export function WriteView(props: WriteViewProps) {
             {steps.map((step, index) => {
               const stepItem = items[step.itemId];
               if (!stepItem) return null;
-              return <section key={step.itemId} aria-label={`Step ${index + 1}: ${stepItem.title}`}
+              const mounted = visibleIds.has(stepItem.id) || selectionIds.has(stepItem.id) || stepItem.id === item.id || stepItem.id === focusedId || stepItem.id === moveTarget?.itemId || busyItems.has(stepItem.id);
+              let session = sessions.get(stepItem.id);
+              if (!session) {
+                session = { undo: [], redo: [], previewUrls: new Set() };
+                sessions.set(stepItem.id, session);
+              }
+              return <section key={step.itemId} data-item-id={step.itemId} data-mounted={mounted} aria-label={`Step ${index + 1}: ${stepItem.title}`}
+                style={mounted ? undefined : { height: heights.get(stepItem.id) ?? 240, overflow: 'hidden' }}
                 ref={(element) => { if (element) slotRefs.current.set(step.itemId, element); else slotRefs.current.delete(step.itemId); }}>
                 {index > 0 && trail && <div className="trail-divider mt-4">
                   <TrailConnector />
@@ -393,8 +452,12 @@ export function WriteView(props: WriteViewProps) {
                 <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                   Step {index + 1}
                 </div>
-                {stepItem.content != null && <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
-                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} />}
+                {stepItem.content != null && (mounted ? <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
+                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} session={session} onPendingImages={onPendingImages} /> : <button type="button"
+                  aria-label={`Open note: ${stepItem.title}`} onClick={() => props.onSelectItem(stepItem, props.activeTrailId)}
+                  className="w-full pl-7 pt-2 text-left font-display text-[28px] font-medium" style={{ textAlign: stepItem.titleAlign }}>
+                  {stepItem.title}
+                </button>)}
                 {index === steps.length - 1 && nextTrail && <NextTrailButton trail={nextTrail} onSelectTrail={props.onSelectTrail}>
                   <kbd className="text-xs text-muted-foreground">⌘⌥→</kbd>
                 </NextTrailButton>}
