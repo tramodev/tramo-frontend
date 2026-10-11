@@ -31,6 +31,16 @@ export default function EditorPage() {
   useEffect(() => {
     localStorage.setItem(CONNECTIONS_OPEN_STORAGE_KEY, String(connectionsPanelOpen));
   }, [connectionsPanelOpen]);
+  useEffect(() => {
+    const blockSidebarShortcut = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'b') return;
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable || target?.closest?.('[contenteditable="true"], input, textarea')) return;
+      event.stopImmediatePropagation();
+    };
+    window.addEventListener('keydown', blockSidebarShortcut, true);
+    return () => window.removeEventListener('keydown', blockSidebarShortcut, true);
+  }, []);
 
   const project = useProjectEditorState(projectId, connectionsPanelOpen);
 
