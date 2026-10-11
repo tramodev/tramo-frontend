@@ -25,7 +25,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
   projectId: string; itemId: string; trail?: Trail; sharedCount: number; history: HistoryState; actions: ExtractionActions; onOpen: (result: ExtractionResult) => void;
 }) {
   const [editor] = useLexicalComposerContext();
-  const [available, setAvailable] = useState<{ local: boolean; reason?: string; top: number; left: number; above: boolean } | null>(null);
+  const [available, setAvailable] = useState<{ local: boolean; reason?: string; top: number; left: number; above: boolean; container: HTMLElement } | null>(null);
   const [capture, setCapture] = useState<CapturedSelection | null>(null);
   const [title, setTitle] = useState('');
   const [placement, setPlacement] = useState<'next' | 'last' | 'outside'>('outside');
@@ -45,12 +45,18 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
       if (opened.current || busy.current) return;
       const selection = window.getSelection();
       const root = editor.getRootElement();
-      if (!root || !selection || selection.isCollapsed || !selection.rangeCount
+      const container = root?.closest<HTMLElement>('.editor-inner');
+      if (!root || !container || !selection || selection.isCollapsed || !selection.rangeCount
           || !root.contains(selection.anchorNode) && !root.contains(selection.focusNode)) { setAvailable(null); return; }
       const range = selection.getRangeAt(0), rect = range.getBoundingClientRect();
+      const viewport = container.getBoundingClientRect();
+      if (rect.bottom <= viewport.top || rect.top >= viewport.bottom) { setAvailable(null); return; }
       const local = root.contains(selection.anchorNode) && root.contains(selection.focusNode);
-      const above = rect.top >= 44;
-      setAvailable({ local, reason: local ? undefined : 'Select content inside one note. Selections across notes cannot be extracted.', top: above ? rect.top - 8 : rect.bottom + 8, left: Math.max(8, Math.min(rect.left, window.innerWidth - 220)), above });
+      const above = rect.top >= viewport.top + 44;
+      setAvailable({ local, reason: local ? undefined : 'Select content inside one note. Selections across notes cannot be extracted.',
+        top: (above ? rect.top - 8 : rect.bottom + 8) - viewport.top + container.scrollTop,
+        left: Math.max(viewport.left + 8, Math.min(rect.left, viewport.right - 220)) - viewport.left + container.scrollLeft,
+        above, container });
     };
     const schedule = () => {
       cancelAnimationFrame(frame);
@@ -102,7 +108,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
     }
   };
   return <>
-    {available && !capture && createPortal(<div className={`fixed z-40 ${available.above ? '-translate-y-full' : ''}`} style={{ top: available.top, left: available.left }}>
+    {available && !capture && createPortal(<div className={`absolute z-10 ${available.above ? '-translate-y-full' : ''}`} style={{ top: available.top, left: available.left }}>
       <Button size="sm" variant="ghost" className="rounded-md border border-border bg-popover shadow-elevation-2" disabled={!available.local || !!available.reason} title={available.reason} onMouseDown={event => event.preventDefault()} onClick={() => {
         if (!available.local) return;
         const result = captureSelection(editor);
@@ -114,7 +120,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
           .catch(failure => { if (opened.current) setError(failure instanceof Error ? failure.message : 'Could not check note usage. Close and try again.'); });
       }}>Extract to new note</Button>
       {available.reason && <p role="status" className="mt-1 max-w-64 rounded-lg border border-border bg-popover px-2 py-1 text-xs text-muted-foreground">{available.reason}</p>}
-    </div>, document.body)}
+    </div>, available.container)}
     <Dialog open={!!capture} onOpenChange={open => { if (!open) close(); }}>
       <DialogContent showCloseButton={!pending} onEscapeKeyDown={event => { if (pending) event.preventDefault(); }} onInteractOutside={event => { if (pending) event.preventDefault(); }}>
         <DialogHeader><DialogTitle>Extract to new note</DialogTitle><DialogDescription>The selected content will move to a new note and be replaced here with a link. After extraction, Undo applies only to subsequent edits; it cannot undo note creation.</DialogDescription></DialogHeader>

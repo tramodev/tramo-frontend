@@ -7,12 +7,15 @@ function setup() {
   const states = [], refs = [], effects = [], requests = [], accepted = [], applied = [], history = [], saves = [];
   let si = 0, ri = 0, initialized = false, inspect, now = 0, timerId = 0, collapsed = false, captures = 0;
   let rect = { top: 80, bottom: 100, left: 100 };
+  let viewport = { top: 0, bottom: 600, left: 0, right: 1000 };
+  const portals = [];
+  const container = { scrollTop: 0, scrollLeft: 0, getBoundingClientRect: () => viewport };
   const timers = new Map();
   const advance = ms => { now += ms; for (const [id, timer] of timers) if (timer.at <= now) { timers.delete(id); timer.fn(); } };
   const original = { root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'original' }] }] } };
   let current = original, editable = true, failSave = false;
   const captured = { state: { toJSON: () => original }, content: JSON.stringify(original), selection: {} };
-  const root = { contains: () => true };
+  const root = { contains: () => true, closest: () => container };
   const editor = {
     getEditorState: () => ({ toJSON: () => current }), getRootElement: () => root,
     registerUpdateListener: () => () => {}, isEditable: () => editable, setEditable: value => { editable = value; },
@@ -24,7 +27,7 @@ function setup() {
     exports, Error, requestAnimationFrame: fn => { const id = ++timerId; timers.set(id, { fn, at: now + 16 }); return id; }, cancelAnimationFrame: id => timers.delete(id), crypto: { randomUUID: () => 'fixed-operation-id' },
     require: name => ({
       react: { useRef: value => refs[ri++] ?? (refs[ri - 1] = { current: value }), useState: value => { const index = si++; if (!(index in states)) states[index] = value; return [states[index], next => { states[index] = next; }]; }, useEffect: effect => { if (!initialized) effects.push(effect); } },
-      'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' }, 'react-dom': { createPortal: element => element },
+      'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' }, 'react-dom': { createPortal: (element, target) => { portals.push(target); return element; } },
       '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] }, lexical: { CLEAR_HISTORY_COMMAND: 'clear-history' },
       '@/components/ui/button': { Button: 'Button' }, '@/components/ui/input': { Input: 'Input' },
       '@/components/ui/dialog': Object.fromEntries(['Dialog', 'DialogContent', 'DialogDescription', 'DialogHeader', 'DialogTitle'].map(name => [name, name])),
@@ -41,7 +44,7 @@ function setup() {
   function button(label) { return render().find(node => node.type === 'Button' && node.props.children === label); }
   function open() { render(); inspect(); advance(16); button('Extract to new note').props.onClick(); render().find(node => node.type === 'Input').props.onChange({ target: { value: 'New note' } }); }
   const result = { item: { id: 'new', title: 'New note', content: 'extracted' }, sourceContent: JSON.stringify({ root: { children: [{ text: 'replacement' }] } }), extractionEpoch: 1, steps: [] };
-  return { render, button, open, advance, inspect: () => inspect(), setRect: next => { rect = next; }, collapse: () => { collapsed = true; }, captures: () => captures, result, requests, accepted, applied, history, saves, failSave: () => { failSave = true; }, change: () => { current = { root: { children: [{ text: 'later edit' }] } }; }, content: () => current, editable: () => editable };
+  return { render, button, open, advance, inspect: () => inspect(), setRect: next => { rect = next; }, setViewport: next => { viewport = next; }, container, portals, collapse: () => { collapsed = true; }, captures: () => captures, result, requests, accepted, applied, history, saves, failSave: () => { failSave = true; }, change: () => { current = { root: { children: [{ text: 'later edit' }] } }; }, content: () => current, editable: () => editable };
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
@@ -70,26 +73,43 @@ test('late response does not discard content changed after submission', async ()
 test('floats above the selection without debounce and stays anchored while extending down', () => {
   const s = setup(); s.render(); s.inspect();
   s.advance(16);
-  let floating = s.render().find(node => node.props.className?.includes('fixed z-40'));
+  let floating = s.render().find(node => node.props.className?.includes('absolute z-10'));
   expect(floating.props.style.top).toBe(72);
   expect(floating.props.className).toContain('-translate-y-full');
   expect(s.captures()).toBe(0);
   s.setRect({ top: 80, bottom: 200, left: 100 });
   s.inspect(); s.advance(16);
-  floating = s.render().find(node => node.props.className?.includes('fixed z-40'));
+  floating = s.render().find(node => node.props.className?.includes('absolute z-10'));
   expect(floating.props.style.top).toBe(72);
   s.setRect({ top: 60, bottom: 200, left: 100 });
   s.inspect(); s.advance(16);
-  floating = s.render().find(node => node.props.className?.includes('fixed z-40'));
+  floating = s.render().find(node => node.props.className?.includes('absolute z-10'));
   expect(floating.props.style.top).toBe(52);
   s.setRect({ top: 40, bottom: 200, left: 100 });
   s.inspect(); s.advance(16);
-  floating = s.render().find(node => node.props.className?.includes('fixed z-40'));
+  floating = s.render().find(node => node.props.className?.includes('absolute z-10'));
   expect(floating.props.style.top).toBe(208);
   expect(floating.props.className).not.toContain('-translate-y-full');
   s.collapse(); s.inspect(); s.advance(16);
   expect(s.button('Extract to new note')).toBeUndefined();
   expect(s.captures()).toBe(0);
+});
+
+test('floating action is local to the editor scroller and hides when the selection scrolls out', () => {
+  const s = setup(); s.render();
+  s.setViewport({ top: 64, bottom: 500, left: 100, right: 700 });
+  s.container.scrollTop = 200;
+  s.setRect({ top: 140, bottom: 180, left: 130 });
+  s.inspect(); s.advance(16);
+  const floating = s.render().find(node => node.props.className?.includes('absolute z-10'));
+  expect(floating.props.style).toEqual({ top: 268, left: 30 });
+  expect(s.portals.at(-1)).toBe(s.container);
+  s.setRect({ top: 510, bottom: 530, left: 130 });
+  s.inspect(); s.advance(16);
+  expect(s.button('Extract to new note')).toBeUndefined();
+  s.setRect({ top: 10, bottom: 30, left: 130 });
+  s.inspect(); s.advance(16);
+  expect(s.button('Extract to new note')).toBeUndefined();
 });
 
 test('offers next, last and outside in order and sends last placement with the trail snapshot', async () => {
