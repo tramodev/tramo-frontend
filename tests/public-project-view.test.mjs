@@ -75,6 +75,9 @@ test('public reader shares the editor column and connections panel without mutat
   const content = flatten(shell.props.content);
   expect(content.some(node => node.props.className === 'editor-inner')).toBe(true);
   expect(content.some(node => node.props.className === 'editor-content-column')).toBe(true);
+  const intro = content.find(node => node.props['aria-label'] === 'About this project');
+  expect(flatten(intro).some(node => node.type === 'button')).toBe(false);
+  expect(content.some(node => node.props['aria-label'] === 'Current trail')).toBe(false);
   const panel = content.find(node => node.type === 'ConnectionsPanel');
   expect(panel.props.readOnly).toBe(true);
   expect(panel.props.item.id).toBe('a');
@@ -107,11 +110,17 @@ test('the next-trail button appears after the last note and opens the following 
   });
   const note = id => ({ id, title: id.toUpperCase(), content: '', titleAlign: 'left' });
   const project = { id: 'project', title: 'Project', trails: [
-    { id: 'first', title: 'First', items: [note('a'), note('b')] },
+    { id: 'first', title: 'First', description: 'Begin here.', items: [note('a'), note('b')] },
     { id: 'second', title: 'Second', items: [note('c')] },
   ], looseItems: [] };
   let shell = render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
   const nodes = flatten(shell.props.content);
+  const intro = nodes.find(node => node.props['aria-label'] === 'About this project');
+  expect(flatten(intro).some(node => node.type === 'button')).toBe(false);
+  const heading = flatten(nodes.find(node => node.props['aria-label'] === 'Current trail'));
+  expect(heading.some(node => node.type === 'h2' && node.props.children === 'First')).toBe(true);
+  expect(heading.some(node => node.type === 'p' && node.props.children === 'Begin here.')).toBe(true);
+  expect(heading.find(node => node.type === 'span').props.children.join('')).toBe('· 2 notes');
   const buttons = nodes.filter(node => node.type === 'NextTrailButton');
   expect(buttons).toHaveLength(1);
   expect(buttons[0].props.trail.id).toBe('second');
@@ -123,6 +132,9 @@ test('the next-trail button appears after the last note and opens the following 
   shell = render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
   expect(shell.props.sidebar.props.activeTrailId).toBe('second');
   expect(shell.props.sidebar.props.selectedItemId).toBe('c');
+  const nextHeading = flatten(flatten(shell.props.content).find(node => node.props['aria-label'] === 'Current trail'));
+  expect(nextHeading.some(node => node.type === 'h2' && node.props.children === 'Second')).toBe(true);
+  expect(nextHeading.find(node => node.type === 'span').props.children.join('')).toBe('· 1 note');
   expect(flatten(shell.props.content).some(node => node.type === 'NextTrailButton')).toBe(false);
 });
 

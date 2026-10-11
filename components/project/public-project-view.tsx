@@ -271,18 +271,14 @@ export function PublicProjectView({
                   <section aria-label="About this project" className="border-b border-border py-6 pl-7">
                     <h1 className="font-display text-3xl font-medium">{project.title}</h1>
                     {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
-                    {project.trails.length > 0 && <>
-                      <p className="mt-5 text-xs text-muted-foreground">Trails are ordered sequences of notes. Choose where to begin.</p>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        {project.trails.map(trail => <button type="button" key={trail.id} aria-pressed={activeTrailId === trail.id} onClick={() => handleSelectTrail(trail.id)} className={`rounded-lg border p-3 text-left ${activeTrailId === trail.id ? 'border-primary bg-muted' : 'border-border hover:bg-muted'}`}>
-                          <span className="block text-sm font-medium">{trail.title}</span>
-                          {trail.description?.trim() && <span className="mt-1 block text-xs text-muted-foreground">{trail.description}</span>}
-                          <span className="mt-1 block text-xs text-muted-foreground">{trail.items.length} notes</span>
-                        </button>)}
-                      </div>
-                    </>}
-                    {project.looseItems.length > 0 && <button type="button" className="mt-3 text-sm underline" onClick={() => { setActiveTrailId(undefined); setSelectedItem(project.looseItems[0]); }}>Notes outside trails</button>}
                   </section>
+                  {activeTrail && <section aria-label="Current trail" className="pl-7 pt-6">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <h2 className="text-sm font-medium">{activeTrail.title}</h2>
+                      <span className="text-xs text-muted-foreground">· {activeTrail.itemIds.length} {activeTrail.itemIds.length === 1 ? 'note' : 'notes'}</span>
+                    </div>
+                    {activeTrail.description?.trim() && <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{activeTrail.description}</p>}
+                  </section>}
                   {selectedItem ? steps.map((step, i) => {
                     const stepItem = items[step.itemId]
                     if (!stepItem) return null
