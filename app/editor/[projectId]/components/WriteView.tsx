@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { EditorState } from 'lexical';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
@@ -47,6 +47,7 @@ import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
 import { ConnectionsPanel } from '@/components/editor/connections-panel';
 import { TrailConnector } from '@/components/editor/trail-connector';
+import { NextTrailButton } from '@/components/editor/next-trail-button';
 import type { ReorderNotice } from '../hooks/useProjectEditorState';
 import { Trail, Item, TitleAlign } from '../../types';
 import type { MapPreviews } from '@/lib/projects-store';
@@ -394,13 +395,9 @@ export function WriteView(props: WriteViewProps) {
                 </div>
                 {stepItem.content != null && <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
                   toolbar={toolbar} onFocus={onFocus} register={register} move={move} />}
-                {index === steps.length - 1 && nextTrail && <div className="mt-8 flex justify-end pl-7">
-                  <button type="button" onClick={() => props.onSelectTrail(nextTrail.id)}
-                    className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">
-                    Next trail: {nextTrail.title} <kbd className="text-xs text-muted-foreground">⌘⌥→</kbd>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>}
+                {index === steps.length - 1 && nextTrail && <NextTrailButton trail={nextTrail} onSelectTrail={props.onSelectTrail}>
+                  <kbd className="text-xs text-muted-foreground">⌘⌥→</kbd>
+                </NextTrailButton>}
               </section>;
             })}
             {inTrail && trail && <div className="mt-16 flex justify-center pb-4">

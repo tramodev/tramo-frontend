@@ -208,9 +208,8 @@ test('selected embeds can be deleted without deleting surrounding text', () => {
 });
 
 test('editor/public registrations and CSP include embeds without allowing external parent scripts', () => {
-  for (const path of ['app/editor/lexical-config.ts', 'components/project/lexical-read-only.tsx']) {
-    expect(readFileSync(path, 'utf8')).toMatch(/\bEmbedNode,/);
-  }
+  expect(readFileSync('app/editor/lexical-config.ts', 'utf8')).toMatch(/\bEmbedNode,/);
+  expect(readFileSync('components/project/lexical-read-only.tsx', 'utf8')).toMatch(/\.\.\.editorConfig/);
   const next = load('next.config.ts', {}, { process: { env: {} } }).default;
   return next.headers().then(headers => {
     const csp = headers[0].headers.find(header => header.key === 'Content-Security-Policy').value;
