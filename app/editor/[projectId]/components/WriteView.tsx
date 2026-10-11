@@ -143,7 +143,7 @@ function ItemNavigationPlugin({ itemId, register, move }: {
       if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.isComposing || editor.isComposing()) return false;
       const target = event.target as HTMLElement | null;
       if (target?.closest('table, pre, [role="dialog"], [role="menu"], [data-lexical-decorator="true"]')) return false;
-      if (document.querySelector('.item-mention-menu, [role="dialog"], [role="menu"], [role="listbox"]')) return false;
+      if (document.querySelector('.item-mention-menu, [role="dialog"], [role="menu"], [role="listbox"]:not(:empty)')) return false;
       const selection = $getSelection();
       if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
       const root = $getRoot();
@@ -260,7 +260,7 @@ function ItemTitle({ item, onCommitTitle, onFocus, move }: {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
           if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.nativeEvent.isComposing || editor.isComposing()) return;
           if (event.currentTarget.selectionStart !== event.currentTarget.selectionEnd) return;
-          if (document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+          if (document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]:not(:empty)')) return;
           if (event.key === 'ArrowUp') {
             if (move(item.id, -1)) event.preventDefault();
             return;

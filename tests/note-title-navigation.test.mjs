@@ -10,7 +10,7 @@ const code = require('@lexical/code');
 const source = readFileSync('app/editor/[projectId]/components/WriteView.tsx', 'utf8')
   + '\nexport { ItemNavigationPlugin, ItemTitle, isOnBoundaryLine, focusTitle };';
 
-function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, codeBlock = false } = {}) {
+function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, codeBlock = false, emptyListbox = false } = {}) {
   const frames = [], moves = [], saves = [], focused = [];
   let menu = false, composing = false;
   const rect = top => ({ top, bottom: top + 18, height: 18 });
@@ -40,7 +40,7 @@ function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, c
   }).outputText, {
     exports, Node: { TEXT_NODE: 3, ELEMENT_NODE: 1 }, requestAnimationFrame: fn => frames.push(fn),
     window: { getSelection: () => ({ isCollapsed: true, rangeCount: 1, anchorNode: {}, getRangeAt: () => range }) },
-    document: { querySelector: () => menu ? {} : null, createRange: () => ({ selectNodeContents() {}, getClientRects: () => lines.map(rect) }) },
+    document: { querySelector: selector => menu || emptyListbox && selector.includes('[role="listbox"]') && !selector.includes('[role="listbox"]:not(:empty)') ? {} : null, createRange: () => ({ selectNodeContents() {}, getClientRects: () => lines.map(rect) }) },
     require: name => {
       if (name === 'react') return { useEffect: fn => fn(), useRef: value => ({ current: value }) };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
@@ -145,6 +145,12 @@ test('empty notes can navigate in both directions', () => {
   const s = setup({ empty: true, lines: [0] });
   expect(s.arrow(-1).handled).toBe(true);
   expect(s.arrow(1).handled).toBe(true);
+});
+
+test('empty typeahead containers do not block note navigation', () => {
+  const s = setup({ emptyListbox: true });
+  expect(s.arrow(-1).handled).toBe(true);
+  expect(s.titleArrow('ArrowDown')).toBe(true);
 });
 
 test('zero-height caret rectangles use adjacent text geometry', () => {
