@@ -374,7 +374,6 @@ export function WriteView(props: WriteViewProps) {
           {props.contentLoadError ? <><p>Could not load the editor.</p><button type="button" className="text-foreground underline" onClick={props.onRetryContent}>Retry</button></> : 'Loading editor…'}
         </div>}
         <div ref={setToolbar} data-editor-toolbar className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
-        <hr />
         {props.reorderNotice && props.reorderNotice.error && <div
           role={props.reorderNotice.error ? 'alert' : 'status'} className="mx-4 my-2 max-h-36 shrink-0 overflow-y-auto rounded-lg border border-border bg-muted p-3 text-sm">
           {props.reorderNotice.error && <p className="text-destructive">{props.reorderNotice.error}</p>}

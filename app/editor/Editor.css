@@ -12,12 +12,6 @@
  }
 
 .editor-container {
-  border-style: var(--tw-border-style);
-  border-width: 1.5px;
-  border-radius: 20;
-  border-bottom: 0;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
   margin: 0;
   max-width: none;
   position: relative;
@@ -1023,8 +1017,13 @@ pre::-webkit-scrollbar-thumb {
   justify-content: center;
   gap: 3px;
   flex: none;
+  width: fit-content;
+  max-width: calc(100% - 16px);
+  margin: 0 auto 8px;
   padding: 8px 12px;
   flex-wrap: wrap;
+  background-color: var(--muted);
+  border-radius: 24px;
 }
 
 .toolbar button.toolbar-item {
