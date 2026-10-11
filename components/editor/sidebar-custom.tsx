@@ -21,7 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { SharedNoteIndicator } from "@/components/editor/shared-note-indicator"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Trail, Item } from "@/app/editor/types"
 import { MIN_SEARCH_LENGTH } from "@/app/editor/editor-utils"
@@ -590,6 +590,7 @@ export function SidebarCustom({
                                                 {index + 1}
                                               </span>
                                               <span className="truncate">{item.title}</span>
+                                              <SharedNoteIndicator trails={trailsForItem(item.id)} />
                                             </SidebarMenuSubButton>
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
@@ -705,7 +706,6 @@ export function SidebarCustom({
                       {allItems.map((item) => {
                         const isActive = selectedItemId === item.id && !activeTrailId;
                         const memberTrails = trailsForItem(item.id);
-                        const isShared = memberTrails.length > 1;
                         const addableTrails = trails.filter((t) => !t.itemIds.includes(item.id));
                         return (
                         <SidebarMenuItem key={item.id} className="group/loose">
@@ -732,21 +732,7 @@ export function SidebarCustom({
                                   }
                                 />
                                 <span className="truncate">{item.title}</span>
-                                {isShared && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Link2 className="ml-auto h-3 w-3 shrink-0 text-primary" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-56">
-                                      <p className="font-medium">
-                                        Used in {memberTrails.length} trails: {memberTrails.map((p) => p.title).join(", ")}
-                                      </p>
-                                      <p className="mt-1 text-muted-foreground">
-                                        Edits appear in every trail that uses this note.
-                                      </p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
+                                <SharedNoteIndicator trails={memberTrails} />
                               </SidebarMenuButton>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

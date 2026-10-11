@@ -33,6 +33,7 @@ test('public sidebar separates loose notes and searches every note locally', () 
   const render = load('components/project/public-sidebar.tsx', {
     '@/components/ui/sidebar': { useSidebar: () => ({ state: 'expanded', setOpenMobile: open => mobile.push(open) }) },
     '@/components/ui/input': { Input: 'Input' },
+    '@/components/editor/shared-note-indicator': { SharedNoteIndicator: 'SharedNoteIndicator' },
     '@/app/editor/editor-utils': { MIN_SEARCH_LENGTH: 2, searchableText: content => content.toLowerCase() },
   });
   const note = { id: 'a', title: 'Shared note', content: 'Searchable body' };
@@ -42,6 +43,9 @@ test('public sidebar separates loose notes and searches every note locally', () 
   let nodes = render('PublicSidebar', props);
   const titles = nodes.filter(node => node.type === 'span' && node.props.children === note.title);
   expect(titles).toHaveLength(2);
+  const indicators = nodes.filter(node => node.type === 'SharedNoteIndicator');
+  expect(indicators).toHaveLength(2);
+  expect(indicators.every(node => node.props.readOnly && node.props.trails.length === 2)).toBe(true);
   const looseSection = nodes.find(node => node.props.className === 'group/items');
   expect(flatten(looseSection).some(node => node.type === 'span' && node.props.children === note.title)).toBe(false);
   expect(flatten(looseSection).filter(node => node.type === 'span' && node.props.children === loose.title)).toHaveLength(1);
@@ -148,4 +152,32 @@ test('the shared next-trail button keeps its label, click action and editor shor
   expect(nodes.find(node => node.type === 'kbd')).toBe(shortcut);
   button.props.onClick();
   expect(selected).toEqual(['next']);
+});
+
+test('editor trail rows and the notes list use the same shared-note indicator', () => {
+  const render = load('components/editor/sidebar-custom.tsx', {
+    '@/components/ui/sidebar': { useSidebar: () => ({ state: 'expanded' }) },
+    '@/components/editor/shared-note-indicator': { SharedNoteIndicator: 'SharedNoteIndicator' },
+  });
+  const items = { shared: { id: 'shared', title: 'Shared' }, single: { id: 'single', title: 'Single' } };
+  const trails = [{ id: 'one', title: 'One', itemIds: ['shared', 'single'] }, { id: 'two', title: 'Two', itemIds: ['shared'] }];
+  const nodes = render('SidebarCustom', { items, trails });
+  const trailIndicators = flatten(nodes.find(node => node.props.className === 'group/trails')).filter(node => node.type === 'SharedNoteIndicator');
+  expect(trailIndicators.filter(node => node.props.trails.length === 2)).toHaveLength(2);
+  expect(trailIndicators.filter(node => node.props.trails.length === 1)).toHaveLength(1);
+  const noteIndicators = flatten(nodes.find(node => node.props.className === 'group/items')).filter(node => node.type === 'SharedNoteIndicator');
+  expect(noteIndicators.filter(node => node.props.trails.length === 2)).toHaveLength(1);
+});
+
+test('shared-note tooltips explain trail membership and hide for single-trail notes', () => {
+  const render = load('components/editor/shared-note-indicator.tsx', { 'lucide-react': { Link2: 'Link2' } });
+  expect(render('SharedNoteIndicator', { trails: [] })).toHaveLength(0);
+  expect(render('SharedNoteIndicator', { trails: [{ title: 'One' }] })).toHaveLength(0);
+  const trails = [{ title: 'One' }, { title: 'Two' }];
+  for (const readOnly of [true, false]) {
+    const nodes = render('SharedNoteIndicator', { trails, readOnly });
+    expect(nodes.find(node => node.type === 'Link2').props['aria-label']).toBe('Used in 2 trails');
+    expect(nodes.find(node => node.type === 'p').props.children.join('')).toBe('Used in 2 trails: One, Two');
+    expect(nodes.some(node => node.props.children === 'Edits appear in every trail that uses this note.')).toBe(!readOnly);
+  }
 });

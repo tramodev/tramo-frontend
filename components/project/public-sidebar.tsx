@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { ChevronRight, Search } from "lucide-react"
 import { Mark } from "@/components/layout/logo"
+import { SharedNoteIndicator } from "@/components/editor/shared-note-indicator"
 import {
   Sidebar,
   SidebarContent,
@@ -107,6 +108,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                                     <button type="button" onClick={() => selectItem(item, trail.id)}>
                                       <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{index + 1}</span>
                                       <span className="truncate">{item.title}</span>
+                                      <SharedNoteIndicator trails={trails.filter(candidate => candidate.items.some(note => note.id === item.id))} readOnly />
                                     </button>
                                   </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>;
