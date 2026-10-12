@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { CircleHelp, Network, PanelRightOpen, X } from 'lucide-react';
+import { CircleHelp, Loader2, Network, PanelRightOpen, X } from 'lucide-react';
 import type { Item, Trail } from '@/app/editor/types';
 import type { MapPreviews } from '@/lib/projects-store';
 import { itemIdsFromContent } from '@/app/editor/plugins/itemLink';
@@ -10,7 +10,7 @@ import { ShortcutsDialog } from '@/components/editor/shortcuts-dialog';
 import { startEditorTour } from '@/app/editor/[projectId]/hooks/useEditorTour';
 
 const KnowledgeGraph = dynamic(() => import('@/components/editor/knowledge-graph').then(module => module.KnowledgeGraph), {
-  loading: () => <div role="status" className="flex h-full items-center justify-center text-xs text-muted-foreground">Loading map…</div>,
+  loading: () => <div role="status" aria-label="Loading map" className="flex h-full items-center justify-center text-muted-foreground"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" /></div>,
 });
 
 interface ConnectionsPanelProps {
@@ -55,7 +55,7 @@ export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapP
         </div>;
       })}
     </section>
-    <div className="flex h-40 shrink-0 flex-col border-t border-border pt-2"><button type="button" onClick={onOpenGraph} className="mb-1 self-start text-sm text-primary">Open map</button><div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">{mapPreviews === undefined && !readOnly ? <div role="status" className="flex h-full items-center justify-center text-xs text-muted-foreground">Loading map…</div> : mapPreviews === null ? <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph trails={trails} items={items} mapPreviews={mapPreviews} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" />}</div></div>
+    <div className="flex h-40 shrink-0 flex-col border-t border-border pt-2"><button type="button" onClick={onOpenGraph} className="mb-1 self-start text-sm text-primary">Open map</button><div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">{mapPreviews === undefined && !readOnly ? <div role="status" aria-label="Loading map" className="flex h-full items-center justify-center text-muted-foreground"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" /></div> : mapPreviews === null ? <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph trails={trails} items={items} mapPreviews={mapPreviews} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" />}</div></div>
     {utilities}
   </aside>;
 }

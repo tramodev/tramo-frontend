@@ -4,7 +4,7 @@
 "use client"
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { FolderPlus } from 'lucide-react';
+import { FolderPlus, Loader2 } from 'lucide-react';
 import { ProjectShell } from '@/components/editor/project-shell';
 import { SidebarCustom } from '@/components/editor/sidebar-custom';
 import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sidebar';
@@ -137,7 +137,7 @@ export default function EditorPage() {
               {project.trails.length > 1 ? 'Reuse a note with “Add existing note” in another trail. Edits appear everywhere that note is used.' : Object.keys(project.items).length > 1 ? 'Mention another note with @, or connect notes in the map.' : 'Start writing in the note. Your changes save automatically; you can add a title later.'}
             </TaskHint>}
             <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
-            {!project.loaded ? <div className="editor-container flex flex-1 items-center justify-center text-sm text-muted-foreground" role="status">Loading editor…</div> : project.view === 'graph' ? (
+            {!project.loaded ? <div className="editor-container flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</div> : project.view === 'graph' ? (
               <GraphView
                 projectId={projectId}
                 graphColors={project.graphColors}

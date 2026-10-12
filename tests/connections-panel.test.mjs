@@ -27,8 +27,9 @@ function setup() {
       useRef: value => refs[ref++] ?? (refs[ref - 1] = { current: value }),
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    '@/app/editor/plugins/itemLink': itemLink,
+    'lucide-react': { Loader2: 'Spinner' },
     'next/dynamic': { default: () => 'KnowledgeGraph' },
+    '@/app/editor/plugins/itemLink': itemLink,
   })[name] ?? {} });
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id.toUpperCase(), content: '' }]));
   let props = { items, item: items.a, trails: [], open: true };
@@ -82,7 +83,9 @@ test('map waits for previews and offers retry after a failed load', () => {
   const { render, items, find } = setup();
   let retried = false;
   let nodes = render({ mapPreviews: undefined, onRetryMapPreviews: () => { retried = true; } });
-  expect(nodes.some(node => node.props.role === 'status' && node.props.children === 'Loading map…')).toBe(true);
+  expect(nodes.some(node => node.props.role === 'status' && node.props['aria-label'] === 'Loading map')).toBe(true);
+  expect(find(nodes, 'Spinner').props.className).toContain('motion-reduce:animate-none');
+  expect(find(nodes, 'Spinner').props['aria-hidden']).toBe('true');
   expect(nodes.some(node => node.type === 'KnowledgeGraph')).toBe(false);
   nodes = render({ mapPreviews: null });
   expect(nodes.some(node => node.props.role === 'alert')).toBe(true);
