@@ -27,6 +27,7 @@ import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Item, Trail } from "@/app/editor/types"
 import { firstReadableTrail, resolveItemTrail } from "@/app/editor/trail-navigation"
 import { useScrollSpy } from "@/hooks/use-scroll-spy"
+import { useVirtualNotes } from "@/app/editor/[projectId]/hooks/useVirtualNotes"
 
 function toEditorShape(project: PublicProject): { trails: Trail[]; items: Record<string, Item> } {
   const items: Record<string, Item> = {};
@@ -88,16 +89,18 @@ export function PublicProjectView({
 
   const inTrail = !!(selectedItem && activeTrail?.itemIds.includes(selectedItem.id))
   const nextTrail = inTrail && activeTrail ? trails[trails.findIndex(trail => trail.id === activeTrail.id) + 1] : undefined
-  const steps = inTrail && activeTrail
+  const steps = useMemo(() => inTrail && activeTrail
     ? activeTrail.steps
     : selectedItem
       ? [{ itemId: selectedItem.id }]
-      : []
+      : [], [inTrail, activeTrail, selectedItem])
+  const ids = useMemo(() => steps.map(step => step.itemId), [steps])
   const stacked = steps.length > 1
 
   const columnRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef(new Map<string, HTMLElement>())
   const shouldScrollRef = useRef(false)
+  const { visibleIds, selectionIds, heights } = useVirtualNotes(columnRef, slotRefs, ids, view === 'content')
 
   useEffect(() => {
     const el = columnRef.current
@@ -113,7 +116,7 @@ export function PublicProjectView({
   useScrollSpy({
     root: columnRef,
     slots: slotRefs,
-    ids: steps.map((step) => step.itemId),
+    ids,
     enabled: stacked && view === 'content',
     onVisible: (itemId) => {
       if (itemId === selectedItem?.id) return
@@ -283,10 +286,14 @@ export function PublicProjectView({
                     const stepItem = items[step.itemId]
                     if (!stepItem) return null
                     const isActive = step.itemId === selectedItem.id
+                    const mounted = isActive || visibleIds.has(step.itemId) || selectionIds.has(step.itemId)
 
                     return (
                       <section
                         key={step.itemId}
+                        data-item-id={step.itemId}
+                        data-mounted={mounted}
+                        style={mounted ? undefined : { height: heights.get(step.itemId) ?? 240, overflow: 'hidden' }}
                         tabIndex={-1}
                         aria-label={`Step ${i + 1}: ${stepItem.title}`}
                         ref={(el) => {
@@ -310,7 +317,7 @@ export function PublicProjectView({
                           <h2 className="pl-7 pt-2 font-display text-[28px] font-medium leading-normal" style={{ textAlign: stepItem.titleAlign }}>
                             {stepItem.title}
                           </h2>
-                          <LexicalReadOnly key={step.itemId} content={stepItem.content ?? ''} onItemClick={handleItemLinkClick} />
+                          {mounted && <LexicalReadOnly key={step.itemId} content={stepItem.content ?? ''} onItemClick={handleItemLinkClick} />}
                         </div>
                         {i === steps.length - 1 && nextTrail && <NextTrailButton trail={nextTrail} onSelectTrail={handleSelectTrail} />}
                       </section>

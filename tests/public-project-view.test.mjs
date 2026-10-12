@@ -5,7 +5,7 @@ import ts from 'typescript';
 
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 const jsx = (type, props) => ({ type, props });
-function load(path, modules = {}) {
+function load(path, modules = {}, globals = {}) {
   const exports = {};
   const states = [];
   let index = 0;
@@ -23,8 +23,9 @@ function load(path, modules = {}) {
       useEffect: () => {},
     },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
+    '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(), selectionIds: new Set(), heights: new Map() }) },
     ...modules,
-  })[name] ?? {} });
+  })[name] ?? {}, ...globals });
   return (component, props) => { index = 0; return flatten(exports[component](props)); };
 }
 
@@ -103,6 +104,43 @@ test('read-only text uses the editor node configuration and never enables editin
   expect(composer.props.initialConfig.theme).toBe(config.theme);
   expect(composer.props.initialConfig.editorState).toBe(content);
   expect(composer.props.initialConfig.editable).toBe(false);
+});
+
+test('public long trails mount only nearby, selected and text-selected notes', () => {
+  let visibleIds = new Set(['0', '1']);
+  let selectionIds = new Set();
+  let onVisible;
+  const render = load('components/project/public-project-view.tsx', {
+    '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
+    '@/components/project/lexical-read-only': { LexicalReadOnly: 'Reader' },
+    '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
+    '@/components/editor/graph-view': { GraphView: 'GraphView' },
+    '@/hooks/use-scroll-spy': { useScrollSpy: options => { onVisible = options.onVisible; } },
+    '@/app/editor/trail-navigation': { firstReadableTrail: trails => trails[0], resolveItemTrail: (_trails, _item, _previous, preferred) => preferred },
+    '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds, selectionIds, heights: new Map([['1', 950]]) }) },
+  }, { requestAnimationFrame: () => 0 });
+  const notes = Array.from({ length: 100 }, (_, i) => ({ id: String(i), title: `Note ${i}`, content: `Body ${i}`, titleAlign: 'left' }));
+  const project = { id: 'project', title: 'Project', trails: [{ id: 'first', title: 'First', items: notes }], looseItems: [] };
+  const view = () => render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
+  const readers = shell => flatten(shell.props.content).filter(node => node.type === 'Reader').map(node => node.props.content);
+  expect(readers(view())).toEqual(['Body 0', 'Body 1']);
+  visibleIds = new Set(['97', '98', '99']);
+  onVisible('98');
+  let shell = view();
+  expect(readers(shell)).toEqual(['Body 97', 'Body 98', 'Body 99']);
+  expect(flatten(shell.props.content).find(node => node.props['data-item-id'] === '1').props.style.height).toBe(950);
+  selectionIds = new Set(['0', '1']);
+  expect(readers(view())).toEqual(['Body 0', 'Body 1', 'Body 97', 'Body 98', 'Body 99']);
+  selectionIds = new Set();
+  shell.props.sidebar.props.onSelectItem(notes[75], 'first');
+  shell = view();
+  expect(readers(shell)).toContain('Body 75');
+  expect(shell.props.sidebar.props.selectedItemId).toBe('75');
+  flatten(shell.props.content).find(node => node.type === 'ConnectionsPanel').props.onOpenGraph();
+  shell = view();
+  expect(readers(shell)).toEqual([]);
+  flatten(shell.props.content).find(node => node.type === 'GraphView').props.onClose();
+  expect(readers(view())).toContain('Body 75');
 });
 
 test('the next-trail button appears after the last note and opens the following trail', () => {
