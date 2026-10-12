@@ -1,80 +1,85 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Waypoints, Copy, Share2, Check, Bold, Italic, Underline, Strikethrough, Highlighter, Code, AlignLeft, Link2, Type, Undo2, Redo2, Plus, Search, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { Check, Link2, Waypoints, X, ChevronDown, Plus } from 'lucide-react';
 import { FadeUp } from '@/components/landing/landing-motion';
 
-function WriteMockup() {
-  return <div className="w-full overflow-hidden rounded-[20px] border border-border bg-background shadow-elevation-2">
-    <div className="flex items-center justify-between gap-3 bg-background px-4 py-3 text-xs">
-      <span className="font-medium">Memex and Vannevar Bush</span>
-      <span className="flex shrink-0 items-center gap-1 text-primary"><Check className="h-3 w-3" />Saved</span>
+function ConnectionsPanelMockup() {
+  return <div className="w-full rounded-[18px] border border-border bg-popover p-5 shadow-elevation-2">
+    <div className="mb-4 flex items-center justify-between gap-2">
+      <span className="font-display text-lg font-medium">Connections (1)</span>
+      <X className="h-3.5 w-3.5 text-muted-foreground" />
     </div>
-    <div className="p-3"><div className="overflow-hidden bg-background">
-      <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2.5 rounded-[24px] bg-muted px-4 py-2.5 text-muted-foreground">
-        {[Undo2, Redo2, Type, AlignLeft, Bold, Italic, Underline, Strikethrough, Highlighter, Code, Link2, Plus, Search].map((Icon, i) => <Icon key={i} className="h-3.5 w-3.5 shrink-0" />)}
-      </div>
-      <div className="px-5 py-6">
-        <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Step 1</p>
-        <p className="mb-3 font-display text-2xl font-medium">Vannevar Bush</p>
-        <p className="text-[13px] leading-relaxed text-muted-foreground">How can we find, connect and revisit the ideas we collect?</p>
-        <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">Start with a note. Give it a title when you’re ready.<span className="ml-1 inline-block h-3.5 w-px bg-primary align-middle" /></p>
-      </div>
-    </div></div>
+    <p className="mb-4 text-xs text-muted-foreground">Connections involving “Vannevar Bush”.</p>
+    <div className="rounded-xl border border-border p-4">
+      <p className="text-[13px] font-medium">Vannevar Bush — As We May Think</p>
+      <p className="mt-1 text-xs text-muted-foreground">@ mention in Vannevar Bush</p>
+    </div>
+    <div className="mt-4 flex items-center gap-2 border-t border-border pt-3 text-xs text-primary"><Waypoints className="h-3.5 w-3.5" />Open map</div>
   </div>;
 }
 
 function ConnectionsMockup() {
-  return <div className="w-full rounded-[18px] border border-border bg-popover p-5 shadow-elevation-2">
-    <div className="mb-4 flex items-center justify-between"><span className="font-display text-lg font-medium">Connections</span><Waypoints className="h-4 w-4 text-muted-foreground" /></div>
-    <p className="mb-4 text-xs text-muted-foreground">Connections involving “Memex”.</p>
-    <div className="rounded-xl border border-border bg-background p-4">
-      <p className="text-[13px] font-medium">Memex — As We May Think</p>
-      <p className="mt-1 text-xs text-muted-foreground">@ mention in Memex</p>
+  return <div className="w-full rounded-[20px] border border-border bg-background shadow-elevation-2">
+    <div className="flex items-center justify-between gap-3 px-4 py-3 text-xs">
+      <span className="font-medium">Memex and Vannevar Bush</span>
+      <span className="flex shrink-0 items-center gap-1 text-primary"><Check className="h-3 w-3" />Saved</span>
     </div>
-    <div className="mt-3 rounded-xl border border-border bg-background p-4">
-      <p className="text-[13px] font-medium">Associative trails — Memex</p>
-      <p className="mt-1 text-xs text-muted-foreground">@ mention in Associative trails</p>
+    <div className="px-6 pb-32 pt-6 sm:px-9">
+      <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Step 1</p>
+      <p className="mb-3 font-display text-2xl font-medium">Vannevar Bush</p>
+      <div className="max-w-[70ch] text-[13px] leading-relaxed text-muted-foreground">
+        Vannevar Bush was an American engineer and science administrator. In 1945, he published{' '}
+        <span className="relative inline-block">
+          <span className="text-primary">@As We May Think</span>
+          <span className="ml-0.5 inline-block h-3.5 w-px bg-primary align-middle" />
+          <span className="absolute left-0 top-full mt-2 block w-[200px] rounded-lg border border-border bg-popover p-1 shadow-elevation-2">
+            <span className="block rounded-sm bg-secondary px-2.5 py-1.5 text-[13px] text-secondary-foreground">As We May Think</span>
+          </span>
+        </span>
+      </div>
     </div>
-    <div className="mt-4 flex items-center gap-2 text-xs text-primary"><Link2 className="h-3.5 w-3.5" />Connect notes when they add context</div>
   </div>;
 }
 
 function ReuseMockup() {
-  return <div className="w-full rounded-[18px] border border-border bg-popover p-5 shadow-elevation-2">
-    <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground"><Copy className="h-3.5 w-3.5" />One note · two trails</div>
+  return <div className="w-full rounded-[18px] border border-border bg-card p-3 shadow-elevation-2">
+    <div className="mb-3 flex items-center justify-between px-2 text-[11px] font-medium text-muted-foreground"><span>Trails</span><Plus className="h-3.5 w-3.5" /></div>
     {[
       { title: 'Bush’s vision', notes: ['Vannevar Bush', 'As We May Think', 'Memex'] },
       { title: 'Thinking in trails', notes: ['Memex', 'Associative trails', 'Sharing a trail'] },
-    ].map(trail => <div key={trail.title} className="mb-4 last:mb-0">
-      <p className="mb-2 font-display text-lg font-medium">{trail.title}</p>
-      <ol className="flex flex-col gap-1.5">{trail.notes.map((note, index) => <li key={note} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${note === 'Memex' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'}`}>
-        <span className="text-[10px]">{index + 1}</span><span className="flex-1">{note}</span>{note === 'Memex' && <Link2 className="h-3 w-3" />}
+    ].map(trail => <div key={trail.title} className="mb-3 last:mb-0">
+      <p className="mb-1 flex items-center gap-1.5 px-2 text-[13px] font-medium"><ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />{trail.title}</p>
+      <ol className="ml-3 flex flex-col gap-0.5 border-l border-sidebar-border pl-2.5">{trail.notes.map((note, index) => <li key={note} className="flex items-center gap-2 rounded-md px-2.5 py-[5px] text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" style={note === 'Memex' && trail.title === 'Bush’s vision' ? {
+        backgroundColor: 'color-mix(in srgb, var(--primary) 15%, var(--sidebar))',
+        color: 'var(--foreground)',
+        fontWeight: 600,
+        outline: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
+        outlineOffset: -1,
+      } : undefined}>
+        <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{index + 1}</span><span className="min-w-0 flex-1 truncate">{note}</span>{note === 'Memex' && <Link2 aria-label="Used in 2 trails" className="h-3 w-3 shrink-0 text-primary" />}
       </li>)}</ol>
     </div>)}
     <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">Used in 2 trails. Edits appear in both.</p>
   </div>;
 }
 
-function ReadingMockup() {
-  return <div className="w-full rounded-[18px] border border-border bg-background p-5 shadow-elevation-2">
-    <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground"><Share2 className="h-3 w-3" />Published snapshot</div>
-    <p className="font-display text-2xl font-medium leading-tight">Memex and Vannevar Bush</p>
-    <p className="mt-3 border-b border-border pb-4 text-[13px] leading-relaxed text-muted-foreground">Explore a personal knowledge library and the trails that connect its ideas.</p>
-    <div className="mt-4 flex flex-wrap items-baseline gap-2">
-      <p className="text-sm font-medium">Bush’s vision</p><span className="text-xs text-muted-foreground">· 3 notes</span>
-    </div>
-    <p className="mt-5 text-[10px] uppercase tracking-widest text-muted-foreground">Step 3</p>
-    <p className="mt-2 font-display text-2xl font-medium">Memex</p>
-    <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">Bush imagined a personal library where ideas could be connected into trails and revisited later.</p>
-    <div className="mt-6 flex justify-end"><span className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs">Next trail: Thinking in trails<ArrowRight className="h-3.5 w-3.5 shrink-0" /></span></div>
-  </div>;
+function MapMockup() {
+  return <Image
+    src="/landing-map.png"
+    alt="Two trails connected through the shared Memex note"
+    width={1392}
+    height={1056}
+    sizes="(max-width: 768px) 100vw, 464px"
+    className="h-auto w-full rounded-[18px] border border-border shadow-elevation-2"
+  />;
 }
 
 const STEPS = [
-  { Mockup: WriteMockup, color: '--ed-blue', label: 'Write notes', title: 'Start with one idea', description: 'Open a project and start writing. Add a title, more notes and structure when they help.' },
   { Mockup: ConnectionsMockup, color: '--ed-orange', label: 'Connect them', title: 'Explain how ideas relate', description: 'Connect notes when a relationship adds context. Choose a destination and add an optional explanation.' },
+  { Mockup: ConnectionsPanelMockup, color: '--ed-blue', label: 'Connections', title: 'See how your notes connect', description: 'Review connections involving a note and follow them to related ideas.' },
   { Mockup: ReuseMockup, color: '--ed-purple', label: 'Reuse them', title: 'One note, more than one trail', description: 'A trail is an ordered sequence of notes. Use the same note in different trails, in a different reading order.' },
-  { Mockup: ReadingMockup, color: '--ed-green', label: 'Share your thinking', title: 'Let readers follow your thinking', description: 'Publish a snapshot readers can follow, note by note. Share the link and keep working privately until your next update.' },
+  { Mockup: MapMockup, color: '--ed-green', label: 'Explore the map', title: 'See the bigger picture', description: 'View your trails side by side. See how notes connect and where the same idea appears in different paths.' },
 ];
 
 export function FeaturesSection() {

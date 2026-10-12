@@ -1,7 +1,10 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 
+'use client';
+
 import React from 'react';
+import Image from 'next/image';
 import {
   Undo,
   Redo,
@@ -28,8 +31,11 @@ import {
   CircleHelp,
   X,
   Lock,
+  ArrowRight,
 } from 'lucide-react';
 import { Mark } from '@/components/layout/logo';
+import { SharedNoteIndicator } from '@/components/editor/shared-note-indicator';
+import { Button } from '@/components/ui/button';
 import type { Item, Trail } from '@/app/editor/types';
 
 const GRAPH_ITEMS: Record<string, Item> = {
@@ -101,7 +107,7 @@ const GRAPH_TRAILS: Trail[] = [
 
 const TRAILS = GRAPH_TRAILS.map(trail => ({
   title: trail.title,
-  items: trail.itemIds.map(id => ({ title: GRAPH_ITEMS[id].title, active: id === 'memex' && trail.id === 'bushs-vision' })),
+  items: trail.itemIds.map(id => ({ title: GRAPH_ITEMS[id].title, shared: id === 'memex', active: id === 'memex' && trail.id === 'bushs-vision' })),
 }));
 
 const LOOSE_ITEMS = Object.values(GRAPH_ITEMS).map(item => ({
@@ -158,14 +164,18 @@ export const BrowserMockup: React.FC = () => {
                   {trail.items.map((item, i) => (
                     <li
                       key={item.title}
-                      className={`flex items-center gap-2 rounded-md text-[13px] font-medium truncate px-2.5 py-[5px] ${
-                        item.active
-                          ? 'bg-secondary text-secondary-foreground'
-                          : 'text-muted-foreground'
-                      }`}
+                      className="flex items-center gap-2 rounded-md text-[13px] font-medium truncate px-2.5 py-[5px] text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      style={item.active ? {
+                        backgroundColor: 'color-mix(in srgb, var(--primary) 15%, var(--sidebar))',
+                        color: 'var(--foreground)',
+                        fontWeight: 600,
+                        outline: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
+                        outlineOffset: -1,
+                      } : undefined}
                     >
                       <span className="w-3 shrink-0 text-[10px] tabular-nums">{i + 1}</span>
-                      {item.title}
+                      <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                      {item.shared && <SharedNoteIndicator trails={GRAPH_TRAILS} />}
                     </li>
                   ))}
                 </ul>
@@ -183,7 +193,7 @@ export const BrowserMockup: React.FC = () => {
             {LOOSE_ITEMS.map((item) => (
               <li
                 key={item.title}
-                className="flex items-center gap-2 rounded-md text-[13px] font-medium truncate px-2.5 py-[5px] text-muted-foreground"
+                className="flex items-center gap-2 rounded-md text-[13px] font-medium truncate px-2.5 py-[5px] text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 <span className="w-[7px] h-[7px] shrink-0 rounded-full box-border border-[1.5px] border-input" />
                 <span className="truncate flex-1">{item.title}</span>
@@ -204,10 +214,10 @@ export const BrowserMockup: React.FC = () => {
         <span className="hidden xl:inline text-[11px] text-muted-foreground">123 words · 645 characters</span>
         <Download className="w-3.5 h-3.5 text-muted-foreground" />
         <History className="w-3.5 h-3.5 text-muted-foreground" />
-        <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-[12px] font-medium text-secondary-foreground">
-          <Share2 className="w-3 h-3" />
+        <Button variant="secondary" size="lg" className="h-8 gap-[6.4px] px-[12.8px] text-[11.2px] has-[>svg]:px-[12.8px]">
+          <Share2 className="size-3" />
           Publish &amp; Share
-        </span>
+        </Button>
         <span className="w-[26px] h-[26px] shrink-0 rounded-full flex items-center justify-center text-[11px] font-medium bg-primary text-primary-foreground">
           A
         </span>
@@ -251,12 +261,32 @@ export const BrowserMockup: React.FC = () => {
             <Search className="w-3.5 h-3.5" />
           </div>
 
-          <div className="flex-1 overflow-hidden px-8 py-6">
+          <div
+            className="flex-1 min-h-0 cursor-text overflow-y-auto px-8 py-6"
+            onClick={(event) => {
+              if (event.target !== event.currentTarget) return;
+              const content = event.currentTarget.querySelector<HTMLDivElement>('div[contenteditable]');
+              if (!content) return;
+              content.focus();
+              const range = document.createRange();
+              range.selectNodeContents(content);
+              range.collapse(false);
+              const selection = window.getSelection();
+              selection?.removeAllRanges();
+              selection?.addRange(range);
+            }}
+          >
             <p className="mb-3 text-[10px] font-medium uppercase tracking-widest text-foreground">Step 3</p>
-            <h1 className="font-display font-medium text-[28px] mb-2.5">
+            <h1 contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" aria-label="Demo note title" className="font-display font-medium text-[28px] mb-2.5 cursor-text outline-none">
               Memex
             </h1>
-            <p className="mb-5 text-[11px] text-muted-foreground">Used in 2 trails. Edits appear in both.</p>
+            <div className="mb-5 text-[11px] text-muted-foreground">
+              <p>Used in 2 trails. Edits appear in both.</p>
+              <div className="mt-1 flex flex-wrap gap-3">
+                {GRAPH_TRAILS.map(trail => <span key={trail.id} className="underline">{trail.title}</span>)}
+              </div>
+            </div>
+            <div contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" aria-label="Demo note content (changes are not saved)" aria-multiline="true" className="cursor-text outline-none">
             <p className="text-[13px] leading-6 mb-3 text-muted-foreground">
               Bush&apos;s Memex is a proposed personal library for books, records and communications.
               Introduced in{' '}
@@ -274,6 +304,14 @@ export const BrowserMockup: React.FC = () => {
               <li>— Reuse the same record in different trails</li>
               <li>— Share a path for others to explore</li>
             </ul>
+            </div>
+            <div className="mt-8 flex justify-end">
+              <button type="button" className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-[11px] hover:bg-muted">
+                Next trail: Thinking in trails
+                <kbd className="text-muted-foreground">⌘⌥→</kbd>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -292,22 +330,14 @@ export const BrowserMockup: React.FC = () => {
           <div className="flex h-36 shrink-0 flex-col border-t border-border pt-2">
             <span className="mb-1 text-[11px] text-primary">Open map</span>
             <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
-              <svg viewBox="-64 -12 1260 620" role="img" aria-label="Two trails sharing the Memex note" className="h-full w-full">
-                {GRAPH_TRAILS.map((trail, column) => <g key={trail.id} transform={`translate(${column * 570}, 0)`}>
-                  <rect y="56" width="512" height="528" rx="6" fill="var(--muted)" fillOpacity="0.2" stroke="var(--border)" />
-                  <text x="16" y="28" fill="var(--foreground)" fontSize="20">{trail.title}</text>
-                </g>)}
-                <g fill="none" stroke="var(--primary)" strokeWidth="1.5">
-                  <path d="M16 494 C-44 494 -44 322 16 322" />
-                  <path d="M1066 150 C1126 150 1126 322 1066 322" />
-                  <path d="M496 494 C552 494 530 150 586 150" stroke="var(--ed-purple)" strokeDasharray="2 6" strokeLinecap="round" opacity="0.75" />
-                </g>
-                {GRAPH_TRAILS.map((trail, column) => trail.itemIds.map((id, row) => <g key={`${trail.id}:${id}`} transform={`translate(${column * 570 + 16}, ${84 + row * 172})`}>
-                  <rect width="480" height="132" rx="6" fill="var(--card)" stroke={id === 'memex' && column === 0 ? 'var(--primary)' : 'var(--border)'} />
-                  <text x="16" y="70" fill="var(--foreground)" fontSize="28">{GRAPH_ITEMS[id].title}</text>
-                  <text x="464" y="28" fill="var(--muted-foreground)" fontSize="12" textAnchor="end">{id === 'memex' ? 'Shared · ' : ''}{row + 1}</text>
-                </g>))}
-              </svg>
+              <Image
+                src="/landing-map.png"
+                alt="Two trails sharing the Memex note"
+                width={1392}
+                height={1056}
+                sizes="170px"
+                className="h-full w-full object-contain"
+              />
             </div>
           </div>
           <div className="mt-auto flex items-center justify-center gap-3 border-t border-border pt-2 text-[10px] text-muted-foreground">
