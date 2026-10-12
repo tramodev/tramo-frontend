@@ -331,12 +331,20 @@ export const BrowserMockup: React.FC = () => {
             <span className="mb-1 text-[11px] text-primary">Open map</span>
             <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
               <Image
-                src="/landing-map.png"
+                src="/landing-map-light.png"
+                alt="Two trails sharing the Memex note"
+                width={1724}
+                height={1282}
+                sizes="170px"
+                className="h-full w-full object-cover dark:hidden"
+              />
+              <Image
+                src="/landing-map-dark.png"
                 alt="Two trails sharing the Memex note"
                 width={1392}
                 height={1056}
                 sizes="170px"
-                className="h-full w-full object-contain"
+                className="hidden h-full w-full object-cover dark:block"
               />
             </div>
           </div>

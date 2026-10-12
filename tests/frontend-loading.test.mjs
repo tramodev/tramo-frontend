@@ -66,9 +66,11 @@ test('landing mockup uses an accessible static image without importing the graph
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'next/image': { default: 'Image' },
   })[name] ?? {});
-  const image = flatten(mockup.BrowserMockup()).find(node => node.type === 'Image');
-  expect(image.props.src).toBe('/landing-map.png');
-  expect(image.props.alt).toBeTruthy();
+  const images = flatten(mockup.BrowserMockup()).filter(node => node.type === 'Image');
+  expect(images.map(image => image.props.src)).toEqual(['/landing-map-light.png', '/landing-map-dark.png']);
+  expect(images[0].props.className).toContain('dark:hidden');
+  expect(images[1].props.className).toContain('dark:block');
+  expect(images.every(image => image.props.alt)).toBe(true);
 });
 
 test.each(['components/editor/graph-view.tsx', 'components/editor/connections-panel.tsx'])('%s loads the graph runtime on demand', path => {

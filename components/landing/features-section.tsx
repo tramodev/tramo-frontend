@@ -65,14 +65,24 @@ function ReuseMockup() {
 }
 
 function MapMockup() {
-  return <Image
-    src="/landing-map.png"
-    alt="Two trails connected through the shared Memex note"
-    width={1392}
-    height={1056}
-    sizes="(max-width: 768px) 100vw, 464px"
-    className="h-auto w-full rounded-[18px] border border-border shadow-elevation-2"
-  />;
+  return <>
+    <Image
+      src="/landing-map-light.png"
+      alt="Two trails connected through the shared Memex note"
+      width={1724}
+      height={1282}
+      sizes="(max-width: 768px) 100vw, 464px"
+      className="h-auto w-full rounded-[18px] border border-border shadow-elevation-2 dark:hidden"
+    />
+    <Image
+      src="/landing-map-dark.png"
+      alt="Two trails connected through the shared Memex note"
+      width={1392}
+      height={1056}
+      sizes="(max-width: 768px) 100vw, 464px"
+      className="hidden h-auto w-full rounded-[18px] border border-border shadow-elevation-2 dark:block"
+    />
+  </>;
 }
 
 const STEPS = [
