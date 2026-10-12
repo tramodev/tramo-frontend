@@ -154,7 +154,7 @@ export function ExploreCard({
           thumbnailImageUrl={project.thumbnailImageUrl}
           loading={loading}
           title={project.title}
-          className="rounded-lg w-full h-[180px] sm:w-[156px] sm:h-[128px] bg-surface-container-high"
+          className="pointer-events-none rounded-lg w-full h-[180px] sm:w-[156px] sm:h-[128px] bg-surface-container-high"
         />
       </div>
     </div>

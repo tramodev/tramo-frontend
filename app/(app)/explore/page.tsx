@@ -186,7 +186,7 @@ export default async function ExplorePage({
             thumbnailImageUrl={featured.thumbnailImageUrl}
             loading="eager"
             title={featured.title}
-            className="rounded-[20px] h-[250px] bg-accent"
+            className="pointer-events-none rounded-[20px] h-[250px] bg-accent"
             placeholder={
               <span className="font-display text-[84px] font-medium text-accent-foreground leading-none">
                 {initial(featured.title)}
