@@ -62,9 +62,13 @@ test('an unmounted projects page ignores late request results', async () => {
 test('landing mockup uses an accessible static image without importing the graph runtime', () => {
   const source = readFileSync('components/landing/browser-mockup.tsx', 'utf8');
   expect(source).not.toContain('KnowledgeGraph');
-  expect(source).not.toContain('use client');
-  const mockup = load('components/landing/browser-mockup.tsx', name => name === 'react/jsx-runtime' ? { jsx, jsxs: jsx } : {});
-  expect(flatten(mockup.BrowserMockup()).find(node => node.type === 'svg' && node.props.role === 'img').props['aria-label']).toBeTruthy();
+  const mockup = load('components/landing/browser-mockup.tsx', name => ({
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'next/image': { default: 'Image' },
+  })[name] ?? {});
+  const image = flatten(mockup.BrowserMockup()).find(node => node.type === 'Image');
+  expect(image.props.src).toBe('/landing-map.png');
+  expect(image.props.alt).toBeTruthy();
 });
 
 test.each(['components/editor/graph-view.tsx', 'components/editor/connections-panel.tsx'])('%s loads the graph runtime on demand', path => {
