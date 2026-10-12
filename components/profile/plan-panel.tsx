@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { cancelSubscription, type SubscriptionStatus } from "@/lib/subscription"
 import { formatBytes } from "@/lib/format-bytes"
-import { getPatreonAuthorizeUrl } from "@/lib/patreon"
+import { PatreonButton } from "@/components/profile/patreon-button"
 
 function Meter({ label, used, total, pct }: { label: string; used: string; total: string; pct: number }) {
   return (
@@ -24,7 +24,7 @@ function Meter({ label, used, total, pct }: { label: string; used: string; total
   )
 }
 
-export function PlanPanel({ initialStatus }: { initialStatus: SubscriptionStatus }) {
+export function PlanPanel({ initialStatus, patreonStatus }: { initialStatus: SubscriptionStatus; patreonStatus?: string }) {
   const [status, setStatus] = useState(initialStatus)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -33,13 +33,14 @@ export function PlanPanel({ initialStatus }: { initialStatus: SubscriptionStatus
 
   return (
     <>
+      {patreonStatus === "error" && <p role="alert" className="text-sm text-destructive">Patreon connection wasn’t completed. Please try again.</p>}
       <section>
         <h2 className="mb-1 text-lg font-medium inline-flex items-center gap-2">
           {status.supporter ? <>Supporter <Heart className="h-4 w-4 text-primary" /></> : "Free plan"}
         </h2>
         <p className="mb-6 text-sm text-muted-foreground">
           {status.supporter
-            ? "Thanks for supporting Tramo. Your limits are lifted."
+            ? "Supporter active. Thanks for supporting Tramo. Your limits are lifted."
             : "The free plan covers everyday use. Here's where you stand."}
         </p>
 
@@ -75,19 +76,14 @@ export function PlanPanel({ initialStatus }: { initialStatus: SubscriptionStatus
           </h3>
           <p className="mb-4 text-sm opacity-[85%]">More space, so nothing gets in the way.</p>
           <div className="mb-5 flex flex-col gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <CircleCheck className="h-4 w-4" />
-              10GB storage
-            </div>
+            {['10GB storage', 'Animated GIF avatar', 'Profile banner', 'Supporter badge on your profile'].map(feature => (
+              <div key={feature} className="flex items-center gap-2">
+                <CircleCheck className="h-4 w-4 shrink-0" />
+                {feature}
+              </div>
+            ))}
           </div>
-          <Button
-            disabled={pending}
-            onClick={() => startTransition(async () => {
-              window.location.href = await getPatreonAuthorizeUrl()
-            })}
-          >
-            Connect with Patreon
-          </Button>
+          <PatreonButton onSupporter={setStatus} />
         </section>
       )}
     </>

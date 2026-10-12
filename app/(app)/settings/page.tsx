@@ -33,9 +33,9 @@ const TABS: { key: Tab; label: string; icon: typeof User }[] = [
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; patreon?: string }>
 }) {
-  const { tab: tabParam } = await searchParams
+  const { tab: tabParam, patreon } = await searchParams
   const tab: Tab = TAB_KEYS.includes(tabParam as Tab) ? (tabParam as Tab) : "account"
 
   const [fetchedProfile, cookieUsername] = await Promise.all([getMyProfile(), getUsername()])
@@ -99,7 +99,7 @@ export default async function SettingsPage({
                 <SettingsView />
               </>
             )}
-            {tab === "plan" && <PlanPanel initialStatus={await getSubscriptionStatus()} />}
+            {tab === "plan" && <PlanPanel initialStatus={await getSubscriptionStatus()} patreonStatus={patreon} />}
             {tab === "notifications" && notificationPrefs && (
               <NotificationSettings
                 initialEnabled={notificationPrefs.notificationsEnabled}
