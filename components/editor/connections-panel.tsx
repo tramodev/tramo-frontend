@@ -1,13 +1,17 @@
 "use client"
 
 import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { CircleHelp, Network, PanelRightOpen, X } from 'lucide-react';
 import type { Item, Trail } from '@/app/editor/types';
 import type { MapPreviews } from '@/lib/projects-store';
 import { itemIdsFromContent } from '@/app/editor/plugins/itemLink';
-import { KnowledgeGraph } from '@/components/editor/knowledge-graph';
 import { ShortcutsDialog } from '@/components/editor/shortcuts-dialog';
 import { startEditorTour } from '@/app/editor/[projectId]/hooks/useEditorTour';
+
+const KnowledgeGraph = dynamic(() => import('@/components/editor/knowledge-graph').then(module => module.KnowledgeGraph), {
+  loading: () => <div role="status" className="flex h-full items-center justify-center text-xs text-muted-foreground">Loading map…</div>,
+});
 
 interface ConnectionsPanelProps {
   item: Item;

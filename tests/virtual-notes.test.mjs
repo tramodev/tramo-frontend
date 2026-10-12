@@ -31,7 +31,7 @@ test('the viewport window removes distant notes and remembers measured heights',
   let selection;
   class Observer {
     constructor(callback, options) { this.callback = callback; this.options = options; this.targets = []; observers.push(this); }
-    observe(element) { this.targets.push(element); }
+    observe(element, options) { this.targets.push(element); this.observeOptions = options; }
     disconnect() { this.disconnected = true; }
   }
   const virtual = load('app/editor/[projectId]/hooks/useVirtualNotes.ts', { react: { ...react, useEffect: fn => effects.push(fn) } }, {
@@ -40,7 +40,7 @@ test('the viewport window removes distant notes and remembers measured heights',
     document: { addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
   });
   const root = { current: { contains: () => true } };
-  const slots = { current: new Map(Array.from({ length: 100 }, (_, i) => [String(i), { dataset: { itemId: String(i), mounted: i === 0 ? 'true' : 'false' }, getBoundingClientRect: () => ({ height: 700 + i }) }])) };
+  const slots = { current: new Map(Array.from({ length: 100 }, (_, i) => [String(i), { dataset: { itemId: String(i), mounted: i === 0 ? 'true' : 'false' }, getBoundingClientRect: () => { throw new Error('Unexpected layout measurement'); } }])) };
   const ids = [...slots.current.keys()];
   const render = () => { react.reset(); return virtual.useVirtualNotes(root, slots, ids, true); };
   render();
@@ -50,7 +50,8 @@ test('the viewport window removes distant notes and remembers measured heights',
   expect(intersection.options).toEqual({ root: root.current, rootMargin: '400px 0px' });
   expect(intersection.targets).toHaveLength(100);
   intersection.callback([{ target: slots.current.get('0'), isIntersecting: true }]);
-  resize.callback([{ target: slots.current.get('0') }, { target: slots.current.get('99') }]);
+  expect(resize.observeOptions).toEqual({ box: 'border-box' });
+  resize.callback([{ target: slots.current.get('0'), borderBoxSize: [{ blockSize: 700 }] }, { target: slots.current.get('99'), borderBoxSize: [{ blockSize: 799 }] }]);
   let result = render();
   expect([...result.visibleIds]).toEqual(['0']);
   expect(result.heights.get('0')).toBe(700);

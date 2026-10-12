@@ -40,7 +40,7 @@ export function useVirtualNotes(root: RefObject<HTMLElement | null>, slots: RefO
         const element = entry.target as HTMLElement;
         const id = element.dataset.itemId;
         if (id && element.dataset.mounted === 'true') {
-          const height = element.getBoundingClientRect().height;
+          const height = entry.borderBoxSize[0].blockSize;
           if (height > 0) heights.set(id, height);
         }
       }
@@ -49,7 +49,7 @@ export function useVirtualNotes(root: RefObject<HTMLElement | null>, slots: RefO
       const element = slots.current.get(id);
       if (!element) continue;
       intersection.observe(element);
-      resize.observe(element);
+      resize.observe(element, { box: 'border-box' });
     }
     return () => { intersection.disconnect(); resize.disconnect(); };
   }, [root, slots, ids, ready, heights]);

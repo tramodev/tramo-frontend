@@ -3,9 +3,13 @@
 "use client"
 
 import { X } from 'lucide-react';
-import { KnowledgeGraph } from '@/components/editor/knowledge-graph';
+import dynamic from 'next/dynamic';
 import { Trail, Item } from '@/app/editor/types';
 import type { MapPreviews } from '@/lib/projects-store';
+
+const KnowledgeGraph = dynamic(() => import('@/components/editor/knowledge-graph').then(module => module.KnowledgeGraph), {
+  loading: () => <div role="status" className="flex h-full items-center justify-center text-sm text-muted-foreground">Loading map…</div>,
+});
 
 interface GraphViewProps {
   projectId?: string;

@@ -67,6 +67,12 @@ test('landing mockup uses an accessible static image without importing the graph
   expect(flatten(mockup.BrowserMockup()).find(node => node.type === 'svg' && node.props.role === 'img').props['aria-label']).toBeTruthy();
 });
 
+test.each(['components/editor/graph-view.tsx', 'components/editor/connections-panel.tsx'])('%s loads the graph runtime on demand', path => {
+  const source = readFileSync(path, 'utf8');
+  expect(source).toContain("dynamic(() => import('@/components/editor/knowledge-graph')");
+  expect(source).not.toMatch(/import\s+\{\s*KnowledgeGraph\s*\}\s+from/);
+});
+
 test('bootstrap GET preserves preferred note, trail, contents and profile', async () => {
   const requests = [];
   const dto = { id: 'project', title: 'Project', description: null, graphColors: null, visibility: 'private', tags: [],
