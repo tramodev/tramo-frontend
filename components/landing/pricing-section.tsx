@@ -30,7 +30,7 @@ export const PricingSection: React.FC = () => {
       <div className="grid items-stretch gap-4 md:grid-cols-[1.55fr_1fr]">
         <FadeUp>
           <div className="flex h-full flex-col rounded-[28px] bg-card p-11">
-            <span className="mb-[22px] self-start rounded-full bg-secondary px-[13px] py-[5px] text-xs font-semibold text-secondary-foreground">
+            <span className="mb-[22px] self-start rounded-full bg-secondary py-[5px] text-xs font-semibold text-secondary-foreground">
               Free forever · no card required
             </span>
             <h2 className="mb-2.5 font-display text-4xl font-medium leading-[1.08] tracking-[-.02em]">

@@ -35,12 +35,6 @@ export async function Navbar() {
         >
           Plans
         </a>
-        <Link
-          href="/explore"
-          className="hidden md:block text-sm font-medium text-muted-foreground px-4 py-2.5 rounded-full transition-colors hover:bg-muted hover:text-foreground"
-        >
-          Explore
-        </Link>
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
             <AvatarMenu username={username} imageUrl={imageUrl} />
