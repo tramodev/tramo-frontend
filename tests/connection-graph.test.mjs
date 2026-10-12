@@ -9,6 +9,7 @@ const itemLink = {};
 const graphColors = {};
 let states = [];
 let index = 0;
+let internalNodes = new Map();
 const transpile = path => ts.transpileModule(readFileSync(path, 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
@@ -34,7 +35,7 @@ runInNewContext(transpile('components/editor/knowledge-graph.tsx'), {
     '@/app/editor/graph-colors': graphColors,
     '@/app/editor/plugins/itemLink': itemLink,
     '@xyflow/react': {
-      ReactFlow: 'Flow', BaseEdge: 'BaseEdge', useInternalNode: () => null,
+      ReactFlow: 'Flow', BaseEdge: 'BaseEdge', useInternalNode: id => internalNodes.get(id),
       getBezierPath: ({ sourceX, sourceY, targetX, targetY }) => [`M ${sourceX} ${sourceY} C ${targetX} ${targetY}`, 0, 0],
       Position: { Top: 'top', Bottom: 'bottom', Left: 'left', Right: 'right' },
     },
@@ -114,4 +115,56 @@ test('note previews stop at 256 characters', () => {
   expect(flow(props).props.nodes.find(node => node.type === 'card').data.preview).toBe('a'.repeat(256));
   items.a.content = noteContent(`${'a'.repeat(256)}b`);
   expect(flow(props).props.nodes.find(node => node.type === 'card').data.preview).toBe(`${'a'.repeat(256)}...`);
+});
+
+test('selecting a note highlights its connections and clicking the pane restores all edges', () => {
+  states = [];
+  const items = { a: { id: 'a', title: 'A', content: content('b', 'c') }, b: { id: 'b', title: 'B', content: '' }, c: { id: 'c', title: 'C', content: '' }, d: { id: 'd', title: 'D', content: content('b') } };
+  const props = { items, trails: [{ id: 'first', title: 'First', itemIds: Object.keys(items) }], onSelectItem() {} };
+  let graph = flow(props);
+  graph.props.onNodeClick({ stopPropagation() {} }, graph.props.nodes.find(node => node.data.itemId === 'a'));
+  graph = flow(props);
+  expect(graph.props.edges.filter(edge => edge.style.opacity === 1).map(edge => edge.id)).toEqual(['connection:a:b', 'connection:a:c']);
+  expect(graph.props.edges.find(edge => edge.id === 'connection:b:d').style.opacity).toBe(0.12);
+  graph.props.onEdgeClick({}, graph.props.edges.find(edge => edge.id === 'connection:b:d'));
+  graph = flow(props);
+  expect(graph.props.edges.filter(edge => edge.style.opacity === 1).map(edge => edge.id)).toEqual(['connection:b:d']);
+  expect(graph.props.edges.find(edge => edge.id === 'connection:b:d').zIndex).toBe(2);
+  graph.props.onPaneClick();
+  expect(flow(props).props.edges.every(edge => edge.style.opacity === 0.7)).toBe(true);
+  graph.props.onNodeClick({ stopPropagation() {} }, graph.props.nodes.find(node => node.data.itemId === 'a'));
+  render(props).find(node => node.props.className?.startsWith('knowledge-graph ')).props.onKeyDown({ key: 'Escape' });
+  expect(flow(props).props.edges.every(edge => edge.style.opacity === 0.7)).toBe(true);
+  graph.props.onEdgeClick({}, graph.props.edges.find(edge => edge.id === 'connection:b:d'));
+  items.d.content = '';
+  expect(flow(props).props.edges.every(edge => edge.style.opacity === 0.7)).toBe(true);
+});
+
+test('dense same-column connections use separate gutters without entering the next column', () => {
+  states = [];
+  const items = Object.fromEntries(['a', 'b', 'c', 'd', 'e', 'f'].map((id, index, ids) => [id, { id, title: id, content: content(...ids.slice(index + 2)) }]));
+  const graph = flow({ items, trails: [{ id: 'first', title: 'First', itemIds: Object.keys(items) }], onSelectItem() {} });
+  const cards = graph.props.nodes.filter(node => node.type === 'card');
+  internalNodes = new Map(cards.map(node => [node.id, { id: node.id, internals: { positionAbsolute: node.position }, measured: { width: 480, height: 132 } }]));
+  const offsets = graph.props.edges.map(edge => edge.data.offset);
+  expect(new Set(offsets).size).toBe(graph.props.edges.length);
+  expect(offsets.every(offset => offset >= 0 && offset <= 16)).toBe(true);
+  const paths = graph.props.edges.map(edge => graph.props.edgeTypes.floating(edge).props.path);
+  expect(new Set(paths).size).toBe(paths.length);
+  expect(paths.every(path => !/NaN|undefined/.test(path))).toBe(true);
+  expect(paths[0]).toContain(`Q ${496 + offsets[0] + 24}`);
+  expect(paths.at(-1)).toContain(`Q ${496 + offsets.at(-1) + 24}`);
+  internalNodes = new Map();
+});
+
+test('cross-trail connections take separate rounded channels inside the column gap', () => {
+  states = [];
+  const items = { a: { id: 'a', title: 'A', content: content('d') }, b: { id: 'b', title: 'B', content: content('c') }, c: { id: 'c', title: 'C', content: '' }, d: { id: 'd', title: 'D', content: '' } };
+  const graph = flow({ items, trails: [{ id: 'first', title: 'First', itemIds: ['a', 'b'] }, { id: 'second', title: 'Second', itemIds: ['c', 'd'] }], onSelectItem() {} });
+  internalNodes = new Map(graph.props.nodes.filter(node => node.type === 'card').map(node => [node.id, { id: node.id, internals: { positionAbsolute: node.position }, measured: { width: 480, height: 132 } }]));
+  const paths = graph.props.edges.map(edge => graph.props.edgeTypes.floating(edge).props.path);
+  expect(paths.every(path => path.includes(' Q ') && !path.includes(' C '))).toBe(true);
+  expect(paths[0]).toContain('Q 517 ');
+  expect(paths[1]).toContain('Q 565 ');
+  internalNodes = new Map();
 });

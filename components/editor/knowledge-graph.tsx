@@ -75,7 +75,7 @@ const Lane = memo(function Lane({ data }: NodeProps<LaneNode>) {
 })
 
 type CardBounds = { id: string; x: number; y: number; width: number; height: number }
-type ReferenceEdgeData = { cards: CardBounds[] }
+type ReferenceEdgeData = { cards: CardBounds[]; offset?: number }
 
 function roundedPath(points: { x: number; y: number }[]) {
   let path = `M ${points[0].x} ${points[0].y}`
@@ -105,7 +105,7 @@ function curvedPath(start: { x: number; y: number }, end: { x: number; y: number
   return getBezierPath({ sourceX: start.x, sourceY: start.y, sourcePosition, targetX: end.x, targetY: end.y, targetPosition })
 }
 
-function routeEdge(source: InternalNode, target: InternalNode, cards: CardBounds[]) {
+function routeEdge(source: InternalNode, target: InternalNode, cards: CardBounds[], offset = 0) {
   const sx = source.internals.positionAbsolute.x
   const sy = source.internals.positionAbsolute.y
   const sw = source.measured.width ?? 0
@@ -122,10 +122,14 @@ function routeEdge(source: InternalNode, target: InternalNode, cards: CardBounds
     const left = Math.min(start.x, end.x)
     const right = Math.max(start.x, end.x)
     const between = others.filter(card => card.x < right && card.x + card.width > left)
-    if (!between.length) return curvedPath(start, end, direction > 0 ? Position.Right : Position.Left, direction > 0 ? Position.Left : Position.Right)
-    const firstX = start.x + direction * 24
-    const lastX = end.x - direction * 24
-    const candidates = [(start.y + end.y) / 2, ...between.flatMap(card => [card.y - 16, card.y + card.height + 16])]
+    if (!between.length) {
+      if (start.y === end.y) return curvedPath(start, end, direction > 0 ? Position.Right : Position.Left, direction > 0 ? Position.Left : Position.Right)
+      const x = (start.x + end.x) / 2 + direction * (offset - 8) * 3
+      return [roundedPath([start, { x, y: start.y }, { x, y: end.y }, end]), x, (start.y + end.y) / 2] as const
+    }
+    const firstX = start.x + direction * (24 + offset)
+    const lastX = end.x - direction * (24 + offset)
+    const candidates = [(start.y + end.y) / 2, ...between.flatMap(card => [card.y - 16 - offset, card.y + card.height + 16 + offset])]
     const clear = candidates.filter(y => between.every(card => y < card.y - 12 || y > card.y + card.height + 12))
     const y = clear.sort((a, b) => Math.abs(start.y - a) + Math.abs(end.y - a) - Math.abs(start.y - b) - Math.abs(end.y - b))[0]
     const points = [start, { x: firstX, y: start.y }, { x: firstX, y }, { x: lastX, y }, { x: lastX, y: end.y }, end]
@@ -136,7 +140,7 @@ function routeEdge(source: InternalNode, target: InternalNode, cards: CardBounds
   const end = { x: tx + tw / 2, y: ty + (down ? 0 : th) }
   const between = others.some(card => card.x < sx + sw && card.x + card.width > sx && card.y < Math.max(start.y, end.y) && card.y + card.height > Math.min(start.y, end.y))
   if (!between) return curvedPath(start, end, down ? Position.Bottom : Position.Top, down ? Position.Top : Position.Bottom)
-  const gutter = Math.max(sx + sw, tx + tw) + 24
+  const gutter = Math.max(sx + sw, tx + tw) + 24 + offset
   return [roundedPath([{ x: sx + sw, y: sy + sh / 2 }, { x: gutter, y: sy + sh / 2 }, { x: gutter, y: ty + th / 2 }, { x: tx + tw, y: ty + th / 2 }]), gutter, (sy + sh / 2 + ty + th / 2) / 2] as const
 }
 
@@ -144,7 +148,7 @@ const FloatingEdge = memo(function FloatingEdge({ source, target, style, data, i
   const sourceNode = useInternalNode(source)
   const targetNode = useInternalNode(target)
   if (!sourceNode?.measured.width || !sourceNode.measured.height || !targetNode?.measured.width || !targetNode.measured.height) return null
-  const [path] = routeEdge(sourceNode, targetNode, data?.cards ?? [])
+  const [path] = routeEdge(sourceNode, targetNode, data?.cards ?? [], data?.offset)
   return <BaseEdge path={path} style={style} interactionWidth={interactionWidth} />
 })
 
@@ -227,20 +231,36 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
   }
 
   const cards = nodes.filter((node): node is CardNode => node.type === "card").map(node => ({ id: node.id, x: node.position.x, y: node.position.y, width: COLUMN_WIDTH, height: heights[node.id] ?? 132 }))
-  const edges: Edge[] = sharedEdges.map(edge => ({ ...edge, data: { cards } })).concat(graphReferences.map(reference => {
+  const routeGroups = new Map<string, ReferenceView[]>()
+  for (const reference of graphReferences) {
+    const key = pairKey(String(reference.source.column), String(reference.target.column))
+    const group = routeGroups.get(key) ?? []
+    group.push(reference)
+    routeGroups.set(key, group)
+  }
+  const offsets = new Map<string, number>()
+  for (const group of routeGroups.values()) group.forEach((reference, index) => offsets.set(reference.id, 16 * index / Math.max(1, group.length - 1)))
+  const focusedCard = nodes.find((node): node is CardNode => node.type === "card" && node.id === selectedCardId)
+  const selected = graphReferences.find(reference => reference.id === selectedConnection)
+  const focused = !!selected || !!focusedCard
+  const edges: Edge[] = sharedEdges.map(edge => {
+    const highlighted = !selected && (edge.source === selectedCardId || edge.target === selectedCardId)
+    return { ...edge, data: { cards }, style: { ...edge.style, opacity: focused ? highlighted ? 0.85 : 0.12 : 0.6 } }
+  }).concat(graphReferences.map(reference => {
     const { source, target } = reference
+    const highlighted = selected ? selected.id === reference.id : !!focusedCard && (reference.sourceId === focusedCard.data.itemId || reference.targetId === focusedCard.data.itemId)
     return {
       id: reference.id, source: source.id, target: target.id, type: "floating",
       sourceHandle: "source-right",
       targetHandle: "target-left",
       selected: selectedConnection === reference.id,
       interactionWidth: 40,
-      style: { stroke: "var(--primary)", strokeWidth: selectedConnection === reference.id ? 2 : 1.5 },
-      data: { cards },
+      style: { stroke: "var(--primary)", strokeWidth: highlighted ? 2.5 : 1.5, opacity: focused ? highlighted ? 1 : 0.12 : 0.7 },
+      zIndex: highlighted ? 2 : 0,
+      data: { cards, offset: offsets.get(reference.id) },
       ariaLabel: `${items[reference.sourceId].title} connected to ${items[reference.targetId].title}`,
     }
   }))
-  const selected = graphReferences.find(reference => reference.id === selectedConnection)
   const setBackground = async (color: GraphColor | "") => {
     if (!onSaveColors || !menu || savingColors) return
     const group = menu.kind === "item" ? "items" : "trails"
@@ -259,7 +279,7 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
       setError("Could not save map colors. Please try again.")
     } finally { setSavingColors(false) }
   }
-  return <div ref={graphRef} tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") setMenu(null) }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
+  return <div ref={graphRef} tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") { setMenu(null); setSelectedCardId(null); setSelectedConnection(undefined) } }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
     <div className="min-h-0 flex-1">
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 1 }} minZoom={preview ? 0.01 : 0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={false} onEdgeClick={(_, edge) => { if (!graphReferences.some(reference => reference.id === edge.id)) return; setMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
         setMenu(null)
@@ -278,7 +298,7 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
         if (node.type === "card") {
           setMenu({ kind: "item", sourceId: node.data.itemId, x, y })
         } else if (node.type === "lane") setMenu({ kind: "trail", trailId: node.id.slice(5), x, y })
-      }} onPaneClick={() => { setMenu(null); setSelectedCardId(null) }} panOnDrag={!preview} zoomOnScroll={!preview} zoomOnPinch={!preview} zoomOnDoubleClick={!preview} elementsSelectable={!preview} nodesFocusable={!preview} edgesFocusable={!preview} proOptions={preview ? { hideAttribution: true } : undefined}>
+      }} onPaneClick={() => { setMenu(null); setSelectedCardId(null); setSelectedConnection(undefined) }} panOnDrag={!preview} zoomOnScroll={!preview} zoomOnPinch={!preview} zoomOnDoubleClick={!preview} elementsSelectable={!preview} nodesFocusable={!preview} edgesFocusable={!preview} proOptions={preview ? { hideAttribution: true } : undefined}>
         {!preview && <Background color="var(--border)" gap={22} size={1} />}
         {!preview && <Controls position="bottom-right" showInteractive={false} />}
       </ReactFlow>
