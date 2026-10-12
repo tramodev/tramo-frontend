@@ -17,6 +17,10 @@ export default function AboutPage() {
       <h1 className="mb-8 font-display text-[clamp(40px,5.6vw,56px)] font-medium leading-[1.1]">Free to use.<br />Your ideas, your space.</h1>
       <p className="mb-12 text-[17px] leading-7 text-muted-foreground">Tramo is a place to write, connect ideas and build trails through what you know. Inspired by the Memex, it lets a note belong to more than one path, so your thinking can grow without being boxed into a single outline.</p>
       <div className="space-y-10">
+        <section aria-labelledby="creator-heading">
+          <h2 id="creator-heading" className="mb-3 font-display text-2xl font-medium">Built by one person, for many minds.</h2>
+          <p className="text-base leading-7 text-muted-foreground">I’m Ezequiel Martino, <a href="https://github.com/emart99" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4">@emart99<span className="sr-only"> on GitHub (opens in a new tab)</span></a> on GitHub. I build and maintain Tramo as a solo developer. It’s a personal project with a simple goal: make it easier to connect what you know and share how you think.</p>
+        </section>
         <section aria-labelledby="free-heading">
           <h2 id="free-heading" className="mb-3 font-display text-2xl font-medium">A useful tool shouldn’t be out of reach.</h2>
           <p className="text-base leading-7 text-muted-foreground">Tramo is free. Writing notes, connecting them, building trails, exploring projects and publishing your work aren’t a trial or a teaser for a paid plan. You don’t need a subscription to do the things Tramo was built for.</p>
