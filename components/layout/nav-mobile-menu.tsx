@@ -28,9 +28,9 @@ export function NavMobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
         </SheetHeader>
         <nav className="flex flex-col gap-1 px-4 pt-2">
           <SheetClose asChild>
-            <a href="#product" className="rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+            <Link href="/#product" className="rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
               Product
-            </a>
+            </Link>
           </SheetClose>
           {!isLoggedIn && (
             <>
