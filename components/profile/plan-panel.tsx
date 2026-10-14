@@ -10,19 +10,20 @@ import { cancelSubscription, type SubscriptionStatus } from "@/lib/subscription"
 import { formatBytes } from "@/lib/format-bytes"
 import { PatreonButton } from "@/components/profile/patreon-button"
 
-function StorageMeter({ status }: { status: SubscriptionStatus }) {
-  const scale = Math.max(status.storageQuotaBytes, status.storageUsedBytes, 1)
-  const pct = Math.min(100, status.storageUsedBytes / Math.max(status.storageQuotaBytes, 1) * 100)
+export function StorageMeter({ status }: { status: Pick<SubscriptionStatus, "storageUsedBytes" | "storageImageBytes" | "storageTextBytes"> & { storageQuotaBytes?: number } }) {
+  const quota = status.storageQuotaBytes ?? status.storageUsedBytes
+  const scale = Math.max(quota, status.storageUsedBytes, 1)
+  const pct = Math.min(100, status.storageUsedBytes / Math.max(quota, 1) * 100)
   const images = formatBytes(status.storageImageBytes)
   const text = formatBytes(status.storageTextBytes)
   const used = formatBytes(status.storageUsedBytes)
-  const total = formatBytes(status.storageQuotaBytes)
+  const total = status.storageQuotaBytes === undefined ? used : `${used} / ${formatBytes(status.storageQuotaBytes)}`
 
   return (
     <div>
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Storage</span>
-        <span className="font-medium tabular-nums">{used} / {total}</span>
+        <span className="font-medium tabular-nums">{total}</span>
       </div>
       <div
         role="progressbar"
@@ -30,7 +31,7 @@ function StorageMeter({ status }: { status: SubscriptionStatus }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-valuetext={`${used} / ${total}. Images: ${images}. Text: ${text}.`}
+        aria-valuetext={`${total}. Images: ${images}. Text: ${text}.`}
         className="mt-2 flex h-2 overflow-hidden rounded-full bg-muted"
       >
         <div aria-hidden="true" className="h-full shrink-0 bg-chart-1" style={{ width: `${status.storageImageBytes / scale * 100}%` }} />

@@ -138,6 +138,16 @@ export async function listProjects(): Promise<Project[]> {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+export interface ProjectStorage {
+  storageUsedBytes: number;
+  storageImageBytes: number;
+  storageTextBytes: number;
+}
+
+export async function getProjectStorage(id: string): Promise<ProjectStorage> {
+  return apiJson<ProjectStorage>(`/api/project/${id}/storage`);
+}
+
 export async function getProject(id: string): Promise<Project | null> {
   const projectResponse = await api(`/api/project/${id}`);
   if (projectResponse.status === 404) return null;

@@ -62,3 +62,13 @@ test.each([100, 0])('empty storage has zero-width segments even with quota %s', 
   expect(bar.props['aria-valuenow']).toBe(0);
   expect(bar.props.children.map(node => node.props.style.width)).toEqual(['0%', '0%']);
 });
+
+test('project storage shows its own total and proportions without a plan quota', () => {
+  const mb = 1024 * 1024;
+  const bar = meter(3 * mb, mb).find(node => node.props.role === 'progressbar');
+  expect(bar.props['aria-valuetext']).toBe('4.0MB. Images: 3.0MB. Text: 1.0MB.');
+  expect(bar.props.children.map(node => node.props.style.width)).toEqual(['75%', '25%']);
+  const empty = meter(0, 0).find(node => node.props.role === 'progressbar');
+  expect(empty.props['aria-valuenow']).toBe(0);
+  expect(empty.props.children.map(node => node.props.style.width)).toEqual(['0%', '0%']);
+});

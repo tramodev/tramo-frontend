@@ -14,6 +14,7 @@ import {
   ExternalLink,
   LayoutGrid,
   List as ListIcon,
+  HardDrive,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { ProjectThumbnail } from "@/components/project/project-thumbnail"
 import { ForkBadge } from "@/components/project/fork-badge"
 import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
+import { ProjectUsageDialog } from "@/components/project/project-usage-dialog"
 import { formatBytes } from "@/lib/format-bytes"
 import {
   startProject,
@@ -64,6 +66,7 @@ export default function ProjectsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState("")
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
+  const [usageTarget, setUsageTarget] = useState<Project | null>(null)
   const [sortBy, setSortBy] = useState<SortBy>("modified")
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
 
@@ -292,6 +295,7 @@ export default function ProjectsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 shrink-0"
+                            aria-label={`Actions for ${project.title}`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MoreHorizontal className="h-3.5 w-3.5" />
@@ -305,6 +309,11 @@ export default function ProjectsPage() {
                           <DropdownMenuItem onSelect={() => openInNewTab(project.id)}>
                             <ExternalLink className="h-3.5 w-3.5" />
                             Open in new tab
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
+                            <HardDrive className="h-3.5 w-3.5" />
+                            Usage breakdown
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -392,6 +401,7 @@ export default function ProjectsPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
+                          aria-label={`Actions for ${project.title}`}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <MoreHorizontal className="h-3.5 w-3.5" />
@@ -405,6 +415,11 @@ export default function ProjectsPage() {
                         <DropdownMenuItem onSelect={() => openInNewTab(project.id)}>
                           <ExternalLink className="h-3.5 w-3.5" />
                           Open in new tab
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
+                          <HardDrive className="h-3.5 w-3.5" />
+                          Usage breakdown
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -422,6 +437,7 @@ export default function ProjectsPage() {
             </div>
           )}
         </div>
+      {usageTarget && <ProjectUsageDialog key={usageTarget.id} project={usageTarget} onClose={() => setUsageTarget(null)} />}
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
