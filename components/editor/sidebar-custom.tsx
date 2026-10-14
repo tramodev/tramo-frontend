@@ -477,6 +477,10 @@ export function SidebarCustom({
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="start">
+                                        <DropdownMenuItem onSelect={() => startEditTrail(trail)}>
+                                          <Pencil className="h-3.5 w-3.5" />
+                                          Rename trail
+                                        </DropdownMenuItem>
                                         {linkableItems.length > 0 && (
                                           <DropdownMenuItem onSelect={() => startLinkingItem(trail.id)}>
                                             <Link2 className="h-3.5 w-3.5" />
