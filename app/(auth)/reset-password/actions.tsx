@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { API_BASE_URL } from '@/lib/config';
 
 export type ResetPasswordResult =
   | { success: true }
@@ -10,7 +11,7 @@ export async function resetPasswordHandler(
   token: string,
   newPassword: string
 ): Promise<ResetPasswordResult> {
-  const response = await fetch('http://localhost:8080/api/auth/reset-password', {
+  const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, newPassword }),

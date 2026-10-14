@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 import { redirect } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/config';
 
 export type ForgotPasswordResult = {
   error?: string;
@@ -17,11 +18,21 @@ export async function forgotPasswordHandler(
     return { error: 'Email is required' };
   }
 
-  await fetch('http://localhost:8080/api/auth/forgot-password', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    return { error: 'Could not request a reset link. Please try again.' };
+  }
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    return { error: typeof data?.message === 'string' ? data.message : 'Could not request a reset link. Please try again.' };
+  }
 
   redirect(`/forgot-password/check-email?email=${encodeURIComponent(email)}`);
 }

@@ -24,7 +24,7 @@ export function ForgotPasswordForm({
       </div>
       <FieldGroup className="mt-2 gap-[22px]">
         {state?.error && (
-          <div className="text-sm text-center text-destructive">
+          <div role="alert" className="text-sm text-center text-destructive">
             {state.error}
           </div>
         )}
