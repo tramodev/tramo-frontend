@@ -20,7 +20,10 @@ test('footer shows the brand, social icons and copyright in order', () => {
   const github = nodes.find(node => node.props.href === 'https://github.com/tramodev');
   expect(github.props.href).toBe('https://github.com/tramodev');
   expect(github.props.rel).toBe('noopener noreferrer');
-  expect(nodes.find(node => node.props['aria-label'] === 'Discord (coming soon)').props['aria-disabled']).toBe('true');
+  const discord = nodes.find(node => node.props['aria-label'] === 'Discord (opens in a new tab)');
+  expect(discord.props.href).toBe('https://discord.gg/rgYQHDYZRe');
+  expect(discord.props.target).toBe('_blank');
+  expect(discord.props.rel).toBe('noopener noreferrer');
   const x = nodes.find(node => node.props.href === 'https://x.com/tramodev');
   expect(x.props.rel).toBe('noopener noreferrer');
   expect(nodes.indexOf(x)).toBeLessThan(nodes.indexOf(github));
