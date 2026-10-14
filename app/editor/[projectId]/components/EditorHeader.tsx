@@ -14,9 +14,10 @@ interface EditorTitleSlotProps {
   projectTitle: string;
   onRenameProject: (title: string) => void;
   saveStatus: SaveStatus;
+  saveError: string;
 }
 
-export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus }: EditorTitleSlotProps) {
+export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, saveError }: EditorTitleSlotProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
 
@@ -78,6 +79,7 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus }: E
           </>
         )}
       </span>
+      {saveStatus === 'error' && saveError && <span role="alert" className="max-w-sm text-xs text-destructive">{saveError}</span>}
     </div>
   );
 }

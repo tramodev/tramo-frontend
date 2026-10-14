@@ -3,9 +3,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticatedFetch } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/config';
+import { readRequestBody } from '@/lib/request-body';
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => null);
+  const text = await readRequestBody(request);
+  if (text instanceof Response) return text;
+  let body;
+  try { body = JSON.parse(text); } catch { body = null; }
   if (!body || typeof body.projectId !== 'string' || typeof body.publicRead !== 'boolean'
       || !Array.isArray(body.imageIds) || body.imageIds.length < 1 || body.imageIds.length > 100
       || body.imageIds.some((id: unknown) => typeof id !== 'string')

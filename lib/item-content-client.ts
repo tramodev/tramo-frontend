@@ -31,6 +31,10 @@ export async function saveItemContent(itemId: string, content: string): Promise<
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content, extractionEpoch: getExtractionEpoch(itemId), expectedContent: savedContents.get(itemId) ?? '' }),
   });
+  if (response.status === 413 || response.status === 429) {
+    const error = await response.json().catch(() => null);
+    throw new Error(typeof error?.message === 'string' ? error.message : `Request failed with status ${response.status}`);
+  }
   await expectOk(response);
   savedContents.set(itemId, content);
 }

@@ -7,8 +7,15 @@ import { API_BASE_URL } from "./config";
 export type UploadKind = "avatar" | "thumbnail" | "banner";
 
 export interface UploadPresign {
-  uploadUrl: string;
-  publicUrl: string;
+  uploadId: string;
+  uploadUrl: string | null;
+}
+
+export async function completePublicUpload(uploadId: string): Promise<string> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/uploads/${encodeURIComponent(uploadId)}/complete`, { method: 'POST' });
+  const body = await response.json().catch(() => null);
+  if (!response.ok || typeof body?.publicUrl !== 'string') throw new Error(body?.message ?? 'Image validation failed. Please try again.');
+  return body.publicUrl;
 }
 
 const MAX_RATE_LIMIT_RETRIES = 3;

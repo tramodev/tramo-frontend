@@ -6,13 +6,13 @@ import { setAuthCookies } from './auth';
 
 export type GoogleAuthResult =
   | { success: true; requiresBirthDate: boolean }
-  | { success: false; error: string };
+  | { success: false; error: string; linkRequired?: boolean };
 
-export async function googleAuthHandler(idToken: string): Promise<GoogleAuthResult> {
+export async function googleAuthHandler(idToken: string, password?: string): Promise<GoogleAuthResult> {
   const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idToken }),
+    body: JSON.stringify({ idToken, password }),
   });
 
   if (!response.ok) {
@@ -20,6 +20,7 @@ export async function googleAuthHandler(idToken: string): Promise<GoogleAuthResu
     try {
       const data = await response.json();
       if (typeof data?.message === 'string') message = data.message;
+      return { success: false, error: message, linkRequired: data?.code === 'GOOGLE_LINK_REQUIRED' };
     } catch {
     }
     return { success: false, error: message };

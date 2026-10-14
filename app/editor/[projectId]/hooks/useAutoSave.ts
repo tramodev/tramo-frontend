@@ -20,6 +20,7 @@ export function useAutoSave({
   redirectToLogin,
 }: UseAutoSaveParams) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [saveError, setSaveError] = useState('');
   const pendingContentRef = useRef(new Map<string, string>());
   const optimisticContentRef = useRef(new Map<string, string>());
   const optimisticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,6 +55,7 @@ export function useAutoSave({
     if (!Array.from(pendingContentRef.current.keys()).some(id => !pausedItemsRef.current.has(id))) return Promise.resolve(false);
     const save = async () => {
       setSaveStatus('saving');
+      setSaveError('');
       try {
         while (pendingContentRef.current.size > 0) {
           const pending = Array.from(pendingContentRef.current).find(([id]) => !pausedItemsRef.current.has(id));
@@ -69,6 +71,7 @@ export function useAutoSave({
               pendingContentRef.current.set(itemId, content);
             }
             setSaveStatus('error');
+            setSaveError(err instanceof Error ? err.message : 'Could not save note content.');
             if (isAuthError(err)) redirectToLogin();
             return false;
           }
@@ -138,5 +141,5 @@ export function useAutoSave({
     if (pausedItemsRef.current.has(oldId)) { pausedItemsRef.current.delete(oldId); pausedItemsRef.current.add(newId); }
     if (incompleteImagesRef.current.has(oldId)) { incompleteImagesRef.current.delete(oldId); incompleteImagesRef.current.add(newId); }
   }, []);
-  return { saveStatus, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
+  return { saveStatus, saveError, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
 }

@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import { beginEditorImageUpload, completeEditorImageUpload } from "./editor-images";
-import { getUploadPresign, type UploadKind } from "./uploads";
+import { completePublicUpload, getUploadPresign, type UploadKind } from "./uploads";
 
 async function sha256Hex(blob: Blob): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
@@ -12,18 +12,20 @@ async function sha256Hex(blob: Blob): Promise<string> {
 
 export async function uploadImage(blob: Blob, kind: UploadKind, projectId?: string): Promise<string> {
   const contentHash = await sha256Hex(blob);
-  const { uploadUrl, publicUrl } = await getUploadPresign(blob.type, kind, contentHash, blob.size, projectId);
+  const { uploadId, uploadUrl } = await getUploadPresign(blob.type, kind, contentHash, blob.size, projectId);
 
-  const response = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": blob.type },
-    body: blob,
-  });
-  if (!response.ok) {
-    throw new Error(`Upload failed with status ${response.status}`);
+  if (uploadUrl) {
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": blob.type },
+      body: blob,
+    });
+    if (!response.ok) {
+      throw new Error(`Upload failed with status ${response.status}`);
+    }
   }
 
-  return publicUrl;
+  return completePublicUpload(uploadId);
 }
 
 export async function uploadEditorImage(blob: Blob, projectId: string): Promise<string> {

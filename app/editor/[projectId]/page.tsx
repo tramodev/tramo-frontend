@@ -95,6 +95,7 @@ export default function EditorPage() {
             projectTitle={project.projectTitle}
             onRenameProject={project.handleRenameProject}
             saveStatus={project.saveStatus}
+            saveError={project.saveError}
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={

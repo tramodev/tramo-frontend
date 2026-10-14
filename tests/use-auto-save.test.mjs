@@ -10,6 +10,7 @@ function setup() {
   const timers = new Map();
   const requests = [];
   const statuses = [];
+  const errors = [];
   const optimistic = [];
   let refIndex = 0;
   let timerId = 0;
@@ -24,7 +25,7 @@ function setup() {
     require: (name) => ({
       react: {
         useRef: (value) => refs[refIndex++] ?? (refs[refIndex - 1] = { current: value }),
-        useState: () => ['idle', (status) => statuses.push(status)],
+        useState: (initial) => [initial, (value) => (initial === 'idle' ? statuses : errors).push(value)],
         useCallback: (fn) => fn,
         useEffect: (fn) => { cleanups.push(fn()); },
       },
@@ -43,6 +44,7 @@ function setup() {
       dispatchEvent: () => {},
     },
     Event: class { constructor(type) { this.type = type; } },
+    Error,
     console: { error: () => {} },
   });
   let hook;
@@ -59,7 +61,7 @@ function setup() {
     });
   }
   return {
-    requests, statuses, optimistic, select,
+    requests, statuses, errors, optimistic, select,
     edit: (content) => hook.onChange(currentItemId, { read: (fn) => fn(), toJSON: () => content }),
     flush: () => { for (const [id, fn] of timers) { timers.delete(id); fn(); } },
     unload: (event) => beforeUnload(event),
@@ -148,6 +150,21 @@ test('a failed save preserves newer content and does not retry in a loop', async
   s.requests[1].resolve();
   await settle();
   expect(s.statuses.at(-1)).toBe('saved');
+});
+
+test('a resource limit explains the failure and retains the unsaved content', async () => {
+  const s = setup();
+  s.select('a');
+  s.edit('unsaved content');
+  s.flush();
+  s.requests[0].reject(new Error('Storage quota exceeded. Remove content or upgrade your plan.'));
+  await settle();
+  expect(s.statuses.at(-1)).toBe('error');
+  expect(s.errors.at(-1)).toContain('Storage quota exceeded');
+  const retry = s.barrier();
+  expect(s.requests[1].content).toBe(JSON.stringify('unsaved content'));
+  s.requests[1].resolve();
+  expect(await retry).toBe(true);
 });
 
 

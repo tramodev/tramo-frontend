@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticatedFetch } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/config';
+import { readRequestBody } from '@/lib/request-body';
 
 
 export async function GET(
@@ -23,11 +24,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.text();
+  const body = await readRequestBody(request);
+  if (body instanceof Response) return body;
   const response = await authenticatedFetch(`${API_BASE_URL}/api/item/${id}/content`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body,
   });
-  return new NextResponse(null, { status: response.status });
+  return new NextResponse(response.status === 204 ? null : await response.text(), {
+    status: response.status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
