@@ -11,6 +11,23 @@ const token = `header.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() 
 function setup(responses) {
   const exports = {};
   const requests = [];
+  const refresh = {};
+  const fetchResponse = async (url, options) => {
+    requests.push({ url, options });
+    const response = responses.shift();
+    if (response instanceof Error) throw response;
+    if (!response) throw new Error('Unexpected fetch');
+    return response;
+  };
+  runInNewContext(ts.transpileModule(readFileSync('lib/refresh.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017 },
+  }).outputText, {
+    exports: refresh,
+    require: () => ({ API_BASE_URL: 'http://backend' }),
+    fetch: fetchResponse,
+    setTimeout: () => ({ unref() {} }),
+    AbortSignal,
+  });
   runInNewContext(ts.transpileModule(readFileSync('proxy.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText, {
@@ -18,19 +35,15 @@ function setup(responses) {
     require: (name) => ({
       'next/server': { NextResponse },
       '@/lib/config': { API_BASE_URL: 'http://backend', REFRESH_TOKEN_MAX_AGE: 2592000 },
+      '@/lib/refresh': refresh,
     })[name],
-    fetch: async (url, options) => {
-      requests.push({ url, options });
-      const response = responses.shift();
-      if (response instanceof Error) throw response;
-      if (!response) throw new Error('Unexpected fetch');
-      return response;
-    },
+    fetch: fetchResponse,
     atob, URL, Date,
     process: { env: { NODE_ENV: 'test' } },
   });
   return {
     requests,
+    refresh: refresh.refreshTokens,
     run: (path, cookie = `accessToken=${token}; refreshToken=removed; username=old`, action = false) => exports.proxy(new NextRequest(`http://frontend${path}`, {
       headers: { cookie, ...(action ? { 'next-action': 'action-id' } : {}) },
     })),
@@ -99,4 +112,17 @@ test('a login redirect retains cookies rotated by refresh', async () => {
   const response = await s.run('/login');
   expect(response.headers.get('location')).toBe('http://frontend/projects');
   expect(response.cookies.get('refreshToken')?.value).toBe('rotated');
+});
+
+test.each([401, 403, 404])('a profile rejection (%s) cannot revive a cached session', async (status) => {
+  const s = setup([
+    new Response(JSON.stringify({ accessToken: token, refreshToken: 'rotated' })),
+    new Response(null, { status }),
+    failedRefresh(),
+  ]);
+  await s.refresh('removed');
+  const response = await s.run('/login');
+  expect(response.headers.get('location')).toBeNull();
+  for (const name of ['accessToken', 'refreshToken', 'username']) expect(response.cookies.get(name)?.value).toBe('');
+  expect(s.requests).toHaveLength(3);
 });

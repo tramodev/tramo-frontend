@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { API_BASE_URL, REFRESH_TOKEN_MAX_AGE } from '@/lib/config';
+import { invalidateRefreshTokens, refreshTokens } from '@/lib/refresh';
 
 const ANON_ID_COOKIE = 'tramo_anon_id';
 
@@ -34,24 +35,6 @@ function needsBirthDate(token: string): boolean {
   return decodeJwtPayload(token)?.requiresBirthDate === true;
 }
 
-async function refreshAccessToken(
-  refreshToken: string,
-): Promise<{ accessToken: string; refreshToken: string } | null> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!response.ok) return null;
-    const data = await response.json();
-    if (!data.accessToken) return null;
-    return { accessToken: data.accessToken, refreshToken: data.refreshToken ?? refreshToken };
-  } catch {
-    return null;
-  }
-}
-
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isOnboarding = path.startsWith('/onboarding/birth-date');
@@ -78,13 +61,14 @@ export async function proxy(request: NextRequest) {
       const birthDateRequired = profile.status === 403
         && (await profile.json().catch(() => null))?.message === 'Please provide your birth date to continue.';
       accessValid = profile.ok || birthDateRequired;
+      if (!accessValid && refreshToken) invalidateRefreshTokens(refreshToken);
     } catch {
       return new NextResponse('Session validation unavailable', { status: 503 });
     }
   }
 
   if ((isProtected || isAuthPage) && !accessValid && refreshToken) {
-    refreshed = await refreshAccessToken(refreshToken);
+    refreshed = await refreshTokens(refreshToken);
     if (refreshed) accessToken = refreshed.accessToken;
   }
 

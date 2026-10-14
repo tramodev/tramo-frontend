@@ -3,6 +3,7 @@
 'use server';
 import { cookies } from 'next/headers';
 import { API_BASE_URL, REFRESH_TOKEN_MAX_AGE } from './config';
+import { invalidateRefreshTokens, refreshTokens } from '@/lib/refresh';
 
 export type AuthTokens = { accessToken: string; refreshToken: string; username?: string };
 
@@ -69,8 +70,6 @@ export async function getUsername(): Promise<string | null> {
   return cookieStore.get('username')?.value || null;
 }
 
-const inflightRefresh = new Map<string, Promise<AuthTokens | null>>();
-
 export async function refreshAccessToken(): Promise<boolean> {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get('refreshToken')?.value;
@@ -85,28 +84,7 @@ export async function refreshAccessToken(): Promise<boolean> {
     return false;
   }
 
-  let promise = inflightRefresh.get(refreshToken);
-  if (!promise) {
-    promise = (async (): Promise<AuthTokens | null> => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
-        });
-        if (!response.ok) return null;
-        return await response.json();
-      } catch (error) {
-        console.error('Token refresh failed:', error);
-        return null;
-      }
-    })().finally(() => {
-      inflightRefresh.delete(refreshToken);
-    });
-    inflightRefresh.set(refreshToken, promise);
-  }
-
-  const tokens = await promise;
+  const tokens = await refreshTokens(refreshToken, cookieStore.get('accessToken')?.value);
   if (!tokens) return false;
   await setAuthCookies(tokens);
   return true;
@@ -116,11 +94,13 @@ export async function logout() {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get('refreshToken')?.value;
   if (refreshToken) {
+    invalidateRefreshTokens(refreshToken);
     await fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     }).catch(() => {});
+    invalidateRefreshTokens(refreshToken);
   }
   cookieStore.delete('accessToken');
   cookieStore.delete('refreshToken');
