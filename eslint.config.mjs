@@ -7,6 +7,14 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["app/editor/[[]projectId]/page.tsx"],
+    rules: { "@next/next/no-location-assign-relative-destination": "off" },
+  },
+  {
+    files: ["app/editor/plugins/ImageComponent.tsx"],
+    rules: { "@next/next/no-img-element": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

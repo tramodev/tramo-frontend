@@ -12,7 +12,7 @@ async function setup() {
   const states = [], refs = [], effects = [];
   let stateIndex = 0, refIndex = 0, initial = true;
   let resolveSave, rejectSave, requests = 0, bootstraps = 0, previews = 0;
-  let createResolve, createReject, creates = 0, looseCreateResolve, createLooseReject, looseCreates = 0;
+  let createResolve, createReject, looseCreateResolve;
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, content: '' }]));
   const steps = ['a', 'b', 'c'].map(id => ({ itemId: id }));
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
@@ -27,7 +27,6 @@ async function setup() {
   const autoSaveTimers = new Map();
   const autoSaveCleanups = [];
   const autoSaveRequests = [];
-  let autoSaveBeforeUnload;
   const autoSaveExports = {};
   runInNewContext(transpile('app/editor/[projectId]/hooks/useAutoSave.ts'), {
     exports: autoSaveExports,
@@ -48,7 +47,7 @@ async function setup() {
     setTimeout: (fn) => { autoSaveTimers.set(++autoSaveTimerId, fn); return autoSaveTimerId; },
     clearTimeout: (id) => autoSaveTimers.delete(id),
     window: {
-      addEventListener: (_, fn) => { autoSaveBeforeUnload = fn; },
+      addEventListener: () => {},
       removeEventListener: () => {},
       dispatchEvent: () => {},
     },
@@ -77,8 +76,8 @@ async function setup() {
       '@/lib/projects-store': {
         getMapPreviews: async () => { previews++; return {}; },
         reorderTrailItems: () => { requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
-        createItem: () => { creates++; return new Promise((resolve, reject) => { createResolve = resolve; createReject = reject; }); },
-        createLooseItem: () => { looseCreates++; return new Promise((resolve, reject) => { createLooseResolve = resolve; createLooseReject = reject; }); },
+        createItem: () => new Promise((resolve, reject) => { createResolve = resolve; createReject = reject; }),
+        createLooseItem: () => new Promise((resolve) => { looseCreateResolve = resolve; }),
       },
       '@/lib/item-content-client': { acceptLoadedContents: contents => contents, getTrailContents: async () => ({}), getItemContent: async () => '', saveItemContent: async () => {} },
       '../../editor-utils': { lastItemStorageKey: () => 'last', countTextStats: () => ({ words: 0, characters: 0 }), isAuthError: () => false },

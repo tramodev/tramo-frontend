@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 
-export default{
+const ExampleTheme = {
   code: 'editor-code',
   codeHighlight: {
     atrule: 'editor-tokenAttr',
@@ -81,3 +81,5 @@ export default{
     underlineStrikethrough: 'editor-text-underlineStrikethrough',
   },
 };
+
+export default ExampleTheme;
