@@ -10,15 +10,41 @@ import { cancelSubscription, type SubscriptionStatus } from "@/lib/subscription"
 import { formatBytes } from "@/lib/format-bytes"
 import { PatreonButton } from "@/components/profile/patreon-button"
 
-function Meter({ label, used, total, pct }: { label: string; used: string; total: string; pct: number }) {
+function StorageMeter({ status }: { status: SubscriptionStatus }) {
+  const scale = Math.max(status.storageQuotaBytes, status.storageUsedBytes, 1)
+  const pct = Math.min(100, status.storageUsedBytes / Math.max(status.storageQuotaBytes, 1) * 100)
+  const images = formatBytes(status.storageImageBytes)
+  const text = formatBytes(status.storageTextBytes)
+  const used = formatBytes(status.storageUsedBytes)
+  const total = formatBytes(status.storageQuotaBytes)
+
   return (
     <div>
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground">Storage</span>
         <span className="font-medium tabular-nums">{used} / {total}</span>
       </div>
-      <div className="mt-2 h-2 rounded-full bg-muted">
-        <div className="h-2 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+      <div
+        role="progressbar"
+        aria-label="Storage"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        aria-valuetext={`${used} / ${total}. Images: ${images}. Text: ${text}.`}
+        className="mt-2 flex h-2 overflow-hidden rounded-full bg-muted"
+      >
+        <div aria-hidden="true" className="h-full shrink-0 bg-chart-1" style={{ width: `${status.storageImageBytes / scale * 100}%` }} />
+        <div aria-hidden="true" className="h-full shrink-0 bg-chart-2" style={{ width: `${status.storageTextBytes / scale * 100}%` }} />
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="size-2 rounded-full bg-chart-1" />
+          Images <span className="tabular-nums">{images}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="size-2 rounded-full bg-chart-2" />
+          Text <span className="tabular-nums">{text}</span>
+        </span>
       </div>
     </div>
   )
@@ -28,8 +54,6 @@ export function PlanPanel({ initialStatus, patreonStatus }: { initialStatus: Sub
   const [status, setStatus] = useState(initialStatus)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [pending, startTransition] = useTransition()
-
-  const storagePct = Math.min(100, (status.storageUsedBytes / status.storageQuotaBytes) * 100)
 
   return (
     <>
@@ -45,12 +69,7 @@ export function PlanPanel({ initialStatus, patreonStatus }: { initialStatus: Sub
         </p>
 
         <div className="flex flex-col gap-5">
-          <Meter
-            label="Storage"
-            used={formatBytes(status.storageUsedBytes)}
-            total={formatBytes(status.storageQuotaBytes)}
-            pct={storagePct}
-          />
+          <StorageMeter status={status} />
         </div>
       </section>
 

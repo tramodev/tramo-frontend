@@ -8,6 +8,8 @@ import { parseResponse } from "./http";
 export interface SubscriptionStatus {
   supporter: boolean;
   storageUsedBytes: number;
+  storageImageBytes: number;
+  storageTextBytes: number;
   storageQuotaBytes: number;
   publishesPerWeek: number; // -1 = unlimited
 }
