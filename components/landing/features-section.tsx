@@ -103,11 +103,11 @@ export function FeaturesSection() {
     <p className="mb-10 max-w-[60ch] text-[17px] leading-relaxed text-muted-foreground">Keep your notes connected and reusable. Build trails for the things you want to learn or explain.</p>
     <div className="grid gap-4 md:grid-cols-2">
       {STEPS.map(({ Mockup, color, title }, index) => <FadeUp key={title} delay={index * 0.08} className="h-full md:row-span-2 md:grid md:grid-rows-subgrid">
-        <div className="flex h-full flex-col overflow-hidden rounded-[28px] bg-card md:row-span-2 md:grid md:grid-rows-subgrid md:gap-0">
+        <div className="flex h-full flex-col overflow-hidden rounded-t-[28px] rounded-b-sm bg-card md:row-span-2 md:grid md:grid-rows-subgrid md:gap-0">
           <div className="px-5 py-4 sm:px-6">
             <h3 className="font-display text-xl font-medium text-foreground">{title}</h3>
           </div>
-          <div aria-hidden="true" className="flex flex-1 items-center rounded-t-[28px] p-3 sm:p-4" style={{ background: `color-mix(in srgb, var(${color}) 60%, var(--muted))` }}><Mockup /></div>
+          <div aria-hidden="true" className="flex flex-1 items-end rounded-t-[28px] px-3 pt-3 sm:px-4 sm:pt-4 [&>div]:rounded-b-none [&>div]:border-b-0" style={{ background: `color-mix(in srgb, var(${color}) 60%, var(--muted))` }}><Mockup /></div>
         </div>
       </FadeUp>)}
     </div>
