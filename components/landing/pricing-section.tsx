@@ -8,7 +8,7 @@ import { FadeUp } from '@/components/landing/landing-motion';
 const PATREON_URL = 'https://www.patreon.com/tramodev';
 
 const FREE_FEATURES = [
-  'Unlimited public projects',
+  'Unlimited projects',
   'Unlimited publishing',
   'Full social layer — follow, fork, comment, upvote',
   '500MB storage',
