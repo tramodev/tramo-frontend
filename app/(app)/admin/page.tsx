@@ -1,9 +1,11 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { isAdmin } from "@/lib/session"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
+import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -17,6 +19,7 @@ export default async function AdminPage() {
 
   return (
     <main className="mx-auto w-full flex-1 px-8 py-8 max-w-[1000px]">
+      <div className="mb-8"><Button asChild variant="secondary"><Link href="/admin/content">Manage site content</Link></Button></div>
       <AdminDashboard />
     </main>
   )

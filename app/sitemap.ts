@@ -3,6 +3,7 @@
 import type { MetadataRoute } from "next"
 import { API_BASE_URL, SITE_URL } from "@/lib/config"
 import { SECTIONS } from "@/app/wiki/content"
+import { getBlogPosts } from "@/lib/site-content"
 
 export const revalidate = 3600
 
@@ -37,7 +38,7 @@ async function getSitemapUsers(): Promise<SitemapUser[]> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [projects, users] = await Promise.all([getSitemapProjects(), getSitemapUsers()])
+  const [projects, users, posts] = await Promise.all([getSitemapProjects(), getSitemapUsers(), getBlogPosts().catch(() => [])])
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
@@ -71,5 +72,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }))
 
-  return [...staticRoutes, ...wikiRoutes, ...projectRoutes, ...userRoutes]
+  const blogRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: `${SITE_URL}/blog/${post.slug}`,
+    lastModified: post.publishedDate,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }))
+
+  return [...staticRoutes, ...wikiRoutes, ...blogRoutes, ...projectRoutes, ...userRoutes]
 }

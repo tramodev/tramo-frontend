@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { connection } from 'next/server';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
+import { getChangelog } from '@/lib/site-content';
 
 export const metadata: Metadata = {
   title: 'Changelog',
@@ -8,7 +10,9 @@ export const metadata: Metadata = {
   alternates: { canonical: '/changelog' },
 };
 
-export default function ChangelogPage() {
+export default async function ChangelogPage() {
+  await connection();
+  const entries = await getChangelog();
   return <div className="min-h-screen">
     <Navbar />
     <main className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
@@ -18,19 +22,13 @@ export default function ChangelogPage() {
       <section aria-labelledby="recent-updates-heading" className="border-t border-border pt-8">
         <h2 id="recent-updates-heading" className="mb-6 font-display text-2xl font-medium text-foreground">Recent updates</h2>
         <ul className="space-y-6">
-          <li>
-            <h3 className="mb-1 font-medium text-foreground">Project storage breakdown</h3>
-            <p className="text-base leading-7 text-muted-foreground">See how much space a project uses for images and text. Open Usage breakdown from the project’s three-dot menu.</p>
-          </li>
-          <li>
-            <h3 className="mb-1 font-medium text-foreground">More reliable image cleanup</h3>
-            <p className="text-base leading-7 text-muted-foreground">Unused public uploads are now covered by automatic cleanup. Images used by notes or published versions stay protected.</p>
-          </li>
-          <li>
-            <h3 className="mb-1 font-medium text-foreground">A clearer introduction to Tramo</h3>
-            <p className="text-base leading-7 text-muted-foreground">Simpler feature previews on the homepage, with more room for the mockups and a better fit on smaller screens.</p>
-          </li>
+          {entries.map(entry => <li key={entry.id}>
+            <time dateTime={entry.publishedDate} className="mb-2 block text-xs text-muted-foreground">{entry.publishedDate}</time>
+            <h3 className="mb-1 font-medium text-foreground">{entry.title}</h3>
+            <p className="whitespace-pre-wrap break-words text-base leading-7 text-muted-foreground">{entry.content}</p>
+          </li>)}
         </ul>
+        {entries.length === 0 && <p className="text-sm text-muted-foreground">No updates yet.</p>}
       </section>
     </main>
     <Footer />
