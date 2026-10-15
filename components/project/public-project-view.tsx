@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { Eye, FolderPlus, MessageCircle } from "lucide-react"
 
@@ -94,6 +94,8 @@ export function PublicProjectView({
   const noteIds = useMemo(() => entries.filter(entry => entry.item).map(entry => entry.id), [entries])
 
   const columnRef = useRef<HTMLDivElement>(null)
+  const commentsRef = useRef<HTMLDivElement>(null)
+  const stopCommentsScroll = useRef(() => {})
   const slotRefs = useRef(new Map<string, HTMLElement>())
   const { visibleIds, selectionIds, heights } = useVirtualNotes(columnRef, slotRefs, noteIds, view === 'content')
 
@@ -105,7 +107,29 @@ export function PublicProjectView({
     onVisible: setSelectedId,
   })
 
+  useEffect(() => () => stopCommentsScroll.current(), [view])
+
+  const scrollToComments = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    const container = columnRef.current
+    const comments = commentsRef.current
+    if (!container || !comments?.parentElement) return
+    event.preventDefault()
+    stopCommentsScroll.current()
+    const align = () => comments.scrollIntoView({ block: 'start', behavior: 'instant' })
+    const observer = new ResizeObserver(align)
+    const stop = () => {
+      observer.disconnect()
+      for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) container.removeEventListener(type, stop)
+    }
+    stopCommentsScroll.current = stop
+    for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) container.addEventListener(type, stop, { passive: true })
+    observer.observe(comments.parentElement)
+    align()
+    comments.focus({ preventScroll: true })
+  }
+
   const scrollToEntry = (id: string | undefined) => {
+    stopCommentsScroll.current()
     setView('content')
     if (!id) return
     setSelectedId(id)
@@ -186,6 +210,7 @@ export function PublicProjectView({
               <TooltipTrigger asChild>
                 <a
                   href="#comments"
+                  onClick={scrollToComments}
                   aria-label="Jump to project comments"
                   className="relative z-10 flex h-9 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
                 >
@@ -308,7 +333,7 @@ export function PublicProjectView({
                     )
                   })}
                   {noteIds.length === 0 && emptyState}
-                  <div className="mt-8 border-t border-border">
+                  <div ref={commentsRef} tabIndex={-1} className="mt-8 border-t border-border">
                     <CommentsSection projectId={project.id} projectTitle={project.title} isLoggedIn={isLoggedIn} username={username} commentCount={commentCount} onCommentCountChange={setCommentCount} canComment={project.canComment} />
                   </div>
                 </div>

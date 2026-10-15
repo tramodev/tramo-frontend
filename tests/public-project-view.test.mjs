@@ -216,6 +216,68 @@ test('all trails and loose notes form one document with distinct shared-note slo
   expect(shell.props.sidebar.props.selectedItemId).toBe('b');
 });
 
+test('jumping to comments follows virtual note resizing until user input or navigation', () => {
+  const cleanups = [], observers = [], scrolled = [], focused = [];
+  const listeners = new Map();
+  const column = {
+    addEventListener: (type, listener) => listeners.set(type, listener),
+    removeEventListener: type => listeners.delete(type),
+  };
+  const content = {};
+  const comments = {
+    parentElement: content,
+    scrollIntoView: options => scrolled.push(options),
+    focus: options => focused.push(options),
+  };
+  const render = load('components/project/public-project-view.tsx', {
+    react: {
+      useState: value => [typeof value === 'function' ? value() : value, () => {}],
+      useMemo: calculate => calculate(),
+      useRef: current => ({ current }),
+      useEffect: effect => cleanups.push(effect()),
+    },
+    '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
+    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+  }, {
+    requestAnimationFrame: () => 0,
+    ResizeObserver: class {
+      constructor(callback) { this.callback = callback; observers.push(this); }
+      observe(target) { this.target = target; }
+      disconnect() { this.disconnected = true; }
+    },
+  });
+  const project = { id: 'project', title: 'Project', trails: [], looseItems: [] };
+  const shell = render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
+  const nodes = flatten(shell.props.content);
+  nodes.find(node => node.props.className === 'editor-inner').props.ref.current = column;
+  nodes.find(node => node.props.className === 'mt-8 border-t border-border').props.ref.current = comments;
+  const link = flatten(shell.props.actions).find(node => node.props.href === '#comments');
+  let prevented = false;
+  const jump = () => link.props.onClick({ preventDefault: () => { prevented = true; } });
+  jump();
+  expect(prevented).toBe(true);
+  expect(observers[0].target).toBe(content);
+  expect(scrolled).toEqual([{ block: 'start', behavior: 'instant' }]);
+  expect(focused).toEqual([{ preventScroll: true }]);
+  observers[0].callback();
+  observers[0].callback();
+  expect(scrolled).toHaveLength(3);
+  for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
+    if (!listeners.has(type)) jump();
+    listeners.get(type)();
+    expect(observers.at(-1).disconnected).toBe(true);
+    expect(listeners.size).toBe(0);
+  }
+  jump();
+  shell.props.sidebar.props.onSelectTrail('other');
+  expect(observers.at(-1).disconnected).toBe(true);
+  expect(listeners.size).toBe(0);
+  jump();
+  cleanups.forEach(cleanup => cleanup?.());
+  expect(observers.at(-1).disconnected).toBe(true);
+  expect(listeners.size).toBe(0);
+});
+
 test('empty public projects still render their introduction and project comments', () => {
   const render = load('components/project/public-project-view.tsx', {
     '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
