@@ -36,7 +36,7 @@ test('footer shows the brand, social icons and copyright in order', () => {
 test('future footer pages are listed without broken links', () => {
   const nodes = flatten(exports.Footer());
   const pages = nodes.filter(node => node.props.role === 'link' && node.props.title === 'Coming soon');
-  expect(pages.map(node => node.props.children[0])).toEqual(['Blog', 'Wiki', 'Changelog', 'Privacy Policy', 'Terms of Service']);
+  expect(pages.map(node => node.props.children[0])).toEqual(['Privacy Policy', 'Terms of Service']);
   expect(pages.every(node => node.props['aria-disabled'] === 'true' && !node.props.href)).toBe(true);
   expect(nodes.filter(node => node.type === 'ul')).toHaveLength(3);
   expect(nodes.filter(node => node.type === 'h2').map(node => node.props.children)).toEqual(['Company', 'Product', 'Resources']);

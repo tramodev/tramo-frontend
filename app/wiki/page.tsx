@@ -1,0 +1,213 @@
+import type { Metadata } from 'next';
+import { Navbar } from '@/components/layout/navbar';
+import { Footer } from '@/components/layout/footer';
+
+export const metadata: Metadata = {
+  title: 'Wiki',
+  description: 'An overview of Tramo’s features: projects, notes, trails, connections, publishing and more.',
+  alternates: { canonical: '/wiki' },
+};
+
+const SECTIONS = [
+  {
+    id: 'getting-started', title: 'Getting started', features: [
+      ['Create an account', 'Sign up with an email address and password.'],
+      ['Google sign-in', 'Use your Google account to sign up or log in.'],
+      ['Email verification', 'Verify your email and request a new verification message when needed.'],
+      ['Example project', 'Start with an editable copy of the Memex and Vannevar Bush example.'],
+      ['Editor walkthrough', 'Follow the guided editor tour and replay it from Settings or Help.'],
+      ['Appearance', 'Choose a light, dark or device-matched theme from the account menu.'],
+    ],
+  },
+  {
+    id: 'projects', title: 'Projects', features: [
+      ['Create a project', 'Start a new workspace for your notes and trails.'],
+      ['Rename a project', 'Change its title from the project menu or the editor.'],
+      ['Grid and list views', 'Choose how your projects appear in the workspace.'],
+      ['Sort projects', 'Order projects by title or last modified date.'],
+      ['Open in a new tab', 'Open another project without leaving your current workspace.'],
+      ['Delete a project', 'Permanently remove a project after confirming the action.'],
+      ['Project text statistics', 'See the project’s word and character counts in the editor.'],
+    ],
+  },
+  {
+    id: 'notes-and-trails', title: 'Notes and trails', features: [
+      ['Create and rename notes', 'Give each idea its own note and title.'],
+      ['Notes outside trails', 'Keep notes in a project without assigning them to a reading path.'],
+      ['Create and rename trails', 'Build named, ordered paths through your notes.'],
+      ['Reuse a note', 'Place the same note in more than one trail without copying its content.'],
+      ['Shared-note indicators', 'See when a note is used in multiple trails. Edits affect the shared note.'],
+      ['Add an existing note', 'Include a note you already have as a step in another trail.'],
+      ['Remove a step', 'Remove a note from a trail without confusing that action with deleting the note.'],
+      ['Reorder steps', 'Drag notes into a different reading order within a trail.'],
+      ['Delete notes and trails', 'Remove unwanted notes or trails using their confirmation dialogs.'],
+    ],
+  },
+  {
+    id: 'writing', title: 'Writing and formatting', features: [
+      ['Rich-text formatting', 'Use bold, italic, underline, strikethrough, highlighting and inline code.'],
+      ['Headings', 'Structure a note with three levels of headings.'],
+      ['Lists and checklists', 'Write bulleted lists, numbered lists and tasks, with indentation.'],
+      ['Quotes', 'Separate quoted text from the rest of a note.'],
+      ['Code blocks', 'Add code snippets with a language selector and syntax highlighting.'],
+      ['Fonts and text size', 'Adjust the font family and size of selected text.'],
+      ['Text colors', 'Apply a color from the editor’s palette.'],
+      ['Alignment', 'Align paragraphs and note titles using the toolbar.'],
+      ['Web links', 'Insert and edit links to external pages.'],
+      ['Slash menu', 'Type / to find and insert blocks without leaving the note.'],
+      ['Markdown shortcuts', 'Turn familiar heading, list and quote prefixes into formatted blocks as you type.'],
+      ['Move blocks', 'Reorder content inside a note with block drag handles.'],
+      ['Undo and redo', 'Step backward and forward through normal edits.'],
+      ['Automatic saving', 'Save note changes automatically and check the editor’s saving or error status.'],
+    ],
+  },
+  {
+    id: 'images-and-blocks', title: 'Images and other blocks', features: [
+      ['Image uploads', 'Insert images into notes through the upload controls.'],
+      ['Resize images', 'Adjust an image’s displayed dimensions in the editor.'],
+      ['Captions and alt text', 'Add a visible caption and an accessible image description.'],
+      ['Tables', 'Insert a table and choose its initial number of rows and columns.'],
+      ['Dividers', 'Separate parts of a note with a horizontal rule.'],
+      ['Equations', 'Write LaTeX equations inline or as a separate block.'],
+      ['Music notation', 'Add a music block using ABC notation.'],
+      ['Embeds', 'Insert a public YouTube video or X / Twitter post by its URL.'],
+    ],
+  },
+  {
+    id: 'connections-and-map', title: 'Connections and the map', features: [
+      ['Note mentions', 'Type @ to find and link to another note in the project.'],
+      ['Wiki-style links', 'Use [[ as another way to insert a note reference.'],
+      ['Follow a reference', 'Open the linked note from its mention.'],
+      ['Connections panel', 'See both outgoing and incoming mentions involving the selected note.'],
+      ['Extract to a new note', 'Move selected content into a new note and leave a reference in its place. Extraction cannot be undone with normal Undo.'],
+      ['Extraction placement', 'Place the extracted note next or last in the current trail, or outside trails.'],
+      ['Project map', 'See trails side by side, shared notes and connections between ideas.'],
+      ['Map navigation', 'Pan, zoom, fit the view and open notes from their cards.'],
+      ['Map colors', 'Set background colors for notes and trails through the map’s context menu.'],
+      ['Map preview', 'Keep a small map preview available in the connections panel.'],
+    ],
+  },
+  {
+    id: 'navigation', title: 'Navigation and shortcuts', features: [
+      ['Project note search', 'Find notes in the current project from the sidebar or with Cmd/Ctrl+P.'],
+      ['Find and replace', 'Search and replace text within the current note.'],
+      ['Continuous trail reading', 'Move through the notes of a trail in a continuous editor view.'],
+      ['Keyboard navigation', 'Move between titles, note content, trail steps and the next trail with keyboard shortcuts.'],
+      ['Shortcut reference', 'Open the shortcut dialog with Cmd/Ctrl+/ and see the available commands.'],
+      ['Collapsible panels', 'Show or hide the sidebar and connections panel to make more room for writing.'],
+    ],
+  },
+  {
+    id: 'publishing', title: 'Publishing and sharing', features: [
+      ['Private projects', 'Keep a project accessible only to you.'],
+      ['Unlisted projects', 'Allow people with the link to read a project without listing it on Explore.'],
+      ['Published projects', 'Publish a project for others to discover on Explore.'],
+      ['Project descriptions', 'Introduce the project and explain what readers will find.'],
+      ['Tags', 'Add project tags with suggestions for existing topics.'],
+      ['Public thumbnails', 'Upload a cover image or capture the project map as a thumbnail. Thumbnails are public.'],
+      ['Publication preview', 'Preview the project card before publishing or updating it.'],
+      ['Copy a sharing link', 'Copy the reader-facing link from the sharing screen.'],
+      ['Published snapshots', 'Publish an update when you want later edits to become visible to readers.'],
+      ['Publish history', 'Browse earlier published versions and open their public links.'],
+      ['Reader view', 'Read shared projects with their notes, trails and map outside the editing interface.'],
+      ['Export a project', 'Download a ZIP containing an HTML reader, project JSON and images.'],
+    ],
+  },
+  {
+    id: 'community', title: 'Explore and community', features: [
+      ['Explore search', 'Search the projects published by the community.'],
+      ['Recent and hot feeds', 'Browse newly published projects or popular activity.'],
+      ['Following feed', 'Focus the feed on people you follow.'],
+      ['Featured projects and topics', 'Discover highlighted projects, hot topics and active authors.'],
+      ['Upvotes', 'Upvote a project you find useful.'],
+      ['Bookmarks', 'Save projects and revisit them from your profile.'],
+      ['Comments and replies', 'Discuss a project and reply to other comments when the author allows it.'],
+      ['Manage your comments', 'Delete comments you no longer want to keep.'],
+      ['Follow authors', 'Follow or unfollow other people and browse follower lists.'],
+      ['Share with followers', 'Share a project to your followers’ activity feed.'],
+      ['Fork a project', 'Create your own editable starting point from someone else’s project when forks are allowed.'],
+      ['Fork attribution', 'See the source author associated with a fork.'],
+    ],
+  },
+  {
+    id: 'profile-and-account', title: 'Profile and account', features: [
+      ['Profile details', 'Edit your bio, location and website.'],
+      ['Profile images', 'Upload and crop your avatar. Profile images are public.'],
+      ['Age visibility', 'Choose whether to show your age on your profile.'],
+      ['Public profiles', 'Browse an author’s profile, published projects and visible activity.'],
+      ['Personal collections', 'Revisit your published projects, bookmarks, forks and upvoted projects from your profile.'],
+      ['Activity history', 'Review your recent activity on Tramo.'],
+      ['Badges', 'View earned badges and select one to display on your profile.'],
+      ['Change your password', 'Update your password from account settings.'],
+      ['Password recovery', 'Request an email link to reset a forgotten password.'],
+      ['Delete your account', 'Request permanent account deletion from the account settings.'],
+    ],
+  },
+  {
+    id: 'privacy-and-notifications', title: 'Privacy and notifications', features: [
+      ['Profile visibility', 'Choose a public or private profile. This setting is separate from project visibility.'],
+      ['Upvote visibility', 'Choose whether your public profile shows the projects you upvoted.'],
+      ['Fork permissions', 'Choose whether other people can fork your published projects.'],
+      ['Comment permissions', 'Allow comments from everyone, people you follow, or no one.'],
+      ['Blocked users', 'Block or unblock people and manage your blocked-user list.'],
+      ['Report content', 'Report a project or comment with a reason.'],
+      ['Notification inbox', 'Receive notifications about interactions with your work and people you follow.'],
+      ['Notification preferences', 'Disable notifications or mute individual categories such as comments, follows and upvotes.'],
+    ],
+  },
+  {
+    id: 'storage-and-supporter', title: 'Storage and Supporter', features: [
+      ['Workspace storage', 'See the storage used by your account and the quota of your current plan.'],
+      ['Images and text breakdown', 'See how much of the account’s storage comes from images and text.'],
+      ['Project usage', 'Open Usage breakdown from a project’s menu to inspect its images and text.'],
+      ['Unused image cleanup', 'Unused uploads are cleaned up after a grace period; references from notes and published versions protect images.'],
+      ['Support through Patreon', 'Connect Patreon to activate Tramo Supporter.'],
+      ['Supporter benefits', 'Get more storage, an animated GIF avatar, a profile banner and a Supporter badge.'],
+      ['Cancel a subscription', 'Cancel from plan settings without deleting your existing projects.'],
+    ],
+  },
+  {
+    id: 'administration', title: 'Administration', features: [
+      ['Report review', 'Administrators can review project and comment reports.'],
+      ['Moderation actions', 'Administrators can dismiss reports, unpublish reported projects and remove reported comments.'],
+      ['User lookup', 'Administrators can search the user list.'],
+      ['Bans', 'Administrators can ban users with a reason or lift an existing ban.'],
+    ],
+  },
+];
+
+export default function WikiPage() {
+  return <div className="min-h-screen">
+    <Navbar />
+    <main className="mx-auto max-w-[1216px] px-6 pb-[84px] pt-16 md:px-[72px]">
+      <header className="mb-12 max-w-[680px]">
+        <p className="mb-4 text-sm font-medium text-primary">Wiki</p>
+        <h1 className="mb-6 font-display text-[clamp(40px,5.6vw,56px)] font-medium leading-[1.1]">Find your way around Tramo.</h1>
+        <p className="mb-4 text-[17px] leading-7 text-muted-foreground">From your first note to a published trail, here’s what you can do with Tramo.</p>
+        <p className="text-sm text-muted-foreground">This is a feature index. Detailed guides and examples are still being written.</p>
+      </header>
+      <div className="grid items-start gap-10 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-16">
+        <nav aria-label="Wiki topics" className="rounded-2xl border border-border p-5 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
+          <p className="mb-4 text-sm font-medium text-foreground">Browse topics</p>
+          <ul className="grid gap-x-4 gap-y-1 sm:grid-cols-2 lg:grid-cols-1">
+            {SECTIONS.map(section => <li key={section.id}>
+              <a href={`#${section.id}`} className="block rounded-sm py-1.5 text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{section.title}</a>
+            </li>)}
+          </ul>
+        </nav>
+        <div className="min-w-0 space-y-12">
+          {SECTIONS.map(section => <section key={section.id} id={section.id} aria-labelledby={`${section.id}-heading`} className="scroll-mt-24 border-t border-border pt-6">
+            <h2 id={`${section.id}-heading`} className="mb-6 font-display text-[28px] font-medium leading-tight text-foreground">{section.title}</h2>
+            <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+              {section.features.map(([title, description]) => <div key={title}>
+                <dt className="mb-1 text-sm font-medium text-foreground">{title}</dt>
+                <dd className="text-sm leading-6 text-muted-foreground">{description}</dd>
+              </div>)}
+            </dl>
+          </section>)}
+        </div>
+      </div>
+    </main>
+    <Footer />
+  </div>;
+}
