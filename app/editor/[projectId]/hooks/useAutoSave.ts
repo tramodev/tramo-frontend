@@ -35,6 +35,7 @@ export function useAutoSave({
     pendingContentRef.current.delete(itemId);
     optimisticContentRef.current.delete(itemId);
     incompleteImagesRef.current.delete(itemId);
+    pausedItemsRef.current.delete(itemId);
   }, []);
 
   const flushOptimisticContent = useCallback(() => {
@@ -76,7 +77,7 @@ export function useAutoSave({
             return false;
           }
         }
-        setSaveStatus('saved');
+        setSaveStatus(incompleteImagesRef.current.size > 0 ? 'saving' : 'saved');
         return incompleteImagesRef.current.size === 0;
       } finally {
         inFlightRef.current = null;
@@ -92,7 +93,7 @@ export function useAutoSave({
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (pendingContentRef.current.size === 0 && !inFlightRef.current) return;
+      if (pendingContentRef.current.size === 0 && !inFlightRef.current && incompleteImagesRef.current.size === 0) return;
       flushPendingContent();
       event.preventDefault();
       event.returnValue = '';
@@ -105,6 +106,7 @@ export function useAutoSave({
     editorState.read(() => {
       if (deletedItemsRef.current.has(itemId)) return;
       const json = JSON.stringify(editorState.toJSON());
+      setSaveStatus('saving');
       optimisticContentRef.current.set(itemId, json);
       if (!optimisticTimeoutRef.current) optimisticTimeoutRef.current = setTimeout(flushOptimisticContent, 150);
       if (json.includes('"imageId":""')) {
@@ -115,7 +117,6 @@ export function useAutoSave({
       incompleteImagesRef.current.delete(itemId);
 
       pendingContentRef.current.set(itemId, json);
-      setSaveStatus('saving');
       if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = setTimeout(() => flushPendingContent(), 600);
     });
@@ -130,16 +131,17 @@ export function useAutoSave({
     pendingContentRef.current.delete(id);
     optimisticContentRef.current.delete(id);
     incompleteImagesRef.current.delete(id);
-    setSaveStatus('saved');
+    setSaveStatus(pendingContentRef.current.size > 0 || inFlightRef.current || incompleteImagesRef.current.size > 0 ? 'saving' : 'saved');
   };
   const renameItemId = useCallback((oldId: string, newId: string) => {
     if (oldId === newId) return;
+    flushOptimisticContent();
     for (const ref of [pendingContentRef, optimisticContentRef]) {
       const content = ref.current.get(oldId);
       if (content !== undefined) { ref.current.delete(oldId); ref.current.set(newId, content); }
     }
     if (pausedItemsRef.current.has(oldId)) { pausedItemsRef.current.delete(oldId); pausedItemsRef.current.add(newId); }
     if (incompleteImagesRef.current.has(oldId)) { incompleteImagesRef.current.delete(oldId); incompleteImagesRef.current.add(newId); }
-  }, []);
+  }, [flushOptimisticContent]);
   return { saveStatus, saveError, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
 }

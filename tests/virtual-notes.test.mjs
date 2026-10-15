@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-const jsx = (type, props) => ({ type, props });
+const jsx = (type, props, key) => ({ type, props, key });
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 function load(path, modules, globals = {}) {
   const exports = {};
@@ -25,6 +25,44 @@ function hooks() {
     useRef: value => ({ current: value }), useMemo: fn => fn(), useCallback: fn => fn,
   };
 }
+
+test('confirming a temporary note keeps the same editor key and session including image previews', () => {
+  const react = hooks();
+  const effects = [], revoked = [];
+  const view = load('app/editor/[projectId]/components/WriteView.tsx', {
+    react: { ...react, useEffect: fn => effects.push(fn) },
+    'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
+    '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
+    '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(), selectionIds: new Set(), heights: new Map() }) },
+  }, {
+    window: { addEventListener() {}, removeEventListener() {} },
+    URL: { revokeObjectURL: url => revoked.push(url) },
+    requestAnimationFrame: () => 0,
+    cancelAnimationFrame() {},
+  });
+  function render(item, notes = [item]) {
+    react.reset();
+    const items = Object.fromEntries(notes.map(note => [note.id, note]));
+    const trail = { id: 'trail', itemIds: notes.map(note => note.id), steps: notes.map(note => ({ itemId: note.id })) };
+    const nodes = flatten(view.WriteView({ projectId: 'project', item, items, trail, trails: [trail], onVisibleItem() {} }));
+    return { section: nodes.find(node => node.type === 'section'), editor: nodes.find(node => node.type?.name === 'ItemEditor'), nodes };
+  }
+  const temporary = { id: 'temp-1', editorKey: 'temp-1', title: 'Note', content: 'draft' };
+  const first = render(temporary);
+  first.editor.props.session.previewUrls.add('blob:pending');
+  first.editor.props.session.state = { unsaved: true };
+  first.editor.props.onPendingImages('temp-1', true);
+  const real = { ...temporary, id: '42' };
+  const confirmed = render(real);
+  expect(confirmed.section.key).toBe(first.section.key);
+  expect(confirmed.editor.props.session).toBe(first.editor.props.session);
+  const other = { id: 'other', title: 'Other', content: '' };
+  const scrolled = render(other, [real, other]);
+  expect(scrolled.nodes.find(node => node.type?.name === 'ItemEditor' && node.props.item.id === '42').props.session).toBe(first.editor.props.session);
+  for (const effect of effects) effect();
+  expect(revoked).toEqual([]);
+  expect(confirmed.editor.props.session.previewUrls.has('blob:pending')).toBe(true);
+});
 
 test('the viewport window removes distant notes and remembers measured heights', () => {
   const react = hooks(), effects = [], observers = [], listeners = new Map();

@@ -12,7 +12,8 @@ async function setup() {
   const states = [], refs = [], effects = [];
   let stateIndex = 0, refIndex = 0, initial = true;
   let resolveSave, rejectSave, requests = 0, bootstraps = 0, previews = 0;
-  let createResolve, createReject, looseCreateResolve;
+  let createResolve, createReject, looseCreateResolve, looseCreateReject;
+  const contentResets = [];
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, content: '' }]));
   const steps = ['a', 'b', 'c'].map(id => ({ itemId: id }));
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
@@ -77,9 +78,9 @@ async function setup() {
         getMapPreviews: async () => { previews++; return {}; },
         reorderTrailItems: () => { requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
         createItem: () => new Promise((resolve, reject) => { createResolve = resolve; createReject = reject; }),
-        createLooseItem: () => new Promise((resolve) => { looseCreateResolve = resolve; }),
+        createLooseItem: () => new Promise((resolve, reject) => { looseCreateResolve = resolve; looseCreateReject = reject; }),
       },
-      '@/lib/item-content-client': { acceptLoadedContents: contents => contents, getTrailContents: async () => ({}), getItemContent: async () => '', saveItemContent: async () => {} },
+      '@/lib/item-content-client': { resetItemContents: ids => contentResets.push(ids), acceptLoadedContents: contents => contents, getTrailContents: async () => ({}), getItemContent: async () => '', saveItemContent: async () => {} },
       '../../editor-utils': { lastItemStorageKey: () => 'last', countTextStats: () => ({ words: 0, characters: 0 }), isAuthError: () => false },
       '../../trail-navigation': navigation,
       '@/lib/pending-saves': saves,
@@ -91,19 +92,23 @@ async function setup() {
   });
   function render() {
     stateIndex = refIndex = 0;
+    autoSaveRefIndex = 0;
     const hook = exports.useProjectEditorState('project', false);
     if (initial) { initial = false; effects.forEach(fn => fn()); }
     return hook;
   }
   render();
   await settle();
-  return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews };
+  return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), createLooseFail: () => looseCreateReject(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews, contentResets, autoSaveRequests,
+    flushTimers: () => { for (const [id, fn] of autoSaveTimers) { autoSaveTimers.delete(id); fn(); } },
+  };
 }
 
 test('startup uses one bootstrap request and defers map previews', async () => {
   const s = await setup();
   expect(s.bootstraps()).toBe(1);
   expect(s.previews()).toBe(0);
+  expect(s.contentResets).toEqual([['a', 'b', 'c']]);
 });
 
 test('reorder preserves note content and rejects concurrent requests', async () => {
@@ -177,7 +182,7 @@ test('failed createItem removes the optimistic note', async () => {
   expect(hook.trails[0].itemIds).not.toContain(tempId);
 });
 
-test.skip('createLooseItem adds the note optimistically and reconciles with the server id', async () => {
+test('createLooseItem adds the note optimistically and reconciles with the server id', async () => {
   const s = await setup();
   const pending = s.render().handleCreateLooseItem('Loose note');
   await settle();
@@ -190,4 +195,64 @@ test.skip('createLooseItem adds the note optimistically and reconciles with the 
   hook = s.render();
   expect(hook.items[tempId]).toBeUndefined();
   expect(hook.items.loose.unfiled).toBe(true);
+});
+
+test.each(['trail', 'loose'])('a slow %s note creation never autosaves the temporary id', async kind => {
+  const s = await setup();
+  const pending = kind === 'trail' ? s.render().handleCreateItem('trail', 'New note') : s.render().handleCreateLooseItem('New note');
+  await settle();
+  const hook = s.render();
+  const tempId = Object.keys(hook.items).find(id => id.startsWith('temp-'));
+  hook.onChange(tempId, { read: fn => fn(), toJSON: () => 'written while creating' });
+  s.flushTimers();
+  expect(s.autoSaveRequests).toHaveLength(0);
+  expect(await hook.flushPendingContent()).toBe(false);
+  const item = { id: 'new', title: 'New note', titleAlign: 'center', unfiled: kind === 'loose', content: '' };
+  if (kind === 'trail') s.create(item); else s.createLoose(item);
+  await pending;
+  s.flushTimers();
+  expect(s.autoSaveRequests).toHaveLength(1);
+  expect(s.autoSaveRequests[0].itemId).toBe('new');
+  expect(s.autoSaveRequests[0].content).toBe(JSON.stringify('written while creating'));
+  s.autoSaveRequests[0].resolve();
+  await settle();
+  expect(await s.render().flushPendingContent()).toBe(true);
+});
+
+test.each(['trail', 'loose'])('a failed %s note creation discards paused temporary writes', async kind => {
+  const s = await setup();
+  const pending = kind === 'trail' ? s.render().handleCreateItem('trail', 'New note') : s.render().handleCreateLooseItem('New note');
+  await settle();
+  const hook = s.render();
+  const tempId = Object.keys(hook.items).find(id => id.startsWith('temp-'));
+  hook.onChange(tempId, { read: fn => fn(), toJSON: () => 'draft' });
+  if (kind === 'trail') s.createFail(); else s.createLooseFail();
+  await expect(pending).rejects.toThrow('offline');
+  hook.onChange(tempId, { read: fn => fn(), toJSON: () => 'late update' });
+  s.flushTimers();
+  expect(s.autoSaveRequests).toHaveLength(0);
+  expect(await s.render().flushPendingContent()).toBe(true);
+});
+
+test.each(['trail', 'loose'])('a fast %s creation keeps edits made before the optimistic timer fires', async kind => {
+  const s = await setup();
+  const pending = kind === 'trail' ? s.render().handleCreateItem('trail', 'New note') : s.render().handleCreateLooseItem('New note');
+  await settle();
+  const hook = s.render();
+  const tempId = Object.keys(hook.items).find(id => id.startsWith('temp-'));
+  hook.onChange(tempId, { read: fn => fn(), toJSON: () => 'typed just before the response' });
+  const sequence = hook.navigationRequest.sequence;
+  const item = { id: 'new', title: 'New note', titleAlign: 'center', unfiled: kind === 'loose', content: '' };
+  if (kind === 'trail') s.create(item); else s.createLoose(item);
+  await pending;
+  const reconciled = s.render();
+  const confirmed = reconciled.items.new;
+  expect(confirmed.content).toBe(JSON.stringify('typed just before the response'));
+  expect(confirmed.editorKey).toBe(tempId);
+  expect(reconciled.navigationRequest.sequence).toBe(sequence);
+  expect(reconciled.navigationRequest.itemId).toBe('new');
+  s.flushTimers();
+  expect(s.autoSaveRequests[0].itemId).toBe('new');
+  s.autoSaveRequests[0].resolve();
+  await settle();
 });

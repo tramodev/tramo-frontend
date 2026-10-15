@@ -4,6 +4,7 @@ export type TitleAlign = "left" | "center" | "right";
 
 export interface Item {
     id: string;
+    editorKey?: string;
     title: string;
     titleAlign: TitleAlign;
     unfiled: boolean;

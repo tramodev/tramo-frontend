@@ -56,6 +56,7 @@ import { Trail, Item, TitleAlign } from '../../types';
 import type { MapPreviews } from '@/lib/projects-store';
 
 interface WriteViewProps {
+  active?: boolean;
   projectId: string;
   item: Item;
   items: Record<string, Item>;
@@ -198,10 +199,10 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
   useEffect(() => {
     const unregister = editor.registerUpdateListener(({ editorState }) => {
       session.state = editorState;
-      onPendingImages(item.id, editorState.read(() => $nodesOfType(ImageNode).some(node => !node.__imageId)));
+      onPendingImages(item.editorKey ?? item.id, editorState.read(() => $nodesOfType(ImageNode).some(node => !node.__imageId)));
     });
     return () => { unregister(); saveItemSession(session, editor, history); };
-  }, [editor, history, item.id, session, onPendingImages]);
+  }, [editor, history, item.id, item.editorKey, session, onPendingImages]);
   return (
       <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor} onFocusCapture={event => {
         if (event.currentTarget.contains(event.target)) onFocus(item.id);
@@ -246,7 +247,7 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
         <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         <ItemNavigationPlugin itemId={item.id} register={register} move={move} />
         <OnChangePlugin onChange={(state, _editor, tags) => { if (!tags.has('extraction')) props.onChange(item.id, state); }} ignoreSelectionChange />
-        {focused && <>
+        {focused && props.active !== false && <>
           <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail} history={history}
             sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}
             onOpen={result => props.onSelectItem(result.item, result.trailId)} />
@@ -300,7 +301,7 @@ function ItemTitle({ item, onCommitTitle, onFocus, move }: {
 }
 
 export function WriteView(props: WriteViewProps) {
-  const { item, items, trail, navigationRequest, onVisibleItem } = props;
+  const { item, items, trail, navigationRequest, onVisibleItem, active = true } = props;
   const [imageError, setImageError] = useState<string | null>(null);
   useEffect(() => {
     const onError = (event: Event) => setImageError((event as CustomEvent<string>).detail);
@@ -323,21 +324,22 @@ export function WriteView(props: WriteViewProps) {
   const ids = useMemo(() => inTrail && trail ? trail.itemIds : [item.id], [inTrail, trail, item.id]);
   const focusedId = ids.includes(focusedItemId) ? focusedItemId : item.id;
   const contentReady = ids.every((id) => items[id]?.content != null);
-  const context = inTrail ? `trail:${trail!.id}` : `item:${item.id}`;
+  const context = inTrail ? `trail:${trail!.id}` : `item:${item.editorKey ?? item.id}`;
   const revealed = contentReady && positionedContext === context;
-  const { visibleIds, selectionIds, heights } = useVirtualNotes(editorInnerRef, slotRefs, ids, contentReady);
+  const { visibleIds, selectionIds, heights } = useVirtualNotes(editorInnerRef, slotRefs, ids, active && contentReady);
   const moveTarget = pendingMove?.context === context && pendingMove.sequence === navigationRequest?.sequence ? pendingMove : null;
   useEffect(() => () => {
     for (const session of sessions.values()) session.previewUrls.forEach(url => URL.revokeObjectURL(url));
   }, [sessions]);
   useEffect(() => {
+    const editorKeys = new Set(Object.values(items).map(item => item.editorKey ?? item.id));
     for (const [id, session] of sessions) {
-      if (items[id]) continue;
+      if (editorKeys.has(id)) continue;
       session.previewUrls.forEach(url => URL.revokeObjectURL(url));
       sessions.delete(id);
     }
   }, [items, sessions]);
-  useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: revealed, onVisible: (id) => {
+  useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: active && revealed, onVisible: (id) => {
     if (!navigationRequest || handledRequest.current === navigationRequest.sequence) onVisibleItem(id);
   } });
 
@@ -365,7 +367,7 @@ export function WriteView(props: WriteViewProps) {
     return true;
   }, [ids, items, context, navigationRequest?.sequence]);
   useEffect(() => {
-    if (!moveTarget) return;
+    if (!active || !moveTarget) return;
     const frame = requestAnimationFrame(() => {
       const editor = editors.current.get(moveTarget.itemId);
       if (!editor) return;
@@ -375,11 +377,11 @@ export function WriteView(props: WriteViewProps) {
       setPendingMove(previous => previous === moveTarget ? null : previous);
     });
     return () => cancelAnimationFrame(frame);
-  }, [moveTarget, visibleIds]);
+  }, [active, moveTarget, visibleIds]);
 
   useEffect(() => {
     const request = navigationRequest;
-    if (!contentReady || (positionedContext === context && (!request || handledRequest.current === request.sequence))) return;
+    if (!active || !contentReady || (positionedContext === context && (!request || handledRequest.current === request.sequence))) return;
     const frame = requestAnimationFrame(() => {
       const targetId = request?.itemId ?? item.id;
       const editor = editors.current.get(targetId);
@@ -392,9 +394,10 @@ export function WriteView(props: WriteViewProps) {
       if (request?.focus) requestAnimationFrame(() => focusEditor(editor));
     });
     return () => cancelAnimationFrame(frame);
-  }, [navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id, visibleIds]);
+  }, [active, navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id, visibleIds]);
 
   useEffect(() => {
+    if (!active) return;
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest('[role="dialog"], [role="menu"], [role="listbox"], .find-replace-bar')) return;
@@ -437,13 +440,14 @@ export function WriteView(props: WriteViewProps) {
             {steps.map((step, index) => {
               const stepItem = items[step.itemId];
               if (!stepItem) return null;
-              const mounted = visibleIds.has(stepItem.id) || selectionIds.has(stepItem.id) || stepItem.id === item.id || stepItem.id === focusedId || stepItem.id === moveTarget?.itemId || busyItems.has(stepItem.id);
-              let session = sessions.get(stepItem.id);
+              const editorKey = stepItem.editorKey ?? stepItem.id;
+              const mounted = visibleIds.has(stepItem.id) || selectionIds.has(stepItem.id) || stepItem.id === item.id || stepItem.id === focusedId || stepItem.id === moveTarget?.itemId || busyItems.has(editorKey);
+              let session = sessions.get(editorKey);
               if (!session) {
                 session = { undo: [], redo: [], previewUrls: new Set() };
-                sessions.set(stepItem.id, session);
+                sessions.set(editorKey, session);
               }
-              return <section key={step.itemId} data-item-id={step.itemId} data-mounted={mounted} aria-label={`Step ${index + 1}: ${stepItem.title}`}
+              return <section key={editorKey} data-item-id={step.itemId} data-mounted={mounted} aria-label={`Step ${index + 1}: ${stepItem.title}`}
                 style={mounted ? undefined : { height: heights.get(stepItem.id) ?? 240, overflow: 'hidden' }}
                 ref={(element) => { if (element) slotRefs.current.set(step.itemId, element); else slotRefs.current.delete(step.itemId); }}>
                 {index > 0 && trail && <div className="trail-divider mt-4">

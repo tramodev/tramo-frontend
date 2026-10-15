@@ -12,6 +12,7 @@ function setup() {
   const statuses = [];
   const errors = [];
   const optimistic = [];
+  const redirects = [];
   let refIndex = 0;
   let timerId = 0;
   let cleanups = [];
@@ -34,7 +35,7 @@ function setup() {
           requests.push({ itemId, content, resolve, reject });
         }),
       },
-      '../../editor-utils': { isAuthError: () => false },
+      '../../editor-utils': { isAuthError: error => error instanceof Error && error.message.includes('401') },
     })[name],
     setTimeout: (fn) => { timers.set(++timerId, fn); return timerId; },
     clearTimeout: (id) => timers.delete(id),
@@ -57,11 +58,11 @@ function setup() {
     hook = exports.useAutoSave({
       contextId: itemId,
       onOptimisticUpdate: (itemId, content) => optimistic.push([itemId, content]),
-      redirectToLogin: () => {},
+      redirectToLogin: () => redirects.push('/login'),
     });
   }
   return {
-    requests, statuses, errors, optimistic, select,
+    requests, statuses, errors, optimistic, redirects, select,
     edit: (content) => hook.onChange(currentItemId, { read: (fn) => fn(), toJSON: () => content }),
     flush: () => { for (const [id, fn] of timers) { timers.delete(id); fn(); } },
     unload: (event) => beforeUnload(event),
@@ -167,6 +168,20 @@ test('a resource limit explains the failure and retains the unsaved content', as
   expect(await retry).toBe(true);
 });
 
+test('a temporary session outage keeps pending edits without redirecting to login', async () => {
+  const s = setup();
+  s.select('a');
+  s.edit('unsaved during session outage');
+  const first = s.barrier();
+  s.requests[0].reject(new Error('Request failed with status 503'));
+  expect(await first).toBe(false);
+  expect(s.redirects).toEqual([]);
+  const retry = s.barrier();
+  expect(s.requests[1].content).toBe(JSON.stringify('unsaved during session outage'));
+  s.requests[1].resolve();
+  expect(await retry).toBe(true);
+});
+
 
 test('editing a non-visible item saves under its own id', async () => {
   const s = setup();
@@ -203,6 +218,55 @@ test('does not persist an incomplete image or a temporary preview', () => {
   s.flush();
   expect(s.requests.length).toBe(1);
   expect(s.requests[0].content).not.toContain('blob:');
+});
+
+test('warns before closing when an incomplete image is the only unsaved change', async () => {
+  const s = setup();
+  s.select('a');
+  s.edit({ root: { children: [{ type: 'image', imageId: '' }] } });
+  let warned = false;
+  s.unload({ preventDefault: () => { warned = true; } });
+  expect(warned).toBe(true);
+  expect(s.requests).toHaveLength(0);
+  s.edit({ root: { children: [{ type: 'image', imageId: 'confirmed-id' }] } });
+  const saved = s.barrier();
+  s.requests[0].resolve();
+  expect(await saved).toBe(true);
+  warned = false;
+  s.unload({ preventDefault: () => { warned = true; } });
+  expect(warned).toBe(false);
+});
+
+test('an incomplete image replaces Saved with Saving until its confirmed content is persisted', async () => {
+  const s = setup();
+  s.select('a');
+  s.edit('saved text');
+  const initial = s.barrier();
+  s.requests[0].resolve();
+  await initial;
+  expect(s.statuses.at(-1)).toBe('saved');
+  s.edit({ root: { children: [{ type: 'image', imageId: '' }] } });
+  expect(s.statuses.at(-1)).toBe('saving');
+  expect(await s.barrier()).toBe(false);
+  s.edit({ root: { children: [{ type: 'image', imageId: 'ready' }] } });
+  const confirmed = s.barrier();
+  expect(s.statuses.at(-1)).toBe('saving');
+  s.requests[1].resolve();
+  expect(await confirmed).toBe(true);
+  expect(s.statuses.at(-1)).toBe('saved');
+});
+
+test('completing another save or extraction never marks an incomplete image as saved', async () => {
+  const s = setup();
+  s.select('a');
+  s.edit('in flight');
+  const pending = s.barrier();
+  s.editItem('b', { root: { children: [{ type: 'image', imageId: '' }] } });
+  s.requests[0].resolve();
+  expect(await pending).toBe(false);
+  expect(s.statuses.at(-1)).toBe('saving');
+  s.acceptPersisted('a');
+  expect(s.statuses.at(-1)).toBe('saving');
 });
 
 
@@ -253,6 +317,6 @@ test('renameItemId migrates pending content to the real id', () => {
   s.editItem('a', 'text');
   s.renameItem('a', 'b');
   s.flush();
-  expect(s.optimistic).toEqual([['b', JSON.stringify('text')]]);
+  expect(s.optimistic).toEqual([['a', JSON.stringify('text')]]);
   expect(s.requests[0].itemId).toBe('b');
 });

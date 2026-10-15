@@ -138,7 +138,8 @@ export default function EditorPage() {
               {project.trails.length > 1 ? 'Reuse a note with “Add existing note” in another trail. Edits appear everywhere that note is used.' : Object.keys(project.items).length > 1 ? 'Mention another note with @, or connect notes in the map.' : 'Start writing in the note. Your changes save automatically; you can add a title later.'}
             </TaskHint>}
             <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
-            {!project.loaded ? <div className="editor-container flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</div> : project.view === 'graph' ? (
+            {!project.loaded ? <div className="editor-container flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</div> : <>
+            {project.view === 'graph' && (
               <GraphView
                 projectId={projectId}
                 graphColors={project.graphColors}
@@ -152,8 +153,11 @@ export default function EditorPage() {
                 onSelectItem={project.handleSelectItem}
                 onClose={() => project.setView('write')}
               />
-            ) : project.selectedItem ? (
+            )}
+            <div className={project.view === 'graph' ? 'hidden' : 'flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden'} inert={project.view === 'graph'}>
+            {project.selectedItem ? (
               <WriteView
+                active={project.view === 'write'}
                 projectId={projectId}
                 item={project.selectedItem}
                 items={project.items}
@@ -192,7 +196,9 @@ export default function EditorPage() {
                 connectionsPanelOpen={connectionsPanelOpen}
                 onToggleConnectionsPanelOpen={() => setConnectionsPanelOpen((o) => !o)}
               />
-            ) : emptyState}
+             ) : emptyState}
+            </div>
+            </>}
             </div>
           </div>
         }
