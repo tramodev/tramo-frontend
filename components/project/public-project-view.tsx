@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { Eye, FolderPlus, MessageCircle } from "lucide-react"
 
@@ -11,7 +11,6 @@ import { EditorImagesProvider } from "@/components/editor/editor-images-provider
 import { LexicalReadOnly } from "@/components/project/lexical-read-only"
 import { ProjectShell } from "@/components/editor/project-shell"
 import { TrailConnector } from "@/components/editor/trail-connector"
-import { NextTrailButton } from "@/components/editor/next-trail-button"
 import { GraphView } from "@/components/editor/graph-view"
 import { ConnectionsPanel } from "@/components/editor/connections-panel"
 import { VoteButton } from "@/components/social/vote-button"
@@ -25,7 +24,6 @@ import { CommentsSection } from "@/components/project/comments-section"
 import { UserMenu } from "@/components/layout/user-menu"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Item, Trail } from "@/app/editor/types"
-import { firstReadableTrail, resolveItemTrail } from "@/app/editor/trail-navigation"
 import { useScrollSpy } from "@/hooks/use-scroll-spy"
 import { useVirtualNotes } from "@/app/editor/[projectId]/hooks/useVirtualNotes"
 
@@ -73,94 +71,64 @@ export function PublicProjectView({
   username: string | null
   imageUrl: string | null
 }) {
-  const allItems = [...project.trails.flatMap((trail) => trail.items), ...project.looseItems]
-  const firstTrail = firstReadableTrail(project.trails)
-  const [selectedItem, setSelectedItem] = useState<PublicItem | undefined>(firstTrail?.items[0] ?? project.looseItems[0])
-  const [activeTrailId, setActiveTrailId] = useState<string | undefined>(firstTrail?.id)
+  const sections = useMemo(() => [
+    ...project.trails.map(trail => ({ id: `trail:${trail.id}`, trailId: trail.id, title: trail.title, description: trail.description, items: trail.items })),
+    ...(project.looseItems.length ? [{ id: 'loose', trailId: undefined, title: 'Notes without a trail', description: '', items: project.looseItems }] : []),
+  ], [project])
+  const entries = useMemo(() => sections.flatMap(section => [
+    { id: section.id, section, item: undefined, index: 0 },
+    ...section.items.map((item, index) => ({ id: `${section.id}:item:${item.id}`, section, item, index })),
+  ]), [sections])
+  const [selectedId, setSelectedId] = useState<string | undefined>(entries.find(entry => entry.item)?.id ?? entries[0]?.id)
   const [view, setView] = useState<'content' | 'graph'>('content')
   const [commentCount, setCommentCount] = useState(project.commentCount)
   const [connectionsPanelOpen, setConnectionsPanelOpen] = useState(false)
 
   const { trails, items } = useMemo(() => toEditorShape(project), [project])
 
-  const activeTrail = useMemo(() => trails.find((t) => t.id === activeTrailId), [trails, activeTrailId])
-
-
-
-  const inTrail = !!(selectedItem && activeTrail?.itemIds.includes(selectedItem.id))
-  const nextTrail = inTrail && activeTrail ? trails[trails.findIndex(trail => trail.id === activeTrail.id) + 1] : undefined
-  const steps = useMemo(() => inTrail && activeTrail
-    ? activeTrail.steps
-    : selectedItem
-      ? [{ itemId: selectedItem.id }]
-      : [], [inTrail, activeTrail, selectedItem])
-  const ids = useMemo(() => steps.map(step => step.itemId), [steps])
-  const stacked = steps.length > 1
+  const selected = entries.find(entry => entry.id === selectedId) ?? entries[0]
+  const selectedItem = selected?.item ?? selected?.section.items[0]
+  const activeTrailId = selected?.section.trailId
+  const ids = useMemo(() => entries.map(entry => entry.id), [entries])
+  const noteIds = useMemo(() => entries.filter(entry => entry.item).map(entry => entry.id), [entries])
 
   const columnRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef(new Map<string, HTMLElement>())
-  const shouldScrollRef = useRef(false)
-  const { visibleIds, selectionIds, heights } = useVirtualNotes(columnRef, slotRefs, ids, view === 'content')
-
-  useEffect(() => {
-    const el = columnRef.current
-    if (!el || !selectedItem || !shouldScrollRef.current) return
-    shouldScrollRef.current = false
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const slot = slotRefs.current.get(selectedItem.id)
-      if (slot && stacked) slot.scrollIntoView({ block: 'start' })
-      else el.scrollTop = 0
-    }))
-  }, [selectedItem, stacked])
+  const { visibleIds, selectionIds, heights } = useVirtualNotes(columnRef, slotRefs, noteIds, view === 'content')
 
   useScrollSpy({
     root: columnRef,
     slots: slotRefs,
     ids,
-    enabled: stacked && view === 'content',
-    onVisible: (itemId) => {
-      if (itemId === selectedItem?.id) return
-      const item = allItems.find((candidate) => candidate.id === itemId)
-      if (item) setSelectedItem(item)
-    },
+    enabled: view === 'content',
+    onVisible: setSelectedId,
   })
 
-  const handleSelectItem = (item: PublicItem, trailId?: string) => {
-    shouldScrollRef.current = true
-    setSelectedItem(item)
+  const scrollToEntry = (id: string | undefined) => {
     setView('content')
-    setActiveTrailId(prev => resolveItemTrail(trails, item.id, prev, trailId))
+    if (!id) return
+    setSelectedId(id)
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const slot = slotRefs.current.get(item.id)
+      const slot = slotRefs.current.get(id)
       slot?.scrollIntoView({ block: 'start' })
       slot?.focus({ preventScroll: true })
     }))
   }
 
-  const handleSelectTrail = (id: string) => {
-    const trail = project.trails.find(candidate => candidate.id === id)
-    if (!trail) return
-    setActiveTrailId(id)
-    setSelectedItem(trail.items[0])
-    setView('content')
-    shouldScrollRef.current = false
-    columnRef.current?.scrollTo({ top: 0 })
+  const handleSelectItem = (item: Pick<PublicItem, 'id'>, trailId?: string) => {
+    const target = entries.find(entry => entry.item?.id === item.id && entry.section.trailId === trailId)
+      ?? entries.find(entry => entry.item?.id === item.id)
+    if (target) scrollToEntry(target.id)
   }
 
-  const handleSelectMappedItem = (item: Item, trailId?: string) => {
-    const original = allItems.find((candidate) => candidate.id === item.id)
-    if (original) handleSelectItem(original, trailId)
-  }
+  const handleSelectTrail = (id: string) => scrollToEntry(`trail:${id}`)
 
-  const handleItemLinkClick = (itemId: string) => {
-    const item = allItems.find((candidate) => candidate.id === itemId)
-    if (item) handleSelectItem(item)
-  }
+  const handleSelectMappedItem = (item: Item, trailId?: string) => handleSelectItem(item, trailId ?? activeTrailId)
 
   const emptyState = (
     <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
       <FolderPlus className="h-12 w-12 opacity-40" />
-      <p className="text-lg font-medium">{activeTrail ? 'This trail has no notes yet' : 'This project has no published notes yet'}</p>
+      <p className="text-lg font-medium">This project has no published notes yet</p>
     </div>
   )
 
@@ -265,64 +233,75 @@ export function PublicProjectView({
               activeTrailId={activeTrailId}
               selectedItemId={selectedItem?.id}
               onSelectItem={handleSelectMappedItem}
-              onClose={() => setView('content')}
+              onClose={() => scrollToEntry(selected?.id)}
             />
           ) : (
             <div className="editor-container flex min-h-0 min-w-0 flex-1 flex-col">
-              <div ref={columnRef} className="editor-inner">
+              <div ref={columnRef} className="editor-inner" style={{ paddingInline: 'clamp(12px, 4vw, 48px)' }}>
                 <div className="editor-content-column">
                   <section aria-label="About this project" className="border-b border-border py-6 pl-7">
                     <h1 className="font-display text-3xl font-medium">{project.title}</h1>
                     {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
                   </section>
-                  {activeTrail && <section aria-label="Current trail" className="pl-7 pt-6">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <h2 className="text-sm font-medium">{activeTrail.title}</h2>
-                      <span className="text-xs text-muted-foreground">· {activeTrail.itemIds.length} {activeTrail.itemIds.length === 1 ? 'note' : 'notes'}</span>
-                    </div>
-                    {activeTrail.description?.trim() && <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{activeTrail.description}</p>}
-                  </section>}
-                  {selectedItem ? steps.map((step, i) => {
-                    const stepItem = items[step.itemId]
-                    if (!stepItem) return null
-                    const isActive = step.itemId === selectedItem.id
-                    const mounted = isActive || visibleIds.has(step.itemId) || selectionIds.has(step.itemId)
+                  {entries.map(entry => {
+                    const section = entry.section
+                    if (!entry.item) return <section
+                      key={entry.id}
+                      id={entry.id}
+                      data-section-id={entry.id}
+                      tabIndex={-1}
+                      aria-label={section.title}
+                      className="pl-7 pt-10 pb-2"
+                      ref={el => { if (el) slotRefs.current.set(entry.id, el); else slotRefs.current.delete(entry.id) }}
+                    >
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <h2 className="font-display text-2xl font-medium">{section.title}</h2>
+                        <span className="text-xs text-muted-foreground">· {section.items.length} {section.items.length === 1 ? 'note' : 'notes'}</span>
+                      </div>
+                      {section.description?.trim() && <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{section.description}</p>}
+                      {section.items.length === 0 && <p className="mt-2 text-sm text-muted-foreground">This trail has no notes yet.</p>}
+                    </section>
+                    const stepItem = entry.item
+                    const isActive = selectedItem?.id === stepItem.id && activeTrailId === section.trailId
+                    const mounted = isActive || visibleIds.has(entry.id) || selectionIds.has(entry.id)
 
                     return (
                       <section
-                        key={step.itemId}
-                        data-item-id={step.itemId}
+                        key={entry.id}
+                        id={entry.id}
+                        data-item-id={entry.id}
+                        data-note-id={stepItem.id}
+                        data-trail-id={section.trailId}
                         data-mounted={mounted}
-                        style={mounted ? undefined : { height: heights.get(step.itemId) ?? 240, overflow: 'hidden' }}
+                        style={mounted ? undefined : { height: heights.get(entry.id) ?? 240, overflow: 'hidden' }}
                         tabIndex={-1}
-                        aria-label={`Step ${i + 1}: ${stepItem.title}`}
+                        aria-label={`${section.title}, note ${entry.index + 1}: ${stepItem.title}`}
                         ref={(el) => {
-                          if (el) slotRefs.current.set(step.itemId, el)
-                          else slotRefs.current.delete(step.itemId)
+                          if (el) slotRefs.current.set(entry.id, el)
+                          else slotRefs.current.delete(entry.id)
                         }}
                       >
-                        {i > 0 && <div className="trail-divider mt-4"><TrailConnector /></div>}
+                        {entry.index > 0 && <div className="trail-divider mt-4"><TrailConnector /></div>}
                         <div
                           onClick={(e) => {
                             if (isActive) return
                             if ((e.target as HTMLElement).closest('a')) return
-                            const target = allItems.find((candidate) => candidate.id === step.itemId)
-                            if (target) setSelectedItem(target)
+                            setSelectedId(entry.id)
                           }}
-                          className={stacked && !isActive ? 'group cursor-pointer' : undefined}
+                          className={!isActive ? 'group cursor-pointer' : undefined}
                         >
                           <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>
-                            Step {i + 1}
+                            Note {entry.index + 1}
                           </div>
-                          <h2 className="pl-7 pt-2 font-display text-[28px] font-medium leading-normal" style={{ textAlign: stepItem.titleAlign }}>
+                          <h3 className="pl-7 pt-2 font-display text-[28px] font-medium leading-normal" style={{ textAlign: stepItem.titleAlign }}>
                             {stepItem.title}
-                          </h2>
-                          {mounted && <LexicalReadOnly key={step.itemId} content={stepItem.content ?? ''} onItemClick={handleItemLinkClick} />}
+                          </h3>
+                          {mounted && <LexicalReadOnly content={stepItem.content ?? ''} onItemClick={itemId => handleSelectItem({ id: itemId }, section.trailId)} />}
                         </div>
-                        {i === steps.length - 1 && nextTrail && <NextTrailButton trail={nextTrail} onSelectTrail={handleSelectTrail} />}
                       </section>
                     )
-                  }) : emptyState}
+                  })}
+                  {noteIds.length === 0 && emptyState}
                   <div className="mt-8 border-t border-border">
                     <CommentsSection projectId={project.id} projectTitle={project.title} isLoggedIn={isLoggedIn} username={username} commentCount={commentCount} onCommentCountChange={setCommentCount} canComment={project.canComment} />
                   </div>

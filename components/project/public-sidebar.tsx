@@ -48,6 +48,12 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
     setOpenMobile(false);
   };
 
+  const selectTrail = (trailId: string) => {
+    onSelectTrail(trailId);
+    setQuery("");
+    setOpenMobile(false);
+  };
+
   return (
     <Sidebar variant="sidebar" collapsible="icon" className="border-r">
       <SidebarContent className="project-sidebar gap-0.5">
@@ -65,7 +71,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
               <SidebarMenu>
                 {resultTrails.length > 0 && <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Trails</p>}
                 {resultTrails.map(trail => <SidebarMenuItem key={`result-trail-${trail.id}`}>
-                  <SidebarMenuButton onClick={() => { onSelectTrail(trail.id); setQuery(""); setOpenMobile(false); }}>
+                  <SidebarMenuButton onClick={() => selectTrail(trail.id)}>
                     <ChevronRight className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{trail.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
@@ -92,13 +98,17 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                     <SidebarMenu>
                       {trails.map(trail => <Collapsible key={trail.id} defaultOpen className="group/collapsible">
                         <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton className="font-semibold">
-                              <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                          <div className="flex items-center">
+                            <CollapsibleTrigger asChild>
+                              <button type="button" aria-label={`Toggle ${trail.title}`} className="shrink-0 rounded-md p-2 hover:bg-sidebar-accent">
+                                <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                              </button>
+                            </CollapsibleTrigger>
+                            <SidebarMenuButton className="font-semibold" isActive={activeTrailId === trail.id} onClick={() => selectTrail(trail.id)}>
                               <span className="flex-1 truncate">{trail.title}</span>
                               <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">{trail.items.length}</span>
                             </SidebarMenuButton>
-                          </CollapsibleTrigger>
+                          </div>
                           <CollapsibleContent>
                             <SidebarMenuSub>
                               {trail.items.map((item, index) => {

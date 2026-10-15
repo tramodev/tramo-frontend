@@ -4,11 +4,12 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
-const jsx = (type, props) => ({ type, props });
+const jsx = (type, props, key) => ({ type, props, key });
 function load(path, modules = {}, globals = {}) {
   const exports = {};
   const states = [];
-  let index = 0;
+  const refs = [];
+  let index = 0, refIndex = 0;
   runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports, require: name => ({
@@ -19,14 +20,14 @@ function load(path, modules = {}, globals = {}) {
         return [states[slot], next => { states[slot] = typeof next === 'function' ? next(states[slot]) : next; }];
       },
       useMemo: calculate => calculate(),
-      useRef: value => ({ current: value }),
+      useRef: value => refs[refIndex++] ?? (refs[refIndex - 1] = { current: value }),
       useEffect: () => {},
     },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(), selectionIds: new Set(), heights: new Map() }) },
     ...modules,
   })[name] ?? {}, ...globals });
-  return (component, props) => { index = 0; return flatten(exports[component](props)); };
+  return (component, props) => { index = refIndex = 0; return flatten(exports[component](props)); };
 }
 
 test('public sidebar separates loose notes and searches every note locally', () => {
@@ -72,7 +73,6 @@ test('public reader shares the editor column and connections panel without mutat
     '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
     '@/components/project/public-sidebar': { PublicSidebar: 'PublicSidebar' },
     '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
-    '@/app/editor/trail-navigation': { firstReadableTrail: trails => trails[0] },
   });
   const project = { id: 'project', title: 'Project', ownerUsername: 'author', trails: [], looseItems: [{ id: 'a', title: 'A', content: '', titleAlign: 'left' }] };
   const nodes = render('PublicProjectView', { project });
@@ -106,8 +106,9 @@ test('read-only text uses the editor node configuration and never enables editin
   expect(composer.props.initialConfig.editable).toBe(false);
 });
 
-test('public long trails mount only nearby, selected and text-selected notes', () => {
-  let visibleIds = new Set(['0', '1']);
+test('public long projects mount only nearby, selected and text-selected notes', () => {
+  const slot = id => `trail:first:item:${id}`;
+  let visibleIds = new Set([slot('0'), slot('1')]);
   let selectionIds = new Set();
   let onVisible;
   const render = load('components/project/public-project-view.tsx', {
@@ -116,20 +117,19 @@ test('public long trails mount only nearby, selected and text-selected notes', (
     '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
     '@/components/editor/graph-view': { GraphView: 'GraphView' },
     '@/hooks/use-scroll-spy': { useScrollSpy: options => { onVisible = options.onVisible; } },
-    '@/app/editor/trail-navigation': { firstReadableTrail: trails => trails[0], resolveItemTrail: (_trails, _item, _previous, preferred) => preferred },
-    '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds, selectionIds, heights: new Map([['1', 950]]) }) },
+    '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds, selectionIds, heights: new Map([[slot('1'), 950]]) }) },
   }, { requestAnimationFrame: () => 0 });
   const notes = Array.from({ length: 100 }, (_, i) => ({ id: String(i), title: `Note ${i}`, content: `Body ${i}`, titleAlign: 'left' }));
   const project = { id: 'project', title: 'Project', trails: [{ id: 'first', title: 'First', items: notes }], looseItems: [] };
   const view = () => render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
   const readers = shell => flatten(shell.props.content).filter(node => node.type === 'Reader').map(node => node.props.content);
   expect(readers(view())).toEqual(['Body 0', 'Body 1']);
-  visibleIds = new Set(['97', '98', '99']);
-  onVisible('98');
+  visibleIds = new Set([slot('97'), slot('98'), slot('99')]);
+  onVisible(slot('98'));
   let shell = view();
   expect(readers(shell)).toEqual(['Body 97', 'Body 98', 'Body 99']);
-  expect(flatten(shell.props.content).find(node => node.props['data-item-id'] === '1').props.style.height).toBe(950);
-  selectionIds = new Set(['0', '1']);
+  expect(flatten(shell.props.content).find(node => node.props['data-item-id'] === slot('1')).props.style.height).toBe(950);
+  selectionIds = new Set([slot('0'), slot('1')]);
   expect(readers(view())).toEqual(['Body 0', 'Body 1', 'Body 97', 'Body 98', 'Body 99']);
   selectionIds = new Set();
   shell.props.sidebar.props.onSelectItem(notes[75], 'first');
@@ -143,41 +143,105 @@ test('public long trails mount only nearby, selected and text-selected notes', (
   expect(readers(view())).toContain('Body 75');
 });
 
-test('the next-trail button appears after the last note and opens the following trail', () => {
+test('all trails and loose notes form one document with distinct shared-note slots and comments last', () => {
+  const frames = [], scrolled = [], focused = [];
+  let onVisible;
   const render = load('components/project/public-project-view.tsx', {
     '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
-    '@/components/editor/next-trail-button': { NextTrailButton: 'NextTrailButton' },
-    '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
-    '@/app/editor/trail-navigation': { firstReadableTrail: trails => trails[0] },
-  });
+    '@/components/project/lexical-read-only': { LexicalReadOnly: 'Reader' },
+    '@/components/project/comments-section': { CommentsSection: 'Comments' },
+    '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(['trail:second:item:c']), selectionIds: new Set(), heights: new Map() }) },
+    '@/hooks/use-scroll-spy': { useScrollSpy: options => { onVisible = options.onVisible; } },
+  }, { requestAnimationFrame: callback => frames.push(callback) });
   const note = id => ({ id, title: id.toUpperCase(), content: '', titleAlign: 'left' });
+  const shared = note('a');
   const project = { id: 'project', title: 'Project', trails: [
-    { id: 'first', title: 'First', description: 'Begin here.', items: [note('a'), note('b')] },
-    { id: 'second', title: 'Second', items: [note('c')] },
-  ], looseItems: [] };
-  let shell = render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
+    { id: 'first', title: 'First', description: 'Begin here.', items: [shared, note('b')] },
+    { id: 'empty', title: 'Empty', items: [] },
+    { id: 'second', title: 'Second', items: [shared, note('c')] },
+  ], looseItems: [note('d')] };
+  const view = () => render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
+  const connect = nodes => nodes.filter(node => node.type === 'section' && node.props.ref).forEach(node => node.props.ref({ scrollIntoView: () => scrolled.push(node.props.id), focus: () => focused.push(node.props.id) }));
+  const flush = () => { while (frames.length) frames.shift()(); };
+  let shell = view();
   const nodes = flatten(shell.props.content);
-  const intro = nodes.find(node => node.props['aria-label'] === 'About this project');
-  expect(flatten(intro).some(node => node.type === 'button')).toBe(false);
-  const heading = flatten(nodes.find(node => node.props['aria-label'] === 'Current trail'));
-  expect(heading.some(node => node.type === 'h2' && node.props.children === 'First')).toBe(true);
-  expect(heading.some(node => node.type === 'p' && node.props.children === 'Begin here.')).toBe(true);
-  expect(heading.find(node => node.type === 'span').props.children.join('')).toBe('· 2 notes');
-  const buttons = nodes.filter(node => node.type === 'NextTrailButton');
-  expect(buttons).toHaveLength(1);
-  expect(buttons[0].props.trail.id).toBe('second');
-  expect(buttons[0].props.children).toBeUndefined();
-  const steps = nodes.filter(node => node.type === 'section' && node.props['aria-label']?.startsWith('Step'));
-  expect(flatten(steps[0]).some(node => node.type === 'NextTrailButton')).toBe(false);
-  expect(flatten(steps[1]).some(node => node.type === 'NextTrailButton')).toBe(true);
-  buttons[0].props.onSelectTrail('second');
-  shell = render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
+  connect(nodes);
+  expect(nodes.filter(node => node.props['data-section-id']).map(node => node.props.id)).toEqual(['trail:first', 'trail:empty', 'trail:second', 'loose']);
+  const steps = nodes.filter(node => node.props['data-note-id']);
+  expect(steps.map(node => node.props['data-note-id'])).toEqual(['a', 'b', 'a', 'c', 'd']);
+  expect(new Set(steps.map(node => node.key)).size).toBe(5);
+  expect(steps.map(node => node.props['data-item-id'])).toEqual(['trail:first:item:a', 'trail:first:item:b', 'trail:second:item:a', 'trail:second:item:c', 'loose:item:d']);
+  expect(nodes.filter(node => node.type === 'Comments')).toHaveLength(1);
+  expect(nodes.findIndex(node => node.type === 'Comments')).toBeGreaterThan(nodes.indexOf(steps.at(-1)));
+  expect(nodes.some(node => node.props.children === 'Begin here.')).toBe(true);
+  expect(nodes.some(node => node.props.children === 'This trail has no notes yet.')).toBe(true);
+  shell.props.sidebar.props.onSelectTrail('second');
+  shell = view();
+  connect(flatten(shell.props.content));
+  flush();
+  expect(scrolled.at(-1)).toBe('trail:second');
   expect(shell.props.sidebar.props.activeTrailId).toBe('second');
+  expect(shell.props.sidebar.props.selectedItemId).toBe('a');
+  expect(flatten(shell.props.content).filter(node => node.props['data-note-id'])).toHaveLength(5);
+  shell.props.sidebar.props.onSelectItem(shared, 'first');
+  shell = view(); flush();
+  expect(scrolled.at(-1)).toBe('trail:first:item:a');
+  expect(focused.at(-1)).toBe('trail:first:item:a');
+  expect(shell.props.sidebar.props.activeTrailId).toBe('first');
+  const secondNote = flatten(shell.props.content).find(node => node.props['data-item-id'] === 'trail:second:item:c');
+  flatten(secondNote).find(node => node.type === 'Reader').props.onItemClick('a');
+  shell = view();
+  expect(shell.props.sidebar.props.activeTrailId).toBe('second');
+  expect(shell.props.sidebar.props.selectedItemId).toBe('a');
+  onVisible('trail:second:item:a');
+  shell = view();
+  expect(shell.props.sidebar.props.activeTrailId).toBe('second');
+  expect(shell.props.sidebar.props.selectedItemId).toBe('a');
+  onVisible('loose:item:d');
+  shell = view();
+  expect(shell.props.sidebar.props.activeTrailId).toBeUndefined();
+  expect(shell.props.sidebar.props.selectedItemId).toBe('d');
+  shell.props.sidebar.props.onSelectTrail('empty');
+  shell = view(); flush();
+  expect(scrolled.at(-1)).toBe('trail:empty');
+  expect(shell.props.sidebar.props.activeTrailId).toBe('empty');
+  expect(shell.props.sidebar.props.selectedItemId).toBeUndefined();
+  shell.props.sidebar.props.onSelectItem(note('c'), 'second');
+  shell = view();
   expect(shell.props.sidebar.props.selectedItemId).toBe('c');
-  const nextHeading = flatten(flatten(shell.props.content).find(node => node.props['aria-label'] === 'Current trail'));
-  expect(nextHeading.some(node => node.type === 'h2' && node.props.children === 'Second')).toBe(true);
-  expect(nextHeading.find(node => node.type === 'span').props.children.join('')).toBe('· 1 note');
-  expect(flatten(shell.props.content).some(node => node.type === 'NextTrailButton')).toBe(false);
+  const reader = flatten(shell.props.content).find(node => node.type === 'Reader');
+  reader.props.onItemClick('b');
+  shell = view();
+  expect(shell.props.sidebar.props.activeTrailId).toBe('first');
+  expect(shell.props.sidebar.props.selectedItemId).toBe('b');
+});
+
+test('empty public projects still render their introduction and project comments', () => {
+  const render = load('components/project/public-project-view.tsx', {
+    '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
+    '@/components/project/comments-section': { CommentsSection: 'Comments' },
+    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+  });
+  const project = { id: 'empty', title: 'Empty project', trails: [], looseItems: [] };
+  const shell = render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
+  const nodes = flatten(shell.props.content);
+  expect(nodes.some(node => node.props.children === 'This project has no published notes yet')).toBe(true);
+  expect(nodes.filter(node => node.type === 'Comments')).toHaveLength(1);
+});
+
+test('trail headings in the sidebar jump to the section independently from collapse controls', () => {
+  const selected = [], mobile = [];
+  const render = load('components/project/public-sidebar.tsx', {
+    '@/components/ui/sidebar': { useSidebar: () => ({ state: 'expanded', setOpenMobile: value => mobile.push(value) }), SidebarMenuButton: 'SidebarMenuButton' },
+    '@/components/ui/collapsible': { CollapsibleTrigger: 'CollapsibleTrigger' },
+    '@/app/editor/editor-utils': { searchableText: () => '' },
+  });
+  const nodes = render('PublicSidebar', { trails: [{ id: 'trail', title: 'Chapter', items: [] }], looseItems: [], onSelectTrail: id => selected.push(id) });
+  const heading = nodes.find(node => node.type === 'SidebarMenuButton' && node.props.className === 'font-semibold');
+  heading.props.onClick();
+  expect(selected).toEqual(['trail']);
+  expect(mobile).toEqual([false]);
+  expect(nodes.some(node => node.type === 'button' && node.props['aria-label'] === 'Toggle Chapter')).toBe(true);
 });
 
 test('the shared next-trail button keeps its label, click action and editor shortcut', () => {
