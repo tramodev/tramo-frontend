@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { MetadataRoute } from "next"
 import { API_BASE_URL, SITE_URL } from "@/lib/config"
+import { SECTIONS } from "@/app/wiki/content"
 
 export const revalidate = 3600
 
@@ -64,5 +65,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }))
 
-  return [...staticRoutes, ...projectRoutes, ...userRoutes]
+  const wikiRoutes: MetadataRoute.Sitemap = SECTIONS.map((section) => ({
+    url: `${SITE_URL}/wiki/${section.id}`,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }))
+
+  return [...staticRoutes, ...wikiRoutes, ...projectRoutes, ...userRoutes]
 }

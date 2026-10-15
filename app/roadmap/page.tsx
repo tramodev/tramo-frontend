@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/footer';
 
 export const metadata: Metadata = {
   title: 'Roadmap',
-  description: 'What’s next for Tramo: collaboration, better version history and infrastructure that can grow with the community.',
+  description: 'What’s next for Tramo: collaboration, AI integration, better version history and infrastructure that can grow with the community.',
   alternates: { canonical: '/roadmap' },
 };
 
@@ -20,6 +20,11 @@ export default function RoadmapPage() {
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-primary">Planned</p>
           <h2 id="collaboration-heading" className="mb-3 font-display text-2xl font-medium">Collaboration</h2>
           <p className="text-base leading-7 text-muted-foreground">Work on projects together. The goal is to let people contribute to shared notes and trails, building an explanation with others instead of working alone.</p>
+        </section>
+        <section aria-labelledby="ai-heading">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-primary">Planned</p>
+          <h2 id="ai-heading" className="mb-3 font-display text-2xl font-medium">AI integration</h2>
+          <p className="text-base leading-7 text-muted-foreground">Explore ways AI can help you work with your notes: surface connections, summarize ideas and suggest paths through a project. Assistance for your thinking, not a replacement for it.</p>
         </section>
         <section aria-labelledby="versions-heading">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-primary">Planned</p>

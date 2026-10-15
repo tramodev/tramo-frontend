@@ -1,0 +1,16 @@
+import { Navbar } from '@/components/layout/navbar';
+import { Footer } from '@/components/layout/footer';
+import { WikiNav } from '@/components/layout/wiki-nav';
+
+export default function WikiLayout({ children }: { children: React.ReactNode }) {
+  return <div className="min-h-screen">
+    <Navbar />
+    <div className="mx-auto grid max-w-[1216px] items-start gap-10 px-6 pb-[84px] pt-10 md:px-[72px] lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-16">
+      <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:border-r lg:border-border lg:pr-6">
+        <WikiNav />
+      </aside>
+      <main id="wiki-content" className="min-w-0">{children}</main>
+    </div>
+    <Footer />
+  </div>;
+}
