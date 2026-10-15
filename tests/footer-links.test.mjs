@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-test('footer links to available pages, contact email and X while leaving unfinished pages disabled', () => {
+test('footer links to available pages, legal documents, contact email and X', () => {
   const exports = {};
   const jsx = (type, props) => ({ type, props });
   const code = ts.transpileModule(readFileSync('components/layout/footer.tsx', 'utf8'), {
@@ -29,5 +29,6 @@ test('footer links to available pages, contact email and X while leaving unfinis
   const social = nodes.find(node => node.props.href === 'https://x.com/tramodev');
   expect(social.props.target).toBe('_blank');
   expect(social.props.rel).toBe('noopener noreferrer');
-  expect(nodes.some(node => node.props['aria-disabled'] === 'true' && node.props.children?.[0] === 'Privacy Policy')).toBe(true);
+  expect(nodes.find(node => node.props.children === 'Privacy Policy').props.href).toBe('/privacy');
+  expect(nodes.find(node => node.props.children === 'Terms of Service').props.href).toBe('/tos');
 });

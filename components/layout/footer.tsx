@@ -34,9 +34,7 @@ export function Footer() {
               <ul className="space-y-3">
                 {section.pages.map(page => (
                   <li key={page}>
-                    {page === "About" || page === "Blog" || page === "Wiki" || page === "Changelog" || page === "Roadmap" ? <Link href={`/${page.toLowerCase()}`} className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</Link> : page === "Contact" ? <a href="mailto:contact@tramo.dev" className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</a> : <span role="link" aria-disabled="true" title="Coming soon" className="inline-block py-1">
-                      {page}<span className="sr-only"> (coming soon)</span>
-                    </span>}
+                     {page === "Contact" ? <a href="mailto:contact@tramo.dev" className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</a> : <Link href={page === "Privacy Policy" ? "/privacy" : page === "Terms of Service" ? "/tos" : `/${page.toLowerCase()}`} className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</Link>}
                   </li>
                 ))}
               </ul>
