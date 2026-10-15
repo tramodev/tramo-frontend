@@ -141,7 +141,7 @@ export default function ProjectsPage() {
 
   return (
     <main className="w-full flex-1 pb-[84px]">
-      <section className="bg-surface-container-high">
+      <section className="bg-surface-container-high pb-8">
         <div className="mx-auto max-w-[1216px] px-5 py-11 sm:px-10 lg:px-18">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-primary">
@@ -179,7 +179,8 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-        <div className="mx-auto mt-[34px] min-h-[310px] max-w-[1216px] px-5 sm:px-10 lg:px-18">
+      <section className="relative -mt-8 rounded-t-[32px] bg-background pt-[34px]">
+        <div className="mx-auto min-h-[310px] max-w-[1216px] px-5 sm:px-10 lg:px-18">
           <div className="mb-5 flex items-center justify-between">
             <span className="block text-sm font-medium text-muted-foreground">My projects</span>
             <div className="flex items-center gap-2">
@@ -437,6 +438,7 @@ export default function ProjectsPage() {
             </div>
           )}
         </div>
+      </section>
       {usageTarget && <ProjectUsageDialog key={usageTarget.id} project={usageTarget} onClose={() => setUsageTarget(null)} />}
       <ConfirmDialog
         open={deleteTarget !== null}
