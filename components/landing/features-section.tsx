@@ -28,12 +28,12 @@ function ConnectionsMockup() {
     <div className="px-6 pb-32 pt-6 sm:px-9">
       <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Step 1</p>
       <p className="mb-3 font-display text-2xl font-medium">Vannevar Bush</p>
-      <div className="max-w-[70ch] text-[13px] leading-relaxed text-muted-foreground">
+      <div className="relative max-w-[70ch] text-[13px] leading-relaxed text-muted-foreground">
         Vannevar Bush was an American engineer and science administrator. In 1945, he published{' '}
-        <span className="relative inline-block">
+        <span className="inline-block">
           <span className="text-primary">@As We May Think</span>
           <span className="ml-0.5 inline-block h-3.5 w-px bg-primary align-middle" />
-          <span className="absolute left-0 top-full mt-2 block w-[200px] rounded-lg border border-border bg-popover p-1 shadow-elevation-2">
+          <span className="absolute right-0 top-full mt-2 block w-[200px] max-w-full rounded-lg border border-border bg-popover p-1 shadow-elevation-2">
             <span className="block rounded-sm bg-secondary px-2.5 py-1.5 text-[13px] text-secondary-foreground">As We May Think</span>
           </span>
         </span>
