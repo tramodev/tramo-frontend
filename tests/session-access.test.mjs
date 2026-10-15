@@ -94,6 +94,18 @@ test('a backend outage blocks private pages without deleting the session', async
   expect(response.cookies.get('accessToken')).toBeUndefined();
 });
 
+test.each([429, 500, 503, 'network', 'malformed'])('a refresh outage (%s) preserves expired session cookies', async failure => {
+  const response = failure === 'network' ? new Error('offline')
+    : failure === 'malformed' ? Response.json({ accessToken: 'incomplete' })
+    : new Response(null, { status: failure });
+  const s = setup([response]);
+  const expiredToken = `header.${Buffer.from(JSON.stringify({ exp: 1, role: 'USER' })).toString('base64url')}.signature`;
+  const result = await s.run('/editor/note', `accessToken=${expiredToken}; refreshToken=valid; username=owner`);
+  expect(result.status).toBe(503);
+  expect(result.headers.get('location')).toBeNull();
+  for (const name of ['accessToken', 'refreshToken', 'username']) expect(result.cookies.get(name)).toBeUndefined();
+});
+
 test('a valid refresh updates the request and browser cookies', async () => {
   const s = setup([new Response(null, { status: 401 }), new Response(JSON.stringify({ accessToken: token, refreshToken: 'rotated' }))]);
   const response = await s.run('/projects');

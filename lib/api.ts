@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-    'use server';
+import 'server-only';
 import { redirect } from 'next/navigation';
 import { getAccessToken, refreshAccessToken } from './auth';
 
@@ -23,6 +23,9 @@ export async function authenticatedFetch(
 
   if (response.status === 401) {
     const refreshed = await refreshAccessToken();
+    if (refreshed === 'unavailable') {
+      return Response.json({ message: 'Session validation unavailable. Please try again.' }, { status: 503 });
+    }
 
     if (refreshed) {
       token = await getAccessToken();

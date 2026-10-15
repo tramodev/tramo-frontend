@@ -65,6 +65,7 @@ function setup() {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText, {
     exports: api,
+    Response,
     require: (name) => ({ './auth': exports, 'next/navigation': {} })[name],
     fetch: async (_, options) => {
       const token = options.headers.Authorization;
@@ -128,6 +129,22 @@ test('both authenticated requests retry with the new access token', async () => 
   const responses = await Promise.all([first, second]);
   expect(responses.map((response) => response.status)).toStrictEqual([200, 200]);
   expect(s.accessTokens.filter((token) => token === 'Bearer new-access').length).toBe(2);
+});
+
+test.each([503, 429, 'network', 'timeout'])('an unavailable refresh (%s) returns 503 instead of a false authentication failure', async failure => {
+  const s = setup();
+  const first = s.fetch(0);
+  await settle();
+  if (failure === 'network') s.requests[0].reject(new Error('offline'));
+  else if (failure === 'timeout') s.timeouts[0].abort();
+  else s.requests[0].resolve(new Response(null, { status: failure }));
+  const response = await first;
+  expect(response.status).toBe(503);
+  expect(s.stores[0].get('refreshToken')).toBe('old');
+  const retry = s.fetch(0);
+  await settle();
+  s.requests[1].resolve(Response.json({ accessToken: 'new-access', refreshToken: 'new-refresh' }));
+  expect((await retry).status).toBe(200);
 });
 
 test('a failed shared refresh preserves cookies and allows a new attempt', async () => {
@@ -202,7 +219,7 @@ test.each([null, {}, { accessToken: 'new-access' }, { accessToken: 'new-access',
     const action = s.refresh(0);
     await settle();
     s.requests[0].resolve(new Response(JSON.stringify(body)));
-    expect(await action).toBe(false);
+    expect(await action).toBe('unavailable');
     expect(s.stores[0].get('refreshToken')).toBe('old');
   },
 );
@@ -212,7 +229,7 @@ test('a network failure does not leave a rejected refresh cached', async () => {
   const first = s.refresh(0);
   await settle();
   s.requests[0].reject(new Error('offline'));
-  expect(await first).toBe(false);
+  expect(await first).toBe('unavailable');
   const retry = s.refresh(0);
   await settle();
   expect(s.requests).toHaveLength(2);
@@ -304,10 +321,26 @@ test('a hanging refresh times out and releases all callers and its cache entry',
   expect(s.requests).toHaveLength(1);
   expect(s.timeouts[0].ms).toBe(10000);
   s.timeouts[0].abort();
-  expect(await Promise.all([first, second])).toStrictEqual([false, false]);
+  expect(await Promise.all([first, second])).toStrictEqual(['unavailable', 'unavailable']);
   const retry = s.refresh(0);
   await settle();
   expect(s.requests).toHaveLength(2);
   s.requests[1].resolve(new Response(null, { status: 401 }));
   expect(await retry).toBe(false);
+});
+
+test('a proxy refresh timeout returns 503 without deleting the session and allows retry', async () => {
+  const s = setup();
+  const first = s.proxy();
+  await settle();
+  s.timeouts[0].abort();
+  const response = await first;
+  expect(response.status).toBe(503);
+  expect(response.headers.get('location')).toBeNull();
+  expect(response.cookies.get('refreshToken')).toBeUndefined();
+  const retry = s.proxy();
+  await settle();
+  expect(s.requests).toHaveLength(2);
+  s.requests[1].resolve(new Response(JSON.stringify({ accessToken: 'new-access', refreshToken: 'new-refresh' })));
+  expect((await retry).cookies.get('refreshToken')?.value).toBe('new-refresh');
 });

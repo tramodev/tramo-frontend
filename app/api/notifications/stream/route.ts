@@ -16,8 +16,10 @@ function open(token: string | null, signal: AbortSignal) {
 export async function GET(request: Request) {
   let upstream = await open(await getAccessToken(), request.signal);
 
-  if (upstream.status === 401 && (await refreshAccessToken())) {
-    upstream = await open(await getAccessToken(), request.signal);
+  if (upstream.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed === 'unavailable') return new Response(null, { status: 503 });
+    if (refreshed) upstream = await open(await getAccessToken(), request.signal);
   }
 
   if (!upstream.ok || !upstream.body) {

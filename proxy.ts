@@ -68,7 +68,11 @@ export async function proxy(request: NextRequest) {
   }
 
   if ((isProtected || isAuthPage) && !accessValid && refreshToken) {
-    refreshed = await refreshTokens(refreshToken);
+    const result = await refreshTokens(refreshToken);
+    if (result === 'unavailable') {
+      return new NextResponse('Session validation unavailable', { status: 503 });
+    }
+    refreshed = result;
     if (refreshed) accessToken = refreshed.accessToken;
   }
 

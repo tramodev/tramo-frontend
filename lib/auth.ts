@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-'use server';
+import 'server-only';
 import { cookies } from 'next/headers';
 import { API_BASE_URL, REFRESH_TOKEN_MAX_AGE } from './config';
 import { invalidateRefreshTokens, refreshTokens } from '@/lib/refresh';
@@ -70,7 +70,7 @@ export async function getUsername(): Promise<string | null> {
   return cookieStore.get('username')?.value || null;
 }
 
-export async function refreshAccessToken(): Promise<boolean> {
+export async function refreshAccessToken(): Promise<boolean | 'unavailable'> {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get('refreshToken')?.value;
 
@@ -85,6 +85,7 @@ export async function refreshAccessToken(): Promise<boolean> {
   }
 
   const tokens = await refreshTokens(refreshToken, cookieStore.get('accessToken')?.value);
+  if (tokens === 'unavailable') return 'unavailable';
   if (!tokens) return false;
   await setAuthCookies(tokens);
   return true;

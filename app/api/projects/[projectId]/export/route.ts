@@ -15,7 +15,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
     });
   };
   let upstream = await open();
-  if (upstream.status === 401 && await refreshAccessToken()) upstream = await open();
+  if (upstream.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed === 'unavailable') return new Response(null, { status: 503 });
+    if (refreshed) upstream = await open();
+  }
   return new Response(upstream.body, {
     status: upstream.status,
     headers: {
