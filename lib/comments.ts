@@ -61,5 +61,5 @@ export async function postComment(projectId: string, content: string, parentId?:
 }
 
 export async function deleteComment(id: string): Promise<void> {
-  await authenticatedFetch(`${API_BASE_URL}/api/comment/${id}`, { method: "DELETE" });
+  await expectOk(await authenticatedFetch(`${API_BASE_URL}/api/comment/${id}`, { method: "DELETE" }));
 }

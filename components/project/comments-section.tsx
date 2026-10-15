@@ -65,6 +65,7 @@ export function CommentsSection({
   const [reportTarget, setReportTarget] = useState<string | null>(null)
   const [reportReason, setReportReason] = useState("")
   const [reportSubmitted, setReportSubmitted] = useState(false)
+  const [deleteError, setDeleteError] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -123,13 +124,18 @@ export function CommentsSection({
   }
 
   function handleDelete() {
-    if (!deleteTarget) return
+    if (!deleteTarget || isPending) return
     const id = deleteTarget
     setDeleteTarget(null)
+    setDeleteError(false)
     startTransition(async () => {
-      await deleteComment(id)
-      onCommentCountChange((current) => Math.max(0, current - 1))
-      refresh()
+      try {
+        await deleteComment(id)
+        onCommentCountChange((current) => Math.max(0, current - 1))
+        refresh()
+      } catch {
+        setDeleteError(true)
+      }
     })
   }
 
@@ -161,6 +167,8 @@ export function CommentsSection({
         </h2>
         <p className="text-sm text-muted-foreground">On the project «{projectTitle}»</p>
       </div>
+
+      {deleteError && <p role="alert" className="text-sm text-destructive">Couldn&apos;t delete the comment. Please try again.</p>}
 
       {comments === null ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
