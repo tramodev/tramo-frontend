@@ -1,21 +1,25 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import Image from 'next/image';
-import { Check, Link2, Waypoints, X, ChevronDown, Plus } from 'lucide-react';
+import { Check, Link2, X, ChevronDown, Plus } from 'lucide-react';
 import { FadeUp } from '@/components/landing/landing-motion';
 
 function ConnectionsPanelMockup() {
   return <div className="w-full rounded-[18px] border border-border bg-popover p-5 shadow-elevation-2">
     <div className="mb-4 flex items-center justify-between gap-2">
-      <span className="font-display text-lg font-medium">Connections (1)</span>
+      <span className="font-display text-lg font-medium">Connections (2)</span>
       <X className="h-3.5 w-3.5 text-muted-foreground" />
     </div>
-    <p className="mb-4 text-xs text-muted-foreground">Connections involving “Vannevar Bush”.</p>
-    <div className="rounded-xl border border-border p-4">
-      <p className="text-[13px] font-medium">Vannevar Bush — As We May Think</p>
-      <p className="mt-1 text-xs text-muted-foreground">@ mention in Vannevar Bush</p>
+    <p className="mb-4 text-xs text-muted-foreground">Connections involving “Memex”.</p>
+    <div className="mb-2 rounded-xl border border-border p-4">
+      <p className="text-[13px] font-medium">Memex — As We May Think</p>
+      <p className="mt-1 text-xs text-muted-foreground">@ mention in Memex</p>
     </div>
-    <div className="mt-4 flex items-center gap-2 border-t border-border pt-3 text-xs text-primary"><Waypoints className="h-3.5 w-3.5" />Open map</div>
+    <div className="rounded-xl border border-border p-4">
+      <p className="text-[13px] font-medium">Memex — Associative trails</p>
+      <p className="mt-1 text-xs text-muted-foreground">@ mention in Memex</p>
+    </div>
+    <div className="mt-4 border-t border-border pt-3 text-xs text-primary">Open map</div>
   </div>;
 }
 
@@ -65,14 +69,14 @@ function ReuseMockup() {
 }
 
 function MapMockup() {
-  return <>
+  return <div className="w-full rounded-[18px] border border-border bg-popover p-4 shadow-elevation-2">
     <Image
       src="/landing-map-light.png"
       alt="Two trails connected through the shared Memex note"
       width={1724}
       height={1282}
       sizes="(max-width: 768px) 100vw, 464px"
-      className="h-auto w-full rounded-[18px] border border-border shadow-elevation-2 dark:hidden"
+      className="h-auto w-full dark:hidden"
     />
     <Image
       src="/landing-map-dark.png"
@@ -80,16 +84,16 @@ function MapMockup() {
       width={1392}
       height={1056}
       sizes="(max-width: 768px) 100vw, 464px"
-      className="hidden h-auto w-full rounded-[18px] border border-border shadow-elevation-2 dark:block"
+      className="hidden h-auto w-full dark:block"
     />
-  </>;
+  </div>;
 }
 
 const STEPS = [
-  { Mockup: ConnectionsMockup, color: '--ed-orange', label: 'Connect them', title: 'Explain how ideas relate', description: 'Connect notes when a relationship adds context. Choose a destination and add an optional explanation.' },
-  { Mockup: ConnectionsPanelMockup, color: '--ed-blue', label: 'Connections', title: 'See how your notes connect', description: 'Review connections involving a note and follow them to related ideas.' },
-  { Mockup: ReuseMockup, color: '--ed-purple', label: 'Reuse them', title: 'One note, more than one trail', description: 'A trail is an ordered sequence of notes. Use the same note in different trails, in a different reading order.' },
-  { Mockup: MapMockup, color: '--ed-green', label: 'Explore the map', title: 'See the bigger picture', description: 'View your trails side by side. See how notes connect and where the same idea appears in different paths.' },
+  { Mockup: ConnectionsMockup, color: '--ed-orange', title: 'Explain how ideas relate' },
+  { Mockup: ConnectionsPanelMockup, color: '--ed-blue', title: 'See how your notes connect' },
+  { Mockup: ReuseMockup, color: '--ed-purple', title: 'One note, more than one trail' },
+  { Mockup: MapMockup, color: '--ed-green', title: 'See the bigger picture' },
 ];
 
 export function FeaturesSection() {
@@ -98,14 +102,12 @@ export function FeaturesSection() {
     <h2 className="mb-3.5 max-w-[24ch] font-display text-[40px] font-medium leading-[1.1]">Write once. Explain in different ways.</h2>
     <p className="mb-10 max-w-[60ch] text-[17px] leading-relaxed text-muted-foreground">Keep your notes connected and reusable. Build trails for the things you want to learn or explain.</p>
     <div className="grid gap-4 md:grid-cols-2">
-      {STEPS.map(({ Mockup, color, label, title, description }, index) => <FadeUp key={label} delay={index * 0.08} className="h-full md:row-span-2 md:grid md:grid-rows-subgrid">
+      {STEPS.map(({ Mockup, color, title }, index) => <FadeUp key={title} delay={index * 0.08} className="h-full md:row-span-2 md:grid md:grid-rows-subgrid">
         <div className="flex h-full flex-col overflow-hidden rounded-[28px] bg-card md:row-span-2 md:grid md:grid-rows-subgrid md:gap-0">
-          <div className="p-6 sm:p-9">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wide" style={{ color: `var(${color})` }}>{label}</div>
-            <h3 className="mb-3 font-display text-2xl font-medium">{title}</h3>
-            <p className="text-[15px] leading-relaxed text-muted-foreground">{description}</p>
+          <div className="px-5 py-4 sm:px-6">
+            <h3 className="font-display text-xl font-medium text-foreground">{title}</h3>
           </div>
-          <div aria-hidden="true" className="flex flex-1 items-center p-5 sm:p-9" style={{ background: `var(${color})` }}><Mockup /></div>
+          <div aria-hidden="true" className="flex flex-1 items-center rounded-t-[28px] p-3 sm:p-4" style={{ background: `color-mix(in srgb, var(${color}) 60%, var(--muted))` }}><Mockup /></div>
         </div>
       </FadeUp>)}
     </div>
