@@ -4,8 +4,9 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Check, Share2 } from "lucide-react"
+import { Check, Repeat2 } from "lucide-react"
 import { shareProjectToFollowers } from "@/lib/projects-store"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function ShareToFollowersButton({
   projectId,
@@ -38,16 +39,21 @@ export function ShareToFollowersButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isPending}
-      title="Share with your followers"
-      className={`relative z-10 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted ${
-        shared ? "text-primary" : "text-muted-foreground"
-      }`}
-    >
-      {shared ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={isPending}
+          aria-label="Share with your followers"
+          className={`relative z-10 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted ${
+            shared ? "text-primary" : "text-muted-foreground"
+          }`}
+        >
+          {shared ? <Check className="h-4 w-4" /> : <Repeat2 className="h-4 w-4" />}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>Share with your followers</TooltipContent>
+    </Tooltip>
   )
 }

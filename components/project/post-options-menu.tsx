@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { MoreHorizontal, Flag, Share2, UserPlus, UserCheck, Ban, GitFork } from "lucide-react"
+import { MoreHorizontal, Flag, Repeat2, UserPlus, UserCheck, Ban, GitFork } from "lucide-react"
 
 import {
   DropdownMenu,
@@ -135,7 +135,7 @@ export function PostOptionsMenu({
         </Tooltip>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={handleShare}>
-            <Share2 className="h-3.5 w-3.5" />
+            <Repeat2 className="h-3.5 w-3.5" />
             Share to followers
           </DropdownMenuItem>
           {!isOwnPost && (

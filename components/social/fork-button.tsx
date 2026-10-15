@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { GitFork } from "lucide-react"
 import { forkProject } from "@/lib/projects-store"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function ForkButton({
   projectId,
@@ -41,31 +42,39 @@ export function ForkButton({
 
   if (variant === "filled") {
     return (
-      <Button
-        type="button"
-        size="sm"
-        onClick={handleClick}
-        disabled={isPending}
-        className="relative z-10"
-        title={error ? "Fork failed, try again" : "Fork this project into your account"}
-      >
-        <GitFork className="h-[13px] w-[13px]" />
-        {isPending ? "Forking..." : "Fork"}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleClick}
+            disabled={isPending}
+            className="relative z-10"
+          >
+            <GitFork className="h-[13px] w-[13px]" />
+            {isPending ? "Forking..." : "Fork"}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{error ? "Fork failed, try again" : "Fork this project into your account"}</TooltipContent>
+      </Tooltip>
     )
   }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={handleClick}
-      disabled={isPending}
-      title={error ? "Fork failed, try again" : "Fork this project into your account"}
-    >
-      <GitFork className="h-4 w-4" />
-      {isPending ? "Forking..." : "Fork"}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleClick}
+          disabled={isPending}
+        >
+          <GitFork className="h-4 w-4" />
+          {isPending ? "Forking..." : "Fork"}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{error ? "Fork failed, try again" : "Fork this project into your account"}</TooltipContent>
+    </Tooltip>
   )
 }

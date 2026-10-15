@@ -22,6 +22,7 @@ import { ShareToFollowersButton } from "@/components/social/share-to-followers-b
 import { ProfileHoverCard } from "@/components/social/profile-hover-card"
 import { CommentsSection } from "@/components/project/comments-section"
 import { UserMenu } from "@/components/layout/user-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Item, Trail } from "@/app/editor/types"
 import { useScrollSpy } from "@/hooks/use-scroll-spy"
@@ -181,14 +182,19 @@ export function PublicProjectView({
       actions={
         <>
           {view === 'content' && (
-            <a
-              href="#comments"
-              title="Jump to project comments"
-              className="relative z-10 flex h-9 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
-            >
-              <MessageCircle className="h-4 w-4" />
-              {commentCount}
-            </a>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href="#comments"
+                  aria-label="Jump to project comments"
+                  className="relative z-10 flex h-9 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {commentCount}
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>Jump to project comments</TooltipContent>
+            </Tooltip>
           )}
           {isLoggedIn ? (
             <>
