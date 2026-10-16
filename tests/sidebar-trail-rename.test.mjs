@@ -30,15 +30,19 @@ function setup({ trails = [{ id: 'trail', title: 'Original', itemIds: [] }], ite
     })[name] ?? {},
   });
   const renames = [];
+  const moves = [];
+  const reorders = [];
   const render = () => {
     state = 0;
     return flatten(exports.SidebarCustom({
       homeHref: '/projects', projectId: 'project', items, trails,
       onRenameTrail: (...args) => renames.push(args),
       onRenameItem: (...args) => renames.push(args),
+      onMoveItemToTrail: async (...args) => { moves.push(args); },
+      onReorderTrailItems: (...args) => reorders.push(args),
     }));
   };
-  return { render, renames };
+  return { render, renames, moves, reorders };
 }
 
 test('the trail menu opens the existing rename form and submits a trimmed title', () => {
@@ -51,6 +55,53 @@ test('the trail menu opens the existing rename form and submits a trimmed title'
   input.props.onSubmit();
   expect(renames).toEqual([['trail', 'Renamed']]);
   expect(render().some(node => node.type?.name === 'InlineInput')).toBe(false);
+});
+
+test('a note can be moved by menu or dropped onto an empty trail header', () => {
+  const { render, moves } = setup({
+    items: { note: { id: 'note', title: 'Note' } },
+    trails: [{ id: 'source', title: 'Source', itemIds: ['note'] }, { id: 'target', title: 'Target', itemIds: [] }],
+  });
+  render().find(node => node.type === 'DropdownMenuItem' && node.props.children.includes('Move to another trail')).props.onSelect();
+  const picker = render().find(node => node.type?.name === 'AddToTrailSelect');
+  expect(Array.from(picker.props.trails, trail => trail.id)).toEqual(['target']);
+  picker.props.onPick('target');
+  expect(moves).toEqual([['source', 'target', 'note', undefined]]);
+  const row = render().find(node => node.props.draggable);
+  row.props.onDragStart({ dataTransfer: {} });
+  let header = render().filter(node => node.props.onDrop && node.props.className?.includes('group/trail'))[1];
+  let prevented = false;
+  header.props.onDragOver({ preventDefault: () => { prevented = true; }, dataTransfer: {} });
+  expect(prevented).toBe(true);
+  header = render().filter(node => node.props.onDrop && node.props.className?.includes('group/trail'))[1];
+  expect(header.props.className).toContain('ring-primary');
+  header.props.onDrop({ preventDefault() {}, stopPropagation() {} });
+  expect(moves).toEqual([['source', 'target', 'note', undefined], ['source', 'target', 'note', undefined]]);
+});
+
+test.each([[5, 0], [15, 1]])('dropping at y=%i inserts at destination position %i', (clientY, position) => {
+  const { render, moves } = setup({
+    items: { a: { id: 'a', title: 'A' }, b: { id: 'b', title: 'B' } },
+    trails: [{ id: 'source', title: 'Source', itemIds: ['a'] }, { id: 'target', title: 'Target', itemIds: ['b'] }],
+  });
+  render().filter(node => node.props.draggable)[0].props.onDragStart({ dataTransfer: {} });
+  let target = render().filter(node => node.props.draggable)[1];
+  target.props.onDragOver({ preventDefault() {}, dataTransfer: {}, clientY, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 20 }) } });
+  target = render().filter(node => node.props.draggable)[1];
+  expect(target.props.className).toContain(position === 0 ? 'before:bg-primary' : 'after:bg-primary');
+  target.props.onDrop({ preventDefault() {}, stopPropagation() {} });
+  expect(moves).toEqual([['source', 'target', 'a', position]]);
+});
+
+test('same-trail drops still reorder correctly using insertion boundaries', () => {
+  const { render, reorders } = setup({
+    items: Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id }])),
+    trails: [{ id: 'source', title: 'Source', itemIds: ['a', 'b', 'c'] }],
+  });
+  render().filter(node => node.props.draggable)[0].props.onDragStart({ dataTransfer: {} });
+  render().filter(node => node.props.draggable)[2].props.onDragOver({ preventDefault() {}, dataTransfer: {}, clientY: 15, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 20 }) } });
+  render().filter(node => node.props.draggable)[2].props.onDrop({ preventDefault() {}, stopPropagation() {} });
+  expect(reorders).toEqual([['source', ['b', 'c', 'a']]]);
 });
 
 test.each([0, 1, 2])('note rename opens only the input for the selected occurrence %i', occurrence => {

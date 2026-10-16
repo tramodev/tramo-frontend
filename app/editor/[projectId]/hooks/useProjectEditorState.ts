@@ -254,6 +254,69 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     setTrails(prevTrails => [...prevTrails, newTrail]);
   }, false);
 
+  const handleMoveItemToTrail = (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => {
+    const source = trails.find(trail => trail.id === sourceId);
+    const target = trails.find(trail => trail.id === targetId);
+    if (sourceId === targetId || !source?.itemIds.includes(itemId) || !target) return Promise.resolve();
+    if (reorderingTrails.current.has(sourceId) || reorderingTrails.current.has(targetId)) {
+      return Promise.reject(new Error('Wait for the previous trail change to finish.'));
+    }
+    const existingIndex = target.itemIds.indexOf(itemId);
+    const attachedOrder = existingIndex < 0 ? [...target.itemIds, itemId] : target.itemIds;
+    const targetOrder = target.itemIds.filter(id => id !== itemId);
+    const index = targetIndex === undefined
+      ? existingIndex < 0 ? targetOrder.length : existingIndex
+      : Math.max(0, Math.min(targetOrder.length, targetIndex - (existingIndex >= 0 && existingIndex < targetIndex ? 1 : 0)));
+    targetOrder.splice(index, 0, itemId);
+    const needsOrder = targetOrder.some((id, position) => attachedOrder[position] !== id);
+    reorderingTrails.current.add(sourceId);
+    reorderingTrails.current.add(targetId);
+    return pendingSaves.current.track(`move:${sourceId}:${targetId}:${itemId}`, async () => {
+      setTrails(previous => previous.map(trail => {
+        if (trail.id === sourceId) return { ...trail, itemIds: trail.itemIds.filter(id => id !== itemId), steps: trail.steps.filter(step => step.itemId !== itemId) };
+        if (trail.id === targetId) return { ...trail, itemIds: targetOrder, steps: targetOrder.map(id => trail.steps.find(step => step.itemId === id) ?? { itemId: id }) };
+        return trail;
+      }));
+      let attached = target.itemIds.includes(itemId);
+      let ordered = !needsOrder;
+      try {
+        await attachItemToTrail(targetId, itemId);
+        attached = true;
+        if (needsOrder) {
+          await reorderTrailItems(targetId, targetOrder);
+          ordered = true;
+        }
+        await detachItemFromTrail(sourceId, itemId);
+        setNavigation(previous => previous.trailId === sourceId && previous.itemId === itemId
+          ? { ...previous, trailId: targetId } : previous);
+      } catch (error) {
+        setTrails(previous => previous.map(trail => {
+          if (trail.id === sourceId && !trail.itemIds.includes(itemId)) {
+            const itemIds = [...trail.itemIds];
+            const steps = [...trail.steps];
+            const index = Math.min(source.itemIds.indexOf(itemId), itemIds.length);
+            itemIds.splice(index, 0, itemId);
+            steps.splice(index, 0, source.steps.find(step => step.itemId === itemId)!);
+            return { ...trail, itemIds, steps };
+          }
+          if (trail.id === targetId && (!attached || !ordered)) {
+            const savedOrder = attached ? attachedOrder : target.itemIds;
+            const currentIds = attached ? trail.itemIds : trail.itemIds.filter(id => id !== itemId);
+            const itemIds = [...savedOrder.filter(id => currentIds.includes(id)), ...currentIds.filter(id => !savedOrder.includes(id))];
+            return { ...trail, itemIds, steps: itemIds.map(id => trail.steps.find(step => step.itemId === id)!) };
+          }
+          return trail;
+        }));
+        throw new Error(attached
+          ? 'Could not finish the move. The note is in both trails; retry the move.'
+          : 'Could not move the note. It remains in its original trail.', { cause: error });
+      } finally {
+        reorderingTrails.current.delete(sourceId);
+        reorderingTrails.current.delete(targetId);
+      }
+    }, false);
+  };
+
   const handleCreateItem = (trailId: string, title: string) => pendingSaves.current.track(`create-item:${trailId}:${title}`, async () => {
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     autoSave.pauseItem(tempId);
@@ -490,6 +553,7 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     handleSetGraphColors,
     handleSelectItem,
     handleReorderTrailItems,
+    handleMoveItemToTrail,
     reorderNotices,
     dismissReorderNotice,
     handleCreateTrail,

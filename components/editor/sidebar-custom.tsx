@@ -47,6 +47,7 @@ interface SidebarCustomProps {
   onUnlinkItemFromTrail: (trailId: string, itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
   onReorderTrailItems: (trailId: string, itemIds: string[]) => void;
+  onMoveItemToTrail: (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => Promise<void>;
 }
 
 function InlineInput({
@@ -131,6 +132,7 @@ export function SidebarCustom({
   onUnlinkItemFromTrail,
   onDeleteItem,
   onReorderTrailItems,
+  onMoveItemToTrail,
 }: SidebarCustomProps) {
   const { state, setOpen } = useSidebar();
   const searchBoxRef = useRef<HTMLDivElement>(null);
@@ -145,6 +147,8 @@ export function SidebarCustom({
   const [linkingTrailId, setLinkingTrailId] = useState<string | null>(null);
   const [linkSelection, setLinkSelection] = useState("");
   const [addToTrailItemId, setAddToTrailItemId] = useState<string | null>(null);
+  const [movingItem, setMovingItem] = useState<{ itemId: string; trailId: string } | null>(null);
+  const [moveError, setMoveError] = useState<string | null>(null);
 
   const [editingTrailId, setEditingTrailId] = useState<string | null>(null);
   const [editingTrailTitle, setEditingTrailTitle] = useState("");
@@ -159,18 +163,33 @@ export function SidebarCustom({
   } | null>(null);
 
   const [drag, setDrag] = useState<{ trailId: string; itemId: string; overIndex: number | null } | null>(null);
+  const [dropTrailId, setDropTrailId] = useState<string | null>(null);
+
+  const moveItem = (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => {
+    setDrag(null);
+    setDropTrailId(null);
+    setMovingItem(null);
+    setMoveError(null);
+    void onMoveItemToTrail(sourceId, targetId, itemId, targetIndex).catch(error => setMoveError(error.message));
+  };
 
   const commitDrag = (trail: Trail) => {
-    if (!drag || drag.trailId !== trail.id || drag.overIndex === null) {
+    if (!drag || dropTrailId !== trail.id || drag.overIndex === null) {
       setDrag(null);
       return;
     }
+    if (drag.trailId !== trail.id) {
+      moveItem(drag.trailId, trail.id, drag.itemId, drag.overIndex);
+      return;
+    }
     const from = trail.itemIds.indexOf(drag.itemId);
+    const to = drag.overIndex - (from < drag.overIndex ? 1 : 0);
     setDrag(null);
-    if (from < 0 || from === drag.overIndex) return;
+    setDropTrailId(null);
+    if (from < 0 || from === to) return;
     const next = [...trail.itemIds];
     next.splice(from, 1);
-    next.splice(drag.overIndex, 0, drag.itemId);
+    next.splice(to, 0, drag.itemId);
     onReorderTrailItems(trail.id, next);
   };
 
@@ -407,6 +426,7 @@ export function SidebarCustom({
                   </span>
                 </div>
                 <CollapsibleContent className="pl-2">
+                  {moveError && <p role="alert" className="px-2 py-1 text-xs text-destructive">{moveError}</p>}
                   {isCreating && (
                     <div className="px-2 pb-2">
                       <InlineInput
@@ -434,7 +454,23 @@ export function SidebarCustom({
                         return (
                           <Collapsible key={trail.id} defaultOpen className="group/collapsible">
                             <SidebarMenuItem>
-                              <div className="group/trail flex items-center">
+                              <div
+                                className={`group/trail flex items-center ${dropTrailId === trail.id && drag?.overIndex === null ? "rounded-md bg-accent ring-1 ring-primary" : ""}`}
+                                onDragOver={event => {
+                                  if (!drag || drag.trailId === trail.id) return;
+                                  event.preventDefault();
+                                  event.dataTransfer.dropEffect = "move";
+                                  setDropTrailId(trail.id);
+                                  setDrag({ ...drag, overIndex: null });
+                                }}
+                                onDragLeave={() => setDropTrailId(null)}
+                                onDrop={event => {
+                                  if (!drag || drag.trailId === trail.id) return;
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  moveItem(drag.trailId, trail.id, drag.itemId);
+                                }}
+                              >
                                 {editingTrailId === trail.id ? (
                                   <InlineInput
                                     value={editingTrailTitle}
@@ -552,20 +588,26 @@ export function SidebarCustom({
                                           setDrag({ trailId: trail.id, itemId: item.id, overIndex: null });
                                         }}
                                         onDragOver={(e) => {
-                                          if (!drag || drag.trailId !== trail.id) return;
+                                          if (!drag) return;
                                           e.preventDefault();
                                           e.dataTransfer.dropEffect = "move";
-                                          if (drag.overIndex !== index) setDrag({ ...drag, overIndex: index });
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          const overIndex = index + (e.clientY >= rect.top + rect.height / 2 ? 1 : 0);
+                                          setDropTrailId(trail.id);
+                                          if (drag.overIndex !== overIndex) setDrag({ ...drag, overIndex });
                                         }}
                                         onDrop={(e) => {
                                           e.preventDefault();
+                                          e.stopPropagation();
                                           commitDrag(trail);
                                         }}
-                                        onDragEnd={() => setDrag(null)}
-                                        className={`group/item ${
-                                          drag && drag.trailId === trail.id && drag.overIndex === index
-                                            ? "border-t-2 border-primary"
-                                            : "border-t-2 border-transparent"
+                                        onDragEnd={() => { setDrag(null); setDropTrailId(null); }}
+                                        className={`group/item relative border-t-2 border-transparent ${
+                                          drag && dropTrailId === trail.id && drag.overIndex === index
+                                            ? "before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-primary"
+                                            : ""
+                                        } ${drag && dropTrailId === trail.id && drag.overIndex === index + 1 && index === trailItems.length - 1
+                                          ? "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary" : ""
                                         } ${drag?.itemId === item.id ? "opacity-40" : ""}`}
                                       >
                                         {editingItem?.itemId === item.id && editingItem.trailId === trail.id ? (
@@ -607,6 +649,12 @@ export function SidebarCustom({
                                                   <Pencil className="h-3.5 w-3.5" />
                                                   Rename note
                                                 </DropdownMenuItem>
+                                                {trails.length > 1 && (
+                                                  <DropdownMenuItem onSelect={() => setMovingItem({ itemId: item.id, trailId: trail.id })}>
+                                                    <ListPlus className="h-3.5 w-3.5" />
+                                                    Move to another trail
+                                                  </DropdownMenuItem>
+                                                )}
                                                 {addableTrails.length > 0 && (
                                                   <DropdownMenuItem onSelect={() => setAddToTrailItemId(item.id)}>
                                                     <ListPlus className="h-3.5 w-3.5" />
@@ -635,6 +683,13 @@ export function SidebarCustom({
                                             trails={addableTrails}
                                             onPick={(trailId) => onLinkItemToTrail(trailId, item.id)}
                                             onCancel={() => setAddToTrailItemId(null)}
+                                          />
+                                        )}
+                                        {movingItem?.itemId === item.id && movingItem.trailId === trail.id && (
+                                          <AddToTrailSelect
+                                            trails={trails.filter(candidate => candidate.id !== trail.id)}
+                                            onPick={targetId => moveItem(trail.id, targetId, item.id)}
+                                            onCancel={() => setMovingItem(null)}
                                           />
                                         )}
                                       </SidebarMenuSubItem>

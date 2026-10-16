@@ -8,7 +8,7 @@ const transpile = path => ts.transpileModule(readFileSync(path, 'utf8'), {
 }).outputText;
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-async function setup() {
+async function setup(extraTrails = []) {
   const states = [], refs = [], effects = [];
   let stateIndex = 0, refIndex = 0, initial = true;
   let resolveSave, rejectSave, requests = 0, bootstraps = 0, previews = 0;
@@ -16,6 +16,8 @@ async function setup() {
   const contentResets = [];
   const renameRequests = [];
   const itemRenameRequests = [];
+  const attaches = [], detaches = [];
+  const orders = [];
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, content: '' }]));
   const steps = ['a', 'b', 'c'].map(id => ({ itemId: id }));
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
@@ -74,13 +76,15 @@ async function setup() {
       },
       'next/navigation': { useRouter: () => router },
       '@/lib/editor-bootstrap-client': {
-        getEditorBootstrap: async () => { bootstraps++; return { project: { title: 'Project', visibility: 'private', description: '', graphColors: null, tags: '', items, trails: [trail] }, contents: [], profile: { username: 'owner', imageUrl: null }, selectedItemId: 'a', selectedTrailId: 'trail' }; },
+        getEditorBootstrap: async () => { bootstraps++; return { project: { title: 'Project', visibility: 'private', description: '', graphColors: null, tags: '', items, trails: [trail, ...extraTrails] }, contents: [], profile: { username: 'owner', imageUrl: null }, selectedItemId: 'a', selectedTrailId: 'trail' }; },
       },
       '@/lib/projects-store': {
+        attachItemToTrail: (trailId, itemId) => new Promise((resolve, reject) => attaches.push({ trailId, itemId, resolve, reject })),
+        detachItemFromTrail: (trailId, itemId) => new Promise((resolve, reject) => detaches.push({ trailId, itemId, resolve, reject })),
         renameTrail: (trailId, title) => new Promise((resolve, reject) => { renameRequests.push({ trailId, title, resolve, reject }); }),
         renameItem: (itemId, title) => new Promise((resolve, reject) => { itemRenameRequests.push({ itemId, title, resolve, reject }); }),
         getMapPreviews: async () => { previews++; return {}; },
-        reorderTrailItems: () => { requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
+        reorderTrailItems: (trailId, itemIds) => { orders.push({ trailId, itemIds }); requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
         createItem: () => new Promise((resolve, reject) => { createResolve = resolve; createReject = reject; }),
         createLooseItem: () => new Promise((resolve, reject) => { looseCreateResolve = resolve; looseCreateReject = reject; }),
       },
@@ -106,6 +110,7 @@ async function setup() {
   return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), createLooseFail: () => looseCreateReject(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews, contentResets, autoSaveRequests,
     renameRequests,
     itemRenameRequests,
+    attaches, detaches, orders,
     flushTimers: () => { for (const [id, fn] of autoSaveTimers) { autoSaveTimers.delete(id); fn(); } },
   };
 }
@@ -168,6 +173,119 @@ test('failed note renames keep the new title and retry on flush', async () => {
   expect(s.itemRenameRequests[1].title).toBe('Renamed');
   s.itemRenameRequests[1].resolve();
   await flush;
+});
+
+test('moving a note is optimistic, attaches before detaching, and follows the selected note', async () => {
+  const s = await setup([{ id: 'target', itemIds: [], steps: [] }]);
+  const pending = s.render().handleMoveItemToTrail('trail', 'target', 'a');
+  expect(Array.from(s.render().trails[0].itemIds)).toEqual(['b', 'c']);
+  expect(Array.from(s.render().trails[1].itemIds)).toEqual(['a']);
+  expect(s.render().items.a.content).toBe('');
+  expect(s.attaches[0].trailId).toBe('target');
+  expect(s.detaches).toHaveLength(0);
+  await expect(s.render().handleMoveItemToTrail('target', 'trail', 'a')).rejects.toThrow('Wait');
+  await s.render().handleReorderTrailItems('trail', ['c', 'b']);
+  expect(s.requests()).toBe(0);
+  s.attaches[0].resolve();
+  await settle();
+  expect(s.detaches[0].trailId).toBe('trail');
+  s.detaches[0].resolve();
+  await pending;
+  expect(s.render().activeTrailId).toBe('target');
+  expect(s.render().selectedItemId).toBe('a');
+  await s.render().flushProjectChanges();
+});
+
+test.each([0, 1, 2])('moving a note saves insertion position %i before removing it from the source', async index => {
+  const s = await setup([{ id: 'target', itemIds: ['b', 'c'], steps: [{ itemId: 'b' }, { itemId: 'c' }] }]);
+  const expected = ['b', 'c'];
+  expected.splice(index, 0, 'a');
+  const pending = s.render().handleMoveItemToTrail('trail', 'target', 'a', index);
+  expect(Array.from(s.render().trails[1].itemIds)).toEqual(expected);
+  expect(Array.from(s.render().trails[1].steps, step => step.itemId)).toEqual(expected);
+  s.attaches[0].resolve();
+  await settle();
+  if (index < 2) {
+    expect(s.orders[0].trailId).toBe('target');
+    expect(Array.from(s.orders[0].itemIds)).toEqual(expected);
+    expect(s.detaches).toHaveLength(0);
+    s.save();
+    await settle();
+  }
+  s.detaches[0].resolve();
+  await pending;
+  expect(Array.from(s.render().trails[1].itemIds)).toEqual(expected);
+});
+
+test('failed destination reorder restores its saved order and keeps the source note', async () => {
+  const s = await setup([{ id: 'target', itemIds: ['b', 'c'], steps: [{ itemId: 'b' }, { itemId: 'c' }] }]);
+  const pending = s.render().handleMoveItemToTrail('trail', 'target', 'a', 0);
+  s.attaches[0].resolve();
+  await settle();
+  s.fail();
+  await expect(pending).rejects.toThrow('both trails');
+  expect(s.detaches).toHaveLength(0);
+  expect(Array.from(s.render().trails[0].itemIds)).toEqual(['a', 'b', 'c']);
+  expect(Array.from(s.render().trails[1].itemIds)).toEqual(['b', 'c', 'a']);
+});
+
+test('moving a shared note to a chosen position does not duplicate it', async () => {
+  const s = await setup([{ id: 'target', itemIds: ['a', 'b', 'c'], steps: ['a', 'b', 'c'].map(itemId => ({ itemId })) }]);
+  const pending = s.render().handleMoveItemToTrail('trail', 'target', 'a', 3);
+  expect(Array.from(s.render().trails[1].itemIds)).toEqual(['b', 'c', 'a']);
+  s.attaches[0].resolve();
+  await settle();
+  s.save();
+  await settle();
+  s.detaches[0].resolve();
+  await pending;
+});
+
+test('failed attach restores both trails without detaching the note', async () => {
+  const s = await setup([{ id: 'target', itemIds: [], steps: [] }]);
+  const pending = s.render().handleMoveItemToTrail('trail', 'target', 'b');
+  s.attaches[0].reject(new Error('offline'));
+  await expect(pending).rejects.toThrow('original trail');
+  expect(Array.from(s.render().trails[0].itemIds)).toEqual(['a', 'b', 'c']);
+  expect(Array.from(s.render().trails[1].itemIds)).toEqual([]);
+  expect(s.detaches).toHaveLength(0);
+});
+
+test('failed detach keeps the note in both trails and allows retry without duplicates', async () => {
+  const s = await setup([{ id: 'target', itemIds: ['a'], steps: [{ itemId: 'a' }] }]);
+  const pending = s.render().handleMoveItemToTrail('trail', 'target', 'a');
+  s.attaches[0].resolve();
+  await settle();
+  s.detaches[0].reject(new Error('offline'));
+  await expect(pending).rejects.toThrow('both trails');
+  expect(Array.from(s.render().trails[0].itemIds)).toEqual(['a', 'b', 'c']);
+  expect(Array.from(s.render().trails[1].itemIds)).toEqual(['a']);
+  const retry = s.render().handleMoveItemToTrail('trail', 'target', 'a');
+  s.attaches[1].resolve();
+  await settle();
+  s.detaches[1].resolve();
+  await retry;
+  expect(Array.from(s.render().trails[1].itemIds)).toEqual(['a']);
+  await s.render().flushProjectChanges();
+});
+
+test('rolling back a move preserves notes created while it was saving', async () => {
+  const s = await setup([{ id: 'target', itemIds: [], steps: [] }]);
+  const move = s.render().handleMoveItemToTrail('trail', 'target', 'b');
+  const create = s.render().handleCreateItem('trail', 'New');
+  s.create({ id: 'new', title: 'New', content: '' });
+  await create;
+  s.attaches[0].reject(new Error('offline'));
+  await expect(move).rejects.toThrow('original trail');
+  expect(Array.from(s.render().trails[0].itemIds)).toEqual(['a', 'b', 'c', 'new']);
+  expect(Array.from(s.render().trails[0].steps, step => step.itemId)).toEqual(['a', 'b', 'c', 'new']);
+});
+
+test('moving to the same or an unknown trail does nothing', async () => {
+  const s = await setup();
+  await s.render().handleMoveItemToTrail('trail', 'trail', 'a');
+  await s.render().handleMoveItemToTrail('trail', 'unknown', 'a');
+  expect(s.attaches).toHaveLength(0);
 });
 
 test('startup uses one bootstrap request and defers map previews', async () => {
