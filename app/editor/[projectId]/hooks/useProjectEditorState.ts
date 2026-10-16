@@ -20,6 +20,7 @@ import {
   attachItemToTrail,
   detachItemFromTrail,
   reorderTrailItems,
+  reorderProjectTrails,
   type ProjectVisibility,
   type MapPreviews,
 } from '@/lib/projects-store';
@@ -54,6 +55,8 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   const [trails, setTrails] = useState<Trail[]>([]);
   const [reorderNotices, setReorderNotices] = useState<Record<string, ReorderNotice>>({});
   const reorderingTrails = useRef(new Set<string>());
+  const reorderingProjectTrails = useRef(false);
+  const [trailOrderError, setTrailOrderError] = useState<string | null>(null);
   const dismissReorderNotice = (trailId: string) => setReorderNotices(previous => {
     const next = { ...previous };
     delete next[trailId];
@@ -253,6 +256,27 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     const newTrail = await createTrail(projectId, title);
     setTrails(prevTrails => [...prevTrails, newTrail]);
   }, false);
+
+  const handleReorderTrails = (trailIds: string[]) => {
+    if (reorderingProjectTrails.current) return Promise.resolve();
+    const byId = new Map(trails.map(trail => [trail.id, trail]));
+    if (trailIds.length !== trails.length || new Set(trailIds).size !== trails.length || trailIds.some(id => !byId.has(id))) return Promise.resolve();
+    const previousOrder = new Map(trails.map((trail, index) => [trail.id, index]));
+    reorderingProjectTrails.current = true;
+    setTrailOrderError(null);
+    setTrails(trailIds.map(id => byId.get(id)!));
+    return pendingSaves.current.track('trail-order', async () => {
+      try {
+        await reorderProjectTrails(projectId, trailIds);
+      } catch (error) {
+        setTrails(current => [...current].sort((a, b) => (previousOrder.get(a.id) ?? previousOrder.size) - (previousOrder.get(b.id) ?? previousOrder.size)));
+        setTrailOrderError('Could not reorder the trails. The previous order was restored. Please try again.');
+        throw error;
+      } finally {
+        reorderingProjectTrails.current = false;
+      }
+    }, false).catch(() => {});
+  };
 
   const handleMoveItemToTrail = (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => {
     const source = trails.find(trail => trail.id === sourceId);
@@ -553,6 +577,8 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     handleSetGraphColors,
     handleSelectItem,
     handleReorderTrailItems,
+    handleReorderTrails,
+    trailOrderError,
     handleMoveItemToTrail,
     reorderNotices,
     dismissReorderNotice,

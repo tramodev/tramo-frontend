@@ -130,6 +130,8 @@ export default function EditorPage() {
             onUnlinkItemFromTrail={project.handleUnlinkItemFromTrail}
             onDeleteItem={async (itemId) => { await project.handleDeleteItem(itemId); project.discardItem(itemId); }}
             onReorderTrailItems={project.handleReorderTrailItems}
+            onReorderTrails={project.handleReorderTrails}
+            trailOrderError={project.trailOrderError}
             onMoveItemToTrail={project.handleMoveItemToTrail}
           /> : <Sidebar><SidebarContent><div className="m-6 h-5 w-32 animate-pulse rounded bg-muted" /></SidebarContent></Sidebar>
         }

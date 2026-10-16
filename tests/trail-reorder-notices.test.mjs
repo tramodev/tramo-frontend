@@ -18,6 +18,7 @@ async function setup(extraTrails = []) {
   const itemRenameRequests = [];
   const attaches = [], detaches = [];
   const orders = [];
+  const projectOrders = [];
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, content: '' }]));
   const steps = ['a', 'b', 'c'].map(id => ({ itemId: id }));
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
@@ -79,6 +80,7 @@ async function setup(extraTrails = []) {
         getEditorBootstrap: async () => { bootstraps++; return { project: { title: 'Project', visibility: 'private', description: '', graphColors: null, tags: '', items, trails: [trail, ...extraTrails] }, contents: [], profile: { username: 'owner', imageUrl: null }, selectedItemId: 'a', selectedTrailId: 'trail' }; },
       },
       '@/lib/projects-store': {
+        reorderProjectTrails: (projectId, trailIds) => new Promise((resolve, reject) => projectOrders.push({ projectId, trailIds, resolve, reject })),
         attachItemToTrail: (trailId, itemId) => new Promise((resolve, reject) => attaches.push({ trailId, itemId, resolve, reject })),
         detachItemFromTrail: (trailId, itemId) => new Promise((resolve, reject) => detaches.push({ trailId, itemId, resolve, reject })),
         renameTrail: (trailId, title) => new Promise((resolve, reject) => { renameRequests.push({ trailId, title, resolve, reject }); }),
@@ -110,7 +112,7 @@ async function setup(extraTrails = []) {
   return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), createLooseFail: () => looseCreateReject(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews, contentResets, autoSaveRequests,
     renameRequests,
     itemRenameRequests,
-    attaches, detaches, orders,
+    attaches, detaches, orders, projectOrders,
     flushTimers: () => { for (const [id, fn] of autoSaveTimers) { autoSaveTimers.delete(id); fn(); } },
   };
 }
@@ -286,6 +288,46 @@ test('moving to the same or an unknown trail does nothing', async () => {
   await s.render().handleMoveItemToTrail('trail', 'trail', 'a');
   await s.render().handleMoveItemToTrail('trail', 'unknown', 'a');
   expect(s.attaches).toHaveLength(0);
+});
+
+test('trail order updates optimistically without changing selected note or contents', async () => {
+  const s = await setup([{ id: 'second', itemIds: ['a'], steps: [{ itemId: 'a' }] }]);
+  const pending = s.render().handleReorderTrails(['second', 'trail']);
+  expect(Array.from(s.render().trails, trail => trail.id)).toEqual(['second', 'trail']);
+  expect(s.render().activeTrailId).toBe('trail');
+  expect(s.render().selectedItemId).toBe('a');
+  expect(s.render().items.a.content).toBe('');
+  await s.render().handleReorderTrails(['trail', 'second']);
+  expect(s.projectOrders).toHaveLength(1);
+  expect(Array.from(s.projectOrders[0].trailIds)).toEqual(['second', 'trail']);
+  s.projectOrders[0].resolve();
+  await pending;
+  await s.render().flushProjectChanges();
+});
+
+test('failed trail order restores order without overwriting a concurrent rename and can retry', async () => {
+  const s = await setup([{ id: 'second', itemIds: [], steps: [] }]);
+  const pending = s.render().handleReorderTrails(['second', 'trail']);
+  const rename = s.render().handleRenameTrail('second', 'Renamed');
+  s.renameRequests[0].resolve();
+  await rename;
+  s.projectOrders[0].reject(new Error('offline'));
+  await pending;
+  expect(Array.from(s.render().trails, trail => trail.id)).toEqual(['trail', 'second']);
+  expect(s.render().trails[1].title).toBe('Renamed');
+  expect(s.render().trailOrderError).toContain('previous order');
+  const retry = s.render().handleReorderTrails(['second', 'trail']);
+  expect(s.render().trailOrderError).toBe(null);
+  s.projectOrders[1].resolve();
+  await retry;
+  await s.render().flushProjectChanges();
+});
+
+test('invalid trail orders do not change local state or reach the server', async () => {
+  const s = await setup([{ id: 'second', itemIds: [], steps: [] }]);
+  for (const ids of [['trail'], ['trail', 'trail'], ['trail', 'missing']]) await s.render().handleReorderTrails(ids);
+  expect(s.projectOrders).toHaveLength(0);
+  expect(Array.from(s.render().trails, trail => trail.id)).toEqual(['trail', 'second']);
 });
 
 test('startup uses one bootstrap request and defers map previews', async () => {

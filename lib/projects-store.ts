@@ -311,6 +311,10 @@ export async function reorderTrailItems(trailId: string, itemIds: string[]): Pro
   });
 }
 
+export async function reorderProjectTrails(projectId: string, trailIds: string[]): Promise<void> {
+  await apiVoid(`/api/project/${projectId}/trail/order`, { method: "PUT", json: { trailIds: trailIds.map(Number) } });
+}
+
 export async function renameTrail(trailId: string, title: string): Promise<void> {
   await apiVoid(`/api/trail/${trailId}`, { method: "PUT", json: { title } });
 }

@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { ChevronRight, GitBranch, Link2, ListPlus, MoreVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react"
+import { ArrowDown, ArrowUp, ChevronRight, GitBranch, Link2, ListPlus, MoreVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Mark } from "@/components/layout/logo"
@@ -47,6 +47,8 @@ interface SidebarCustomProps {
   onUnlinkItemFromTrail: (trailId: string, itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
   onReorderTrailItems: (trailId: string, itemIds: string[]) => void;
+  onReorderTrails: (trailIds: string[]) => void;
+  trailOrderError?: string | null;
   onMoveItemToTrail: (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => Promise<void>;
 }
 
@@ -132,6 +134,8 @@ export function SidebarCustom({
   onUnlinkItemFromTrail,
   onDeleteItem,
   onReorderTrailItems,
+  onReorderTrails,
+  trailOrderError,
   onMoveItemToTrail,
 }: SidebarCustomProps) {
   const { state, setOpen } = useSidebar();
@@ -164,6 +168,16 @@ export function SidebarCustom({
 
   const [drag, setDrag] = useState<{ trailId: string; itemId: string; overIndex: number | null } | null>(null);
   const [dropTrailId, setDropTrailId] = useState<string | null>(null);
+  const [trailDrag, setTrailDrag] = useState<{ trailId: string; overIndex: number | null } | null>(null);
+
+  const reorderTrail = (trailId: string, to: number) => {
+    const from = trails.findIndex(trail => trail.id === trailId);
+    if (from < 0 || from === to || to < 0 || to >= trails.length) return;
+    const next = trails.map(trail => trail.id);
+    next.splice(from, 1);
+    next.splice(to, 0, trailId);
+    onReorderTrails(next);
+  };
 
   const moveItem = (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => {
     setDrag(null);
@@ -427,6 +441,7 @@ export function SidebarCustom({
                 </div>
                 <CollapsibleContent className="pl-2">
                   {moveError && <p role="alert" className="px-2 py-1 text-xs text-destructive">{moveError}</p>}
+                  {trailOrderError && <p role="alert" className="px-2 py-1 text-xs text-destructive">{trailOrderError}</p>}
                   {isCreating && (
                     <div className="px-2 pb-2">
                       <InlineInput
@@ -443,7 +458,7 @@ export function SidebarCustom({
                   )}
                   <SidebarGroupContent>
                     <SidebarMenu>
-                      {trails.map((trail) => {
+                      {trails.map((trail, trailIndex) => {
                         const trailItems = trail.itemIds
                           .map((itemId) => items[itemId])
                           .filter((item): item is Item => Boolean(item));
@@ -452,11 +467,28 @@ export function SidebarCustom({
                         );
 
                         return (
-                          <Collapsible key={trail.id} defaultOpen className="group/collapsible">
+                          <Collapsible key={trail.id} defaultOpen className={`group/collapsible relative ${trailDrag?.trailId === trail.id ? "opacity-40" : ""}`}>
+                            {trailDrag?.overIndex === trailIndex && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 top-0 z-10 h-0.5 bg-primary" />}
+                            {trailDrag?.overIndex === trails.length && trailIndex === trails.length - 1 && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 bottom-0 z-10 h-0.5 bg-primary" />}
                             <SidebarMenuItem>
                               <div
                                 className={`group/trail -ml-4 -mr-2 flex items-center hover:bg-sidebar-accent ${dropTrailId === trail.id && drag?.overIndex === null ? "bg-accent ring-1 ring-inset ring-primary" : ""}`}
+                                draggable={editingTrailId !== trail.id}
+                                onDragStart={event => {
+                                  event.stopPropagation();
+                                  event.dataTransfer.effectAllowed = "move";
+                                  event.dataTransfer.setData("text/plain", trail.id);
+                                  setTrailDrag({ trailId: trail.id, overIndex: null });
+                                }}
+                                onDragEnd={() => setTrailDrag(null)}
                                 onDragOver={event => {
+                                  if (trailDrag) {
+                                    event.preventDefault();
+                                    event.dataTransfer.dropEffect = "move";
+                                    const rect = event.currentTarget.getBoundingClientRect();
+                                    setTrailDrag({ ...trailDrag, overIndex: trailIndex + (event.clientY >= rect.top + rect.height / 2 ? 1 : 0) });
+                                    return;
+                                  }
                                   if (!drag || drag.trailId === trail.id) return;
                                   event.preventDefault();
                                   event.dataTransfer.dropEffect = "move";
@@ -465,6 +497,16 @@ export function SidebarCustom({
                                 }}
                                 onDragLeave={() => setDropTrailId(null)}
                                 onDrop={event => {
+                                  if (trailDrag) {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    if (trailDrag.overIndex !== null) {
+                                      const from = trails.findIndex(candidate => candidate.id === trailDrag.trailId);
+                                      reorderTrail(trailDrag.trailId, trailDrag.overIndex - (from < trailDrag.overIndex ? 1 : 0));
+                                    }
+                                    setTrailDrag(null);
+                                    return;
+                                  }
                                   if (!drag || drag.trailId === trail.id) return;
                                   event.preventDefault();
                                   event.stopPropagation();
@@ -520,6 +562,14 @@ export function SidebarCustom({
                                         <DropdownMenuItem onSelect={() => startEditTrail(trail)}>
                                           <Pencil className="h-3.5 w-3.5" />
                                           Rename trail
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem disabled={trailIndex === 0} onSelect={() => reorderTrail(trail.id, trailIndex - 1)}>
+                                          <ArrowUp className="h-3.5 w-3.5" />
+                                          Move trail up
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem disabled={trailIndex === trails.length - 1} onSelect={() => reorderTrail(trail.id, trailIndex + 1)}>
+                                          <ArrowDown className="h-3.5 w-3.5" />
+                                          Move trail down
                                         </DropdownMenuItem>
                                         {linkableItems.length > 0 && (
                                           <DropdownMenuItem onSelect={() => startLinkingItem(trail.id)}>

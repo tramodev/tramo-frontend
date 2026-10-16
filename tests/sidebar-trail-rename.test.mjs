@@ -32,6 +32,7 @@ function setup({ trails = [{ id: 'trail', title: 'Original', itemIds: [] }], ite
   const renames = [];
   const moves = [];
   const reorders = [];
+  const trailReorders = [];
   const render = () => {
     state = 0;
     return flatten(exports.SidebarCustom({
@@ -40,9 +41,10 @@ function setup({ trails = [{ id: 'trail', title: 'Original', itemIds: [] }], ite
       onRenameItem: (...args) => renames.push(args),
       onMoveItemToTrail: async (...args) => { moves.push(args); },
       onReorderTrailItems: (...args) => reorders.push(args),
+      onReorderTrails: ids => trailReorders.push(ids),
     }));
   };
-  return { render, renames, moves, reorders };
+  return { render, renames, moves, reorders, trailReorders };
 }
 
 test('the trail menu opens the existing rename form and submits a trimmed title', () => {
@@ -67,7 +69,7 @@ test('a note can be moved by menu or dropped onto an empty trail header', () => 
   expect(Array.from(picker.props.trails, trail => trail.id)).toEqual(['target']);
   picker.props.onPick('target');
   expect(moves).toEqual([['source', 'target', 'note', undefined]]);
-  const row = render().find(node => node.props.draggable);
+  const row = render().find(node => node.props.draggable && node.props.className?.includes('group/item'));
   row.props.onDragStart({ dataTransfer: {} });
   let header = render().filter(node => node.props.onDrop && node.props.className?.includes('group/trail'))[1];
   let prevented = false;
@@ -84,10 +86,10 @@ test.each([[5, 0], [15, 1]])('dropping at y=%i inserts at destination position %
     items: { a: { id: 'a', title: 'A' }, b: { id: 'b', title: 'B' } },
     trails: [{ id: 'source', title: 'Source', itemIds: ['a'] }, { id: 'target', title: 'Target', itemIds: ['b'] }],
   });
-  render().filter(node => node.props.draggable)[0].props.onDragStart({ dataTransfer: {} });
-  let target = render().filter(node => node.props.draggable)[1];
+  render().filter(node => node.props.draggable && node.props.className?.includes('group/item'))[0].props.onDragStart({ dataTransfer: {} });
+  let target = render().filter(node => node.props.draggable && node.props.className?.includes('group/item'))[1];
   target.props.onDragOver({ preventDefault() {}, dataTransfer: {}, clientY, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 20 }) } });
-  target = render().filter(node => node.props.draggable)[1];
+  target = render().filter(node => node.props.draggable && node.props.className?.includes('group/item'))[1];
   expect(target.props.className).toContain(position === 0 ? 'before:bg-primary' : 'after:bg-primary');
   target.props.onDrop({ preventDefault() {}, stopPropagation() {} });
   expect(moves).toEqual([['source', 'target', 'a', position]]);
@@ -98,10 +100,31 @@ test('same-trail drops still reorder correctly using insertion boundaries', () =
     items: Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id }])),
     trails: [{ id: 'source', title: 'Source', itemIds: ['a', 'b', 'c'] }],
   });
-  render().filter(node => node.props.draggable)[0].props.onDragStart({ dataTransfer: {} });
-  render().filter(node => node.props.draggable)[2].props.onDragOver({ preventDefault() {}, dataTransfer: {}, clientY: 15, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 20 }) } });
-  render().filter(node => node.props.draggable)[2].props.onDrop({ preventDefault() {}, stopPropagation() {} });
+  render().filter(node => node.props.draggable && node.props.className?.includes('group/item'))[0].props.onDragStart({ dataTransfer: {} });
+  render().filter(node => node.props.draggable && node.props.className?.includes('group/item'))[2].props.onDragOver({ preventDefault() {}, dataTransfer: {}, clientY: 15, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 20 }) } });
+  render().filter(node => node.props.draggable && node.props.className?.includes('group/item'))[2].props.onDrop({ preventDefault() {}, stopPropagation() {} });
   expect(reorders).toEqual([['source', ['b', 'c', 'a']]]);
+});
+
+test.each([[0, 2, 15, ['b', 'c', 'a']], [2, 0, 5, ['c', 'a', 'b']]])('trail headers drag from %i to %i', (from, target, clientY, expected) => {
+  const { render, trailReorders, moves, reorders } = setup({ trails: ['a', 'b', 'c'].map(id => ({ id, title: id, itemIds: [] })) });
+  const headers = () => render().filter(node => node.props.draggable && node.props.className?.includes('group/trail'));
+  headers()[from].props.onDragStart({ stopPropagation() {}, dataTransfer: { setData() {} } });
+  headers()[target].props.onDragOver({ preventDefault() {}, dataTransfer: {}, clientY, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 20 }) } });
+  expect(render().some(node => node.props['aria-hidden'] === 'true' && node.props.className?.includes('bg-primary'))).toBe(true);
+  headers()[target].props.onDrop({ preventDefault() {}, stopPropagation() {} });
+  expect(trailReorders).toEqual([expected]);
+  expect(moves).toHaveLength(0);
+  expect(reorders).toHaveLength(0);
+});
+
+test('trail menus allow reordering without drag and disable boundary actions', () => {
+  const { render, trailReorders } = setup({ trails: ['a', 'b'].map(id => ({ id, title: id, itemIds: [] })) });
+  const actions = label => render().filter(node => node.type === 'DropdownMenuItem' && node.props.children.includes(label));
+  expect(actions('Move trail up')[0].props.disabled).toBe(true);
+  expect(actions('Move trail down')[1].props.disabled).toBe(true);
+  actions('Move trail up')[1].props.onSelect();
+  expect(trailReorders).toEqual([['b', 'a']]);
 });
 
 test.each([0, 1, 2])('note rename opens only the input for the selected occurrence %i', occurrence => {
