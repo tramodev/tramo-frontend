@@ -3,6 +3,7 @@ import type { Item, TrailStep } from '@/app/editor/types';
 export interface ExtractionRequest {
   operationId: string;
   title: string;
+  leaveLink: boolean;
   expectedContent: string;
   extractionEpoch: number;
   sourceContent: string;

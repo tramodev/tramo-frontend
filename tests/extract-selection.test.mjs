@@ -43,6 +43,21 @@ test('selection across paragraphs preserves blocks and existing links', () => {
   expect(text(JSON.parse(draft.sourceContent).root)).toBe('fiPartsond');
 });
 
+test.each([false, true])('extraction without a link removes only the selection, whole note: %s', whole => {
+  const editor = make(() => {
+    const node = lexical.$createTextNode('before selected after').setFormat(3);
+    lexical.$getRoot().append(lexical.$createParagraphNode().append(node));
+    node.select(whole ? 0 : 7, whole ? 21 : 15);
+  });
+  const capture = exports.captureSelection(editor).capture;
+  const draft = exports.prepareExtraction(editor, capture, 'Untitled', 'uuid', false);
+  expect(text(JSON.parse(draft.extractedContent).root)).toBe(whole ? 'before selected after' : 'selected');
+  expect(text(JSON.parse(draft.sourceContent).root)).toBe(whole ? '' : 'before  after');
+  expect(draft.sourceContent).not.toContain('tramo-extraction');
+  expect(draft.sourceContent).not.toContain('Untitled');
+  expect(JSON.stringify(editor.getEditorState().toJSON())).toBe(capture.content);
+});
+
 test('list extraction preserves list nesting and checkbox state', () => {
   const editor = make(() => {
     const a = lexical.$createTextNode('first'), b = lexical.$createTextNode('second');

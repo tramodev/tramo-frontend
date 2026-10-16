@@ -32,7 +32,7 @@ export function captureSelection(editor: LexicalEditor): { capture?: CapturedSel
   }, { editor });
 }
 
-export function prepareExtraction(editor: LexicalEditor, capture: CapturedSelection, title: string, operationId: string) {
+export function prepareExtraction(editor: LexicalEditor, capture: CapturedSelection, title: string, operationId: string, leaveLink = true) {
   if (JSON.stringify(editor.getEditorState().toJSON()) !== capture.content) throw new Error('The note changed. Close this dialog and select again.');
   const selected = capture.state.read(() => $generateJSONFromSelectedNodes(editor, capture.selection), { editor });
   const config = { ...editorConfig, onError: (error: Error) => { throw error; } };
@@ -46,7 +46,8 @@ export function prepareExtraction(editor: LexicalEditor, capture: CapturedSelect
   source.update(() => {
     const selection = capture.selection.clone();
     $setSelection(selection);
-    selection.insertNodes([$createLinkNode('#', { rel: `tramo-extraction:${operationId}` }).append($createTextNode(title))]);
+    if (leaveLink) selection.insertNodes([$createLinkNode('#', { rel: `tramo-extraction:${operationId}` }).append($createTextNode(title))]);
+    else selection.removeText();
   }, { discrete: true });
   return { expectedContent: capture.content, extractedContent: JSON.stringify(destination.getEditorState().toJSON()), sourceContent: JSON.stringify(source.getEditorState().toJSON()) };
 }

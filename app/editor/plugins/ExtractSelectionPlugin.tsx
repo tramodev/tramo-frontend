@@ -28,6 +28,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
   const [available, setAvailable] = useState<{ local: boolean; reason?: string; top: number; left: number; above: boolean; container: HTMLElement } | null>(null);
   const [capture, setCapture] = useState<CapturedSelection | null>(null);
   const [title, setTitle] = useState('');
+  const [leaveLink, setLeaveLink] = useState(true);
   const [placement, setPlacement] = useState<'next' | 'last' | 'outside'>('outside');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -75,7 +76,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
     setCapture(null); setError(''); request.current = null; setAvailable(null);
   };
   const confirm = async () => {
-    if (busy.current || !capture || !title.trim() || usage === null) return;
+    if (busy.current || !capture || usage === null) return;
     busy.current = true; setPending(true); setError('');
     const editable = editor.isEditable(); editor.setEditable(false);
     let paused = false;
@@ -85,7 +86,8 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
       actions.pauseItem(itemId); paused = true;
       if (!request.current) {
         const operationId = crypto.randomUUID();
-        request.current = { ...prepareExtraction(editor, capture, title.trim(), operationId), operationId, title: title.trim(), extractionEpoch: getExtractionEpoch(itemId),
+        const noteTitle = title.trim() || 'Untitled';
+        request.current = { ...prepareExtraction(editor, capture, noteTitle, operationId, leaveLink), operationId, title: noteTitle, leaveLink, extractionEpoch: getExtractionEpoch(itemId),
           trailId: placement !== 'outside' && dialogTrail ? Number(dialogTrail.id) : null,
           appendToTrail: placement === 'last',
           expectedOrder: placement !== 'outside' && dialogTrail ? dialogTrail.itemIds.map(Number) : null };
@@ -114,7 +116,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
         const result = captureSelection(editor);
         if (!result.capture) { setAvailable(result.reason ? { ...available, reason: result.reason } : null); return; }
         opened.current = true; request.current = null; setDialogTrail(trail); setSubmitted(false);
-        setCapture(result.capture); setTitle(''); setPlacement(trail ? 'next' : 'outside'); setError(''); setCreated(null);
+        setCapture(result.capture); setTitle(''); setLeaveLink(true); setPlacement(trail ? 'last' : 'outside'); setError(''); setCreated(null);
         setUsage(null);
         void getExtractionTrailCount(projectId, itemId).then(count => { if (opened.current) setUsage(count); })
           .catch(failure => { if (opened.current) setError(failure instanceof Error ? failure.message : 'Could not check note usage. Close and try again.'); });
@@ -123,9 +125,10 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
     </div>, available.container)}
     <Dialog open={!!capture} onOpenChange={open => { if (!open) close(); }}>
       <DialogContent showCloseButton={!pending} onEscapeKeyDown={event => { if (pending) event.preventDefault(); }} onInteractOutside={event => { if (pending) event.preventDefault(); }}>
-        <DialogHeader><DialogTitle>Extract to new note</DialogTitle><DialogDescription>The selected content will move to a new note and be replaced here with a link. After extraction, Undo applies only to subsequent edits; it cannot undo note creation.</DialogDescription></DialogHeader>
-        {usage === null ? <p role="status" className="text-sm text-muted-foreground">Checking where this note is used…</p> : usage > 1 && <p className="text-sm">This note is used in {usage} trails. The replacement link will appear in all of them. A new step is added only to the current trail.</p>}
-        <label className="text-sm">Note title<Input autoFocus required maxLength={300} value={title} disabled={pending || submitted} onChange={event => setTitle(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void confirm(); } }} /></label>
+        <DialogHeader><DialogTitle>Extract to new note</DialogTitle><DialogDescription>The selected content will move to a new note. You can leave a link here in its place. After extraction, Undo applies only to subsequent edits; it cannot undo note creation.</DialogDescription></DialogHeader>
+        {usage === null ? <p role="status" className="text-sm text-muted-foreground">Checking where this note is used…</p> : usage > 1 && <p className="text-sm">This note is used in {usage} trails. Changes to this note will appear in all of them. A new step is added only to the current trail.</p>}
+        <label className="text-sm">Note title (optional)<Input autoFocus placeholder="Untitled" maxLength={300} value={title} disabled={pending || submitted} onChange={event => setTitle(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void confirm(); } }} /></label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={leaveLink} disabled={pending || submitted} onChange={event => setLeaveLink(event.target.checked)} className="accent-primary" />Leave a link in the original note</label>
         <label className="text-sm">Create as
           <select value={placement} disabled={pending || submitted} onChange={event => setPlacement(event.target.value as typeof placement)} className="mt-1 w-full rounded-md border border-input bg-background px-2 py-2 text-sm">
             {dialogTrail && <option value="next">Next step in this trail</option>}
@@ -134,7 +137,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
           </select>
         </label>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <div className="flex justify-end gap-2"><Button variant="ghost" disabled={pending} onClick={close}>Cancel</Button><Button disabled={pending || !title.trim() || usage === null} onClick={() => { void confirm(); }}>{pending ? 'Extracting…' : submitted ? 'Try again' : 'Extract'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="ghost" disabled={pending} onClick={close}>Cancel</Button><Button disabled={pending || usage === null} onClick={() => { void confirm(); }}>{pending ? 'Extracting…' : submitted ? 'Try again' : 'Extract'}</Button></div>
       </DialogContent>
     </Dialog>
     {created && <div role="status" className="flex items-center gap-2 pl-7 text-sm text-muted-foreground">Created “{created.item.title}”.<Button variant="ghost" size="sm" onClick={() => onOpen(created)}>Open note</Button><Button variant="ghost" size="sm" onClick={() => setCreated(null)}>Dismiss</Button></div>}
