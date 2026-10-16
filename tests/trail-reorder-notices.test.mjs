@@ -14,6 +14,8 @@ async function setup() {
   let resolveSave, rejectSave, requests = 0, bootstraps = 0, previews = 0;
   let createResolve, createReject, looseCreateResolve, looseCreateReject;
   const contentResets = [];
+  const renameRequests = [];
+  const itemRenameRequests = [];
   const items = Object.fromEntries(['a', 'b', 'c'].map(id => [id, { id, title: id, content: '' }]));
   const steps = ['a', 'b', 'c'].map(id => ({ itemId: id }));
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
@@ -75,6 +77,8 @@ async function setup() {
         getEditorBootstrap: async () => { bootstraps++; return { project: { title: 'Project', visibility: 'private', description: '', graphColors: null, tags: '', items, trails: [trail] }, contents: [], profile: { username: 'owner', imageUrl: null }, selectedItemId: 'a', selectedTrailId: 'trail' }; },
       },
       '@/lib/projects-store': {
+        renameTrail: (trailId, title) => new Promise((resolve, reject) => { renameRequests.push({ trailId, title, resolve, reject }); }),
+        renameItem: (itemId, title) => new Promise((resolve, reject) => { itemRenameRequests.push({ itemId, title, resolve, reject }); }),
         getMapPreviews: async () => { previews++; return {}; },
         reorderTrailItems: () => { requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
         createItem: () => new Promise((resolve, reject) => { createResolve = resolve; createReject = reject; }),
@@ -100,9 +104,71 @@ async function setup() {
   render();
   await settle();
   return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), createLooseFail: () => looseCreateReject(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews, contentResets, autoSaveRequests,
+    renameRequests,
+    itemRenameRequests,
     flushTimers: () => { for (const [id, fn] of autoSaveTimers) { autoSaveTimers.delete(id); fn(); } },
   };
 }
+
+test('trail renames update immediately even while an earlier rename is saving', async () => {
+  const s = await setup();
+  const first = s.render().handleRenameTrail('trail', 'First');
+  expect(s.render().trails[0].title).toBe('First');
+  const second = s.render().handleRenameTrail('trail', 'Second');
+  expect(s.render().trails[0].title).toBe('Second');
+  expect(s.renameRequests).toHaveLength(1);
+  s.renameRequests[0].resolve();
+  await first;
+  await settle();
+  expect(s.render().trails[0].title).toBe('Second');
+  expect(s.renameRequests[1].title).toBe('Second');
+  s.renameRequests[1].resolve();
+  await second;
+  expect(s.render().trails[0].title).toBe('Second');
+});
+
+test('failed trail renames remain optimistic and are retried on flush', async () => {
+  const s = await setup();
+  const pending = s.render().handleRenameTrail('trail', 'Renamed');
+  s.renameRequests[0].reject(new Error('offline'));
+  await pending;
+  expect(s.render().trails[0].title).toBe('Renamed');
+  const flush = s.render().flushProjectChanges();
+  expect(s.renameRequests[1].title).toBe('Renamed');
+  s.renameRequests[1].resolve();
+  await flush;
+});
+
+test('sidebar and editor note renames update immediately without older saves restoring the title', async () => {
+  const s = await setup();
+  const first = s.render().handleRenameItem('a', 'First');
+  expect(s.render().items.a.title).toBe('First');
+  s.render().commitItemTitle('a', 'First', '  Second  ');
+  expect(s.render().items.a.title).toBe('Second');
+  expect(s.render().selectedItem.title).toBe('Second');
+  expect(s.itemRenameRequests).toHaveLength(1);
+  s.itemRenameRequests[0].resolve();
+  await first;
+  await settle();
+  expect(s.render().items.a.title).toBe('Second');
+  expect(s.itemRenameRequests[1].title).toBe('Second');
+  s.itemRenameRequests[1].resolve();
+  await s.render().flushProjectChanges();
+  expect(s.render().items.a.title).toBe('Second');
+  expect(s.render().items.a.content).toBe('');
+});
+
+test('failed note renames keep the new title and retry on flush', async () => {
+  const s = await setup();
+  const pending = s.render().handleRenameItem('a', 'Renamed');
+  s.itemRenameRequests[0].reject(new Error('offline'));
+  await pending;
+  expect(s.render().items.a.title).toBe('Renamed');
+  const flush = s.render().flushProjectChanges();
+  expect(s.itemRenameRequests[1].title).toBe('Renamed');
+  s.itemRenameRequests[1].resolve();
+  await flush;
+});
 
 test('startup uses one bootstrap request and defers map previews', async () => {
   const s = await setup();

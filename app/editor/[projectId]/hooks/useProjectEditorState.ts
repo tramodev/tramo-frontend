@@ -381,21 +381,21 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     });
   }, false);
 
-  const handleRenameTrail = (trailId: string, title: string) => pendingSaves.current.track(`trail-title:${trailId}`, async () => {
-    await renameTrail(trailId, title);
+  const handleRenameTrail = (trailId: string, title: string) => {
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId ? { ...trail, title } : trail
     ));
-  }, true);
+    return pendingSaves.current.track(`trail-title:${trailId}`, () => renameTrail(trailId, title), true).catch(() => {});
+  };
 
-  const handleRenameItem = (itemId: string, title: string) => pendingSaves.current.track(`item-title:${itemId}`, async () => {
-    await renameItem(itemId, title);
+  const handleRenameItem = (itemId: string, title: string) => {
     setItems(prevItems => {
       const item = prevItems[itemId];
       if (!item) return prevItems;
       return { ...prevItems, [itemId]: { ...item, title } };
     });
-  }, true);
+    return pendingSaves.current.track(`item-title:${itemId}`, () => renameItem(itemId, title), true).catch(() => {});
+  };
 
   const handleDeleteTrail = (trailId: string) => pendingSaves.current.track(`delete-trail:${trailId}`, async () => {
     const target = trails.find(trail => trail.id === trailId);

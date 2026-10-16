@@ -148,12 +148,13 @@ export function SidebarCustom({
 
   const [editingTrailId, setEditingTrailId] = useState<string | null>(null);
   const [editingTrailTitle, setEditingTrailTitle] = useState("");
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<{ itemId: string; trailId?: string } | null>(null);
   const [editingItemTitle, setEditingItemTitle] = useState("");
 
   const [pendingConfirm, setPendingConfirm] = useState<{
     title: string;
     description: string;
+    confirmLabel?: string;
     onConfirm: () => void;
   } | null>(null);
 
@@ -262,18 +263,18 @@ export function SidebarCustom({
     setEditingTrailTitle("");
   };
 
-  const startEditItem = (item: Item) => {
-    setEditingItemId(item.id);
+  const startEditItem = (item: Item, trailId?: string) => {
+    setEditingItem({ itemId: item.id, trailId });
     setEditingItemTitle(item.title);
   };
 
   const submitEditItem = (itemId: string) => {
-    if (editingItemId !== itemId) return;
+    if (editingItem?.itemId !== itemId) return;
     const title = editingItemTitle.trim();
     if (title) {
       onRenameItem(itemId, title);
     }
-    setEditingItemId(null);
+    setEditingItem(null);
     setEditingItemTitle("");
   };
 
@@ -545,7 +546,7 @@ export function SidebarCustom({
                                     return (
                                       <SidebarMenuSubItem
                                         key={item.id}
-                                        draggable={editingItemId !== item.id}
+                                        draggable={editingItem?.itemId !== item.id || editingItem.trailId !== trail.id}
                                         onDragStart={(e) => {
                                           e.dataTransfer.effectAllowed = "move";
                                           setDrag({ trailId: trail.id, itemId: item.id, overIndex: null });
@@ -567,14 +568,14 @@ export function SidebarCustom({
                                             : "border-t-2 border-transparent"
                                         } ${drag?.itemId === item.id ? "opacity-40" : ""}`}
                                       >
-                                        {editingItemId === item.id ? (
+                                        {editingItem?.itemId === item.id && editingItem.trailId === trail.id ? (
                                           <InlineInput
                                             value={editingItemTitle}
                                             className="h-7"
                                             onChange={setEditingItemTitle}
                                             onSubmit={() => submitEditItem(item.id)}
                                             onCancel={() => {
-                                              setEditingItemId(null);
+                                              setEditingItem(null);
                                               setEditingItemTitle("");
                                             }}
                                           />
@@ -602,7 +603,7 @@ export function SidebarCustom({
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent align="start">
-                                                <DropdownMenuItem onSelect={() => startEditItem(item)}>
+                                                <DropdownMenuItem onSelect={() => startEditItem(item, trail.id)}>
                                                   <Pencil className="h-3.5 w-3.5" />
                                                   Rename note
                                                 </DropdownMenuItem>
@@ -614,6 +615,7 @@ export function SidebarCustom({
                                                 )}
                                                 <DropdownMenuItem onSelect={() => setPendingConfirm({
                                                   title: `Remove "${item.title}" from this trail?`,
+                                                  confirmLabel: "Remove",
                                                   description: "The note is kept in your Notes list. This can't be undone.",
                                                   onConfirm: () => onUnlinkItemFromTrail(trail.id, item.id),
                                                 })}>
@@ -707,13 +709,13 @@ export function SidebarCustom({
                         const addableTrails = trails.filter((t) => !t.itemIds.includes(item.id));
                         return (
                         <SidebarMenuItem key={item.id} className="group/loose">
-                          {editingItemId === item.id ? (
+                          {editingItem?.itemId === item.id && editingItem.trailId === undefined ? (
                             <InlineInput
                               value={editingItemTitle}
                               className="h-7"
                               onChange={setEditingItemTitle}
                               onSubmit={() => submitEditItem(item.id)}
-                              onCancel={() => { setEditingItemId(null); setEditingItemTitle(""); }}
+                              onCancel={() => { setEditingItem(null); setEditingItemTitle(""); }}
                             />
                           ) : (
                             <div className="flex items-center">
@@ -791,6 +793,7 @@ export function SidebarCustom({
         }}
         title={pendingConfirm?.title ?? ""}
         description={pendingConfirm?.description ?? ""}
+        confirmLabel={pendingConfirm?.confirmLabel}
         onConfirm={() => {
           pendingConfirm?.onConfirm();
           setPendingConfirm(null);
