@@ -8,7 +8,7 @@ import Image from "next/image"
 import {
   Plus,
   FolderKanban,
-  MoreHorizontal,
+  MoreVertical,
   Pencil,
   Trash2,
   ExternalLink,
@@ -295,11 +295,11 @@ export default function ProjectsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0"
+                            className="h-8 w-8 shrink-0 hover:bg-accent hover:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
                             aria-label={`Actions for ${project.title}`}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
+                            <MoreVertical className="h-3.5 w-3.5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -401,11 +401,11 @@ export default function ProjectsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 hover:bg-accent hover:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
                           aria-label={`Actions for ${project.title}`}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
+                          <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>

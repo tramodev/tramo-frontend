@@ -32,6 +32,7 @@ import {
   X,
   Lock,
   ArrowRight,
+  MoreVertical,
 } from 'lucide-react';
 import { Mark } from '@/components/layout/logo';
 import { SharedNoteIndicator } from '@/components/editor/shared-note-indicator';
@@ -156,26 +157,27 @@ export const BrowserMockup: React.FC = () => {
           <div className="flex flex-col gap-2">
             {TRAILS.map((trail) => (
               <div key={trail.title}>
-                <div className="flex items-center gap-1.5 px-2 text-[13px] font-medium">
+                <div className="group/trail -mx-2.5 flex h-8 items-center gap-1.5 pl-4.5 text-[13px] font-medium hover:bg-sidebar-accent">
                   <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
-                  {trail.title}
+                  <span className="min-w-0 flex-1 truncate">{trail.title}</span>
+                  <Plus className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground group-hover/trail:opacity-100"><MoreVertical className="h-3 w-3" /></span>
                 </div>
-                <ul className="mt-1 flex flex-col gap-0.5 pl-2.5">
+                <ul className="relative -mx-2.5 mt-1 flex flex-col gap-0.5 before:pointer-events-none before:absolute before:inset-y-0 before:left-7 before:border-l before:border-sidebar-border">
                   {trail.items.map((item, i) => (
                     <li
                       key={item.title}
-                      className="flex items-center gap-2 rounded-md text-[13px] font-medium truncate px-2.5 py-[5px] text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      className="group/note relative flex h-7 w-full min-w-0 items-center gap-2 pl-10 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       style={item.active ? {
                         backgroundColor: 'color-mix(in srgb, var(--primary) 15%, var(--sidebar))',
                         color: 'var(--foreground)',
                         fontWeight: 600,
-                        outline: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
-                        outlineOffset: -1,
                       } : undefined}
                     >
                       <span className="w-3 shrink-0 text-[10px] tabular-nums">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate">{item.title}</span>
                       {item.shared && <SharedNoteIndicator trails={GRAPH_TRAILS} />}
+                      <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground group-hover/note:opacity-100"><MoreVertical className="h-3 w-3" /></span>
                     </li>
                   ))}
                 </ul>
@@ -189,15 +191,16 @@ export const BrowserMockup: React.FC = () => {
             </h3>
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
-          <ul className="flex flex-col gap-0.5">
+          <ul className="-mx-2.5 flex flex-col gap-0.5">
             {LOOSE_ITEMS.map((item) => (
               <li
                 key={item.title}
-                className="flex items-center gap-2 rounded-md text-[13px] font-medium truncate px-2.5 py-[5px] text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="group/note flex h-7 w-full min-w-0 items-center gap-2 pl-6 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 <span className="w-[7px] h-[7px] shrink-0 rounded-full box-border border-[1.5px] border-input" />
-                <span className="truncate flex-1">{item.title}</span>
+                <span className="min-w-0 flex-1 truncate">{item.title}</span>
                 {item.linked && <LinkIcon className="w-2.5 h-2.5 shrink-0 text-primary" />}
+                <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground group-hover/note:opacity-100"><MoreVertical className="h-3 w-3" /></span>
               </li>
             ))}
           </ul>

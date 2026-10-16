@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from "lucide-react"
+import { ChevronRight, GitBranch, Link2, ListPlus, MoreVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Mark } from "@/components/layout/logo"
@@ -328,7 +328,7 @@ export function SidebarCustom({
       collapsible="icon"
       className="border-r"
     >
-      <SidebarContent className="project-sidebar gap-0.5">
+      <SidebarContent className="project-sidebar gap-0.5 overflow-x-hidden">
         {state !== "collapsed" && (
           <div className="flex items-center gap-2 px-2.5 pt-4">
             <Link href={homeHref} title="Back to projects" className="shrink-0">
@@ -455,7 +455,7 @@ export function SidebarCustom({
                           <Collapsible key={trail.id} defaultOpen className="group/collapsible">
                             <SidebarMenuItem>
                               <div
-                                className={`group/trail flex items-center ${dropTrailId === trail.id && drag?.overIndex === null ? "rounded-md bg-accent ring-1 ring-primary" : ""}`}
+                                className={`group/trail -ml-4 -mr-2 flex items-center hover:bg-sidebar-accent ${dropTrailId === trail.id && drag?.overIndex === null ? "bg-accent ring-1 ring-inset ring-primary" : ""}`}
                                 onDragOver={event => {
                                   if (!drag || drag.trailId === trail.id) return;
                                   event.preventDefault();
@@ -472,20 +472,23 @@ export function SidebarCustom({
                                 }}
                               >
                                 {editingTrailId === trail.id ? (
-                                  <InlineInput
-                                    value={editingTrailTitle}
-                                    className="h-7"
-                                    onChange={setEditingTrailTitle}
-                                    onSubmit={() => submitEditTrail(trail.id)}
-                                    onCancel={() => {
-                                      setEditingTrailId(null);
-                                      setEditingTrailTitle("");
-                                    }}
-                                  />
+                                  <div className="flex h-8 min-w-0 flex-1 items-center gap-2 pl-6 pr-12">
+                                    <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                                    <InlineInput
+                                      value={editingTrailTitle}
+                                      className="h-7 min-w-0 flex-1 rounded-none border-0 px-0 font-semibold shadow-none"
+                                      onChange={setEditingTrailTitle}
+                                      onSubmit={() => submitEditTrail(trail.id)}
+                                      onCancel={() => {
+                                        setEditingTrailId(null);
+                                        setEditingTrailTitle("");
+                                      }}
+                                    />
+                                  </div>
                                 ) : (
                                   <>
                                     <CollapsibleTrigger asChild>
-                                      <SidebarMenuButton className="font-semibold">
+                                      <SidebarMenuButton className="min-w-0 flex-1 rounded-none pl-6 font-semibold hover:bg-transparent active:bg-transparent">
                                         <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
                                         <span className="flex-1 truncate">{trail.title}</span>
                                         <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
@@ -496,7 +499,7 @@ export function SidebarCustom({
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-5 w-5 shrink-0"
+                                      className="h-auto w-6 shrink-0 self-stretch rounded-none hover:bg-primary/10"
                                       title="New note"
                                       onClick={() => setCreatingItemTrailId(trail.id)}
                                     >
@@ -507,10 +510,10 @@ export function SidebarCustom({
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-5 w-5 shrink-0 text-muted-foreground opacity-0 hover:text-foreground group-hover/trail:opacity-100 data-[state=open]:opacity-100"
+                                          className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/trail:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
                                           title="Trail actions"
                                         >
-                                          <MoreHorizontal className="h-3 w-3" />
+                                          <MoreVertical className="h-3 w-3" />
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="start">
@@ -575,7 +578,7 @@ export function SidebarCustom({
                                 </div>
                               )}
                               <CollapsibleContent>
-                                <SidebarMenuSub>
+                                <SidebarMenuSub className="relative mx-0 -ml-4 -mr-2 translate-x-0 border-l-0 px-0 before:pointer-events-none before:absolute before:inset-y-0 before:left-7 before:border-l before:border-sidebar-border">
                                   {trailItems.map((item, index) => {
                                     const addableTrails = trails.filter((t) => !t.itemIds.includes(item.id));
 
@@ -611,19 +614,26 @@ export function SidebarCustom({
                                         } ${drag?.itemId === item.id ? "opacity-40" : ""}`}
                                       >
                                         {editingItem?.itemId === item.id && editingItem.trailId === trail.id ? (
-                                          <InlineInput
-                                            value={editingItemTitle}
-                                            className="h-7"
-                                            onChange={setEditingItemTitle}
-                                            onSubmit={() => submitEditItem(item.id)}
-                                            onCancel={() => {
-                                              setEditingItem(null);
-                                              setEditingItemTitle("");
-                                            }}
-                                          />
+                                          <div className="flex items-center gap-2 pl-10 pr-6">
+                                            <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{index + 1}</span>
+                                            <InlineInput
+                                              value={editingItemTitle}
+                                              className="h-7 min-w-0 flex-1 rounded-none border-0 px-0 shadow-none"
+                                              onChange={setEditingItemTitle}
+                                              onSubmit={() => submitEditItem(item.id)}
+                                              onCancel={() => {
+                                                setEditingItem(null);
+                                                setEditingItemTitle("");
+                                              }}
+                                            />
+                                          </div>
                                         ) : (
-                                          <div className="flex items-center">
+                                          <div
+                                            data-active={selectedItemId === item.id && activeTrailId === trail.id}
+                                            className="flex items-center hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent"
+                                          >
                                             <SidebarMenuSubButton
+                                              className="min-w-0 flex-1 translate-x-0 rounded-none pl-10 hover:bg-transparent active:bg-transparent data-[active=true]:bg-transparent"
                                               isActive={selectedItemId === item.id && activeTrailId === trail.id}
                                               onClick={() => onSelectItem(item, trail.id)}
                                             >
@@ -638,10 +648,10 @@ export function SidebarCustom({
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"
-                                                  className="h-5 w-5 shrink-0 text-muted-foreground opacity-0 hover:text-foreground group-hover/item:opacity-100 data-[state=open]:opacity-100"
+                                                  className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/item:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
                                                   title="Note actions"
                                                 >
-                                                  <MoreHorizontal className="h-3 w-3" />
+                                                  <MoreVertical className="h-3 w-3" />
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent align="start">
@@ -696,7 +706,7 @@ export function SidebarCustom({
                                     );
                                   })}
                                   {creatingItemTrailId === trail.id && (
-                                    <SidebarMenuSubItem>
+                                    <SidebarMenuSubItem className="pl-10 pr-8">
                                       <InlineInput
                                         value={newItemTitle}
                                         placeholder="Note title (optional)"
@@ -765,16 +775,23 @@ export function SidebarCustom({
                         return (
                         <SidebarMenuItem key={item.id} className="group/loose">
                           {editingItem?.itemId === item.id && editingItem.trailId === undefined ? (
-                            <InlineInput
-                              value={editingItemTitle}
-                              className="h-7"
-                              onChange={setEditingItemTitle}
-                              onSubmit={() => submitEditItem(item.id)}
-                              onCancel={() => { setEditingItem(null); setEditingItemTitle(""); }}
-                            />
+                            <div className="-ml-4 -mr-2 flex items-center gap-2 pl-6 pr-6">
+                              <span className={isActive ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary" : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"} />
+                              <InlineInput
+                                value={editingItemTitle}
+                                className="h-7 min-w-0 flex-1 rounded-none border-0 px-0 shadow-none"
+                                onChange={setEditingItemTitle}
+                                onSubmit={() => submitEditItem(item.id)}
+                                onCancel={() => { setEditingItem(null); setEditingItemTitle(""); }}
+                              />
+                            </div>
                           ) : (
-                            <div className="flex items-center">
+                            <div
+                              data-active={isActive}
+                              className="-ml-4 -mr-2 flex items-center hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent"
+                            >
                               <SidebarMenuButton
+                                className="min-w-0 flex-1 rounded-none pl-6 hover:bg-transparent active:bg-transparent data-[active=true]:bg-transparent"
                                 isActive={isActive}
                                 onClick={() => onSelectItem(item)}
                               >
@@ -793,10 +810,10 @@ export function SidebarCustom({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-5 w-5 shrink-0 text-muted-foreground opacity-0 hover:text-foreground group-hover/loose:opacity-100 data-[state=open]:opacity-100"
+                                    className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/loose:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
                                     title="Note actions"
                                   >
-                                    <MoreHorizontal className="h-3 w-3" />
+                                    <MoreVertical className="h-3 w-3" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start">

@@ -299,7 +299,7 @@ test('trail headings in the sidebar jump to the section independently from colla
     '@/app/editor/editor-utils': { searchableText: () => '' },
   });
   const nodes = render('PublicSidebar', { trails: [{ id: 'trail', title: 'Chapter', items: [] }], looseItems: [], onSelectTrail: id => selected.push(id) });
-  const heading = nodes.find(node => node.type === 'SidebarMenuButton' && node.props.className === 'font-semibold');
+  const heading = nodes.find(node => node.type === 'SidebarMenuButton' && flatten(node).some(child => child.props.children === 'Chapter'));
   heading.props.onClick();
   expect(selected).toEqual(['trail']);
   expect(mobile).toEqual([false]);

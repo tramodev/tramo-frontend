@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import Image from 'next/image';
-import { Check, Link2, X, ChevronDown, Plus } from 'lucide-react';
+import { Check, Link2, X, ChevronDown, Plus, MoreVertical } from 'lucide-react';
 import { FadeUp } from '@/components/landing/landing-motion';
 
 function ConnectionsPanelMockup() {
@@ -53,15 +53,14 @@ function ReuseMockup() {
       { title: 'Bush’s vision', notes: ['Vannevar Bush', 'As We May Think', 'Memex'] },
       { title: 'Thinking in trails', notes: ['Memex', 'Associative trails', 'Sharing a trail'] },
     ].map(trail => <div key={trail.title} className="mb-3 last:mb-0">
-      <p className="mb-1 flex items-center gap-1.5 px-2 text-[13px] font-medium"><ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />{trail.title}</p>
-      <ol className="ml-3 flex flex-col gap-0.5 border-l border-sidebar-border pl-2.5">{trail.notes.map((note, index) => <li key={note} className="flex items-center gap-2 rounded-md px-2.5 py-[5px] text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" style={note === 'Memex' && trail.title === 'Bush’s vision' ? {
+      <p className="group/trail -mx-3 mb-1 flex h-8 items-center gap-1.5 pl-5 text-[13px] font-medium hover:bg-sidebar-accent"><ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /><span className="min-w-0 flex-1 truncate">{trail.title}</span><Plus className="h-3 w-3 shrink-0 text-muted-foreground" /><span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground group-hover/trail:opacity-100"><MoreVertical className="h-3 w-3" /></span></p>
+      <ol className="relative -mx-3 flex flex-col gap-0.5 before:pointer-events-none before:absolute before:inset-y-0 before:left-7 before:border-l before:border-sidebar-border">{trail.notes.map((note, index) => <li key={note} className="group/note relative flex h-7 w-full min-w-0 items-center gap-2 pl-10 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" style={note === 'Memex' && trail.title === 'Bush’s vision' ? {
         backgroundColor: 'color-mix(in srgb, var(--primary) 15%, var(--sidebar))',
         color: 'var(--foreground)',
         fontWeight: 600,
-        outline: '1px solid color-mix(in srgb, var(--primary) 35%, transparent)',
-        outlineOffset: -1,
       } : undefined}>
         <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{index + 1}</span><span className="min-w-0 flex-1 truncate">{note}</span>{note === 'Memex' && <Link2 aria-label="Used in 2 trails" className="h-3 w-3 shrink-0 text-primary" />}
+        <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground group-hover/note:opacity-100"><MoreVertical className="h-3 w-3" /></span>
       </li>)}</ol>
     </div>)}
     <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">Used in 2 trails. Edits appear in both.</p>
