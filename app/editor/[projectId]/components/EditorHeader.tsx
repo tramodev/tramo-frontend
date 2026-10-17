@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { UserMenu } from '@/components/layout/user-menu';
 import { ExportProjectButton } from '@/components/editor/export-project-button';
 import { ProjectHistorySheet } from '@/components/editor/project-history-sheet';
-import { VersionHistorySheet } from '@/components/editor/version-history-sheet';
 import type { SaveStatus } from '../hooks/useAutoSave';
 
 interface EditorTitleSlotProps {
@@ -109,7 +108,6 @@ export function EditorActions({
       ) : <span className="text-xs text-muted-foreground" role="status">Counting project…</span>}
       <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />
       <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />
-      <VersionHistorySheet projectId={projectId} />
       <Button data-tour="share" variant="secondary" size="lg" asChild>
         <Link href={`/projects/${projectId}/share`}>
           <Share2 className="h-[15px] w-[15px]" />

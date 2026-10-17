@@ -347,24 +347,62 @@ test('shared-note tooltips explain trail membership and hide for single-trail no
   }
 });
 
-test('version history links directly to each saved publication without fetching its contents', async () => {
+test('one history panel has two tabs and loads publications only when selected', async () => {
   const requests = [];
-  const render = load('components/editor/version-history-sheet.tsx', {
-    '@/components/ui/sheet': { Sheet: 'Sheet' },
+  const render = load('components/editor/project-history-sheet.tsx', {
+    '@/components/ui/sheet': { Sheet: 'Sheet', SheetTrigger: 'SheetTrigger' },
+    'radix-ui': { Tabs: { Root: 'Tabs', List: 'TabList', Trigger: 'Tab', Content: 'TabContent' } },
+    '@/lib/project-history': { getProjectHistory: async id => {
+      requests.push(`drafts:${id}`);
+      return { versions: [], nextCursor: null, unavailable: false };
+    } },
     '@/lib/project-snapshots': { getProjectSnapshots: async id => {
-      requests.push(id);
+      requests.push(`publications:${id}`);
       return [{ id: '42', version: 3, createdAt: '2026-10-17T12:00:00Z' }];
     } },
     'next/link': { default: 'Link' },
   });
-  const props = { projectId: 'project' };
-  await render('VersionHistorySheet', props).find(node => node.type === 'Sheet').props.onOpenChange(true);
-  const link = render('VersionHistorySheet', props).find(node => node.type === 'Link');
-  expect(requests).toEqual(['project']);
+  const props = { projectId: 'project', restoreEpoch: 0, beforeSave: async () => {} };
+  let nodes = render('ProjectHistorySheet', props);
+  expect(nodes.filter(node => node.type === 'SheetTrigger')).toHaveLength(1);
+  expect(nodes.filter(node => node.type === 'Tab').map(node => flatten(node)[1].props.children)).toEqual(['Project history', 'Publish history']);
+  await nodes.find(node => node.type === 'Sheet').props.onOpenChange(true);
+  expect(requests).toEqual(['drafts:project']);
+  nodes = render('ProjectHistorySheet', props);
+  expect(nodes.find(node => node.type === 'Tabs').props.value).toBe('project');
+  await nodes.find(node => node.type === 'Tabs').props.onValueChange('publish');
+  nodes = render('ProjectHistorySheet', props);
+  expect(nodes.find(node => node.type === 'Tabs').props.value).toBe('publish');
+  const link = nodes.find(node => node.type === 'Link');
+  expect(requests).toEqual(['drafts:project', 'publications:project']);
   expect(link.props.href).toBe('/p/project/versions/42');
   expect(link.props.target).toBe('_blank');
   expect(link.props['aria-label']).toBe('Open version 3 in a new tab');
+  nodes.find(node => node.type === 'Tabs').props.onValueChange('project');
+  nodes.find(node => node.type === 'Sheet').props.onOpenChange(false);
+  nodes.find(node => node.type === 'Sheet').props.onOpenChange(true);
+  expect(render('ProjectHistorySheet', props).find(node => node.type === 'Tabs').props.value).toBe('project');
 });
+
+test('publish history reports loading failures and retries inside the shared panel', async () => {
+  let attempts = 0;
+  const render = load('components/editor/project-history-sheet.tsx', {
+    '@/components/ui/sheet': { Sheet: 'Sheet' },
+    '@/components/ui/button': { Button: 'Button' },
+    'radix-ui': { Tabs: { Root: 'Tabs', Trigger: 'Tab', Content: 'TabContent' } },
+    '@/lib/project-snapshots': { getProjectSnapshots: async () => { if (++attempts === 1) throw new Error('Offline'); return []; } },
+  }, { Error });
+  const props = { projectId: 'project', restoreEpoch: 0, beforeSave: async () => {} };
+  await render('ProjectHistorySheet', props).find(node => node.type === 'Tabs').props.onValueChange('publish');
+  let nodes = render('ProjectHistorySheet', props);
+  expect(nodes.find(node => node.props.role === 'alert').props.children[0]).toBe('Offline');
+  nodes.find(node => node.type === 'Button' && node.props.children === 'Retry').props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
+  nodes = render('ProjectHistorySheet', props);
+  expect(nodes.some(node => node.props.children === 'No published versions yet.')).toBe(true);
+  expect(attempts).toBe(2);
+});
+
 
 test('historical publications use the public reader and resolve images from the saved version', () => {
   const render = load('components/project/public-project-view.tsx', {
