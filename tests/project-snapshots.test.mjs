@@ -59,3 +59,48 @@ test('version page uses saved title and notes instead of the current publication
   snapshot = null;
   await expect(page.default(props)).rejects.toThrow('Not found');
 });
+
+
+test('private version page maps saved order, transclusions and loose notes with current restore epoch', async () => {
+  const requests = [];
+  let detail = { version: { id: 42, name: 'Milestone', type: 'MANUAL', createdAt: '2026-10-17T12:00:00Z' }, snapshot: {
+    title: 'Saved title', description: 'Saved description',
+    items: [{ id: 1, title: 'Shared', content: 'Saved JSON', titleAlign: 'right' }, { id: 2, title: 'Second' }, { id: 3, title: 'Loose', unfiled: false }],
+    trails: [{ id: 8, title: 'First trail', description: 'Saved trail', forkedFromId: 4, itemIds: [2, 1] }, { id: 7, title: 'Second trail', itemIds: [1] }],
+  } };
+  let status = 200;
+  const page = load('app/projects/[projectId]/history/[versionId]/page.tsx', {
+    '@/lib/project-history': { getProjectVersion: async () => detail },
+    '@/lib/api': { authenticatedFetch: async (url, init) => { requests.push({ url, init }); return Response.json({ restoreEpoch: 6, title: 'Live title' }, { status }); } },
+    '@/lib/config': { API_BASE_URL: 'http://backend' },
+    '@/lib/http': { parseResponse: async response => { if (!response.ok) throw new Error('Server error'); return response.json(); } },
+    '@/lib/profile': { getMyProfile: async () => ({ username: 'owner', imageUrl: null }) },
+    '@/components/project/public-project-view': { PublicProjectView: 'View' },
+    '@/components/ui/sidebar': { SidebarProvider: 'Sidebar' },
+    'next/navigation': { notFound: () => { throw new Error('Not found'); } },
+  });
+  const props = { params: Promise.resolve({ projectId: 'project', versionId: '42' }) };
+  const view = (await page.default(props)).props.children;
+  expect(view.type).toBe('View');
+  expect(view.props.project.title).toBe('Saved title');
+  expect(view.props.project.description).toBe('Saved description');
+  expect(view.props.project.ownerUsername).toBe('owner');
+  const [first, second] = view.props.project.trails;
+  expect(first.id).toBe('8');
+  expect(first.forkedFromId).toBe('4');
+  expect(first.items.map(item => item.id)).toEqual(['2', '1']);
+  expect(second.items[0]).toBe(first.items[1]);
+  expect(second.items[0]).toMatchObject({ content: 'Saved JSON', titleAlign: 'right' });
+  expect(first.items[0]).toMatchObject({ content: '', titleAlign: 'center', type: null });
+  expect(view.props.project.looseItems.map(item => item.id)).toEqual(['3']);
+  expect(view.props.historyVersion).toEqual({ ...detail.version, restoreEpoch: 6 });
+  expect(requests).toEqual([{ url: 'http://backend/api/project/project', init: { cache: 'no-store' } }]);
+  status = 403;
+  await expect(page.default(props)).rejects.toThrow('Not found');
+  status = 500;
+  await expect(page.default(props)).rejects.toThrow('Server error');
+  status = 200;
+  detail = null;
+  await expect(page.default(props)).rejects.toThrow('Not found');
+  await expect(page.default({ params: Promise.resolve({ projectId: 'project', versionId: 'invalid' }) })).rejects.toThrow('Not found');
+});

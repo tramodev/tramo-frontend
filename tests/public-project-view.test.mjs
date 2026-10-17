@@ -452,3 +452,96 @@ test('historical dates keep the server text during hydration and use browser for
   expect(date().props.children).toBe('17/10/2026, 16:21:46');
   expect(formatted).toBe(1);
 });
+
+
+test('project history lists links to private previews without loading snapshots', async () => {
+  let details = 0;
+  const render = load('components/editor/project-history-sheet.tsx', {
+    '@/components/ui/sheet': { Sheet: 'Sheet', SheetTrigger: 'Trigger' },
+    '@/components/ui/button': { Button: 'Button' },
+    '@/components/profile/row': { Row: 'Row' },
+    'next/link': { default: 'Link' },
+    'radix-ui': { Tabs: { Root: 'Tabs', List: 'List', Trigger: 'Tab', Content: 'Content' } },
+    '@/lib/project-history': {
+      getProjectHistory: async () => ({ versions: [{ id: 42, name: 'Milestone', type: 'MANUAL', createdAt: '2026-10-17T12:00:00Z' }], nextCursor: 42 }),
+      getProjectVersion: async () => { details++; },
+    },
+  });
+  const props = { projectId: 'project', restoreEpoch: 3, beforeSave: async () => {} };
+  render('ProjectHistorySheet', props).find(node => node.type === 'Sheet').props.onOpenChange(true);
+  await new Promise(resolve => setImmediate(resolve));
+  const nodes = render('ProjectHistorySheet', props);
+  const link = nodes.find(node => node.type === 'Link');
+  expect(link.props.href).toBe('/projects/project/history/42');
+  expect(link.props.target).toBe('_blank');
+  expect(link.props.rel).toBe('noopener noreferrer');
+  expect(nodes.some(node => node.props.children === 'Milestone')).toBe(true);
+  expect(nodes.some(node => node.props.children === 'Load older versions')).toBe(true);
+  expect(nodes.some(node => node.props.children === 'Restore this version')).toBe(false);
+  expect(details).toBe(0);
+});
+
+test('private history preview uses saved image access and offers restore without public actions', () => {
+  const render = load('components/project/public-project-view.tsx', {
+    '@/components/editor/project-shell': { ProjectShell: 'Shell' },
+    '@/components/editor/editor-images-provider': { EditorImagesProvider: 'Images' },
+    '@/components/project/restore-project-version-button': { RestoreProjectVersionButton: 'Restore' },
+    '@/components/project/lexical-read-only': { LexicalReadOnly: 'Reader' },
+    '@/components/project/comments-section': { CommentsSection: 'Comments' },
+    '@/components/social/share-to-followers-button': { ShareToFollowersButton: 'Share' },
+    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    'next/link': { default: 'Link' },
+  });
+  const historyVersion = { id: 42, type: 'MANUAL', name: 'Milestone', createdAt: '2026-10-17T12:00:00Z', restoreEpoch: 3 };
+  const project = { id: 'project', title: 'Saved title', trails: [], looseItems: [{ id: 'note', title: 'Saved note', content: 'Saved JSON', titleAlign: 'right' }] };
+  const nodes = render('PublicProjectView', { project, historyVersion, isLoggedIn: true });
+  expect(nodes.find(node => node.type === 'Images').props).toMatchObject({ publicRead: false, versionId: 42, snapshotId: undefined });
+  const shell = nodes.find(node => node.type === 'Shell');
+  const content = flatten(shell.props.content);
+  expect(content.find(node => node.type === 'Reader').props.content).toBe('Saved JSON');
+  expect(content.find(node => node.type === 'Link').props.href).toBe('/editor/project');
+  expect(content.some(node => node.type === 'Comments')).toBe(false);
+  const actions = flatten(shell.props.actions);
+  expect(actions.find(node => node.type === 'Restore').props).toEqual({ projectId: 'project', versionId: 42, restoreEpoch: 3 });
+  expect(actions.some(node => node.type === 'Share' || node.props.href === '#comments')).toBe(false);
+});
+
+test('restore requires confirmation, blocks double submission and returns to the editor', async () => {
+  const calls = [], navigation = [];
+  let finish;
+  const render = load('components/project/restore-project-version-button.tsx', {
+    '@/components/ui/button': { Button: 'Button' },
+    '@/components/shared/confirm-dialog': { ConfirmDialog: 'Confirm' },
+    'next/navigation': { useRouter: () => ({ push: href => navigation.push(href) }) },
+    '@/lib/project-history': { restoreProjectVersion: (...args) => { calls.push(args); return new Promise(resolve => { finish = resolve; }); } },
+  });
+  const props = { projectId: 'project', versionId: 42, restoreEpoch: 3 };
+  let nodes = render('RestoreProjectVersionButton', props);
+  nodes.find(node => node.type === 'Button').props.onClick();
+  expect(calls).toEqual([]);
+  nodes = render('RestoreProjectVersionButton', props);
+  const confirm = nodes.find(node => node.type === 'Confirm');
+  expect(confirm.props.open).toBe(true);
+  confirm.props.onConfirm();
+  confirm.props.onConfirm();
+  expect(calls).toEqual([['project', 42, 3]]);
+  expect(render('RestoreProjectVersionButton', props).find(node => node.type === 'Button').props.disabled).toBe(true);
+  finish({ restoreEpoch: 4 });
+  await new Promise(resolve => setImmediate(resolve));
+  expect(navigation).toEqual(['/editor/project']);
+});
+
+test('failed restoration displays the error and permits retry without navigation', async () => {
+  const render = load('components/project/restore-project-version-button.tsx', {
+    '@/components/ui/button': { Button: 'Button' },
+    '@/components/shared/confirm-dialog': { ConfirmDialog: 'Confirm' },
+    'next/navigation': { useRouter: () => ({ push: () => { throw new Error('Unexpected navigation'); } }) },
+    '@/lib/project-history': { restoreProjectVersion: async () => { throw new Error('Project changed. Reload before restoring.'); } },
+  }, { Error });
+  const props = { projectId: 'project', versionId: 42, restoreEpoch: 3 };
+  render('RestoreProjectVersionButton', props).find(node => node.type === 'Confirm').props.onConfirm();
+  await new Promise(resolve => setImmediate(resolve));
+  const nodes = render('RestoreProjectVersionButton', props);
+  expect(nodes.find(node => node.props.role === 'alert').props.children).toBe('Project changed. Reload before restoring.');
+  expect(nodes.find(node => node.type === 'Button').props.disabled).toBe(false);
+});

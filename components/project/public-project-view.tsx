@@ -23,6 +23,8 @@ import { ProfileHoverCard } from "@/components/social/profile-hover-card"
 import { CommentsSection } from "@/components/project/comments-section"
 import { UserMenu } from "@/components/layout/user-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { RestoreProjectVersionButton } from "@/components/project/restore-project-version-button"
+import type { HistoryVersion } from "@/lib/project-history"
 import type { ProjectSnapshotSummary } from "@/lib/project-snapshots"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Item, Trail } from "@/app/editor/types"
@@ -30,7 +32,9 @@ import { useMounted } from "@/hooks/use-mounted"
 import { useScrollSpy } from "@/hooks/use-scroll-spy"
 import { useVirtualNotes } from "@/app/editor/[projectId]/hooks/useVirtualNotes"
 
-function toEditorShape(project: PublicProject): { trails: Trail[]; items: Record<string, Item> } {
+type ReaderProject = Pick<PublicProject, 'id' | 'title' | 'description' | 'ownerUsername' | 'trails' | 'looseItems'>
+
+function toEditorShape(project: ReaderProject): { trails: Trail[]; items: Record<string, Item> } {
   const items: Record<string, Item> = {};
   const addItem = (item: PublicItem, unfiled: boolean) => {
     items[item.id] = {
@@ -67,15 +71,19 @@ export function PublicProjectView({
   username,
   imageUrl,
   snapshot,
+  historyVersion,
 }: {
-  project: PublicProject
+  project: ReaderProject | PublicProject
   homeHref: string
   isLoggedIn: boolean
   isOwnProject: boolean
   username: string | null
   imageUrl: string | null
   snapshot?: ProjectSnapshotSummary
+  historyVersion?: HistoryVersion & { restoreEpoch: number }
 }) {
+  const publicProject = historyVersion ? null : project as PublicProject
+  const historical = Boolean(snapshot || historyVersion)
   const mounted = useMounted()
   const sections = useMemo(() => [
     ...project.trails.map(trail => ({ id: `trail:${trail.id}`, trailId: trail.id, title: trail.title, description: trail.description, items: trail.items })),
@@ -87,7 +95,7 @@ export function PublicProjectView({
   ]), [sections])
   const [selectedId, setSelectedId] = useState<string | undefined>(entries.find(entry => entry.item)?.id ?? entries[0]?.id)
   const [view, setView] = useState<'content' | 'graph'>('content')
-  const [commentCount, setCommentCount] = useState(project.commentCount)
+  const [commentCount, setCommentCount] = useState(publicProject?.commentCount ?? 0)
   const [connectionsPanelOpen, setConnectionsPanelOpen] = useState(false)
 
   const { trails, items } = useMemo(() => toEditorShape(project), [project])
@@ -158,12 +166,12 @@ export function PublicProjectView({
   const emptyState = (
     <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
       <FolderPlus className="h-12 w-12 opacity-40" />
-      <p className="text-lg font-medium">This project has no published notes yet</p>
+      <p className="text-lg font-medium">{historyVersion ? 'This version has no notes' : 'This project has no published notes yet'}</p>
     </div>
   )
 
   return (
-    <EditorImagesProvider projectId={project.id} publicRead={true} snapshotId={snapshot ? Number(snapshot.id) : undefined}>
+    <EditorImagesProvider projectId={project.id} publicRead={!historyVersion} snapshotId={snapshot ? Number(snapshot.id) : undefined} versionId={historyVersion?.id}>
     <ProjectShell
       homeHref={homeHref}
       showLogo={false}
@@ -182,35 +190,35 @@ export function PublicProjectView({
                 {project.ownerUsername}
               </Link>
             </ProfileHoverCard>
-            {project.forkedFromOwnerUsername && (
+            {publicProject?.forkedFromOwnerUsername && (
               <>
                 {" "}
                 forked from{" "}
                 <ProfileHoverCard
-                  username={project.forkedFromOwnerUsername}
+                  username={publicProject?.forkedFromOwnerUsername}
                   avatar={null}
                   isLoggedIn={isLoggedIn}
                   viewerUsername={username}
                 >
                   <Link
-                    href={`/u/${encodeURIComponent(project.forkedFromOwnerUsername)}`}
+                    href={`/u/${encodeURIComponent(publicProject?.forkedFromOwnerUsername)}`}
                     className="font-medium hover:text-primary"
                   >
-                    @{project.forkedFromOwnerUsername}
+                    @{publicProject?.forkedFromOwnerUsername}
                   </Link>
                 </ProfileHoverCard>
               </>
             )}
           </span>
-          {!snapshot && <span className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:flex">
+          {!historical && publicProject && <span className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:flex">
             <Eye className="h-3.5 w-3.5" />
-            {project.viewCount} views
+            {publicProject.viewCount} views
           </span>}
         </div>
       }
       actions={
         <>
-          {!snapshot && view === 'content' && (
+          {!historical && publicProject && view === 'content' && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <a
@@ -226,26 +234,27 @@ export function PublicProjectView({
               <TooltipContent>Jump to project comments</TooltipContent>
             </Tooltip>
           )}
-          {!snapshot && (isLoggedIn ? (
+          {!historical && publicProject && (isLoggedIn ? (
             <>
               {!isOwnProject && <ReportButton projectId={project.id} isLoggedIn={isLoggedIn} />}
-              {!isOwnProject && project.canFork && <ForkButton projectId={project.id} isLoggedIn={isLoggedIn} />}
+              {!isOwnProject && publicProject.canFork && <ForkButton projectId={project.id} isLoggedIn={isLoggedIn} />}
               <ShareToFollowersButton projectId={project.id} isLoggedIn={isLoggedIn} />
               <BookmarkButton
                 projectId={project.id}
-                initialBookmarked={project.bookmarkedByRequester}
+                initialBookmarked={publicProject.bookmarkedByRequester}
                 isLoggedIn={isLoggedIn}
               />
               <VoteButton
                 projectId={project.id}
-                initialVoted={project.votedByRequester}
-                initialCount={project.voteCount}
+                initialVoted={publicProject.votedByRequester}
+                initialCount={publicProject.voteCount}
                 isLoggedIn={isLoggedIn}
               />
             </>
           ) : (
             <AuthPromptActions />
           ))}
+          {historyVersion && <RestoreProjectVersionButton projectId={project.id} versionId={historyVersion.id} restoreEpoch={historyVersion.restoreEpoch} />}
           {isLoggedIn && <UserMenu loggedIn={isLoggedIn} username={username} imageUrl={imageUrl} />}
         </>
       }
@@ -275,6 +284,12 @@ export function PublicProjectView({
             <div className="editor-container flex min-h-0 min-w-0 flex-1 flex-col">
               <div ref={columnRef} className="editor-inner" style={{ paddingInline: 'clamp(12px, 4vw, 48px)' }}>
                 <div className="editor-content-column">
+                  {historyVersion && <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+                    Preview: {historyVersion.name || historyVersion.type} · <time dateTime={historyVersion.createdAt}>
+                      {mounted ? new Date(historyVersion.createdAt).toLocaleString() : historyVersion.createdAt}
+                    </time>.{" "}
+                    <Link href={`/editor/${project.id}`} className="font-medium text-foreground underline">Back to editor</Link>
+                  </div>}
                   {snapshot && <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
                     You&apos;re viewing Version {snapshot.version} · <time dateTime={snapshot.createdAt}>
                       {mounted ? new Date(snapshot.createdAt).toLocaleString() : snapshot.createdAt}
@@ -346,8 +361,8 @@ export function PublicProjectView({
                     )
                   })}
                   {noteIds.length === 0 && emptyState}
-                  {!snapshot && <div ref={commentsRef} tabIndex={-1} className="mt-8 border-t border-border">
-                    <CommentsSection projectId={project.id} projectTitle={project.title} isLoggedIn={isLoggedIn} username={username} commentCount={commentCount} onCommentCountChange={setCommentCount} canComment={project.canComment} />
+                  {!historical && publicProject && <div ref={commentsRef} tabIndex={-1} className="mt-8 border-t border-border">
+                    <CommentsSection projectId={project.id} projectTitle={project.title} isLoggedIn={isLoggedIn} username={username} commentCount={commentCount} onCommentCountChange={setCommentCount} canComment={publicProject.canComment} />
                   </div>}
                 </div>
               </div>
