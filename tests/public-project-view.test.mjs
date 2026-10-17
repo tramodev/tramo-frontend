@@ -24,6 +24,7 @@ function load(path, modules = {}, globals = {}) {
       useEffect: () => {},
     },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
+    '@/hooks/use-mounted': { useMounted: () => true },
     '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(), selectionIds: new Set(), heights: new Map() }) },
     ...modules,
   })[name] ?? {}, ...globals });
@@ -344,4 +345,72 @@ test('shared-note tooltips explain trail membership and hide for single-trail no
     expect(nodes.find(node => node.type === 'p').props.children.join('')).toBe('Used in 2 trails: One, Two');
     expect(nodes.some(node => node.props.children === 'Edits appear in every trail that uses this note.')).toBe(!readOnly);
   }
+});
+
+test('version history links directly to each saved publication without fetching its contents', async () => {
+  const requests = [];
+  const render = load('components/editor/version-history-sheet.tsx', {
+    '@/components/ui/sheet': { Sheet: 'Sheet' },
+    '@/lib/project-snapshots': { getProjectSnapshots: async id => {
+      requests.push(id);
+      return [{ id: '42', version: 3, createdAt: '2026-10-17T12:00:00Z' }];
+    } },
+    'next/link': { default: 'Link' },
+  });
+  const props = { projectId: 'project' };
+  await render('VersionHistorySheet', props).find(node => node.type === 'Sheet').props.onOpenChange(true);
+  const link = render('VersionHistorySheet', props).find(node => node.type === 'Link');
+  expect(requests).toEqual(['project']);
+  expect(link.props.href).toBe('/p/project/versions/42');
+  expect(link.props.target).toBe('_blank');
+  expect(link.props['aria-label']).toBe('Open version 3 in a new tab');
+});
+
+test('historical publications use the public reader and resolve images from the saved version', () => {
+  const render = load('components/project/public-project-view.tsx', {
+    '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
+    '@/components/editor/editor-images-provider': { EditorImagesProvider: 'Images' },
+    '@/components/project/public-sidebar': { PublicSidebar: 'Sidebar' },
+    '@/components/project/lexical-read-only': { LexicalReadOnly: 'Reader' },
+    '@/components/project/comments-section': { CommentsSection: 'Comments' },
+    '@/components/social/fork-button': { ForkButton: 'Fork' },
+    '@/components/social/share-to-followers-button': { ShareToFollowersButton: 'Share' },
+    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    'next/link': { default: 'Link' },
+  });
+  const item = { id: 'old-note', title: 'Old note', titleAlign: 'right', content: 'Saved content' };
+  const project = { id: 'project', title: 'Old title', trails: [], looseItems: [item], canFork: true };
+  const snapshot = { id: '42', version: 3, createdAt: '2026-10-17T12:00:00Z' };
+  const nodes = render('PublicProjectView', { project, snapshot, isLoggedIn: true });
+  expect(nodes.find(node => node.type === 'Images').props.snapshotId).toBe(42);
+  const shell = nodes.find(node => node.type === 'ProjectShell');
+  expect(shell.props.sidebar.props.looseItems).toEqual([item]);
+  const content = flatten(shell.props.content);
+  expect(content.find(node => node.type === 'Reader').props.content).toBe('Saved content');
+  expect(content.find(node => node.type === 'h3').props.style.textAlign).toBe('right');
+  expect(content.some(node => node.type === 'Comments')).toBe(false);
+  expect(content.find(node => node.type === 'Link').props.href).toBe('/p/project');
+  expect(flatten(shell.props.actions).some(node => ['Fork', 'Share'].includes(node.type) || node.props.href === '#comments')).toBe(false);
+});
+
+test('historical dates keep the server text during hydration and use browser formatting after mount', () => {
+  let mounted = false;
+  let formatted = 0;
+  const render = load('components/project/public-project-view.tsx', {
+    '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
+    '@/hooks/use-mounted': { useMounted: () => mounted },
+    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+  }, { Date: class extends Date {
+    toLocaleString() { formatted++; return '17/10/2026, 16:21:46'; }
+  } });
+  const project = { id: 'project', title: 'Project', trails: [], looseItems: [] };
+  const snapshot = { id: '42', version: 3, createdAt: '2026-10-17T19:21:46Z' };
+  const date = () => flatten(render('PublicProjectView', { project, snapshot })
+    .find(node => node.type === 'ProjectShell').props.content).find(node => node.type === 'time');
+  expect(date().props.children).toBe(snapshot.createdAt);
+  expect(date().props.dateTime).toBe(snapshot.createdAt);
+  expect(formatted).toBe(0);
+  mounted = true;
+  expect(date().props.children).toBe('17/10/2026, 16:21:46');
+  expect(formatted).toBe(1);
 });

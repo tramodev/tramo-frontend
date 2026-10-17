@@ -23,8 +23,10 @@ import { ProfileHoverCard } from "@/components/social/profile-hover-card"
 import { CommentsSection } from "@/components/project/comments-section"
 import { UserMenu } from "@/components/layout/user-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import type { ProjectSnapshotSummary } from "@/lib/project-snapshots"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Item, Trail } from "@/app/editor/types"
+import { useMounted } from "@/hooks/use-mounted"
 import { useScrollSpy } from "@/hooks/use-scroll-spy"
 import { useVirtualNotes } from "@/app/editor/[projectId]/hooks/useVirtualNotes"
 
@@ -64,6 +66,7 @@ export function PublicProjectView({
   isOwnProject,
   username,
   imageUrl,
+  snapshot,
 }: {
   project: PublicProject
   homeHref: string
@@ -71,7 +74,9 @@ export function PublicProjectView({
   isOwnProject: boolean
   username: string | null
   imageUrl: string | null
+  snapshot?: ProjectSnapshotSummary
 }) {
+  const mounted = useMounted()
   const sections = useMemo(() => [
     ...project.trails.map(trail => ({ id: `trail:${trail.id}`, trailId: trail.id, title: trail.title, description: trail.description, items: trail.items })),
     ...(project.looseItems.length ? [{ id: 'loose', trailId: undefined, title: 'Notes without a trail', description: '', items: project.looseItems }] : []),
@@ -158,7 +163,7 @@ export function PublicProjectView({
   )
 
   return (
-    <EditorImagesProvider projectId={project.id} publicRead={true}>
+    <EditorImagesProvider projectId={project.id} publicRead={true} snapshotId={snapshot ? Number(snapshot.id) : undefined}>
     <ProjectShell
       homeHref={homeHref}
       showLogo={false}
@@ -197,15 +202,15 @@ export function PublicProjectView({
               </>
             )}
           </span>
-          <span className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:flex">
+          {!snapshot && <span className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:flex">
             <Eye className="h-3.5 w-3.5" />
             {project.viewCount} views
-          </span>
+          </span>}
         </div>
       }
       actions={
         <>
-          {view === 'content' && (
+          {!snapshot && view === 'content' && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <a
@@ -221,7 +226,7 @@ export function PublicProjectView({
               <TooltipContent>Jump to project comments</TooltipContent>
             </Tooltip>
           )}
-          {isLoggedIn ? (
+          {!snapshot && (isLoggedIn ? (
             <>
               {!isOwnProject && <ReportButton projectId={project.id} isLoggedIn={isLoggedIn} />}
               {!isOwnProject && project.canFork && <ForkButton projectId={project.id} isLoggedIn={isLoggedIn} />}
@@ -240,7 +245,7 @@ export function PublicProjectView({
             </>
           ) : (
             <AuthPromptActions />
-          )}
+          ))}
           {isLoggedIn && <UserMenu loggedIn={isLoggedIn} username={username} imageUrl={imageUrl} />}
         </>
       }
@@ -270,6 +275,14 @@ export function PublicProjectView({
             <div className="editor-container flex min-h-0 min-w-0 flex-1 flex-col">
               <div ref={columnRef} className="editor-inner" style={{ paddingInline: 'clamp(12px, 4vw, 48px)' }}>
                 <div className="editor-content-column">
+                  {snapshot && <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+                    You&apos;re viewing Version {snapshot.version} · <time dateTime={snapshot.createdAt}>
+                      {mounted ? new Date(snapshot.createdAt).toLocaleString() : snapshot.createdAt}
+                    </time>.{" "}
+                    <Link href={`/p/${project.id}`} className="font-medium text-foreground underline">
+                      See the latest version
+                    </Link>
+                  </div>}
                   <section aria-label="About this project" className="border-b border-border py-6 pl-7">
                     <h1 className="font-display text-3xl font-medium">{project.title}</h1>
                     {project.description?.trim() && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{project.description}</p>}
@@ -333,9 +346,9 @@ export function PublicProjectView({
                     )
                   })}
                   {noteIds.length === 0 && emptyState}
-                  <div ref={commentsRef} tabIndex={-1} className="mt-8 border-t border-border">
+                  {!snapshot && <div ref={commentsRef} tabIndex={-1} className="mt-8 border-t border-border">
                     <CommentsSection projectId={project.id} projectTitle={project.title} isLoggedIn={isLoggedIn} username={username} commentCount={commentCount} onCommentCountChange={setCommentCount} canComment={project.canComment} />
-                  </div>
+                  </div>}
                 </div>
               </div>
             </div>

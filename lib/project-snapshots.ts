@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 
+import { authHeaders } from "@/lib/auth";
+import type { TitleAlign } from "@/app/editor/types";
+import type { PublicItem, PublicTrail } from "@/lib/public-project";
 import { authenticatedFetch } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/config";
 import { parseResponse } from "@/lib/http";
@@ -12,23 +15,11 @@ export interface ProjectSnapshotSummary {
   createdAt: string;
 }
 
-export interface ProjectSnapshotItem {
-  id: string;
-  title: string;
-  type: string | null;
-  content: string | null;
-}
-
-export interface ProjectSnapshotTrail {
-  id: string;
-  title: string;
-  version: number;
-  items: ProjectSnapshotItem[];
-}
-
 export interface ProjectSnapshotDetail extends ProjectSnapshotSummary {
-  trails: ProjectSnapshotTrail[];
-  looseItems: ProjectSnapshotItem[];
+  title: string;
+  description: string | null;
+  trails: PublicTrail[];
+  looseItems: PublicItem[];
 }
 
 interface ProjectSnapshotSummaryDTO {
@@ -42,17 +33,22 @@ interface SnapshotItemDTO {
   title: string;
   type: string | null;
   content: string | null;
+  titleAlign: TitleAlign | null;
 }
 
 interface SnapshotTrailDTO {
   id: number;
   title: string;
+  description: string | null;
+  forkedFromId: number | null;
   version: number;
   items: SnapshotItemDTO[];
 }
 
 interface ProjectSnapshotDetailDTO extends ProjectSnapshotSummaryDTO {
   content: {
+    title: string;
+    description: string | null;
     trails: SnapshotTrailDTO[];
     looseItems: SnapshotItemDTO[];
   };
@@ -68,31 +64,25 @@ export async function getProjectSnapshots(projectId: string): Promise<ProjectSna
   return dtos.map(toSummary);
 }
 
-function toItem(item: SnapshotItemDTO): ProjectSnapshotItem {
-  return { ...item, id: String(item.id) };
+function toItem(item: SnapshotItemDTO): PublicItem {
+  return { ...item, id: String(item.id), content: item.content ?? "", titleAlign: item.titleAlign ?? "center" };
 }
 
 function toDetail(dto: ProjectSnapshotDetailDTO): ProjectSnapshotDetail {
   return {
     ...toSummary(dto),
+    title: dto.content.title,
+    description: dto.content.description ?? null,
     looseItems: dto.content.looseItems.map(toItem),
     trails: dto.content.trails.map((trail) => ({
       id: String(trail.id),
       title: trail.title,
+      description: trail.description ?? "",
+      forkedFromId: trail.forkedFromId == null ? null : String(trail.forkedFromId),
       version: trail.version,
       items: trail.items.map(toItem),
     })),
   };
-}
-
-export async function getProjectSnapshot(
-  projectId: string,
-  snapshotId: string,
-): Promise<ProjectSnapshotDetail | null> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${projectId}/versions/${snapshotId}`);
-  if (response.status === 404) return null;
-  const dto = await parseResponse<ProjectSnapshotDetailDTO>(response);
-  return toDetail(dto);
 }
 
 export async function getPublicProjectSnapshot(
@@ -101,6 +91,7 @@ export async function getPublicProjectSnapshot(
 ): Promise<ProjectSnapshotDetail | null> {
   const response = await fetch(`${API_BASE_URL}/api/public/project/${projectId}/versions/${snapshotId}`, {
     cache: "no-store",
+    headers: await authHeaders(),
   });
   if (!response.ok) return null;
   const dto: ProjectSnapshotDetailDTO = await response.json();
