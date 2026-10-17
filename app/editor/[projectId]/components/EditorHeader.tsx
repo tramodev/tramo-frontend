@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserMenu } from '@/components/layout/user-menu';
 import { ExportProjectButton } from '@/components/editor/export-project-button';
+import { ProjectHistorySheet } from '@/components/editor/project-history-sheet';
 import { VersionHistorySheet } from '@/components/editor/version-history-sheet';
 import type { SaveStatus } from '../hooks/useAutoSave';
 
@@ -88,6 +89,7 @@ interface EditorActionsProps {
   textStats: { words: number; characters: number } | null;
   projectId: string;
   beforeExport: () => Promise<void>;
+  restoreEpoch: number;
   profile: { username: string; imageUrl: string | null } | null;
 }
 
@@ -96,6 +98,7 @@ export function EditorActions({
   projectId,
   profile,
   beforeExport,
+  restoreEpoch,
 }: EditorActionsProps) {
   return (
     <>
@@ -105,6 +108,7 @@ export function EditorActions({
         </span>
       ) : <span className="text-xs text-muted-foreground" role="status">Counting project…</span>}
       <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />
+      <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />
       <VersionHistorySheet projectId={projectId} />
       <Button data-tour="share" variant="secondary" size="lg" asChild>
         <Link href={`/projects/${projectId}/share`}>

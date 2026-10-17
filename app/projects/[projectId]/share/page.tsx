@@ -110,14 +110,14 @@ export default function PublishPage() {
     const next = description.trim();
     if (next === project.description) return;
     setProject({ ...project, description: next });
-    await setProjectDescription(projectId, next);
+    await setProjectDescription(projectId, next, project.restoreEpoch);
   };
 
   const submitTags = async () => {
     const next = tags.trim();
     if (next === project.tags) return;
     setProject({ ...project, tags: next });
-    await setProjectTags(projectId, next);
+    await setProjectTags(projectId, next, project.restoreEpoch);
   };
 
   const changeVisibility = (next: ProjectVisibility) => {
@@ -133,13 +133,13 @@ export default function PublishPage() {
     try {
       if (description.trim() !== project.description) await submitDescription();
       if (visibility === "published") {
-        const { error: err } = await publishProject(projectId);
+        const { error: err } = await publishProject(projectId, project.restoreEpoch);
         if (err) {
           setError(err);
           return;
         }
       } else if (visibility !== project.visibility) {
-        const { error: err } = await setProjectVisibility(projectId, visibility);
+        const { error: err } = await setProjectVisibility(projectId, visibility, project.restoreEpoch);
         if (err) {
           setError(err);
           return;

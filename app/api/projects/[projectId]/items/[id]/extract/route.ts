@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   const body = await readRequestBody(request);
   if (body instanceof Response) return body;
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${projectId}/item/${id}/extract`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-Epoch': request.headers.get('X-Project-Epoch') ?? '0', 'X-Project-Id': projectId }, body,
   });
   return new Response(response.body, { status: response.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' } });
 }

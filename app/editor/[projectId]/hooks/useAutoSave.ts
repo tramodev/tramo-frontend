@@ -8,6 +8,8 @@ import { isAuthError } from '../../editor-utils';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 interface UseAutoSaveParams {
+  projectId?: string;
+  restoreEpoch?: number;
   contextId: string | undefined;
   onOptimisticUpdate: (itemId: string, content: string) => void;
   redirectToLogin: () => void;
@@ -15,6 +17,8 @@ interface UseAutoSaveParams {
 
 
 export function useAutoSave({
+  projectId,
+  restoreEpoch = 0,
   contextId,
   onOptimisticUpdate,
   redirectToLogin,
@@ -27,6 +31,7 @@ export function useAutoSave({
   const inFlightRef = useRef<Promise<boolean> | null>(null);
   const incompleteImagesRef = useRef(new Set<string>());
   const saveContentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const conflictRef = useRef(false);
   const deletedItemsRef = useRef(new Set<string>());
   const pausedItemsRef = useRef(new Set<string>());
 
@@ -47,6 +52,7 @@ export function useAutoSave({
 
   const flushPendingContent = useCallback((): Promise<boolean> => {
     flushOptimisticContent();
+    if (conflictRef.current) return Promise.resolve(false);
     if (saveContentTimeoutRef.current) {
       clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = null;
@@ -64,10 +70,11 @@ export function useAutoSave({
           const [itemId, content] = pending;
           pendingContentRef.current.delete(itemId);
           try {
-            await saveItemContent(itemId, content);
+            await saveItemContent(itemId, content, restoreEpoch, projectId);
             window.dispatchEvent(new Event('editor-images-saved'));
           } catch (err) {
             console.error(err);
+            if (err instanceof Error && (err.name === 'ProjectVersionConflict' || err.name === 'ContentConflict')) conflictRef.current = true;
             if (!deletedItemsRef.current.has(itemId) && !pendingContentRef.current.has(itemId)) {
               pendingContentRef.current.set(itemId, content);
             }
@@ -85,7 +92,7 @@ export function useAutoSave({
     };
     inFlightRef.current = save();
     return inFlightRef.current;
-  }, [flushOptimisticContent, redirectToLogin]);
+  }, [flushOptimisticContent, redirectToLogin, restoreEpoch, projectId]);
 
   useEffect(() => {
     return () => { void flushPendingContent(); };

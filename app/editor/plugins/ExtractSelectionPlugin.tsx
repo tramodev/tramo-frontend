@@ -14,6 +14,7 @@ import { applyExtractedContent, captureSelection, prepareExtraction, type Captur
 import type { Trail } from '../types';
 
 export interface ExtractionActions {
+  restoreEpoch?: number;
   beforeExtract: (id: string, state: EditorState) => Promise<void>;
   pauseItem: (id: string) => void;
   resumeItem: (id: string) => void;
@@ -93,7 +94,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
           expectedOrder: placement !== 'outside' && dialogTrail ? dialogTrail.itemIds.map(Number) : null };
         setSubmitted(true);
       }
-      const result = await extractSelection(projectId, itemId, request.current);
+      const result = await extractSelection(projectId, itemId, request.current, actions.restoreEpoch ?? 0);
       const unchanged = JSON.stringify(editor.getEditorState().toJSON()) === capture.content;
       actions.onExtracted(itemId, capture.content, result, unchanged);
       if (!unchanged) throw new Error('Extraction completed, but this editor changed while saving. Your local text was kept. Reload the project before editing further.');

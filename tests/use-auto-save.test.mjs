@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-function setup() {
+function setup(restoreEpoch = 0) {
   const refs = [];
   const timers = new Map();
   const requests = [];
@@ -31,8 +31,8 @@ function setup() {
         useEffect: (fn) => { cleanups.push(fn()); },
       },
       '@/lib/item-content-client': {
-        saveItemContent: (itemId, content) => new Promise((resolve, reject) => {
-          requests.push({ itemId, content, resolve, reject });
+        saveItemContent: (itemId, content, epoch, projectId) => new Promise((resolve, reject) => {
+          requests.push({ itemId, content, epoch, projectId, resolve, reject });
         }),
       },
       '../../editor-utils': { isAuthError: error => error instanceof Error && error.message.includes('401') },
@@ -57,6 +57,8 @@ function setup() {
     refIndex = 0;
     hook = exports.useAutoSave({
       contextId: itemId,
+      restoreEpoch,
+      projectId: 'project-context',
       onOptimisticUpdate: (itemId, content) => optimistic.push([itemId, content]),
       redirectToLogin: () => redirects.push('/login'),
     });
@@ -319,4 +321,27 @@ test('renameItemId migrates pending content to the real id', () => {
   s.flush();
   expect(s.optimistic).toEqual([['a', JSON.stringify('text')]]);
   expect(s.requests[0].itemId).toBe('b');
+});
+
+
+test('autosave carries the loaded project generation without extra requests', async () => {
+  const s = setup(7); s.select('a'); s.edit('changed');
+  const saved = s.barrier();
+  expect(s.requests).toHaveLength(1);
+  expect(s.requests[0].epoch).toBe(7);
+  expect(s.requests[0].projectId).toBe('project-context');
+  s.requests[0].resolve(); expect(await saved).toBe(true);
+});
+
+test('a restoration conflict preserves local content and stops obsolete retries', async () => {
+  const s = setup(2); s.select('a'); s.edit('local edit');
+  const pending = s.barrier();
+  const error = new Error('This project was restored. Reload before saving.'); error.name = 'ProjectVersionConflict';
+  s.requests[0].reject(error);
+  expect(await pending).toBe(false);
+  s.edit('newer local edit'); s.flush();
+  expect(await s.barrier()).toBe(false);
+  expect(s.requests).toHaveLength(1);
+  expect(s.optimistic.at(-1)).toEqual(['a', JSON.stringify('newer local edit')]);
+  expect(s.errors.at(-1)).toContain('restored');
 });

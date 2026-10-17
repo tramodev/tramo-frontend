@@ -15,6 +15,7 @@ export type MapPreviews = Record<string, { text: string; linkedItemIds: string[]
 export interface Project {
   id: string;
   title: string;
+  restoreEpoch: number;
   description: string;
   graphColors: string | null;
   trails: Trail[];
@@ -34,6 +35,7 @@ export interface Project {
 interface ProjectDTO {
   id: number;
   title: string;
+  restoreEpoch: number;
   description: string | null;
   graphColors: string | null;
   visibility: ProjectVisibility | null;
@@ -74,14 +76,14 @@ type TrailStepDTO = ItemDTO;
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
-type ApiInit = Omit<RequestInit, "body"> & { json?: unknown };
+type ApiInit = Omit<RequestInit, "body"> & { json?: unknown; epoch?: number; projectId?: string };
 
 function api(path: string, init: ApiInit = {}): Promise<Response> {
-  const { json, headers: extraHeaders, ...rest } = init;
+  const { json, epoch, projectId, headers: extraHeaders, ...rest } = init;
   return authenticatedFetch(`${API_BASE_URL}${path}`, {
     ...rest,
     ...(json !== undefined && { body: JSON.stringify(json) }),
-    headers: { ...(json !== undefined ? jsonHeaders : undefined), ...extraHeaders },
+    headers: { ...(json !== undefined ? jsonHeaders : undefined), ...(epoch !== undefined ? { "X-Project-Epoch": String(epoch) } : {}), ...(projectId ? { "X-Project-Id": projectId } : {}), ...extraHeaders },
   });
 }
 
@@ -104,6 +106,7 @@ function toProjectSummary(dto: ProjectDTO): Project {
   return {
     id: String(dto.id),
     title: dto.title,
+    restoreEpoch: dto.restoreEpoch ?? 0,
     description: dto.description ?? "",
     graphColors: dto.graphColors ?? null,
     trails: [],
@@ -207,12 +210,12 @@ export async function startProject(requestId: string): Promise<{ projectId: stri
   return apiJson('/api/project/start', { method: 'POST', json: { requestId } });
 }
 
-export async function startExistingProject(projectId: string, trailId?: string): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
-  return apiJson(`/api/project/${projectId}/start${trailId ? `?trailId=${encodeURIComponent(trailId)}` : ''}`, { method: 'POST' });
+export async function startExistingProject(projectId: string, trailId?: string, epoch = 0): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
+  return apiJson(`/api/project/${projectId}/start${trailId ? `?trailId=${encodeURIComponent(trailId)}` : ''}`, { epoch, method: 'POST' });
 }
 
-export async function renameProject(id: string, title: string): Promise<void> {
-  await apiVoid(`/api/project/${id}`, { method: "PUT", json: { title } });
+export async function renameProject(id: string, title: string, epoch = 0): Promise<void> {
+  await apiVoid(`/api/project/${id}`, { epoch, method: "PUT", json: { title } });
 }
 
 export async function deleteProject(id: string): Promise<void> {
@@ -221,17 +224,17 @@ export async function deleteProject(id: string): Promise<void> {
 
 export async function setProjectVisibility(
   id: string,
-  visibility: ProjectVisibility,
+  visibility: ProjectVisibility, epoch = 0
 ): Promise<{ error: string | null }> {
-  return apiResult(`/api/project/${id}`, { method: "PUT", json: { visibility } });
+  return apiResult(`/api/project/${id}`, { epoch, method: "PUT", json: { visibility } });
 }
 
-export async function publishProject(id: string): Promise<{ error: string | null }> {
-  return apiResult(`/api/project/${id}/publish`, { method: "POST" });
+export async function publishProject(id: string, epoch = 0): Promise<{ error: string | null }> {
+  return apiResult(`/api/project/${id}/publish`, { epoch, method: "POST" });
 }
 
-export async function setProjectThumbnail(id: string, imageUrl: string): Promise<void> {
-  await apiVoid(`/api/project/${id}/thumbnail`, { method: "PUT", json: { type: "DEDICATED", imageUrl } });
+export async function setProjectThumbnail(id: string, imageUrl: string, epoch = 0): Promise<void> {
+  await apiVoid(`/api/project/${id}/thumbnail`, { epoch, method: "PUT", json: { type: "DEDICATED", imageUrl } });
 }
 
 export async function searchProjectItems(id: string, q: string): Promise<string[]> {
@@ -239,18 +242,18 @@ export async function searchProjectItems(id: string, q: string): Promise<string[
   return ids.map(String);
 }
 
-export async function setProjectDescription(id: string, description: string): Promise<void> {
-  await apiVoid(`/api/project/${id}`, { method: "PUT", json: { description } });
+export async function setProjectDescription(id: string, description: string, epoch = 0): Promise<void> {
+  await apiVoid(`/api/project/${id}`, { epoch, method: "PUT", json: { description } });
 }
 
-export async function setProjectGraphColors(id: string, graphColors: string): Promise<void> {
-  const saved = await apiJson<{ graphColors: string | null }>(`/api/project/${id}`, { method: "PUT", json: { graphColors } });
+export async function setProjectGraphColors(id: string, graphColors: string, epoch = 0): Promise<void> {
+  const saved = await apiJson<{ graphColors: string | null }>(`/api/project/${id}`, { epoch, method: "PUT", json: { graphColors } });
   if (saved.graphColors !== graphColors) throw new Error("Graph colors were not saved");
 }
 
-export async function setProjectTags(id: string, tags: string): Promise<void> {
+export async function setProjectTags(id: string, tags: string, epoch = 0): Promise<void> {
   const tagNames = tags.split(",").map((tag) => tag.trim()).filter(Boolean);
-  await apiVoid(`/api/project/${id}`, { method: "PUT", json: { tags: tagNames } });
+  await apiVoid(`/api/project/${id}`, { epoch, method: "PUT", json: { tags: tagNames } });
 }
 
 export interface VoteResult {
@@ -291,8 +294,8 @@ export async function toggleProjectBookmark(id: string): Promise<boolean> {
   return result.bookmarked;
 }
 
-export async function createTrail(projectId: string, title: string): Promise<Trail> {
-  const dto = await apiJson<TrailDTO>(`/api/project/${projectId}/trail`, { method: "POST", json: { title } });
+export async function createTrail(projectId: string, title: string, epoch = 0): Promise<Trail> {
+  const dto = await apiJson<TrailDTO>(`/api/project/${projectId}/trail`, { epoch, method: "POST", json: { title } });
   return {
     id: String(dto.id),
     title: dto.title,
@@ -304,51 +307,51 @@ export async function createTrail(projectId: string, title: string): Promise<Tra
   };
 }
 
-export async function reorderTrailItems(trailId: string, itemIds: string[]): Promise<void> {
+export async function reorderTrailItems(trailId: string, itemIds: string[], epoch = 0): Promise<void> {
   await apiVoid(`/api/trail/${trailId}/item/order`, {
-    method: "PUT",
+    epoch, method: "PUT",
     json: { itemIds: itemIds.map(Number) },
   });
 }
 
-export async function reorderProjectTrails(projectId: string, trailIds: string[]): Promise<void> {
-  await apiVoid(`/api/project/${projectId}/trail/order`, { method: "PUT", json: { trailIds: trailIds.map(Number) } });
+export async function reorderProjectTrails(projectId: string, trailIds: string[], epoch = 0): Promise<void> {
+  await apiVoid(`/api/project/${projectId}/trail/order`, { epoch, method: "PUT", json: { trailIds: trailIds.map(Number) } });
 }
 
-export async function renameTrail(trailId: string, title: string): Promise<void> {
-  await apiVoid(`/api/trail/${trailId}`, { method: "PUT", json: { title } });
+export async function renameTrail(trailId: string, title: string, epoch = 0): Promise<void> {
+  await apiVoid(`/api/trail/${trailId}`, { epoch, method: "PUT", json: { title } });
 }
 
-export async function deleteTrail(trailId: string): Promise<void> {
-  await apiVoid(`/api/trail/${trailId}`, { method: "DELETE" });
+export async function deleteTrail(trailId: string, epoch = 0): Promise<void> {
+  await apiVoid(`/api/trail/${trailId}`, { epoch, method: "DELETE" });
 }
 
-export async function createItem(trailId: string, title: string): Promise<Item> {
-  const dto = await apiJson<ItemDTO>(`/api/trail/${trailId}/item`, { method: "POST", json: { title } });
+export async function createItem(trailId: string, title: string, epoch = 0): Promise<Item> {
+  const dto = await apiJson<ItemDTO>(`/api/trail/${trailId}/item`, { epoch, method: "POST", json: { title } });
   return toItem(dto, false);
 }
 
-export async function createLooseItem(projectId: string, title: string): Promise<Item> {
-  const dto = await apiJson<ItemDTO>(`/api/project/${projectId}/item`, { method: "POST", json: { title } });
+export async function createLooseItem(projectId: string, title: string, epoch = 0): Promise<Item> {
+  const dto = await apiJson<ItemDTO>(`/api/project/${projectId}/item`, { epoch, method: "POST", json: { title } });
   return toItem(dto, true);
 }
 
-export async function deleteItem(itemId: string): Promise<void> {
-  await apiVoid(`/api/item/${itemId}`, { method: "DELETE" });
+export async function deleteItem(itemId: string, epoch = 0, projectId?: string): Promise<void> {
+  await apiVoid(`/api/item/${itemId}`, { epoch, projectId, method: "DELETE" });
 }
 
-export async function renameItem(itemId: string, title: string): Promise<void> {
-  await apiVoid(`/api/item/${itemId}`, { method: "PUT", json: { title } });
+export async function renameItem(itemId: string, title: string, epoch = 0, projectId?: string): Promise<void> {
+  await apiVoid(`/api/item/${itemId}`, { epoch, projectId, method: "PUT", json: { title } });
 }
 
-export async function setItemTitleAlign(itemId: string, titleAlign: TitleAlign): Promise<void> {
-  await apiVoid(`/api/item/${itemId}`, { method: "PUT", json: { titleAlign } });
+export async function setItemTitleAlign(itemId: string, titleAlign: TitleAlign, epoch = 0, projectId?: string): Promise<void> {
+  await apiVoid(`/api/item/${itemId}`, { epoch, projectId, method: "PUT", json: { titleAlign } });
 }
 
-export async function attachItemToTrail(trailId: string, itemId: string): Promise<void> {
-  await apiVoid(`/api/trail/${trailId}/item/${itemId}`, { method: "POST" });
+export async function attachItemToTrail(trailId: string, itemId: string, epoch = 0): Promise<void> {
+  await apiVoid(`/api/trail/${trailId}/item/${itemId}`, { epoch, method: "POST" });
 }
 
-export async function detachItemFromTrail(trailId: string, itemId: string): Promise<void> {
-  await apiVoid(`/api/trail/${trailId}/item/${itemId}`, { method: "DELETE" });
+export async function detachItemFromTrail(trailId: string, itemId: string, epoch = 0): Promise<void> {
+  await apiVoid(`/api/trail/${trailId}/item/${itemId}`, { epoch, method: "DELETE" });
 }

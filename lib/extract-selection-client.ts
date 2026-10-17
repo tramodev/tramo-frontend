@@ -24,8 +24,8 @@ export async function getExtractionTrailCount(projectId: string, sourceId: strin
   if (!response.ok) throw new Error('Could not check where this note is used. Close this dialog and try again.');
   return (await response.json()).trailCount;
 }
-export async function extractSelection(projectId: string, sourceId: string, request: ExtractionRequest): Promise<ExtractionResult> {
-  const response = await fetch(`/api/projects/${projectId}/items/${sourceId}/extract`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+export async function extractSelection(projectId: string, sourceId: string, request: ExtractionRequest, restoreEpoch = 0): Promise<ExtractionResult> {
+  const response = await fetch(`/api/projects/${projectId}/items/${sourceId}/extract`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-Epoch': String(restoreEpoch) }, body: JSON.stringify(request) });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data) throw new Error(data?.message ?? 'Could not extract this selection. Your local content is unchanged. Retry the same request.');
   return { item: { id: String(data.item.id), title: data.item.title, titleAlign: data.item.titleAlign ?? 'center', unfiled: data.item.unfiled, content: data.content },

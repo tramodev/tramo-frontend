@@ -4,6 +4,8 @@ import type { Item, Trail, TitleAlign } from '@/app/editor/types';
 
 interface EditorBootstrapDTO {
   id: string;
+  restoreEpoch: number;
+  historyUnavailable: boolean;
   title: string;
   description: string | null;
   graphColors: string | null;
@@ -35,7 +37,9 @@ export async function getEditorBootstrap(id: string, noteId?: string | null, tra
     itemIds: trail.itemIds.map(String), steps: trail.itemIds.map((itemId) => ({ itemId: String(itemId) })),
   }));
   return {
-    project: { id: dto.id, title: dto.title, description: dto.description ?? '', graphColors: dto.graphColors,
+    restoreEpoch: dto.restoreEpoch,
+    historyUnavailable: dto.historyUnavailable,
+    project: { id: dto.id, restoreEpoch: dto.restoreEpoch, title: dto.title, description: dto.description ?? '', graphColors: dto.graphColors,
       visibility: dto.visibility, tags: dto.tags.join(', '), trails, items } as Project,
     selectedItemId: dto.selectedItemId == null ? undefined : String(dto.selectedItemId),
     selectedTrailId: dto.selectedTrailId == null ? undefined : String(dto.selectedTrailId),

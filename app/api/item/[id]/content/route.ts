@@ -28,7 +28,7 @@ export async function PUT(
   if (body instanceof Response) return body;
   const response = await authenticatedFetch(`${API_BASE_URL}/api/item/${id}/content`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Project-Epoch': request.headers.get('X-Project-Epoch') ?? '0', ...(request.headers.get('X-Project-Id') ? { 'X-Project-Id': request.headers.get('X-Project-Id')! } : {}) },
     body,
   });
   return new NextResponse(response.status === 204 ? null : await response.text(), {

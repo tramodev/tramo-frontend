@@ -36,13 +36,19 @@ export async function getTrailContents(trailId: string): Promise<Record<string, 
   return acceptLoadedContents(rows.filter(row => sessions.get(String(row.id)) === contentSessions.get(String(row.id))));
 }
 
-export async function saveItemContent(itemId: string, content: string): Promise<void> {
+export async function saveItemContent(itemId: string, content: string, restoreEpoch = 0, projectId?: string): Promise<void> {
   const session = contentSessions.get(itemId);
   const response = await fetch(`/api/item/${itemId}/content`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Project-Epoch": String(restoreEpoch), ...(projectId ? { "X-Project-Id": projectId } : {}) },
     body: JSON.stringify({ content, extractionEpoch: getExtractionEpoch(itemId), expectedContent: savedContents.get(itemId) ?? '' }),
   });
+  if (response.status === 409) {
+    const data = await response.json().catch(() => null);
+    const error = new Error(data?.message ?? 'This note changed in another session. Reload before saving.');
+    error.name = data?.code === 'PROJECT_VERSION_CONFLICT' ? 'ProjectVersionConflict' : 'ContentConflict';
+    throw error;
+  }
   if (response.status === 413 || response.status === 429) {
     const error = await response.json().catch(() => null);
     throw new Error(typeof error?.message === 'string' ? error.message : `Request failed with status ${response.status}`);

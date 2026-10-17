@@ -65,7 +65,7 @@ export function ThumbnailPicker({
     setSaving(true);
     onChange(nextImageUrl);
     try {
-      await setProjectThumbnail(projectId, nextImageUrl);
+      await setProjectThumbnail(projectId, nextImageUrl, project.restoreEpoch);
     } catch {
       onChange(imageUrl);
       onError("Couldn't update the thumbnail — try again.");

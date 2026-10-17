@@ -61,7 +61,7 @@ export default function EditorPage() {
     setStarting(true);
     setStartError('');
     try {
-      const result = await startExistingProject(projectId, project.activeTrailId);
+      const result = await startExistingProject(projectId, project.activeTrailId, project.restoreEpoch);
       window.location.assign(`/editor/${result.projectId}?note=${result.itemId}&trail=${result.trailId ?? ''}&write=1`);
     } catch {
       setStartError('Could not open a note. Please try again.');
@@ -100,6 +100,7 @@ export default function EditorPage() {
         }
         actions={
           project.loaded && <EditorActions
+            restoreEpoch={project.restoreEpoch}
             textStats={textStats}
             projectId={projectId}
             beforeExport={async () => {
@@ -184,6 +185,7 @@ export default function EditorPage() {
                 onOpenGraph={() => project.setView('graph')}
                 onChange={project.onChange}
                 extractionActions={{
+                  restoreEpoch: project.restoreEpoch,
                   beforeExtract: async (id, state) => {
                     project.onChange(id, state);
                     if (!await project.flushPendingContent()) throw new Error('Could not save note content. Your selection is kept; wait for image uploads or retry.');

@@ -121,7 +121,7 @@ export default function ProjectsPage() {
     const title = editingTitle.trim()
     setEditingId(null)
     if (!title) return
-    await renameProject(projectId, title)
+    await renameProject(projectId, title, projects.find(project => project.id === projectId)?.restoreEpoch ?? 0)
     setProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, title } : p)),
     )
