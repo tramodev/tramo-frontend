@@ -45,7 +45,7 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
       await beforeSave();
       await createProjectVersion(projectId, name, restoreEpoch);
       setName(''); await load();
-    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not save version.'); }
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not create snapshot.'); }
     finally { action.current = false; setBusy(false); }
   };
 
@@ -60,14 +60,15 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
             <Tabs.Trigger value="publish" disabled={busy} asChild><Button variant="ghost" size="sm" className="data-[state=active]:bg-background data-[state=active]:shadow-elevation-1">Publish history</Button></Tabs.Trigger>
           </Tabs.List>
           <Tabs.Content value="project" className="space-y-4" aria-busy={busy}>
+            <p className="text-sm text-muted-foreground">Your edits are autosaved. Create a snapshot to keep a version of your project as it is now, so you can return to it later.</p>
             {history?.unavailable && <p role="alert" className="text-sm text-destructive">Automatic history is unavailable because this project exceeds the snapshot limits. Your edits are still saved.</p>}
-            <form className="flex gap-2" onSubmit={event => { event.preventDefault(); void saveVersion(); }}>
-              <Input aria-label="Version name" placeholder="Version name (optional)" maxLength={120} value={name} disabled={busy} onChange={event => setName(event.target.value)} />
-              <Button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save version'}</Button>
+            <form className="flex flex-col gap-2 sm:flex-row sm:items-center" onSubmit={event => { event.preventDefault(); void saveVersion(); }}>
+              <Input className="h-9 sm:flex-1" aria-label="Snapshot name" placeholder="Snapshot name (optional)" maxLength={120} value={name} disabled={busy} onChange={event => setName(event.target.value)} />
+              <Button type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create snapshot'}</Button>
             </form>
             {error && <div role="alert" className="text-sm text-destructive">{error}<Button variant="ghost" disabled={busy || loading} onClick={() => void load()}>Reload history</Button></div>}
             {loading && <p role="status" className="text-sm text-muted-foreground">Loading history…</p>}
-            {!loading && history?.versions.length === 0 && <p className="text-sm text-muted-foreground">No versions yet. Save a named version or start editing.</p>}
+            {!loading && history?.versions.length === 0 && <p className="text-sm text-muted-foreground">No versions yet. Create a snapshot or start editing.</p>}
             <div className="flex flex-col gap-1 [&>div]:rounded-none" aria-label="Versions">
               {history?.versions.map(version => <Row key={version.id}>
                 <Link href={`/projects/${projectId}/history/${version.id}`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary" aria-label={`Preview ${version.name || version.type.toLowerCase() + ' version'} in a new tab`}>
