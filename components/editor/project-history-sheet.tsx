@@ -22,7 +22,14 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [name, setName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const createButton = useRef<HTMLButtonElement>(null);
   const action = useRef(false);
+
+  const closeSnapshotForm = () => {
+    setCreating(false); setName('');
+    requestAnimationFrame(() => createButton.current?.focus());
+  };
 
   const load = async (beforeId?: number) => {
     setLoading(true); setError('');
@@ -44,13 +51,13 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
     try {
       await beforeSave();
       await createProjectVersion(projectId, name, restoreEpoch);
-      setName(''); await load();
+      closeSnapshotForm(); await load();
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not create snapshot.'); }
     finally { action.current = false; setBusy(false); }
   };
 
   return <>
-    <Sheet open={open} onOpenChange={next => { if (action.current) return; setOpen(next); if (next) { setTab('project'); setHistory(null); void load(); } }}>
+    <Sheet open={open} onOpenChange={next => { if (action.current) return; setOpen(next); if (next) { setCreating(false); setName(''); setTab('project'); setHistory(null); void load(); } }}>
       <SheetTrigger asChild><Button variant="ghost" size="icon" title="Version history" aria-label="Version history"><History className="h-[15px] w-[15px]" /></Button></SheetTrigger>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
         <SheetHeader><SheetTitle>Version history</SheetTitle><SheetDescription>Browse project drafts and published versions.</SheetDescription></SheetHeader>
@@ -62,10 +69,13 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
           <Tabs.Content value="project" className="space-y-4" aria-busy={busy}>
             <p className="text-sm text-muted-foreground">Your edits are autosaved. Create a snapshot to keep a version of your project as it is now, so you can return to it later.</p>
             {history?.unavailable && <p role="alert" className="text-sm text-destructive">Automatic history is unavailable because this project exceeds the snapshot limits. Your edits are still saved.</p>}
-            <form className="flex flex-col gap-2 sm:flex-row sm:items-center" onSubmit={event => { event.preventDefault(); void saveVersion(); }}>
-              <Input className="h-9 sm:flex-1" aria-label="Snapshot name" placeholder="Snapshot name (optional)" maxLength={120} value={name} disabled={busy} onChange={event => setName(event.target.value)} />
-              <Button type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create snapshot'}</Button>
-            </form>
+            {creating ? <form className="space-y-2" onSubmit={event => { event.preventDefault(); void saveVersion(); }}>
+              <Input autoFocus className="h-9" aria-label="Snapshot name" placeholder="Snapshot name (optional)" maxLength={120} value={name} disabled={busy} onChange={event => setName(event.target.value)} />
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="ghost" disabled={busy} onClick={closeSnapshotForm}>Cancel</Button>
+                <Button type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create'}</Button>
+              </div>
+            </form> : <Button ref={createButton} variant="outline" onClick={() => setCreating(true)}>Create snapshot</Button>}
             {error && <div role="alert" className="text-sm text-destructive">{error}<Button variant="ghost" disabled={busy || loading} onClick={() => void load()}>Reload history</Button></div>}
             {loading && <p role="status" className="text-sm text-muted-foreground">Loading history…</p>}
             {!loading && history?.versions.length === 0 && <p className="text-sm text-muted-foreground">No versions yet. Create a snapshot or start editing.</p>}
