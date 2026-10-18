@@ -190,7 +190,7 @@ export default function PublishPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto lg:col-start-1 lg:row-start-2 lg:min-h-0">
-        <SharePreview card={yourCard} />
+        <SharePreview card={yourCard} visibility={visibility} />
       </div>
 
       <div className="flex flex-col gap-6 overflow-y-auto border-l border-border p-6 pb-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:min-h-0 [&>*]:shrink-0">

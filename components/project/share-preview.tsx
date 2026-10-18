@@ -3,7 +3,10 @@
 "use client"
 
 import { ExploreCard } from "@/components/feed/explore-card"
+import { Link2, Lock } from "lucide-react"
 import type { ProjectFeedItem } from "@/lib/public-project"
+import type { ProjectVisibility } from "@/lib/projects-store"
+import { cn } from "@/lib/utils"
 
 const MOCK_NEIGHBORS: ProjectFeedItem[] = [
   {
@@ -56,7 +59,9 @@ const MOCK_NEIGHBORS: ProjectFeedItem[] = [
   },
 ];
 
-export function SharePreview({ card }: { card: ProjectFeedItem }) {
+export function SharePreview({ card, visibility }: { card: ProjectFeedItem; visibility: ProjectVisibility }) {
+  const isPublished = visibility === "published";
+
   return (
     <div className="flex flex-col gap-3 bg-muted p-7">
       <span className="mx-auto w-full max-w-[752px] text-[12px] font-semibold uppercase tracking-[.04em] text-muted-foreground">
@@ -65,11 +70,15 @@ export function SharePreview({ card }: { card: ProjectFeedItem }) {
       <div className="mx-auto w-full max-w-[752px] opacity-40">
         <ExploreCard project={MOCK_NEIGHBORS[0]} loggedIn={false} username={null} interactive={false} />
       </div>
-      <div className="relative mx-auto w-full max-w-[752px] rounded-[14px] ring-2 ring-foreground">
-        <span className="absolute -top-3 left-4 z-10 rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium uppercase text-background">
-          Your project
+      <div className={cn("relative mx-auto w-full max-w-[752px] rounded-[14px] ring-2 transition-shadow", isPublished ? "ring-foreground" : "ring-border")}>
+        <span className={cn("absolute -top-3 left-4 z-10 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase", isPublished ? "bg-foreground text-background" : "border border-border bg-background text-muted-foreground")}>
+          {visibility === "private" && <Lock className="h-3 w-3" aria-hidden="true" />}
+          {visibility === "unlisted" && <Link2 className="h-3 w-3" aria-hidden="true" />}
+          {isPublished ? 'Your project' : visibility === "private" ? 'Private · Only you' : 'Unlisted · Link only'}
         </span>
-        <ExploreCard project={card} loggedIn={false} username={null} interactive={false} />
+        <div className={cn("transition-[filter,opacity]", !isPublished && "grayscale opacity-75")}>
+          <ExploreCard project={card} loggedIn={false} username={null} interactive={false} />
+        </div>
       </div>
       <div className="mx-auto w-full max-w-[752px] opacity-40">
         <ExploreCard project={MOCK_NEIGHBORS[1]} loggedIn={false} username={null} interactive={false} />
