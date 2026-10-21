@@ -1152,5 +1152,5 @@ pre::-webkit-scrollbar-thumb {
 }
 
 .trail-item-editor .editor-input {
-  min-height: 96px;
+  min-height: calc(8lh + 60px);
 }
