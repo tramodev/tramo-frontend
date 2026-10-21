@@ -80,6 +80,13 @@ test('up from the first visual line focuses the start of the current title witho
   expect(s.editor.getEditorState().toJSON()).toEqual(before);
 });
 
+test('focusing the note title selects the old name for replacement', () => {
+  const s = setup();
+  let selected = false;
+  s.titleInput.props.onFocus({ currentTarget: { select: () => { selected = true; } } });
+  expect(selected).toBe(true);
+});
+
 test('down from anywhere on the last visual line requests the next title', () => {
   const s = setup({ caretTop: 48 });
   expect(s.arrow(1)).toEqual({ handled: true, prevented: true });

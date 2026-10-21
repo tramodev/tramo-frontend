@@ -70,6 +70,7 @@ function InlineInput({
   return (
     <Input
       autoFocus
+      onFocus={(event) => event.currentTarget.select()}
       value={value}
       placeholder={placeholder}
       className={className}

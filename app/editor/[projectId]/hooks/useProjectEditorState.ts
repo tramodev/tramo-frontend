@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPendingSaves } from '@/lib/pending-saves';
+import { assertProjectText } from '@/lib/project-validation';
 import { useRouter } from 'next/navigation';
 import { Trail, Item, TitleAlign } from '../../types';
 import { countTextStats, lastItemStorageKey } from '../../editor-utils';
@@ -532,8 +533,11 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   });
 
   const handleRenameProject = (title: string) => {
-    setProjectTitle(title);
-    void pendingSaves.current.track("project-title", () => renameProject(projectId, title, restoreEpoch), true).catch(() => {});
+    assertProjectText(title, 'title');
+    return pendingSaves.current.track("project-title", async () => {
+      await renameProject(projectId, title, restoreEpoch);
+      setProjectTitle(title);
+    }, true);
   };
 
   const retryMapPreviews = useCallback(() => {

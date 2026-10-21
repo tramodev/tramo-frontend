@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import {
@@ -34,6 +34,8 @@ import { getMyProfile } from "@/lib/profile"
 import type { ProjectFeedItem } from "@/lib/public-project"
 import { TaskHint } from "@/components/editor/task-hint"
 import { cn } from "@/lib/utils"
+import { createPendingSaves } from "@/lib/pending-saves"
+import { assertProjectText, PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 
 const VISIBILITY_OPTIONS: {
   value: ProjectVisibility;
@@ -51,6 +53,8 @@ export default function PublishPage() {
   const router = useRouter();
 
   const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const pendingSaves = useRef(createPendingSaves());
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null; selectedBadge: string | null } | null>(null);
 
   const [description, setDescription] = useState("");
@@ -64,18 +68,30 @@ export default function PublishPage() {
   const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     getProject(projectId).then((p) => {
+      if (cancelled) return;
       if (!p) return;
       setProject(p);
       setDescription(p.description);
       setTags(p.tags);
       setVisibility(p.visibility);
       setThumbnailImageUrl(p.thumbnailImageUrl);
-    });
-    getMyProfile().then((p) => p && setProfile({ username: p.username, imageUrl: p.imageUrl, selectedBadge: p.selectedBadge }));
+    }).catch(() => {
+      if (!cancelled) setError("Could not load this project.");
+    }).finally(() => { if (!cancelled) setLoading(false); });
+    getMyProfile().then((p) => {
+      if (!cancelled && p) setProfile({ username: p.username, imageUrl: p.imageUrl, selectedBadge: p.selectedBadge });
+    }).catch(() => {});
+    return () => { cancelled = true; };
   }, [projectId]);
 
-  if (!project) return null;
+  if (!project) return <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-6">
+    {loading ? <p role="status">Loading project…</p> : <>
+      <p role="alert">{error || "Project not found or unavailable."}</p>
+      <Link href="/projects" className="text-primary underline">Back to projects</Link>
+    </>}
+  </main>;
 
   const tagList = tags.split(",").map((t) => t.trim()).filter(Boolean);
   const confirmLabel =
@@ -109,15 +125,20 @@ export default function PublishPage() {
   const submitDescription = async () => {
     const next = description.trim();
     if (next === project.description) return;
-    setProject({ ...project, description: next });
-    await setProjectDescription(projectId, next, project.restoreEpoch);
+    assertProjectText(next, 'description');
+    await pendingSaves.current.track('description', async () => {
+      await setProjectDescription(projectId, next, project.restoreEpoch);
+      setProject(previous => previous && { ...previous, description: next });
+    }, true);
   };
 
   const submitTags = async () => {
     const next = tags.trim();
     if (next === project.tags) return;
-    setProject({ ...project, tags: next });
-    await setProjectTags(projectId, next, project.restoreEpoch);
+    await pendingSaves.current.track('tags', async () => {
+      await setProjectTags(projectId, next, project.restoreEpoch);
+      setProject(previous => previous && { ...previous, tags: next });
+    }, true);
   };
 
   const changeVisibility = (next: ProjectVisibility) => {
@@ -132,6 +153,8 @@ export default function PublishPage() {
     setError(null);
     try {
       if (description.trim() !== project.description) await submitDescription();
+      if (tags.trim() !== project.tags) await submitTags();
+      await pendingSaves.current.flush();
       if (visibility === "published") {
         const { error: err } = await publishProject(projectId, project.restoreEpoch);
         if (err) {
@@ -145,11 +168,11 @@ export default function PublishPage() {
           return;
         }
       }
-      setProject({ ...project, visibility, description: description.trim() });
+      setProject(previous => previous && { ...previous, visibility });
       setJustPublished(true);
       setTimeout(() => setJustPublished(false), 2000);
-    } catch {
-      setError("Something went wrong — try again.");
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Something went wrong — try again.");
     } finally {
       setIsPublishing(false);
     }
@@ -237,14 +260,17 @@ export default function PublishPage() {
             id="publish-description"
             placeholder="What's this project about?"
             value={description}
+            maxLength={PROJECT_TEXT_MAX_LENGTH}
+            disabled={isPublishing}
             onChange={(e) => setDescription(e.target.value)}
-            onBlur={submitDescription}
+            onBlur={() => void submitDescription().catch(failure => setError(failure instanceof Error ? failure.message : "Could not save description. Try again."))}
             rows={4}
             className="resize-none rounded-xs border-input px-4 py-3 shadow-none"
           />
+          <p className="text-xs text-muted-foreground">{description.length}/{PROJECT_TEXT_MAX_LENGTH} characters</p>
         </div>
 
-        <TagsField value={tags} onChange={setTags} onCommit={submitTags} />
+        <TagsField value={tags} onChange={setTags} onCommit={() => void submitTags().catch(() => setError("Could not save tags. Try again."))} />
 
         <ThumbnailPicker
           projectId={projectId}
@@ -255,7 +281,7 @@ export default function PublishPage() {
         />
 
         <div className="sticky bottom-0 -mx-6 flex flex-col gap-2 bg-background px-6 pb-6 pt-3">
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
           <button
             type="button"
             onClick={handleConfirm}

@@ -33,6 +33,7 @@ import { ForkBadge } from "@/components/project/fork-badge"
 import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
 import { ProjectUsageDialog } from "@/components/project/project-usage-dialog"
 import { formatBytes } from "@/lib/format-bytes"
+import { PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 import {
   startProject,
   startExampleProject,
@@ -65,6 +66,9 @@ export default function ProjectsPage() {
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState("")
+  const [renameError, setRenameError] = useState("")
+  const renamingRef = useRef(false)
+  const renameAfterClose = useRef<Project | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
   const [usageTarget, setUsageTarget] = useState<Project | null>(null)
   const [sortBy, setSortBy] = useState<SortBy>("modified")
@@ -112,19 +116,34 @@ export default function ProjectsPage() {
   }
 
   const startRename = (project: Project) => {
+    setRenameError("")
     setEditingId(project.id)
     setEditingTitle(project.title)
   }
 
+  const focusRename = (event: Event) => {
+    const project = renameAfterClose.current
+    if (!project) return
+    event.preventDefault()
+    renameAfterClose.current = null
+    startRename(project)
+  }
+
   const submitRename = async (projectId: string) => {
-    if (editingId !== projectId) return
+    if (editingId !== projectId || renamingRef.current) return
     const title = editingTitle.trim()
-    setEditingId(null)
-    if (!title) return
-    await renameProject(projectId, title, projects.find(project => project.id === projectId)?.restoreEpoch ?? 0)
-    setProjects((prev) =>
-      prev.map((p) => (p.id === projectId ? { ...p, title } : p)),
-    )
+    if (!title) { setEditingId(null); return }
+    renamingRef.current = true
+    try {
+      await renameProject(projectId, title, projects.find(project => project.id === projectId)?.restoreEpoch ?? 0)
+      setProjects((prev) => prev.map((p) => (p.id === projectId ? { ...p, title } : p)))
+      setEditingId(null)
+      setRenameError("")
+    } catch (failure) {
+      setRenameError(failure instanceof Error ? failure.message : "Could not rename project. Try again.")
+    } finally {
+      renamingRef.current = false
+    }
   }
 
   const openInNewTab = (projectId: string) => {
@@ -141,6 +160,7 @@ export default function ProjectsPage() {
 
   return (
     <main className="w-full flex-1 pb-[84px]">
+      {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
       <section className="bg-surface-container-high pb-8">
         <div className="mx-auto max-w-[1216px] px-5 py-11 sm:px-10 lg:px-18">
         <div className="mb-2 flex items-center justify-between">
@@ -262,6 +282,8 @@ export default function ProjectsPage() {
                       {editingId === project.id ? (
                         <Input
                           autoFocus
+                          maxLength={PROJECT_TEXT_MAX_LENGTH}
+                          onFocus={(event) => event.currentTarget.select()}
                           value={editingTitle}
                           className="h-7 min-w-0 flex-1"
                           onClick={(e) => e.stopPropagation()}
@@ -302,8 +324,8 @@ export default function ProjectsPage() {
                             <MoreVertical className="h-3.5 w-3.5" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenuItem onSelect={() => startRename(project)}>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} onCloseAutoFocus={focusRename}>
+                          <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
                             <Pencil className="h-3.5 w-3.5" />
                             Rename
                           </DropdownMenuItem>
@@ -360,6 +382,8 @@ export default function ProjectsPage() {
                     {editingId === project.id ? (
                       <Input
                         autoFocus
+                        maxLength={PROJECT_TEXT_MAX_LENGTH}
+                        onFocus={(event) => event.currentTarget.select()}
                         value={editingTitle}
                         className="h-7 max-w-xs"
                         onClick={(e) => e.stopPropagation()}
@@ -408,8 +432,8 @@ export default function ProjectsPage() {
                           <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenuItem onSelect={() => startRename(project)}>
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} onCloseAutoFocus={focusRename}>
+                        <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
                           <Pencil className="h-3.5 w-3.5" />
                           Rename
                         </DropdownMenuItem>

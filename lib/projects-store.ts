@@ -8,6 +8,7 @@ import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 import { parseResponse, expectOk } from "./http";
 import { anonIdHeader } from "./public-project";
+import { assertProjectText } from "@/lib/project-validation";
 
 export type ProjectVisibility = "private" | "unlisted" | "published";
 export type MapPreviews = Record<string, { text: string; linkedItemIds: string[] }>;
@@ -215,6 +216,7 @@ export async function startExistingProject(projectId: string, trailId?: string, 
 }
 
 export async function renameProject(id: string, title: string, epoch = 0): Promise<void> {
+  assertProjectText(title, 'title');
   await apiVoid(`/api/project/${id}`, { epoch, method: "PUT", json: { title } });
 }
 
@@ -243,6 +245,7 @@ export async function searchProjectItems(id: string, q: string): Promise<string[
 }
 
 export async function setProjectDescription(id: string, description: string, epoch = 0): Promise<void> {
+  assertProjectText(description, 'description');
   await apiVoid(`/api/project/${id}`, { epoch, method: "PUT", json: { description } });
 }
 

@@ -11,6 +11,7 @@ export function RestoreProjectVersionButton({ projectId, versionId, restoreEpoch
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [restored, setRestored] = useState(false);
   const action = useRef(false);
 
   const restore = async () => {
@@ -18,7 +19,7 @@ export function RestoreProjectVersionButton({ projectId, versionId, restoreEpoch
     action.current = true; setBusy(true); setError('');
     try {
       await restoreProjectVersion(projectId, versionId, restoreEpoch);
-      router.push(`/editor/${projectId}`);
+      setRestored(true);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Could not restore version.');
       action.current = false; setBusy(false);
@@ -26,8 +27,10 @@ export function RestoreProjectVersionButton({ projectId, versionId, restoreEpoch
   };
 
   return <div className="flex flex-wrap items-center gap-2">
+    {restored ? <p role="status" className="text-sm text-primary">Version restored. <button type="button" className="underline" onClick={() => router.push(`/editor/${projectId}`)}>Open editor</button></p> : <>
     {error && <p role="alert" className="max-w-xs text-xs text-destructive">{error}</p>}
     <Button disabled={busy} onClick={() => setConfirm(true)}>{busy ? 'Restoring…' : 'Restore this version'}</Button>
     <ConfirmDialog open={confirm} onOpenChange={setConfirm} title="Restore this version?" description="Your current saved project will be kept as a safety version before restoring. This replaces the draft, including its notes and trail order. Unsaved edits in other tabs will not be restored." confirmLabel="Restore version" destructive={false} onConfirm={() => void restore()} />
+    </>}
   </div>;
 }

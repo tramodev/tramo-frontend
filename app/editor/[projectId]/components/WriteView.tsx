@@ -276,7 +276,10 @@ function ItemTitle({ item, onCommitTitle, onFocus, move }: {
     if (input && input !== document.activeElement) input.value = item.title;
   }, [item.title]);
   return <div className="pl-7 pt-2">
-    <input ref={inputRef} data-note-title defaultValue={item.title} aria-label="Note title" onFocus={onFocus}
+    <input ref={inputRef} data-note-title defaultValue={item.title} aria-label="Note title" onFocus={(event) => {
+      event.currentTarget.select();
+      onFocus();
+    }}
       onBlur={(event) => onCommitTitle(item.id, item.title, event.target.value)}
       onKeyDown={(event) => {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

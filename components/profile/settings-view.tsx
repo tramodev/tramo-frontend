@@ -83,6 +83,14 @@ function ChangePasswordSection() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Complete all password fields")
+      return
+    }
+    if (newPassword.length < 12) {
+      setError("Password must be at least 12 characters")
+      return
+    }
     if (!PASSWORD_COMPLEXITY_PATTERN.test(newPassword)) {
       setError("Password must contain at least one uppercase letter, one number, and one symbol")
       return
@@ -108,9 +116,9 @@ function ChangePasswordSection() {
   return (
     <section>
       <h2 className="mb-4 text-lg font-medium">Password</h2>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <FieldGroup className="gap-[22px]">
-          {error && <div className="text-sm text-destructive">{error}</div>}
+          {error && <div role="alert" className="text-sm text-destructive">{error}</div>}
           <Field floatingLabel>
             <FieldLabel htmlFor="current-password">Current password</FieldLabel>
             <Input

@@ -212,7 +212,7 @@ export function PublicProjectView({
           </span>
           {!historical && publicProject && <span className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:flex">
             <Eye className="h-3.5 w-3.5" />
-            {publicProject.viewCount} views
+            {publicProject.viewCount} {publicProject.viewCount === 1 ? 'view' : 'views'}
           </span>}
         </div>
       }
@@ -283,7 +283,7 @@ export function PublicProjectView({
           ) : (
             <div className="editor-container flex min-h-0 min-w-0 flex-1 flex-col">
               <div ref={columnRef} className="editor-inner" style={{ paddingInline: 'clamp(12px, 4vw, 48px)' }}>
-                <div className="editor-content-column">
+                <div className="editor-content-column [overflow-wrap:anywhere]">
                   {historyVersion && <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
                     Preview: {historyVersion.name || historyVersion.type} · <time dateTime={historyVersion.createdAt}>
                       {mounted ? new Date(historyVersion.createdAt).toLocaleString() : historyVersion.createdAt}

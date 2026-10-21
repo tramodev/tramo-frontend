@@ -205,7 +205,7 @@ export default async function ExplorePage({
       >
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-medium text-muted-foreground mb-3">
-            Recently published
+            {sort === "hot" ? "Popular projects" : sort === "following" ? "From people you follow" : "Recently published"}
           </div>
           <ExploreFeed
             key={`${sort}-${q ?? ""}`}

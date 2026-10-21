@@ -138,6 +138,9 @@ test.each([0, 1, 2])('note rename opens only the input for the selected occurren
   let inputs = render().filter(node => node.type?.name === 'InlineInput');
   expect(inputs).toHaveLength(1);
   expect(inputs[0].props.value).toBe('Original');
+  let selected = false;
+  inputs[0].type(inputs[0].props).props.onFocus({ currentTarget: { select: () => { selected = true; } } });
+  expect(selected).toBe(true);
   inputs[0].props.onChange('  Renamed  ');
   inputs = render().filter(node => node.type?.name === 'InlineInput');
   inputs[0].props.onSubmit();

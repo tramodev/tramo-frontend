@@ -49,10 +49,10 @@ export function ConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
+      <AlertDialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        <AlertDialogHeader className="min-w-0">
+          <AlertDialogTitle className="[overflow-wrap:anywhere]">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="[overflow-wrap:anywhere]">
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>

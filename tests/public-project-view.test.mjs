@@ -80,7 +80,7 @@ test('public reader shares the editor column and connections panel without mutat
   const shell = nodes.find(node => node.type === 'ProjectShell');
   const content = flatten(shell.props.content);
   expect(content.some(node => node.props.className === 'editor-inner')).toBe(true);
-  expect(content.some(node => node.props.className === 'editor-content-column')).toBe(true);
+  expect(content.some(node => node.props.className?.includes('editor-content-column'))).toBe(true);
   const intro = content.find(node => node.props['aria-label'] === 'About this project');
   expect(flatten(intro).some(node => node.type === 'button')).toBe(false);
   expect(content.some(node => node.props['aria-label'] === 'Current trail')).toBe(false);
@@ -313,7 +313,7 @@ test('the shared next-trail button keeps its label, click action and editor shor
   const shortcut = jsx('kbd', { children: '⌘⌥→' });
   const nodes = render('NextTrailButton', { trail: { id: 'next', title: 'Next' }, onSelectTrail: id => selected.push(id), children: shortcut });
   const button = nodes.find(node => node.type === 'button');
-  expect(button.props.children).toContain('Next');
+  expect(nodes.some(node => node.type === 'span' && node.props.children.includes('Next'))).toBe(true);
   expect(nodes.find(node => node.type === 'kbd')).toBe(shortcut);
   button.props.onClick();
   expect(selected).toEqual(['next']);
@@ -506,7 +506,7 @@ test('private history preview uses saved image access and offers restore without
   expect(actions.some(node => node.type === 'Share' || node.props.href === '#comments')).toBe(false);
 });
 
-test('restore requires confirmation, blocks double submission and returns to the editor', async () => {
+test('restore requires confirmation, blocks double submission and confirms success before opening the editor', async () => {
   const calls = [], navigation = [];
   let finish;
   const render = load('components/project/restore-project-version-button.tsx', {
@@ -528,6 +528,10 @@ test('restore requires confirmation, blocks double submission and returns to the
   expect(render('RestoreProjectVersionButton', props).find(node => node.type === 'Button').props.disabled).toBe(true);
   finish({ restoreEpoch: 4 });
   await new Promise(resolve => setImmediate(resolve));
+  nodes = render('RestoreProjectVersionButton', props);
+  expect(nodes.find(node => node.props.role === 'status').props.children).toContain('Version restored. ');
+  expect(navigation).toEqual([]);
+  nodes.find(node => node.type === 'button' && node.props.children === 'Open editor').props.onClick();
   expect(navigation).toEqual(['/editor/project']);
 });
 
