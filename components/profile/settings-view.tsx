@@ -43,7 +43,7 @@ function TutorialsSection() {
       </p>
       {status === "error" && <div className="mb-2 text-sm text-destructive">Couldn&apos;t save that change, try again.</div>}
       {status === "done" ? (
-        <div className="flex items-center gap-2 text-[15px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-[0.9375rem] text-muted-foreground">
           <CheckCircle2 className="h-5 w-5 text-success" />
           It&apos;ll show again next time you open the editor.
         </div>
@@ -72,7 +72,7 @@ function ChangePasswordSection() {
     return (
       <section>
         <h2 className="mb-4 text-lg font-medium">Password</h2>
-        <div className="flex items-center gap-2 text-[15px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-[0.9375rem] text-muted-foreground">
           <CheckCircle2 className="h-5 w-5 text-success" />
           Password changed. Redirecting to log in...
         </div>

@@ -18,7 +18,7 @@ export default async function ChangelogPage() {
     <main className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
       <p className="mb-4 text-sm font-medium text-primary">Changelog</p>
       <h1 className="mb-6 font-display text-[clamp(40px,5.6vw,56px)] font-medium leading-[1.1]">A little better, every time.</h1>
-      <p className="mb-10 text-[17px] leading-7 text-muted-foreground">Small additions, improvements and fixes as Tramo grows.</p>
+      <p className="mb-10 text-[1.0625rem] leading-7 text-muted-foreground">Small additions, improvements and fixes as Tramo grows.</p>
       <section aria-labelledby="recent-updates-heading" className="border-t border-border pt-8">
         <h2 id="recent-updates-heading" className="mb-6 font-display text-2xl font-medium text-foreground">Recent updates</h2>
         <ul className="space-y-6">

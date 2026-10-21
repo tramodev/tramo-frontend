@@ -299,7 +299,8 @@ function ItemTitle({ item, onCommitTitle, onFocus, move }: {
         event.currentTarget.blur();
         requestAnimationFrame(() => focusEditor(editor));
       }} placeholder="Untitled" style={{ textAlign: item.titleAlign }}
-      className="w-full border-0 bg-transparent font-display text-[28px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40" />
+      title={item.title}
+      className="w-full min-w-0 truncate border-0 bg-transparent font-display text-[1.75rem] font-medium leading-normal text-foreground outline-none placeholder:text-muted-foreground/40" />
   </div>;
 }
 
@@ -456,13 +457,13 @@ export function WriteView(props: WriteViewProps) {
                 {index > 0 && trail && <div className="trail-divider mt-4">
                   <TrailConnector />
                 </div>}
-                <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <div className={`pl-7 pt-6 text-[0.6875rem] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                   Step {index + 1}
                 </div>
                 {stepItem.content != null && (mounted ? <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
                   toolbar={toolbar} onFocus={onFocus} register={register} move={move} session={session} onPendingImages={onPendingImages} /> : <button type="button"
                   aria-label={`Open note: ${stepItem.title}`} onClick={() => props.onSelectItem(stepItem, props.activeTrailId)}
-                  className="w-full pl-7 pt-2 text-left font-display text-[28px] font-medium" style={{ textAlign: stepItem.titleAlign }}>
+                  className="w-full pl-7 pt-2 text-left font-display text-[1.75rem] font-medium" style={{ textAlign: stepItem.titleAlign }}>
                   {stepItem.title}
                 </button>)}
                 {index === steps.length - 1 && nextTrail && <NextTrailButton trail={nextTrail} onSelectTrail={props.onSelectTrail}>
@@ -472,7 +473,7 @@ export function WriteView(props: WriteViewProps) {
             })}
             {inTrail && trail && <div className="mt-16 flex justify-center pb-4">
               <button type="button" onClick={() => props.onCreateItem(trail.id, 'Untitled')}
-                className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground">
+                className="flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground">
                 <Plus className="h-3.5 w-3.5" /> Add next step <kbd>⌘↵</kbd>
               </button>
             </div>}

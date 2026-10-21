@@ -7,7 +7,7 @@ import { Wordmark } from "@/components/layout/logo";
 export function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto grid max-w-[1216px] gap-10 px-6 py-12 text-[13px] text-muted-foreground md:grid-cols-2 md:px-[72px]">
+      <div className="container-app grid gap-10 px-6 py-12 text-[0.8125rem] text-muted-foreground md:grid-cols-2 md:px-[72px]">
         <div className="flex flex-col items-start gap-4">
           <Link href="/" aria-label="Tramo home" className="rounded-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Wordmark />

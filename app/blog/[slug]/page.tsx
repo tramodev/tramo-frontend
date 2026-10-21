@@ -23,7 +23,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <article>
         <div className="mb-4 flex gap-3 text-xs text-muted-foreground"><span>{post.category}</span><time dateTime={post.publishedDate}>{post.publishedDate}</time></div>
         <h1 className="mb-6 font-display text-[clamp(36px,5vw,48px)] font-medium leading-tight">{post.title}</h1>
-        <p className="mb-10 text-[17px] leading-7 text-muted-foreground">{post.summary}</p>
+        <p className="mb-10 text-[1.0625rem] leading-7 text-muted-foreground">{post.summary}</p>
         <div className="whitespace-pre-wrap break-words text-base leading-8">{post.content}</div>
       </article>
     </main>

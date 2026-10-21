@@ -45,11 +45,11 @@ export function VerifyEmailClient() {
       : ''
 
   return (
-    <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
+    <div className="flex mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem] flex-col items-start gap-4">
       {status === 'verifying' && (
         <>
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-[15px] text-muted-foreground">
+          <p className="text-[0.9375rem] text-muted-foreground">
             Verifying your email...
           </p>
         </>
@@ -57,7 +57,7 @@ export function VerifyEmailClient() {
       {status === 'success' && (
         <>
           <CheckCircle2 className="h-8 w-8 text-success" />
-          <p className="text-[15px] text-muted-foreground">
+          <p className="text-[0.9375rem] text-muted-foreground">
             Email verified. Redirecting...
           </p>
         </>
@@ -65,7 +65,7 @@ export function VerifyEmailClient() {
       {status === 'error' && (
         <>
           <XCircle className="h-8 w-8 text-destructive" />
-          <p className="text-[15px] text-muted-foreground">
+          <p className="text-[0.9375rem] text-muted-foreground">
             {error}
           </p>
           <a href="/login" className="text-sm font-medium text-primary">

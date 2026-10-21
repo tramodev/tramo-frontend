@@ -117,7 +117,7 @@ export function PrivacySettings({
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-medium">{option.label}</span>
-                  <span className="mt-0.5 block text-[13px] text-muted-foreground">{option.desc}</span>
+                  <span className="mt-0.5 block text-[0.8125rem] text-muted-foreground">{option.desc}</span>
                 </span>
               </button>
             )
@@ -132,14 +132,14 @@ export function PrivacySettings({
           <div className="flex items-center gap-4 border-t border-border py-3.5">
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium">Show upvotes on my profile</div>
-              <div className="mt-0.5 text-[13px] text-muted-foreground">Show an Upvoted section on your public profile.</div>
+              <div className="mt-0.5 text-[0.8125rem] text-muted-foreground">Show an Upvoted section on your public profile.</div>
             </div>
             <Switch checked={showUpvotes} onCheckedChange={handleShowUpvotesChange} />
           </div>
           <div className="flex items-center gap-4 border-t border-border py-3.5">
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium">Allow forks</div>
-              <div className="mt-0.5 text-[13px] text-muted-foreground">
+              <div className="mt-0.5 text-[0.8125rem] text-muted-foreground">
                 Let others fork your published projects as a starting point.
               </div>
             </div>

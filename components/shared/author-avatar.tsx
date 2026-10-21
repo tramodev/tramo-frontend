@@ -21,7 +21,7 @@ export function AuthorAvatar({ username, avatar, size = 22 }: { username: string
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-full bg-tertiary font-medium text-tertiary-foreground ${
-        size > 22 ? "text-xs" : "text-[11px]"
+        size > 22 ? "text-xs" : "text-[0.6875rem]"
       }`}
       style={{ width: size, height: size }}
     >

@@ -241,7 +241,7 @@ export function EditProfileModal({
 
               <p className="px-6 pt-3 text-xs text-muted-foreground">Avatars and banners are public. Do not upload confidential information.</p>
               {error && (
-                <p className="absolute inset-x-3 top-2 z-20 rounded-md bg-black/60 px-2 py-1 text-center text-[11px] font-medium text-white">
+                <p className="absolute inset-x-3 top-2 z-20 rounded-md bg-black/60 px-2 py-1 text-center text-[0.6875rem] font-medium text-white">
                   {error}
                 </p>
               )}
@@ -252,7 +252,7 @@ export function EditProfileModal({
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={isPending}
-                className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary text-[34px] font-medium font-display text-primary-foreground ring-1 ring-border"
+                className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary text-[2.125rem] font-medium font-display text-primary-foreground ring-1 ring-border"
                 title="Change avatar"
               >
                 {avatarPreviewUrl ? (
@@ -287,7 +287,7 @@ export function EditProfileModal({
                 placeholder="Tell people a bit about yourself"
                 className="field-sizing-fixed resize-none rounded-xs px-4 py-2 shadow-none focus-visible:border-primary focus-visible:ring-0 focus-visible:shadow-[inset_0_0_0_1px_var(--primary)]"
               />
-              <span className="self-end text-[11px] text-muted-foreground">
+              <span className="self-end text-[0.6875rem] text-muted-foreground">
                 {bio.length}/255
               </span>
             </div>
@@ -303,12 +303,12 @@ export function EditProfileModal({
                 disabled={!!initialBirthDate}
               />
               {initialBirthDate && (
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[0.6875rem] text-muted-foreground">
                   Date of birth can&apos;t be changed once set.
                 </span>
               )}
               <div className="flex items-center justify-between pt-1">
-                <span className="text-[13px] text-muted-foreground">Show my age on my public profile</span>
+                <span className="text-[0.8125rem] text-muted-foreground">Show my age on my public profile</span>
                 <Switch checked={showAge} onCheckedChange={setShowAge} />
               </div>
             </div>

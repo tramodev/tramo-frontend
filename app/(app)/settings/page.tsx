@@ -48,11 +48,11 @@ export default async function SettingsPage({
   const notificationPrefs = tab === "notifications" ? await getNotificationPreferences() : null
 
   return (
-    <main className="mx-auto w-full flex-1 max-w-[1216px]">
+    <main className="container-app flex-1">
       <div className="pt-9 px-18 pb-16">
         <div className="grid grid-cols-[216px_minmax(0,1fr)] gap-14 items-start">
           <nav className="sticky top-6 flex flex-col gap-1">
-            <h1 className="font-display text-[36px] font-normal leading-[1.1] mb-8">Settings</h1>
+            <h1 className="font-display text-[2.25rem] font-normal leading-[1.1] mb-8">Settings</h1>
             {TABS.map(({ key, label, icon: Icon }) => (
               <Link
                 key={key}

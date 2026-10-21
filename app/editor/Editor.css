@@ -18,10 +18,11 @@
 }
 
 .editor-container {
+  --editor-content-max-width: calc(72ch + 28px);
   margin: 0;
   max-width: none;
   position: relative;
-  line-height: 20px;
+  line-height: 1.25;
   font-weight: 400;
   text-align: left;
 }
@@ -38,7 +39,8 @@
 }
 
 .editor-content-column {
-  width: 95%;
+  width: 100%;
+  max-width: var(--editor-content-max-width);
   margin: 0 auto;
   position: relative;
   flex: 1;
@@ -47,9 +49,7 @@
 }
 
 .editor-content-column .trail-divider {
-  --trail-divider-bleed: calc(2.6316% + 48px);
-  margin-left: calc(-1 * var(--trail-divider-bleed));
-  margin-right: calc(-1 * var(--trail-divider-bleed));
+  margin-left: 28px;
 }
 
 .editor-content-column .editor-input {
@@ -98,7 +98,7 @@
 
 .editor-input {
   resize: none;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.6;
   position: relative;
   flex: 1;
@@ -124,7 +124,7 @@
   text-overflow: ellipsis;
   top: 36px;
   left: 0;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.6;
   user-select: none;
   display: inline-block;
@@ -213,7 +213,7 @@ a[rel^="mypath-idea:"] {
 .item-mention-menu-item {
   padding: 6px 10px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--foreground);
   cursor: pointer;
   transition: background-color 120ms ease-out, color 120ms ease-out;
@@ -262,7 +262,7 @@ a[rel^="mypath-idea:"] {
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--foreground);
   max-width: 360px;
 }
@@ -286,7 +286,7 @@ a[rel^="mypath-idea:"] {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--foreground);
   width: 220px;
 }
@@ -317,7 +317,7 @@ a[rel^="mypath-idea:"] {
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--foreground);
 }
 
@@ -336,14 +336,14 @@ a[rel^="mypath-idea:"] {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--foreground);
   width: 180px;
 }
 
 .find-replace-count {
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 0.75rem;
   white-space: nowrap;
   min-width: 36px;
 }
@@ -370,7 +370,7 @@ a[rel^="mypath-idea:"] {
 .find-replace-text-button {
   width: auto;
   padding: 4px 8px !important;
-  font-size: 12px;
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 
@@ -427,7 +427,7 @@ div.editor-equation {
   display: block;
   width: 100%;
   font-family: var(--font-roboto-mono), monospace;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   padding: 0;
   border: none;
@@ -452,7 +452,7 @@ div.editor-equation {
 .editor-equation-template {
   min-width: 30px;
   padding: 2px 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.4;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -482,7 +482,7 @@ div.editor-equation {
   display: block;
   margin-top: 6px;
   font-family: var(--font-roboto-mono), monospace;
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.4;
   color: var(--destructive);
   white-space: pre-wrap;
@@ -548,7 +548,7 @@ div.editor-equation {
 }
 
 .toolbar-code-language {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.4;
   white-space: nowrap;
 }
@@ -585,7 +585,7 @@ div.editor-equation {
 .toolbar-table-size {
   display: block;
   margin-top: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.4;
   text-align: center;
   color: var(--muted-foreground);
@@ -633,7 +633,7 @@ div.editor-equation {
   display: block;
   width: 100%;
   font-family: var(--font-roboto-mono), monospace;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   padding: 0;
   border: none;
@@ -659,7 +659,7 @@ div.editor-equation {
 .editor-music-error {
   margin-top: 6px;
   font-family: var(--font-roboto-mono), monospace;
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.4;
   color: var(--destructive);
   white-space: pre-wrap;
@@ -744,7 +744,7 @@ div.editor-equation {
 .editor-image-caption {
   display: block;
   margin-top: 6px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-style: italic;
   color: var(--muted-foreground);
   text-align: center;
@@ -765,7 +765,7 @@ div.editor-equation {
   border-radius: 999px;
   background: rgb(0 0 0 / 0.55);
   color: #fff;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
 }
@@ -785,7 +785,7 @@ div.editor-equation {
   border: 1px solid var(--border);
   background: var(--popover);
   color: var(--foreground);
-  font-size: 12px;
+  font-size: 0.75rem;
   outline: none;
 }
 
@@ -796,7 +796,7 @@ div.editor-equation {
   display: block;
   padding: 8px 8px 8px 52px;
   line-height: 1.53;
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin: 0;
   margin-top: 8px;
   margin-bottom: 8px;
@@ -824,7 +824,7 @@ div.editor-equation {
   top: 0;
   right: 3px;
   padding: 3px;
-  font-size: 10px;
+  font-size: 0.625rem;
   text-transform: uppercase;
   position: absolute;
   color: var(--muted-foreground);
@@ -846,7 +846,7 @@ div.editor-equation {
   gap: 2px;
   padding: 3px 5px;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 0.625rem;
   text-transform: uppercase;
   color: var(--muted-foreground);
   cursor: pointer;
@@ -900,9 +900,11 @@ div.editor-equation {
 .editor-embed-video {
   max-width: 640px;
   aspect-ratio: 16 / 9;
+  margin-inline: auto;
 }
 
 .editor-embed-tweet {
+  margin-inline: auto;
   max-width: 550px;
   /* shortcut: tweet height is fixed; use provider resize messages when variable-height embeds are needed. */
   height: 560px;
@@ -914,7 +916,7 @@ div.editor-equation {
 
 .editor-heading-h1 {
   font-family: var(--font-roboto-flex);
-  font-size: 32px;
+  font-size: 2rem;
   color: var(--foreground);
   font-weight: 400;
   margin: 0;
@@ -924,7 +926,7 @@ div.editor-equation {
 
 .editor-heading-h2 {
   font-family: var(--font-roboto-flex);
-  font-size: 20px;
+  font-size: 1.25rem;
   color: var(--foreground);
   font-weight: 500;
   margin: 0;
@@ -934,7 +936,7 @@ div.editor-equation {
 
 .editor-heading-h3 {
   font-family: var(--font-roboto-flex);
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--foreground);
   font-weight: 500;
   margin: 0;
@@ -945,7 +947,7 @@ div.editor-equation {
 .editor-quote {
   margin: 18px 0;
   font-style: italic;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   line-height: 1.7;
   color: var(--muted-foreground);
   border-left-color: var(--primary);
@@ -1095,7 +1097,7 @@ pre::-webkit-scrollbar-thumb {
 
 .toolbar button.toolbar-item.align-dropdown-trigger {
   width: auto;
-  font-size: 13px;
+  font-size: 0.8125rem;
   gap: 1px;
   padding: 0 5px;
 }
@@ -1105,7 +1107,7 @@ pre::-webkit-scrollbar-thumb {
   border: none;
   border-radius: 8px;
   color: var(--foreground);
-  font-size: 13px;
+  font-size: 0.8125rem;
   padding: 4px 6px;
   margin-right: 4px;
   max-width: 120px;
@@ -1137,7 +1139,7 @@ pre::-webkit-scrollbar-thumb {
   border: 0;
   background: none;
   color: var(--foreground);
-  font-size: 13px;
+  font-size: 0.8125rem;
   text-align: center;
   -moz-appearance: textfield;
 }

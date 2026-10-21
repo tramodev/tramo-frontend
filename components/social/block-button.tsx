@@ -63,7 +63,7 @@ export function BlockButton({
         <TooltipContent>{blocked ? "Unblock this user" : "Block this user"}</TooltipContent>
       </Tooltip>
       {error && (
-        <span className="absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-medium text-destructive">
+        <span className="absolute left-0 top-full mt-1 whitespace-nowrap text-[0.6875rem] font-medium text-destructive">
           Couldn&apos;t update, try again
         </span>
       )}

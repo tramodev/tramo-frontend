@@ -14,7 +14,7 @@ export default function LoginPage() {
     <>
       <div className="flex flex-col px-8 py-8 lg:px-24">
         <div className="flex flex-1 flex-col justify-center">
-          <div className="w-full max-w-[400px]">
+          <div className="mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem]">
             <LoginForm />
           </div>
         </div>

@@ -17,8 +17,8 @@ export function ForgotPasswordForm({
   return (
     <form action={formAction} className={cn("flex flex-col gap-6", className)} {...props}>
       <div>
-        <h1 className="font-display text-[36px] font-normal">Forgot password?</h1>
-        <p className="mt-3 text-[15px] leading-6 text-muted-foreground">
+        <h1 className="font-display text-[2.25rem] font-normal">Forgot password?</h1>
+        <p className="mt-3 text-[0.9375rem] leading-6 text-muted-foreground">
           Enter your email and we&apos;ll send you a link to reset it.
         </p>
       </div>

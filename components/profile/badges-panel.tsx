@@ -106,7 +106,7 @@ export function BadgesPanel({ badges }: { badges: Badge[] }) {
                   <div className="mb-2 flex items-center justify-between">
                     <BadgeIcon badge={badge} />
                     {badge.earned && (
-                      <span className="text-[11px] font-medium" style={{ color }}>
+                      <span className="text-[0.6875rem] font-medium" style={{ color }}>
                         Earned
                       </span>
                     )}
@@ -120,7 +120,7 @@ export function BadgesPanel({ badges }: { badges: Badge[] }) {
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest">
                         <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                       </div>
-                      <div className="mt-1 text-[11px] font-medium text-muted-foreground">
+                      <div className="mt-1 text-[0.6875rem] font-medium text-muted-foreground">
                         {badge.progress.toLocaleString('en-US')} / {badge.target.toLocaleString('en-US')}
                       </div>
                     </>

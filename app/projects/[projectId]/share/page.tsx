@@ -195,7 +195,7 @@ export default function PublishPage() {
   };
 
   return (
-    <div className="flex h-svh flex-col bg-background lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[60px_1fr]">
+    <div className="flex h-svh w-full flex-col bg-background lg:grid lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:grid-rows-[60px_minmax(0,1fr)]">
       <div className="flex h-[60px] shrink-0 items-center gap-4 border-b border-border pl-2.5 pr-6 lg:col-start-1 lg:row-start-1 lg:border-b-0">
         <Link href="/projects" title="Back to projects">
           <Mark />
@@ -209,14 +209,14 @@ export default function PublishPage() {
           <ChevronLeft className="h-4 w-4" />
           <span className="leading-none">Editor</span>
         </button>
-        <span className="text-[17px] font-semibold leading-none">Share</span>
+        <span className="text-[1.0625rem] font-semibold leading-none">Share</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto lg:col-start-1 lg:row-start-2 lg:min-h-0">
+      <div className="min-w-0 flex-1 overflow-y-auto bg-muted lg:col-start-1 lg:row-start-2 lg:min-h-0">
         <SharePreview card={yourCard} visibility={visibility} />
       </div>
 
-      <div className="flex flex-col gap-6 overflow-y-auto border-l border-border p-6 pb-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:min-h-0 [&>*]:shrink-0">
+      <div className="flex min-w-0 flex-col gap-6 overflow-y-auto border-l border-border p-6 pb-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:min-h-0 [&>*]:shrink-0">
         <TaskHint id={`publish:${projectId}`}>Before publishing, check the description and read each trail from the editor. Readers see the published snapshot; later edits stay private until you publish an update.</TaskHint>
         <div className="flex flex-col gap-1.5">
           <Label>Visibility</Label>
@@ -238,14 +238,14 @@ export default function PublishPage() {
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-medium">{option.label}</span>
-                    <span className="block truncate text-[12px] text-muted-foreground">{option.description}</span>
+                    <span className="block text-[0.8125rem] font-medium">{option.label}</span>
+                    <span className="block truncate text-[0.75rem] text-muted-foreground">{option.description}</span>
                   </span>
                   {isActive && (
                     visibility === project.visibility ? (
                       <Check className="h-4 w-4 shrink-0" />
                     ) : (
-                      <span className="shrink-0 text-[11px] text-muted-foreground">unsaved</span>
+                      <span className="shrink-0 text-[0.6875rem] text-muted-foreground">unsaved</span>
                     )
                   )}
                 </button>
@@ -286,7 +286,7 @@ export default function PublishPage() {
             type="button"
             onClick={handleConfirm}
             disabled={isPublishing || justPublished}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[14px] font-medium text-background shadow-elevation-2 disabled:opacity-60"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[0.875rem] font-medium text-background shadow-elevation-2 disabled:opacity-60"
           >
             {isPublishing ? (
               <>
@@ -306,13 +306,13 @@ export default function PublishPage() {
 
         {shareUrl && (
           <div className="mb-6 flex items-center gap-2 rounded-md border border-border px-3 py-2">
-            <span className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
               {shareUrl}
             </span>
             <button
               type="button"
               onClick={copyShareUrl}
-              className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium hover:text-foreground"
+              className="flex shrink-0 items-center gap-1.5 text-[0.8125rem] font-medium hover:text-foreground"
             >
               {linkCopied ? (
                 <>

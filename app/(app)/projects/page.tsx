@@ -162,17 +162,17 @@ export default function ProjectsPage() {
     <main className="w-full flex-1 pb-[84px]">
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
       <section className="bg-surface-container-high pb-8">
-        <div className="mx-auto max-w-[1216px] px-5 py-11 sm:px-10 lg:px-18">
+        <div className="container-app px-5 py-11 sm:px-10 lg:px-18">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-primary">
             Your workspace
           </span>
           <PlanUsageChip />
         </div>
-        <h1 className="font-display text-[44px] font-normal leading-[1.1] mb-7">
+        <h1 className="font-display text-[2.75rem] font-normal leading-[1.1] mb-7">
           Start a new project
         </h1>
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-[repeat(auto-fill,minmax(min(100%,17.5rem),1fr))]">
           <button
             disabled={creating}
             onClick={() => handleCreateProject()}
@@ -200,7 +200,7 @@ export default function ProjectsPage() {
       </section>
 
       <section className="relative -mt-8 rounded-t-[32px] bg-background pt-[34px]">
-        <div className="mx-auto min-h-[310px] max-w-[1216px] px-5 sm:px-10 lg:px-18">
+        <div className="container-app min-h-[310px] px-5 sm:px-10 lg:px-18">
           <div className="mb-5 flex items-center justify-between">
             <span className="block text-sm font-medium text-muted-foreground">My projects</span>
             <div className="flex items-center gap-2">
@@ -261,7 +261,7 @@ export default function ProjectsPage() {
               No projects yet. Start writing or try an example.
             </p>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17.5rem),1fr))] gap-4">
               {sortedProjects.map((project, index) => (
                 <Card
                   key={project.id}

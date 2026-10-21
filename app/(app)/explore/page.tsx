@@ -45,13 +45,13 @@ export default async function ExplorePage({
   const hasSidebar = hotTopics.length > 0 || activeAuthors.length > 0 || trendingProjects.length > 0 || showSupportCard
 
   return (
-    <main className="mx-auto w-full flex-1 max-w-[1216px]">
+    <main className="container-app flex-1">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-8 pt-9 px-6 md:px-18 pb-0">
         <div>
           <span className="block text-sm font-medium text-primary mb-2">
             The commons
           </span>
-          <h1 className="font-display text-[44px] font-normal leading-[1.1]">
+          <h1 className="font-display text-[2.75rem] font-normal leading-[1.1]">
             Explore
           </h1>
         </div>
@@ -64,7 +64,7 @@ export default async function ExplorePage({
               name="q"
               defaultValue={q ?? ""}
               placeholder="Search published projects"
-              className="h-12 w-full rounded-full border-0 bg-surface-container-high pl-[46px] pr-5 text-[15px] outline-none transition-colors placeholder:text-muted-foreground focus:bg-surface-container-highest"
+              className="h-12 w-full rounded-full border-0 bg-surface-container-high pl-[46px] pr-5 text-[0.9375rem] outline-none transition-colors placeholder:text-muted-foreground focus:bg-surface-container-highest"
             />
           </div>
           <div className="flex h-10 items-center overflow-hidden rounded-full border border-input">
@@ -84,7 +84,7 @@ export default async function ExplorePage({
                 {i > 0 && <span className="h-full w-px bg-input" />}
                 <Link
                   href={`/explore?${new URLSearchParams({ ...(q ? { q } : {}), sort: value }).toString()}`}
-                  className={`flex h-full items-center gap-1.5 px-[18px] text-[13px] font-medium transition-colors ${
+                  className={`flex h-full items-center gap-1.5 px-[18px] text-[0.8125rem] font-medium transition-colors ${
                     sort === value
                       ? "bg-secondary text-secondary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -104,10 +104,10 @@ export default async function ExplorePage({
           <Link href={`/p/${featured.id}`} className="absolute inset-0 z-0" aria-label={featured.title} />
 
           <div>
-            <span className="block text-[13px] font-medium text-primary mb-3">
+            <span className="block text-[0.8125rem] font-medium text-primary mb-3">
               Featured today
             </span>
-            <div className="flex items-center gap-2.5 text-[13px] text-muted-foreground mb-3.5">
+            <div className="flex items-center gap-2.5 text-[0.8125rem] text-muted-foreground mb-3.5">
               <ProfileHoverCard username={featured.ownerUsername} avatar={featured.ownerAvatar} isLoggedIn={loggedIn} viewerUsername={username}>
                 <span className="relative z-10 flex items-center gap-2.5">
                   <AuthorAvatar username={featured.ownerUsername} avatar={featured.ownerAvatar} />
@@ -126,7 +126,7 @@ export default async function ExplorePage({
                 </span>
               )}
             </div>
-            <h2 className="font-display text-[34px] font-normal leading-[1.2] mb-2.5">
+            <h2 className="font-display text-[2.125rem] font-normal leading-[1.2] mb-2.5">
               {featured.title}
             </h2>
 
@@ -157,11 +157,11 @@ export default async function ExplorePage({
                   initialCount={featured.voteCount}
                   isLoggedIn={loggedIn}
                 />
-                <span className="inline-flex items-center px-2 text-[13px] text-muted-foreground">
+                <span className="inline-flex items-center px-2 text-[0.8125rem] text-muted-foreground">
                   <Eye className="h-[17px] w-[17px]" />
                   {featured.viewCount.toLocaleString('en-US')}
                 </span>
-                <span className="inline-flex items-center px-2 text-[13px] text-muted-foreground">
+                <span className="inline-flex items-center px-2 text-[0.8125rem] text-muted-foreground">
                   <MessageCircle className="h-[15px] w-[15px]" />
                   {featured.commentCount.toLocaleString('en-US')}
                 </span>
@@ -188,7 +188,7 @@ export default async function ExplorePage({
             title={featured.title}
             className="pointer-events-none rounded-[20px] h-[250px] bg-accent"
             placeholder={
-              <span className="font-display text-[84px] font-medium text-accent-foreground leading-none">
+              <span className="font-display text-[5.25rem] font-medium text-accent-foreground leading-none">
                 {initial(featured.title)}
               </span>
             }
@@ -204,7 +204,7 @@ export default async function ExplorePage({
         }
       >
         <div className="min-w-0 flex-1">
-          <div className="text-[13px] font-medium text-muted-foreground mb-3">
+          <div className="text-[0.8125rem] font-medium text-muted-foreground mb-3">
             {sort === "hot" ? "Popular projects" : sort === "following" ? "From people you follow" : "Recently published"}
           </div>
           <ExploreFeed

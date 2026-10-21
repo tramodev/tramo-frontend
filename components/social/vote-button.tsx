@@ -75,7 +75,7 @@ export function VoteButton({
             />
             {burstId > 0 && <BurstParticles />}
           </span>
-          <span className="text-[13px]">{count}</span>
+          <span className="text-[0.8125rem]">{count}</span>
         </button>
       </TooltipTrigger>
       <TooltipContent>{voted ? "Remove upvote" : "Upvote"}</TooltipContent>

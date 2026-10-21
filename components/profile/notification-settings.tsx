@@ -72,7 +72,7 @@ export function NotificationSettings({
         <div className="flex items-center gap-4 rounded-2xl border border-border px-4 py-3.5">
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium">Enable notifications</div>
-            <div className="mt-0.5 text-[13px] text-muted-foreground">
+            <div className="mt-0.5 text-[0.8125rem] text-muted-foreground">
               Turn this off to stop receiving all notifications.
             </div>
           </div>
@@ -92,7 +92,7 @@ export function NotificationSettings({
             <div key={value} className="flex items-center gap-4 border-t border-border py-3.5">
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-medium">{label}</div>
-                <div className="mt-0.5 text-[13px] text-muted-foreground">{desc}</div>
+                <div className="mt-0.5 text-[0.8125rem] text-muted-foreground">{desc}</div>
               </div>
               <Switch
                 checked={!muted.includes(value)}

@@ -60,7 +60,7 @@ export function AvatarMenu({
             <Link href="/profile">
               <div className="flex items-center gap-2">
                 <span
-                  className="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-medium w-6 h-6 bg-primary text-primary-foreground"
+                  className="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full text-[0.6875rem] font-medium w-6 h-6 bg-primary text-primary-foreground"
                 >
                   {imageUrl ? (
                     <Image src={imageUrl} alt="" fill sizes="24px" className="object-cover" />

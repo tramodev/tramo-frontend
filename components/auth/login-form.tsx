@@ -38,8 +38,8 @@ export function LoginForm({
       {...props}
     >
       <div>
-        <h1 className="font-display text-[36px] font-normal">Log in</h1>
-        <p className="mt-3 text-[15px] leading-6 text-muted-foreground">
+        <h1 className="font-display text-[2.25rem] font-normal">Log in</h1>
+        <p className="mt-3 text-[0.9375rem] leading-6 text-muted-foreground">
           Enter your username below to access your account.
         </p>
       </div>
@@ -70,7 +70,7 @@ export function LoginForm({
           </Field>
           <a
             href="/forgot-password"
-            className="self-end text-[13px] font-medium text-primary"
+            className="self-end text-[0.8125rem] font-medium text-primary"
           >
             Forgot your password?
           </a>

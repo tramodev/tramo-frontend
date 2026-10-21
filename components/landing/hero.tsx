@@ -17,7 +17,7 @@ export const Hero: React.FC = () => {
           </h1>
         </StaggerItem>
         <StaggerItem>
-          <p className="text-[17px] leading-7 max-w-[58ch] mx-auto mt-8 text-muted-foreground">
+          <p className="text-[1.0625rem] leading-7 max-w-[58ch] mx-auto mt-8 text-muted-foreground">
             Start writing now. Organize your notes as you go, reuse them in different trails, and share a clear explanation.
           </p>
         </StaggerItem>

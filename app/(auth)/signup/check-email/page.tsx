@@ -23,13 +23,13 @@ export default async function CheckEmailPage({
       <div className="flex flex-col px-8 py-8 lg:px-24">
         <Wordmark className="mb-10" />
         <div className="flex flex-1 flex-col justify-center">
-          <div className="flex w-full max-w-[400px] flex-col gap-6">
+          <div className="flex mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem] flex-col gap-6">
             <MailCheck className="h-10 w-10 text-primary" />
             <div>
-              <h1 className="font-display text-[32px] font-normal">
+              <h1 className="font-display text-[2rem] font-normal">
                 Check your email
               </h1>
-              <p className="mt-3.5 text-[15px] leading-7 text-muted-foreground">
+              <p className="mt-3.5 text-[0.9375rem] leading-7 text-muted-foreground">
                 {email ? (
                   <>We sent a verification link to <strong>{email}</strong>. Click it to activate your account.</>
                 ) : (

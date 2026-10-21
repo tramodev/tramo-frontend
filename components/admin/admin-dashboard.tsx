@@ -189,12 +189,12 @@ export function AdminDashboard() {
                   <span className="font-bold">{user.username}</span>
                   <span className="text-sm text-muted-foreground">{user.email}</span>
                   {user.role === "ADMIN" && (
-                    <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-muted">
+                    <span className="rounded-full px-2 py-0.5 text-[0.6875rem] font-medium bg-muted">
                       ADMIN
                     </span>
                   )}
                   {user.banned && (
-                    <span className="rounded-full px-2 py-0.5 text-[11px] font-medium text-destructive-foreground bg-destructive">
+                    <span className="rounded-full px-2 py-0.5 text-[0.6875rem] font-medium text-destructive-foreground bg-destructive">
                       BANNED
                     </span>
                   )}

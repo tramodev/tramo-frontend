@@ -63,10 +63,10 @@ const Card = memo(function Card({ data }: NodeProps<CardNode>) {
     <Handle id="target-bottom" type="target" position={Position.Bottom} className="!pointer-events-none !opacity-0" />
     <Handle id="source-top" type="source" position={Position.Top} className="!pointer-events-none !opacity-0" />
     <div className="flex items-baseline justify-between gap-2">
-      <div className="min-w-0 break-words font-display text-[28px] font-medium leading-tight text-foreground">{data.title}</div>
-      <div className="flex shrink-0 items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{data.shared && <span>Shared</span>}<span>{data.number}</span></div>
+      <div className="min-w-0 break-words font-display text-[1.75rem] font-medium leading-tight text-foreground">{data.title}</div>
+      <div className="flex shrink-0 items-center gap-2 text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">{data.shared && <span>Shared</span>}<span>{data.number}</span></div>
     </div>
-    {data.preview && <div className="mt-2 space-y-3 break-words text-[15px] leading-[1.6] text-foreground">{data.preview.split("\n\n").map((paragraph, index) => <p key={index} className="whitespace-pre-wrap">{paragraph}</p>)}</div>}
+    {data.preview && <div className="mt-2 space-y-3 break-words text-[0.9375rem] leading-[1.6] text-foreground">{data.preview.split("\n\n").map((paragraph, index) => <p key={index} className="whitespace-pre-wrap">{paragraph}</p>)}</div>}
   </div>
 })
 

@@ -92,7 +92,7 @@ export function ShortcutsDialog({ compact = false }: { compact?: boolean }) {
         <div className="flex flex-col gap-5">
           {GROUPS.map((group) => (
             <div key={group.title} className="flex flex-col gap-1.5">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              <p className="text-[0.6875rem] uppercase tracking-wide text-muted-foreground">
                 {group.title}
               </p>
               {group.shortcuts.map(([keys, label]) => (

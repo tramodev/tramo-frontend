@@ -68,7 +68,7 @@ export function ForksPanel({
             </div>
             <Link
               href={`/editor/${item.id}`}
-              className="relative z-10 shrink-0 rounded-full text-[13px] font-medium transition-colors border border-input text-muted-foreground hover:bg-muted hover:text-foreground py-2 px-4"
+              className="relative z-10 shrink-0 rounded-full text-[0.8125rem] font-medium transition-colors border border-input text-muted-foreground hover:bg-muted hover:text-foreground py-2 px-4"
             >
               Open
             </Link>

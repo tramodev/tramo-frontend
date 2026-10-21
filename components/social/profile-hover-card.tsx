@@ -71,7 +71,7 @@ export function ProfileHoverCard({
             {profile.bio && (
               <p className="mt-1 text-sm leading-[1.5] text-muted-foreground line-clamp-3">{profile.bio}</p>
             )}
-            <div className="mt-2.5 flex items-center gap-3 text-[13px]">
+            <div className="mt-2.5 flex items-center gap-3 text-[0.8125rem]">
               <span>
                 <span className="font-medium text-foreground">{profile.stats.followersCount.toLocaleString('en-US')}</span>{" "}
                 <span className="text-muted-foreground">followers</span>

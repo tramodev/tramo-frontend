@@ -122,7 +122,7 @@ export function TagsField({
                 <span className="flex items-center gap-1.5">
                   {suggestion.name}
                   {suggestion.official && (
-                    <span className="text-[10px] font-medium tracking-wide text-primary uppercase">
+                    <span className="text-[0.625rem] font-medium tracking-wide text-primary uppercase">
                       Official
                     </span>
                   )}
@@ -136,7 +136,7 @@ export function TagsField({
       {tagList.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-1">
           {tagList.map((tag) => (
-            <span key={tag} className="rounded-sm border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            <span key={tag} className="rounded-sm border border-border px-2 py-0.5 text-[0.6875rem] font-medium text-muted-foreground">
               {tag}
             </span>
           ))}

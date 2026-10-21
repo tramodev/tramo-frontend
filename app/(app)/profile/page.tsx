@@ -71,7 +71,7 @@ export default async function ProfilePage({
   const bannerUrl = badges.some((badge) => badge.code === "supporter" && badge.earned) ? profile.bannerUrl : null
 
   return (
-    <main className="mx-auto w-full flex-1 max-w-[1216px]">
+    <main className="container-app flex-1">
         <div className="pt-9 px-18 pb-0">
           {bannerUrl && (
             <div className="mb-3">
@@ -96,7 +96,7 @@ export default async function ProfilePage({
               />
             </div>
             <div className="flex items-start gap-7">
-              <div className="relative flex h-[104px] w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-[38px] font-medium font-display text-primary-foreground">
+              <div className="relative flex h-[104px] w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-[2.375rem] font-medium font-display text-primary-foreground">
                 {profile.imageUrl ? (
                   <Image src={profile.imageUrl} alt="" fill sizes="104px" className="object-cover" />
                 ) : (
@@ -104,7 +104,7 @@ export default async function ProfilePage({
                 )}
               </div>
               <div className="flex min-w-0 flex-col items-start pt-1">
-                <h1 className="font-display text-[36px] font-normal leading-[1.1] mb-2">
+                <h1 className="font-display text-[2.25rem] font-normal leading-[1.1] mb-2">
                   {profile.username}
                 </h1>
 
@@ -112,7 +112,7 @@ export default async function ProfilePage({
                   <p className="mb-2 max-w-2xl text-left text-sm text-foreground">{profile.bio}</p>
                 )}
 
-                <div className="flex flex-wrap items-center justify-start gap-4 text-[13px] mb-3.5 text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-start gap-4 text-[0.8125rem] mb-3.5 text-muted-foreground">
                   {profile.birthDate && (
                     <span className="inline-flex items-center gap-1.5">
                       <Cake className="h-[14px] w-[14px]" />
@@ -145,7 +145,7 @@ export default async function ProfilePage({
                   )}
                 </div>
 
-                <div className="flex items-center justify-start gap-4 text-[13px] mb-3.5 text-muted-foreground">
+                <div className="flex items-center justify-start gap-4 text-[0.8125rem] mb-3.5 text-muted-foreground">
                   <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="inline-flex items-center gap-1.5 hover:text-foreground">
                     <Users className="h-[14px] w-[14px]" />
                     {(stats?.followersCount ?? 0).toLocaleString('en-US')} followers
@@ -163,26 +163,26 @@ export default async function ProfilePage({
 
           <div className="grid grid-cols-4 gap-3 pt-3 text-center">
             <Link href="/projects" className="group rounded-2xl bg-card py-[18px] transition-colors hover:bg-muted">
-              <div className="font-display text-[28px] font-medium text-primary">{stats?.trailsPublished ?? 0}</div>
+              <div className="font-display text-[1.75rem] font-medium text-primary">{stats?.trailsPublished ?? 0}</div>
               <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-0.5">
                 Projects published
                 <ArrowUpRight className="h-[11px] w-[11px]" />
               </div>
             </Link>
             <div className="rounded-2xl bg-card py-[18px]">
-              <div className="font-display text-[28px] font-medium text-primary">{stats?.upvotesReceived ?? 0}</div>
+              <div className="font-display text-[1.75rem] font-medium text-primary">{stats?.upvotesReceived ?? 0}</div>
               <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Upvotes received
               </div>
             </div>
             <div className="rounded-2xl bg-card py-[18px]">
-              <div className="font-display text-[28px] font-medium text-primary">{(stats?.totalViews ?? 0).toLocaleString('en-US')}</div>
+              <div className="font-display text-[1.75rem] font-medium text-primary">{(stats?.totalViews ?? 0).toLocaleString('en-US')}</div>
               <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Total views
               </div>
             </div>
             <div className="rounded-2xl bg-card py-[18px]">
-              <div className="font-display text-[28px] font-medium text-primary">{stats?.forksCount ?? 0}</div>
+              <div className="font-display text-[1.75rem] font-medium text-primary">{stats?.forksCount ?? 0}</div>
               <div className="text-xs font-medium text-muted-foreground mt-0.5">
                 Forks
               </div>

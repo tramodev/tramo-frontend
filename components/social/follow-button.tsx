@@ -50,7 +50,7 @@ export function FollowButton({
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className={`inline-flex items-center gap-2 rounded-full py-2 px-3.5 text-[13px] font-medium transition-colors ${
+        className={`inline-flex items-center gap-2 rounded-full py-2 px-3.5 text-[0.8125rem] font-medium transition-colors ${
           following
             ? "border border-input text-muted-foreground hover:bg-muted"
             : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -60,7 +60,7 @@ export function FollowButton({
         {following ? "Following" : "Follow"}
       </button>
       {error && (
-        <span className="absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-medium text-destructive">
+        <span className="absolute left-0 top-full mt-1 whitespace-nowrap text-[0.6875rem] font-medium text-destructive">
           Couldn&apos;t update, try again
         </span>
       )}

@@ -42,7 +42,7 @@ export const PricingSection: React.FC = () => {
             </p>
             <div className="mb-8 grid grid-cols-1 gap-x-7 gap-y-3 sm:grid-cols-2">
               {FREE_FEATURES.map((feature) => (
-                <span key={feature} className="flex items-start gap-2.5 text-[15px]">
+                <span key={feature} className="flex items-start gap-2.5 text-[0.9375rem]">
                   <Check className="mt-0.5 h-[17px] w-[17px] shrink-0 text-primary" strokeWidth={2.4} />
                   {feature}
                 </span>
@@ -57,7 +57,7 @@ export const PricingSection: React.FC = () => {
         <FadeUp delay={0.1}>
           <div className="flex h-full flex-col rounded-[28px] border border-border bg-card p-11">
             <div className="mb-2 flex items-center gap-[9px]">
-              <span className="font-display text-[23px] font-medium">Supporter</span>
+              <span className="font-display text-[1.4375rem] font-medium">Supporter</span>
               <Heart className="h-[19px] w-[19px] fill-current text-[var(--ed-red)]" strokeWidth={0} />
             </div>
             <p className="mb-[22px] text-sm leading-[1.55] text-muted-foreground text-pretty">
@@ -69,7 +69,7 @@ export const PricingSection: React.FC = () => {
             </div>
             <div className="mb-[26px] flex flex-col gap-2.5">
               {SUPPORTER_FEATURES.map((feature) => (
-                <span key={feature} className="flex items-center gap-[9px] text-[13.5px] text-muted-foreground">
+                <span key={feature} className="flex items-center gap-[9px] text-[0.84375rem] text-muted-foreground">
                   <Check className="h-[15px] w-[15px] shrink-0 text-[var(--ed-red)]" strokeWidth={2.4} />
                   {feature}
                 </span>
@@ -77,7 +77,7 @@ export const PricingSection: React.FC = () => {
             </div>
             <Button
               asChild
-              className="mt-auto h-[54px] w-full rounded-[14px] text-[15px] font-semibold"
+              className="mt-auto h-[54px] w-full rounded-[14px] text-[0.9375rem] font-semibold"
             >
               <a href={PATREON_URL} target="_blank" rel="noopener noreferrer">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

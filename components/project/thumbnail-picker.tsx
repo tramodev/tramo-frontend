@@ -22,7 +22,7 @@ function UploadThumbnailTab({ disabled, onFile }: { disabled: boolean; onFile: (
   return (
     <label
       className={cn(
-        "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[12px] font-medium transition-colors",
+        "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[0.75rem] font-medium transition-colors",
         "border-border hover:bg-muted",
         disabled ? "pointer-events-none opacity-50" : "cursor-pointer"
       )}
@@ -140,7 +140,7 @@ export function ThumbnailPicker({
               setSaving(false);
             }
           }}
-          className="flex flex-col items-center gap-1 rounded-lg border border-border px-2 py-2 text-[12px] font-medium transition-colors hover:bg-muted disabled:opacity-50"
+          className="flex flex-col items-center gap-1 rounded-lg border border-border px-2 py-2 text-[0.75rem] font-medium transition-colors hover:bg-muted disabled:opacity-50"
         >
           <Route className="h-3.5 w-3.5" />
           Map snapshot

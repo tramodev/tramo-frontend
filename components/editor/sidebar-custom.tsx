@@ -380,7 +380,7 @@ export function SidebarCustom({
               <div ref={resultsRef}>
               <SidebarMenu>
                 {resultTrails.length > 0 && (
-                  <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Trails</p>
+                  <p className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Trails</p>
                 )}
                 {resultTrails.map((trail) => (
                   <SidebarMenuItem key={`result-trail-${trail.id}`}>
@@ -391,7 +391,7 @@ export function SidebarCustom({
                   </SidebarMenuItem>
                 ))}
                 {resultItems.length > 0 && (
-                  <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Notes</p>
+                  <p className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Notes</p>
                 )}
                 {resultItems.map((item) => (
                   <SidebarMenuItem key={`result-item-${item.id}`}>
@@ -434,7 +434,7 @@ export function SidebarCustom({
                     </button>
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
+                    <span className="text-[0.6875rem] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
                     <Button variant="ghost" size="icon" className="h-5 w-5" title="New trail" onClick={() => setIsCreating(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -534,7 +534,7 @@ export function SidebarCustom({
                                       <SidebarMenuButton className="min-w-0 flex-1 rounded-none pl-6 font-semibold hover:bg-transparent active:bg-transparent">
                                         <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
                                         <span className="flex-1 truncate">{trail.title}</span>
-                                        <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
+                                        <span className="text-[0.6875rem] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
                                           {trailItems.length}
                                         </span>
                                       </SidebarMenuButton>
@@ -588,7 +588,7 @@ export function SidebarCustom({
                                 )}
                               </div>
                               {trail.forkedFrom && (
-                                <div className="flex items-center gap-1 px-2 pb-0.5 text-[10.5px] italic text-muted-foreground">
+                                <div className="flex items-center gap-1 px-2 pb-0.5 text-[0.65625rem] italic text-muted-foreground">
                                   <GitBranch className="h-3 w-3 shrink-0" />
                                   forked from {trails.find((t) => t.id === trail.forkedFrom)?.title ?? "another trail"}
                                 </div>
@@ -666,7 +666,7 @@ export function SidebarCustom({
                                       >
                                         {editingItem?.itemId === item.id && editingItem.trailId === trail.id ? (
                                           <div className="flex items-center gap-2 pl-10 pr-6">
-                                            <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{index + 1}</span>
+                                            <span className="w-4 shrink-0 text-right text-[0.625rem] tabular-nums text-muted-foreground">{index + 1}</span>
                                             <InlineInput
                                               value={editingItemTitle}
                                               className="h-7 min-w-0 flex-1 rounded-none border-0 px-0 shadow-none"
@@ -688,7 +688,7 @@ export function SidebarCustom({
                                               isActive={selectedItemId === item.id && activeTrailId === trail.id}
                                               onClick={() => onSelectItem(item, trail.id)}
                                             >
-                                              <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+                                              <span className="w-4 shrink-0 text-right text-[0.625rem] tabular-nums text-muted-foreground">
                                                 {index + 1}
                                               </span>
                                               <span className="truncate">{item.title}</span>
@@ -798,7 +798,7 @@ export function SidebarCustom({
                     </button>
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-normal group-data-[state=open]/items:hidden">{allItems.length}</span>
+                    <span className="text-[0.6875rem] font-normal group-data-[state=open]/items:hidden">{allItems.length}</span>
                     <Button variant="ghost" size="icon" className="h-5 w-5" title="New note" onClick={() => setIsCreatingLoose(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>

@@ -36,9 +36,9 @@ export function ResetPasswordClient() {
 
   if (!token) {
     return (
-      <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
+      <div className="flex mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem] flex-col items-start gap-4">
         <XCircle className="h-8 w-8 text-destructive" />
-        <p className="text-[15px] text-muted-foreground">
+        <p className="text-[0.9375rem] text-muted-foreground">
           Missing reset token.
         </p>
         <a href="/forgot-password" className="text-sm font-semibold text-primary">
@@ -50,9 +50,9 @@ export function ResetPasswordClient() {
 
   if (success) {
     return (
-      <div className="flex w-full max-w-[400px] flex-col items-start gap-4">
+      <div className="flex mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem] flex-col items-start gap-4">
         <CheckCircle2 className="h-8 w-8 text-success" />
-        <p className="text-[15px] text-muted-foreground">
+        <p className="text-[0.9375rem] text-muted-foreground">
           Password reset. Redirecting to log in...
         </p>
       </div>
@@ -84,12 +84,12 @@ export function ResetPasswordClient() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6 w-full max-w-[400px]")}>
+    <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6 mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem]")}>
       <div>
-        <h1 className="font-display text-[36px] font-normal">
+        <h1 className="font-display text-[2.25rem] font-normal">
           Reset password
         </h1>
-        <p className="mt-3 text-[15px] leading-6 text-muted-foreground">
+        <p className="mt-3 text-[0.9375rem] leading-6 text-muted-foreground">
           Choose a new password for your account.
         </p>
       </div>

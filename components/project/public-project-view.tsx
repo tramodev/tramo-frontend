@@ -177,7 +177,7 @@ export function PublicProjectView({
       showLogo={false}
       titleSlot={
         <div className="flex min-w-0 items-center gap-3">
-          <span className="min-w-0 truncate text-[15px] font-medium">{project.title}</span>
+          <span className="min-w-0 truncate text-[0.9375rem] font-medium">{project.title}</span>
           <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
             by{" "}
             <ProfileHoverCard
@@ -349,10 +349,10 @@ export function PublicProjectView({
                           }}
                           className={!isActive ? 'group cursor-pointer' : undefined}
                         >
-                          <div className={`pl-7 pt-6 text-[11px] font-medium uppercase tracking-[0.1em] ${isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                          <div className={`pl-7 pt-6 text-[0.6875rem] font-medium uppercase tracking-[0.1em] ${isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>
                             Note {entry.index + 1}
                           </div>
-                          <h3 className="pl-7 pt-2 font-display text-[28px] font-medium leading-normal" style={{ textAlign: stepItem.titleAlign }}>
+                          <h3 className="pl-7 pt-2 font-display text-[1.75rem] font-medium leading-normal" style={{ textAlign: stepItem.titleAlign }}>
                             {stepItem.title}
                           </h3>
                           {mounted && <LexicalReadOnly content={stepItem.content ?? ''} onItemClick={itemId => handleSelectItem({ id: itemId }, section.trailId)} />}

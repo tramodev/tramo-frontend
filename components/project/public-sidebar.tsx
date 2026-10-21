@@ -69,13 +69,13 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
             <div className="flex h-8 shrink-0 items-center px-2 text-xs font-medium text-muted-foreground">Results</div>
             <SidebarGroupContent className="pl-2">
               <SidebarMenu>
-                {resultTrails.length > 0 && <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Trails</p>}
+                {resultTrails.length > 0 && <p className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Trails</p>}
                 {resultTrails.map(trail => <SidebarMenuItem key={`result-trail-${trail.id}`} className="-ml-4 -mr-2">
                   <SidebarMenuButton className="rounded-none pl-6" onClick={() => selectTrail(trail.id)}>
                     <ChevronRight className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{trail.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
-                {resultItems.length > 0 && <p className="px-2 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Notes</p>}
+                {resultItems.length > 0 && <p className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Notes</p>}
                 {resultItems.map(item => <SidebarMenuItem key={`result-item-${item.id}`} className="-ml-4 -mr-2">
                   <SidebarMenuButton className="rounded-none pl-6" isActive={selectedItemId === item.id} onClick={() => selectItem(item)}>
                     <span className={selectedItemId === item.id ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary" : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"} />
@@ -91,7 +91,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
               <SidebarGroup className="py-1">
                 <div className="flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
                   <CollapsibleTrigger asChild><button type="button" className="flex flex-1 items-center gap-1.5"><ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/trails:rotate-90" />Trails</button></CollapsibleTrigger>
-                  <span className="text-[11px] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
+                  <span className="text-[0.6875rem] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
                 </div>
                 <CollapsibleContent className="pl-2">
                   <SidebarGroupContent>
@@ -106,7 +106,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                             </CollapsibleTrigger>
                             <SidebarMenuButton className="min-w-0 flex-1 rounded-none font-semibold hover:bg-transparent active:bg-transparent data-[active=true]:bg-transparent" isActive={activeTrailId === trail.id} onClick={() => selectTrail(trail.id)}>
                               <span className="flex-1 truncate">{trail.title}</span>
-                              <span className="text-[11px] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">{trail.items.length}</span>
+                              <span className="text-[0.6875rem] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">{trail.items.length}</span>
                             </SidebarMenuButton>
                           </div>
                           <CollapsibleContent>
@@ -116,7 +116,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                                 return <SidebarMenuSubItem key={item.id} className="border-t-2 border-transparent">
                                   <SidebarMenuSubButton className="w-full translate-x-0 rounded-none pl-10 pr-6" asChild isActive={isActive}>
                                     <button type="button" onClick={() => selectItem(item, trail.id)}>
-                                      <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{index + 1}</span>
+                                      <span className="w-4 shrink-0 text-right text-[0.625rem] tabular-nums text-muted-foreground">{index + 1}</span>
                                       <span className="min-w-0 flex-1 truncate text-left">{item.title}</span>
                                       <SharedNoteIndicator trails={trails.filter(candidate => candidate.items.some(note => note.id === item.id))} readOnly />
                                     </button>
@@ -137,7 +137,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
               <SidebarGroup className="py-1">
                 <div className="flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
                   <CollapsibleTrigger asChild><button type="button" className="flex flex-1 items-center gap-1.5"><ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/items:rotate-90" />Notes without a trail</button></CollapsibleTrigger>
-                  <span className="text-[11px] font-normal group-data-[state=open]/items:hidden">{looseItems.length}</span>
+                  <span className="text-[0.6875rem] font-normal group-data-[state=open]/items:hidden">{looseItems.length}</span>
                 </div>
                 <CollapsibleContent className="pl-2">
                   <SidebarGroupContent>

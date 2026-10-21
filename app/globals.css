@@ -5,6 +5,25 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility container-app {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 76rem;
+
+  @media (width >= 96rem) {
+    max-width: 90rem;
+  }
+
+  @media (width >= 137.5rem) {
+    max-width: 105rem;
+  }
+}
+
+@utility container-read {
+  width: 100%;
+  max-width: 72ch;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -163,6 +182,10 @@
 }
 
 @layer base {
+  html {
+    font-size: clamp(100%, calc(0.75rem + 0.208333vw), 125%);
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
@@ -183,7 +206,7 @@
   white-space: nowrap;
   padding: 0 4px;
   background: transparent;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 400;
   color: var(--muted-foreground);
   pointer-events: none;
@@ -194,7 +217,7 @@
 .field-outlined:has(input:not(:placeholder-shown)) > label {
   top: 0;
   left: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   background: var(--background);
 }

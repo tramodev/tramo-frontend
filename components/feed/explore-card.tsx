@@ -38,7 +38,7 @@ export function ExploreCard({
       )}
 
       <div className="min-w-0 w-full">
-        <div className="flex items-center gap-2.5 text-[13px] text-muted-foreground mb-3">
+        <div className="flex items-center gap-2.5 text-[0.8125rem] text-muted-foreground mb-3">
           {interactive ? (
             <ProfileHoverCard username={project.ownerUsername} avatar={project.ownerAvatar} isLoggedIn={loggedIn} viewerUsername={username}>
               <span className="relative z-10 flex items-center gap-2.5">
@@ -77,11 +77,11 @@ export function ExploreCard({
             />
           </div>
         )}
-        <div className="mb-2 font-display text-[22px] font-medium leading-[1.25]">
+        <div className="mb-2 font-display text-[1.375rem] font-medium leading-[1.25]">
           {project.title}
         </div>
         {project.description && (
-          <p className="mb-3.5 text-[15px] leading-[1.6] text-muted-foreground max-w-[70ch] line-clamp-2">
+          <p className="mb-3.5 text-[0.9375rem] leading-[1.6] text-muted-foreground max-w-[70ch] line-clamp-2">
             {project.description}
           </p>
         )}
@@ -108,16 +108,16 @@ export function ExploreCard({
                 isLoggedIn={loggedIn}
               />
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground">
                 <ArrowBigUp className="h-[18px] w-[18px]" />
                 {project.voteCount}
               </span>
             )}
-            <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground">
               <Eye className="h-[17px] w-[17px]" />
               {project.viewCount.toLocaleString('en-US')}
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground">
               <MessageCircle className="h-[15px] w-[15px]" />
               {project.commentCount.toLocaleString('en-US')}
             </span>
