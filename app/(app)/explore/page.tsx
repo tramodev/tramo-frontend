@@ -46,7 +46,7 @@ export default async function ExplorePage({
 
   return (
     <main className="container-app flex-1">
-      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 md:gap-8 pt-9 px-6 md:px-18 pb-0">
+      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 md:gap-8 pt-9 px-6 md:px-12 pb-0">
         <div>
           <span className="block text-sm font-medium text-primary mb-2">
             The commons
@@ -199,8 +199,8 @@ export default async function ExplorePage({
       <div
         className={
           hasSidebar
-            ? "grid grid-cols-1 gap-12 pt-9 px-6 md:px-18 pb-14 lg:grid-cols-[minmax(0,1fr)_272px]"
-            : "flex gap-12 pt-9 px-6 md:px-18 pb-14"
+            ? "grid grid-cols-1 gap-12 pt-9 px-6 md:px-12 pb-14 lg:grid-cols-[minmax(0,1fr)_272px]"
+            : "flex gap-12 pt-9 px-6 md:px-12 pb-14"
         }
       >
         <div className="min-w-0 flex-1">

@@ -72,7 +72,7 @@ export default async function ProfilePage({
 
   return (
     <main className="container-app flex-1">
-        <div className="pt-9 px-18 pb-0">
+        <div className="pt-9 px-6 md:px-12 pb-0">
           {bannerUrl && (
             <div className="mb-3">
               <div className="relative aspect-[6/1] w-full overflow-hidden rounded-[28px] bg-muted">
@@ -207,7 +207,7 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        <div className="pt-4 px-18 pb-14">
+        <div className="pt-4 px-6 md:px-12 pb-14">
           {tab === "activity" && (await ActivityTab())}
           {tab === "published" && (await PublishedTab())}
           {tab === "bookmarks" && (await BookmarksTab(loggedIn))}

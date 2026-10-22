@@ -162,7 +162,7 @@ export default function ProjectsPage() {
     <main className="w-full flex-1 pb-[84px]">
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
       <section className="bg-surface-container-high pb-8">
-        <div className="container-app px-5 py-11 sm:px-10 lg:px-18">
+        <div className="container-app px-5 py-11 sm:px-10 lg:px-12">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-primary">
             Your workspace
@@ -200,7 +200,7 @@ export default function ProjectsPage() {
       </section>
 
       <section className="relative -mt-8 rounded-t-[32px] bg-background pt-[34px]">
-        <div className="container-app min-h-[310px] px-5 sm:px-10 lg:px-18">
+        <div className="container-app min-h-[310px] px-5 sm:px-10 lg:px-12">
           <div className="mb-5 flex items-center justify-between">
             <span className="block text-sm font-medium text-muted-foreground">My projects</span>
             <div className="flex items-center gap-2">

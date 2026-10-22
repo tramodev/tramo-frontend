@@ -76,7 +76,7 @@ export default async function PublicProfilePage({
 
   return (
     <main className="container-app flex-1">
-        <div className="pt-9 px-6 md:px-18 pb-14">
+        <div className="pt-9 px-6 md:px-12 pb-14">
           {bannerUrl && (
             <div className="relative mb-3">
               <div className="relative aspect-[6/1] w-full overflow-hidden rounded-[28px] bg-muted">
