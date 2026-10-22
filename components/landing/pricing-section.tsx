@@ -8,10 +8,12 @@ import { FadeUp } from '@/components/landing/landing-motion';
 const PATREON_URL = 'https://www.patreon.com/tramodev';
 
 const FREE_FEATURES = [
+  'Trails & map',
+  'Fork with credit',
   'Unlimited projects',
   'Unlimited publishing',
-  'Full social layer — follow, fork, comment, upvote',
-  '500MB storage',
+  'Follow, comment & upvote',
+  '500MB · thousands of notes',
 ];
 
 const SUPPORTER_FEATURES = [
@@ -27,7 +29,7 @@ export const PricingSection: React.FC = () => {
     <section id="pricing" className="pt-16 pb-[84px]">
       <span className="mb-6 block text-sm font-medium text-primary">Plans</span>
 
-      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
         <FadeUp className="min-w-0">
           <div className="flex h-full min-w-0 flex-col rounded-[28px] bg-card p-6 sm:p-8 lg:p-11">
             <span className="mb-[22px] self-start rounded-full bg-secondary py-[5px] text-xs font-semibold text-secondary-foreground">
@@ -38,7 +40,7 @@ export const PricingSection: React.FC = () => {
             </h2>
             <p className="mb-7 max-w-[46ch] text-base leading-[1.6] text-muted-foreground text-pretty">
               Everything you need to connect notes — the editor, trails, the map, and the full
-              social layer. No trial, no tiers gated behind a paywall.
+              social layer. No trial, nothing gated behind a paywall.
             </p>
             <div className="mb-8 grid grid-cols-1 gap-x-7 gap-y-3 sm:grid-cols-2">
               {FREE_FEATURES.map((feature) => (
@@ -55,7 +57,7 @@ export const PricingSection: React.FC = () => {
         </FadeUp>
 
         <FadeUp delay={0.1} className="min-w-0">
-          <div className="flex h-full min-w-0 flex-col rounded-[28px] border border-border bg-card p-6 sm:p-8 lg:p-11">
+          <div className="flex h-full min-w-0 flex-col rounded-[28px] border border-border bg-card p-6 sm:p-8">
             <div className="mb-2 flex items-center gap-[9px]">
               <span className="font-display text-[1.4375rem] font-medium">Supporter</span>
               <Heart className="h-[19px] w-[19px] fill-current text-[var(--ed-red)]" strokeWidth={0} />
@@ -67,6 +69,9 @@ export const PricingSection: React.FC = () => {
               <span className="font-display text-4xl font-medium">$5</span>
               <span className="text-sm text-muted-foreground">/ month</span>
             </div>
+            <p className="mb-[22px] text-xs leading-relaxed text-muted-foreground">
+              Billed via Patreon, cancel anytime.
+            </p>
             <div className="mb-[26px] flex flex-col gap-2.5">
               {SUPPORTER_FEATURES.map((feature) => (
                 <span key={feature} className="flex items-center gap-[9px] text-[0.84375rem] text-muted-foreground">
@@ -77,6 +82,7 @@ export const PricingSection: React.FC = () => {
             </div>
             <Button
               asChild
+              variant="outline"
               className="mt-auto h-[54px] w-full rounded-[14px] text-[0.9375rem] font-semibold"
             >
               <a href={PATREON_URL} target="_blank" rel="noopener noreferrer">
