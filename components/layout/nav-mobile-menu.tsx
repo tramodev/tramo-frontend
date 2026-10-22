@@ -36,12 +36,12 @@ export function NavMobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
             <>
               <SheetClose asChild>
                 <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-medium text-primary hover:bg-muted">
-                  Sign in
+                  Log in
                 </Link>
               </SheetClose>
               <SheetClose asChild>
                 <Link href="/signup" className="mt-2">
-                  <Button size="lg" className="w-full">Start for free</Button>
+                  <Button size="lg" className="w-full">Get Started</Button>
                 </Link>
               </SheetClose>
             </>
