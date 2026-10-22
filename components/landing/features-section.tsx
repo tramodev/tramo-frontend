@@ -39,11 +39,11 @@ export function FeaturesSection() {
         <div
           className={cn(
             'relative min-w-0 overflow-hidden rounded-lg border border-border',
-            index === 1 ? '-mb-5 -ml-5 max-h-[35rem] self-end rounded-l-none rounded-b-none border-l-0 border-b-0 pt-5 pr-5 sm:-mb-8 sm:-ml-8 sm:pt-8 sm:pr-8 lg:col-start-1 lg:row-start-1' : index === 2 ? 'p-5 sm:p-8 lg:col-span-2' : '-mr-5 -mb-5 max-h-[35rem] self-end rounded-r-none rounded-b-none border-r-0 border-b-0 pt-5 pl-5 sm:-mr-8 sm:-mb-8 sm:pt-8 sm:pl-8',
+            index === 1 ? '-mb-5 -ml-5 max-h-[35rem] self-end rounded-l-none rounded-b-none border-l-0 border-b-0 pt-5 pr-5 sm:-mb-8 sm:-ml-8 sm:pt-8 sm:pr-8 lg:col-start-1 lg:row-start-1' : index === 2 ? '-mb-5 rounded-b-none border-b-0 px-5 pt-5 sm:-mb-8 sm:px-8 sm:pt-8 lg:col-span-2' : '-mr-5 -mb-5 max-h-[35rem] self-end rounded-r-none rounded-b-none border-r-0 border-b-0 pt-5 pl-5 sm:-mr-8 sm:-mb-8 sm:pt-8 sm:pl-8',
           )}
           style={{ background: `var(${color})` }}
         >
-          {index === 2 ? <div className="relative aspect-[1802/1332] overflow-hidden rounded-lg dark:aspect-[1860/1298]">
+          {index === 2 ? <div className="relative aspect-[1802/1332] overflow-hidden rounded-t-lg dark:aspect-[1860/1298]">
             <Image src="/landing-product-map-light.png" alt="Two trails connected through the shared Memex note" fill sizes="100vw" className="object-contain dark:hidden" />
             <Image src="/landing-product-map.png" alt="Two trails connected through the shared Memex note" fill sizes="100vw" className="hidden object-contain dark:block" />
           </div> : <ProductEditorDemo variant={index === 0 ? 'connections' : 'shared'} />}
