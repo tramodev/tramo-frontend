@@ -130,6 +130,9 @@
   --ed-blue: #476eac;
   --ed-purple: #7c61bf;
   --ed-gray: #9AA0A6;
+  --landing-product-bg-1: #DED0BE;
+  --landing-product-bg-2: #BBC8D5;
+  --landing-product-bg-3: #C5CEBC;
 }
 
 .dark {
@@ -179,6 +182,9 @@
   --ed-blue: #A8C7FA;
   --ed-purple: #CFBCFF;
   --ed-gray: #9AA0A6;
+  --landing-product-bg-1: #514333;
+  --landing-product-bg-2: #344351;
+  --landing-product-bg-3: #414D39;
 }
 
 @layer base {
