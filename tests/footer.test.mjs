@@ -43,6 +43,6 @@ test('footer legal pages have working links', () => {
   const sections = nodes.filter(node => node.type === 'div' && Array.isArray(node.props.children) && node.props.children[0]?.type === 'h2');
   const resources = sections.find(node => node.props.children[0].props.children === 'Resources');
   expect(flatten(resources).filter(node => node.type === 'Link').map(node => node.props.children)).toEqual(['Wiki', 'Changelog', 'Roadmap', 'Blog']);
-  expect(nodes.find(node => node.type === 'Link' && node.props.children === 'Product').props.href).toBe('/#product');
+  expect(nodes.find(node => node.type === 'Link' && node.props.children === 'Features').props.href).toBe('/#product');
   expect(nodes.find(node => node.props.children === 'Plans').props.href).toBe('/#pricing');
 });
