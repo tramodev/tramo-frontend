@@ -27,9 +27,9 @@ export const PricingSection: React.FC = () => {
     <section id="pricing" className="pt-16 pb-[84px]">
       <span className="mb-6 block text-sm font-medium text-primary">Plans</span>
 
-      <div className="grid items-stretch gap-4 md:grid-cols-[1.55fr_1fr]">
-        <FadeUp>
-          <div className="flex h-full flex-col rounded-[28px] bg-card p-11">
+      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <FadeUp className="min-w-0">
+          <div className="flex h-full min-w-0 flex-col rounded-[28px] bg-card p-6 sm:p-8 lg:p-11">
             <span className="mb-[22px] self-start rounded-full bg-secondary py-[5px] text-xs font-semibold text-secondary-foreground">
               Free forever · no card required
             </span>
@@ -54,8 +54,8 @@ export const PricingSection: React.FC = () => {
           </div>
         </FadeUp>
 
-        <FadeUp delay={0.1}>
-          <div className="flex h-full flex-col rounded-[28px] border border-border bg-card p-11">
+        <FadeUp delay={0.1} className="min-w-0">
+          <div className="flex h-full min-w-0 flex-col rounded-[28px] border border-border bg-card p-6 sm:p-8 lg:p-11">
             <div className="mb-2 flex items-center gap-[9px]">
               <span className="font-display text-[1.4375rem] font-medium">Supporter</span>
               <Heart className="h-[19px] w-[19px] fill-current text-[var(--ed-red)]" strokeWidth={0} />
