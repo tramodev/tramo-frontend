@@ -28,13 +28,13 @@ export function Footer() {
           <p>&copy; {new Date().getFullYear()} Tramo Inc. All rights reserved.</p>
         </div>
         <nav aria-label="Footer" className="grid grid-cols-2 gap-6 md:gap-8 xl:grid-cols-4">
-          {[{ title: "Company", pages: ["About", "Contact"] }, { title: "Product", pages: ["Product", "Plans"] }, { title: "Resources", pages: ["Wiki", "Changelog", "Roadmap", "Blog"] }, { title: "Legal", pages: ["Privacy Policy", "Terms of Service"] }].map(section => (
+          {[{ title: "Company", pages: ["About", "Contact"] }, { title: "Product", pages: ["Features", "Plans"] }, { title: "Resources", pages: ["Wiki", "Changelog", "Roadmap", "Blog"] }, { title: "Legal", pages: ["Privacy Policy", "Terms of Service"] }].map(section => (
             <div key={section.title}>
               <h2 className="mb-4 text-sm font-medium text-foreground">{section.title}</h2>
               <ul className="space-y-3">
                 {section.pages.map(page => (
                   <li key={page}>
-                     {page === "Contact" ? <a href="mailto:contact@tramo.dev" className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</a> : <Link href={page === "Privacy Policy" ? "/privacy" : page === "Terms of Service" ? "/tos" : page === "Product" ? "/#product" : page === "Plans" ? "/#pricing" : `/${page.toLowerCase()}`} className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</Link>}
+                     {page === "Contact" ? <a href="mailto:contact@tramo.dev" className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</a> : <Link href={page === "Privacy Policy" ? "/privacy" : page === "Terms of Service" ? "/tos" : page === "Features" ? "/#product" : page === "Plans" ? "/#pricing" : `/${page.toLowerCase()}`} className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</Link>}
                   </li>
                 ))}
               </ul>

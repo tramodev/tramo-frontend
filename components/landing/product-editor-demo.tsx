@@ -111,7 +111,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
           }),
         }}>
           <DemoToolbar />
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+          <div className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6', variant === 'connections' && 'pb-10 sm:pb-[3.25rem] lg:pr-[calc(100cqw/11+1.5rem)]')}>
             <h4 className="mb-3 font-display text-2xl font-medium">{note.title}</h4>
             {memberTrails.length > 1 && <div className="mb-5 text-xs leading-relaxed text-muted-foreground">
               <p>Used in 2 trails. Edits appear in both.</p>
