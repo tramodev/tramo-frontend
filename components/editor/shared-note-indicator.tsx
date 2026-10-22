@@ -14,7 +14,7 @@ export function SharedNoteIndicator({ trails, readOnly = false }: {
     </TooltipTrigger>
     <TooltipContent className="max-w-56">
       <p className="font-medium">Used in {trails.length} trails: {trails.map(trail => trail.title).join(", ")}</p>
-      {!readOnly && <p className="mt-1 text-muted-foreground">Edits appear in every trail that uses this note.</p>}
+      {!readOnly && <p className="mt-1 text-background/80">Edits appear in every trail that uses this note.</p>}
     </TooltipContent>
   </Tooltip>
 }
