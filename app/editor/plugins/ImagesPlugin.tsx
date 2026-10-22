@@ -8,6 +8,9 @@ import { mergeRegister } from '@lexical/utils';
 import {
   $createParagraphNode,
   $getNodeByKey,
+  $getSelection,
+  $setSelection,
+  $isRangeSelection,
   $insertNodes,
   $isElementNode,
   COMMAND_PRIORITY_HIGH,
@@ -62,8 +65,17 @@ export async function insertImageWithUpload(
   editor: ReturnType<typeof useLexicalComposerContext>[0],
   file: File,
   projectId?: string,
+  resolveProjectId?: () => Promise<string>,
 ): Promise<void> {
-  if (editor.getEditorState().read($isSelectionInCode) || !projectId) return;
+  if (editor.getEditorState().read($isSelectionInCode) || (!projectId && !resolveProjectId)) return;
+  const selection = editor.getEditorState().read(() => $getSelection()?.clone());
+  let uploadProjectId: string;
+  try {
+    uploadProjectId = resolveProjectId ? await resolveProjectId() : projectId!;
+  } catch (error) {
+    window.dispatchEvent(new CustomEvent('editor-image-error', { detail: error instanceof Error ? error.message : 'Could not create the project for this image.' }));
+    return;
+  }
 
   const previewUrl = URL.createObjectURL(file);
   const urls = previews.get(editor) ?? new Set<string>();
@@ -72,6 +84,14 @@ export async function insertImageWithUpload(
   let key: NodeKey | null = null;
 
   editor.update(() => {
+    if ($isRangeSelection(selection) && $getNodeByKey(selection.anchor.key) && $getNodeByKey(selection.focus.key)) {
+      for (const point of [selection.anchor, selection.focus]) {
+        const node = $getNodeByKey(point.key)!;
+        const limit = $isElementNode(node) ? node.getChildrenSize() : node.getTextContentSize();
+        point.set(point.key, Math.min(point.offset, limit), point.type);
+      }
+      $setSelection(selection);
+    }
     const imageNode = $createImageNode({ altText: file.name, src: previewUrl });
     $insertNodes([imageNode]);
     key = imageNode.getKey();
@@ -80,7 +100,7 @@ export async function insertImageWithUpload(
 
   try {
     const blob = await resizeImageToBlob(file, EDITOR_IMAGE_MAX_DIMENSION, EDITOR_IMAGE_QUALITY);
-    const imageId = await uploadEditorImage(blob, projectId);
+    const imageId = await uploadEditorImage(blob, uploadProjectId);
     editor.update(() => {
       if (key === null) return;
       const node = $getNodeByKey(key);
@@ -105,13 +125,14 @@ async function insertImageFiles(
   editor: ReturnType<typeof useLexicalComposerContext>[0],
   files: File[],
   projectId?: string,
+  resolveProjectId?: () => Promise<string>,
 ): Promise<void> {
   let nextIndex = 0;
 
   async function worker() {
     while (nextIndex < files.length) {
       const file = files[nextIndex++];
-      await insertImageWithUpload(editor, file, projectId);
+      await insertImageWithUpload(editor, file, projectId, resolveProjectId);
     }
   }
 
@@ -120,7 +141,7 @@ async function insertImageFiles(
   );
 }
 
-export default function ImagesPlugin({ projectId, previewUrls }: { projectId?: string; previewUrls?: Set<string> }): null {
+export default function ImagesPlugin({ projectId, previewUrls, resolveProjectId }: { projectId?: string; previewUrls?: Set<string>; resolveProjectId?: () => Promise<string> }): null {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -153,7 +174,7 @@ export default function ImagesPlugin({ projectId, previewUrls }: { projectId?: s
           const files = getImageFiles(clipboardData);
           if (files.length === 0) return false;
           event.preventDefault();
-          insertImageFiles(editor, files, projectId);
+          insertImageFiles(editor, files, projectId, resolveProjectId);
           return true;
         },
         COMMAND_PRIORITY_HIGH,
@@ -166,7 +187,7 @@ export default function ImagesPlugin({ projectId, previewUrls }: { projectId?: s
           const files = getImageFiles(dataTransfer);
           if (files.length === 0) return false;
           event.preventDefault();
-          insertImageFiles(editor, files, projectId);
+          insertImageFiles(editor, files, projectId, resolveProjectId);
           return true;
         },
         COMMAND_PRIORITY_HIGH,
@@ -184,7 +205,7 @@ export default function ImagesPlugin({ projectId, previewUrls }: { projectId?: s
         COMMAND_PRIORITY_HIGH,
       ),
     );
-  }, [editor, projectId, previewUrls]);
+  }, [editor, projectId, previewUrls, resolveProjectId]);
 
   return null;
 }

@@ -10,7 +10,7 @@ test('the map hides the write view without unmounting it and keeps an empty proj
   const exports = {};
   const item = { id: '42', title: 'Note', content: '' };
   const project = { loaded: true, projectTitle: 'Project', view: 'write', items: { 42: item }, trails: [], selectedItem: item };
-  runInNewContext(ts.transpileModule(readFileSync('app/editor/[projectId]/page.tsx', 'utf8'), {
+  runInNewContext(ts.transpileModule(readFileSync('app/editor/editor-workspace.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, {
     exports,
@@ -18,14 +18,14 @@ test('the map hides the write view without unmounting it and keeps an empty proj
       react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useEffect() {} },
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
       'next/navigation': { useParams: () => ({ projectId: 'audit' }) },
-      '../editor-utils': { countProjectTextStats: () => ({ words: 0, characters: 0 }) },
-      './hooks/useProjectEditorState': { useProjectEditorState: () => project },
+      '@/app/editor/editor-utils': { countProjectTextStats: () => ({ words: 0, characters: 0 }) },
+      '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => project },
       '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
-      './components/WriteView': { WriteView: 'WriteView' },
+      '@/app/editor/[projectId]/components/WriteView': { WriteView: 'WriteView' },
       '@/components/editor/graph-view': { GraphView: 'GraphView' },
     })[name] ?? {},
   });
-  const render = () => flatten(flatten(exports.default()).find(node => node.type === 'ProjectShell').props.content);
+  const render = () => flatten(flatten(exports.ProjectEditor({ routeProjectId: 'project', user: { userId: '1', username: 'owner' } })).find(node => node.type === 'ProjectShell').props.content);
   const write = render().find(node => node.type === 'div' && node.props.children?.type === 'WriteView');
   expect(write).toBeDefined();
   expect(write.props.inert).toBe(false);

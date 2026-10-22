@@ -8,7 +8,7 @@ import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
 import { parseResponse, expectOk } from "./http";
 import { anonIdHeader } from "./public-project";
-import { assertProjectText } from "@/lib/project-validation";
+import { assertProjectText, PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation";
 
 export type ProjectVisibility = "private" | "unlisted" | "published";
 export type MapPreviews = Record<string, { text: string; linkedItemIds: string[] }>;
@@ -209,6 +209,30 @@ export async function startExampleProject(): Promise<{ projectId: string; trailI
 
 export async function startProject(requestId: string): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
   return apiJson('/api/project/start', { method: 'POST', json: { requestId } });
+}
+
+export async function saveDraftMetadata(projectId: string, entity: 'project' | 'trail' | 'item', id: string,
+  fields: { title?: string; titleAlign?: TitleAlign }, epoch: number): Promise<{ status: number; message?: string; retryAfter?: number }> {
+  if (!/^[a-zA-Z0-9]+$/.test(projectId) || !Number.isSafeInteger(epoch) || epoch < 0
+    || !['project', 'trail', 'item'].includes(entity) || (entity === 'project' ? id !== projectId : !/^\d+$/.test(id))
+    || !fields || (fields.title !== undefined && (typeof fields.title !== 'string' || fields.title.length > PROJECT_TEXT_MAX_LENGTH))
+    || (fields.titleAlign !== undefined && !['left', 'center', 'right'].includes(fields.titleAlign))) {
+    return { status: 400, message: 'Invalid draft metadata.' };
+  }
+  try {
+    const response = await api(`/api/${entity}/${id}`, { method: 'PUT', epoch, projectId, signal: AbortSignal.timeout(15000),
+      json: { ...(fields.title !== undefined && { title: fields.title }), ...(fields.titleAlign !== undefined && { titleAlign: fields.titleAlign }) } });
+    if (response.ok) return { status: response.status };
+    const body = await response.json().catch(() => null);
+    const retry = response.headers.get('Retry-After');
+    return { status: response.status, message: typeof body?.message === 'string' ? body.message : `Request failed with status ${response.status}`,
+      retryAfter: retry ? Math.max(0, /^\d+$/.test(retry) ? Number(retry) * 1000 : Date.parse(retry) - Date.now()) : 0 };
+  } catch (error) {
+    if (error instanceof TypeError || (error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name))) {
+      return { status: 503, message: 'Could not reach the server. Your draft is kept locally.' };
+    }
+    throw error;
+  }
 }
 
 export async function startExistingProject(projectId: string, trailId?: string, epoch = 0): Promise<{ projectId: string; trailId: number | null; itemId: number }> {

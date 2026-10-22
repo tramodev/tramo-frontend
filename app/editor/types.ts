@@ -18,6 +18,7 @@ export interface TrailStep {
 
 export interface Trail {
     id: string;
+    editorKey?: string;
     title: string;
     description: string;
     itemIds: string[];

@@ -16,7 +16,7 @@ const http = load('lib/http.ts', () => ({}));
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 function projectsSetup() {
-  const states = [], requests = [], starts = [];
+  const states = [], requests = [], starts = [], navigations = [];
   let index = 0, lastDeps, effect, cleanup;
   const page = load('app/(app)/projects/page.tsx', name => ({
     react: {
@@ -25,12 +25,14 @@ function projectsSetup() {
       useEffect: (fn, deps) => { if (!lastDeps || deps.some((dep, i) => dep !== lastDeps[i])) { effect = fn; lastDeps = deps; } },
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'next/navigation': { useRouter: () => ({ push() {} }) },
+    'next/navigation': { useRouter: () => ({ push: url => navigations.push(url) }) },
+    '@/components/auth/current-user': { useCurrentUserId: () => '1' },
+    '@/lib/editor-draft': { beginDraft() {} },
     '@/components/ui/button': { Button: 'Button' },
     'lucide-react': { Loader2: 'Spinner' },
     '@/lib/projects-store': {
       listProjects: () => new Promise((resolve, reject) => requests.push({ resolve, reject })),
-      startProject: () => new Promise((resolve, reject) => starts.push({ resolve, reject })),
+      startExampleProject: () => new Promise((resolve, reject) => starts.push({ resolve, reject })),
     },
   })[name] ?? {}, { sessionStorage: { getItem: () => 'request', setItem() {}, removeItem() {} } });
   function render() {
@@ -39,15 +41,15 @@ function projectsSetup() {
     if (effect) { cleanup?.(); cleanup = effect(); effect = null; }
     return nodes;
   }
-  return { render, requests, starts, cleanup: () => cleanup?.() };
+  return { render, requests, starts, navigations, cleanup: () => cleanup?.() };
 }
 
-test('creation uses a reserved inline status and clears it when the request fails', async () => {
+test('example creation uses a reserved inline status and clears it when the request fails', async () => {
   const s = projectsSetup();
   const idle = s.render().find(node => node.props.role === 'status');
   expect(idle.type).toBe('span');
   expect(flatten(idle).some(node => node.type === 'Spinner')).toBe(false);
-  const start = s.render().find(node => node.type === 'button' && flatten(node).some(child => child.props.children === 'Start writing'));
+  const start = s.render().find(node => node.type === 'button' && flatten(node).some(child => child.props.children === 'Try an example'));
   const opening = start.props.onClick();
   const nodes = s.render();
   const status = nodes.find(node => node.props.role === 'status');
@@ -60,6 +62,14 @@ test('creation uses a reserved inline status and clears it when the request fail
   expect(s.render().some(node => node.type === 'Spinner')).toBe(false);
   expect(s.render().some(node => node.props.role === 'alert')).toBe(true);
   expect(s.render().find(node => node.type === 'button').props.disabled).toBe(false);
+});
+
+test('start writing navigates to a draft without creating entities', async () => {
+  const s = projectsSetup();
+  const start = s.render().find(node => node.type === 'button' && flatten(node).some(child => child.props.children === 'Start writing'));
+  await start.props.onClick();
+  expect(s.navigations).toEqual(['/editor/new']);
+  expect(s.starts).toHaveLength(0);
 });
 
 test('a failed projects request exits loading and can be retried', async () => {

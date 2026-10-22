@@ -283,12 +283,14 @@ function TableSizePicker({ onPick }: { onPick: (rows: number, columns: number) =
 
 export default function ToolbarPlugin({
   projectId,
+  resolveProjectId,
   titleFocused,
   titleAlign,
   onSetTitleAlign,
   history,
 }: {
   projectId?: string;
+  resolveProjectId?: () => Promise<string>;
   titleFocused?: boolean;
   titleAlign?: 'left' | 'center' | 'right';
   onSetTitleAlign?: (align: 'left' | 'center' | 'right') => void;
@@ -511,7 +513,7 @@ export default function ToolbarPlugin({
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    insertImageWithUpload(editor, file, projectId);
+    insertImageWithUpload(editor, file, projectId, resolveProjectId);
   };
 
 

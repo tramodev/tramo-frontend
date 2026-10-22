@@ -38,6 +38,7 @@ async function setup(extraTrails = []) {
     exports: autoSaveExports,
     require: name => ({
       react: {
+        useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
         useRef: (value) => autoSaveRefs[autoSaveRefIndex++] ?? (autoSaveRefs[autoSaveRefIndex - 1] = { current: value }),
         useState: () => ['idle', (status) => autoSaveStatuses.push(status)],
         useCallback: (fn) => fn,
@@ -66,6 +67,7 @@ async function setup(extraTrails = []) {
     exports,
     require: name => ({
       react: {
+        useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
         useState: value => {
           const i = stateIndex++;
           if (!(i in states)) states[i] = typeof value === 'function' ? value() : value;
@@ -94,7 +96,7 @@ async function setup(extraTrails = []) {
       '../../editor-utils': { lastItemStorageKey: () => 'last', countTextStats: () => ({ words: 0, characters: 0 }), isAuthError: () => false },
       '../../trail-navigation': navigation,
       '@/lib/pending-saves': saves,
-      './useAutoSave': autoSaveExports,
+      '@/app/editor/[projectId]/hooks/useAutoSave': autoSaveExports,
     })[name],
     window: { location: { search: '', pathname: '/editor/project' } },
     localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },

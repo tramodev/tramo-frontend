@@ -33,10 +33,12 @@ import { ProjectThumbnail } from "@/components/project/project-thumbnail"
 import { ForkBadge } from "@/components/project/fork-badge"
 import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
 import { ProjectUsageDialog } from "@/components/project/project-usage-dialog"
+import { LocalDraftRecovery } from "@/components/editor/local-draft-recovery"
+import { useCurrentUserId } from "@/components/auth/current-user"
+import { beginDraft } from "@/lib/editor-draft"
 import { formatBytes } from "@/lib/format-bytes"
 import { PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 import {
-  startProject,
   startExampleProject,
   deleteProject,
   listProjects,
@@ -58,6 +60,7 @@ function formatUpdatedAt(iso: string): string {
 
 export default function ProjectsPage() {
   const router = useRouter()
+  const userId = useCurrentUserId()
   const creatingRef = useRef(false)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState("")
@@ -98,16 +101,17 @@ export default function ProjectsPage() {
   }, [projects, sortBy])
 
   const handleCreateProject = async (example = false) => {
+    if (!example) {
+      if (userId) beginDraft(userId)
+      router.push('/editor/new')
+      return
+    }
     if (creatingRef.current) return
     creatingRef.current = true
     setCreating(true)
     setCreateError("")
-    const key = 'tramo:pending-start:blank'
-    const requestId = sessionStorage.getItem(key) ?? crypto.randomUUID()
-    if (!example) sessionStorage.setItem(key, requestId)
     try {
-      const result = await (example ? startExampleProject() : startProject(requestId))
-      if (!example) sessionStorage.removeItem(key)
+      const result = await startExampleProject()
       router.push(`/editor/${result.projectId}?note=${result.itemId}&trail=${result.trailId ?? ''}&write=1`)
     } catch {
       setCreateError("Could not open your project. Try again; your request will not create a duplicate.")
@@ -203,6 +207,7 @@ export default function ProjectsPage() {
       </section>
 
       <section className="relative -mt-8 rounded-t-[32px] bg-background pt-[34px]">
+        <LocalDraftRecovery userId={userId} />
         <div className="container-app min-h-[310px] px-5 sm:px-10 lg:px-12">
           <div className="mb-5 flex items-center justify-between">
             <span className="block text-sm font-medium text-muted-foreground">My projects</span>

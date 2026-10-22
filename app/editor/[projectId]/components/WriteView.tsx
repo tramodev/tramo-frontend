@@ -56,6 +56,9 @@ import { Trail, Item, TitleAlign } from '../../types';
 import type { MapPreviews } from '@/lib/projects-store';
 
 interface WriteViewProps {
+  draft?: boolean;
+  onDraftTitleChange?: (id: string, title: string) => void;
+  resolveProjectId?: () => Promise<string>;
   active?: boolean;
   projectId: string;
   item: Item;
@@ -207,7 +210,7 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
       <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor} onFocusCapture={event => {
         if (event.currentTarget.contains(event.target)) onFocus(item.id);
       }}>
-        <ItemTitle item={item} move={move} onCommitTitle={props.onCommitTitle} onFocus={() => {
+        <ItemTitle item={item} onDraftTitleChange={props.onDraftTitleChange} move={move} onCommitTitle={props.onCommitTitle} onFocus={() => {
           setTitleFocused(true);
           onFocus(item.id);
         }} />
@@ -217,7 +220,7 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
         </div>}
         <div className="relative">
           <RichTextPlugin contentEditable={
-            <ContentEditable className="editor-input" aria-label={`Content of ${item.title}`} aria-placeholder={placeholder}
+            <ContentEditable className="editor-input" aria-label={`Content of ${item.title || 'Untitled note'}`} aria-placeholder={placeholder}
               onFocus={() => { setTitleFocused(false); onFocus(item.id); }}
               placeholder={<div className="editor-placeholder">{placeholder}</div>} />
           } ErrorBoundary={LexicalErrorBoundary} />
@@ -228,7 +231,7 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
         <LinkPlugin />
         <ItemLinkClickPlugin items={props.items} onNavigate={(id) => { const target = props.items[id]; if (target) props.onSelectItem(target); }} />
         <ClickableLinkPlugin newTab />
-        <ImagesPlugin projectId={props.projectId} previewUrls={session.previewUrls} />
+        <ImagesPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId} previewUrls={session.previewUrls} />
         <EquationsPlugin />
         <MusicPlugin />
         <EmbedsPlugin />
@@ -241,17 +244,17 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
         <ListTabPlugin />
         <TabIndentationPlugin />
         <HorizontalRulePlugin />
-        <SlashMenuPlugin projectId={props.projectId} />
+        <SlashMenuPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId} />
         <ItemMentionPlugin items={props.items} currentItemId={item.id} />
         <WikiLinkPlugin items={props.items} currentItemId={item.id} />
         <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         <ItemNavigationPlugin itemId={item.id} register={register} move={move} />
         <OnChangePlugin onChange={(state, _editor, tags) => { if (!tags.has('extraction')) props.onChange(item.id, state); }} ignoreSelectionChange />
         {focused && props.active !== false && <>
-          <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail} history={history}
+          {!props.draft && <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail} history={history}
             sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}
-            onOpen={result => props.onSelectItem(result.item, result.trailId)} />
-          {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId}
+            onOpen={result => props.onSelectItem(result.item, result.trailId)} />}
+          {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId}
             history={history}
             titleFocused={titleFocused} titleAlign={item.titleAlign}
             onSetTitleAlign={(align) => props.onSetTitleAlign(item.id, align)} />, toolbar)}
@@ -263,7 +266,8 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
   );
 }
 
-function ItemTitle({ item, onCommitTitle, onFocus, move }: {
+function ItemTitle({ item, onCommitTitle, onFocus, move, onDraftTitleChange }: {
+  onDraftTitleChange?: (id: string, title: string) => void;
   item: Item;
   onCommitTitle: WriteViewProps['onCommitTitle'];
   onFocus: () => void;
@@ -280,6 +284,8 @@ function ItemTitle({ item, onCommitTitle, onFocus, move }: {
       event.currentTarget.select();
       onFocus();
     }}
+      onChange={event => onDraftTitleChange?.(item.id, event.target.value)}
+      maxLength={255}
       onBlur={(event) => onCommitTitle(item.id, item.title, event.target.value)}
       onKeyDown={(event) => {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -298,7 +304,7 @@ function ItemTitle({ item, onCommitTitle, onFocus, move }: {
         event.preventDefault();
         event.currentTarget.blur();
         requestAnimationFrame(() => focusEditor(editor));
-      }} placeholder="Untitled" style={{ textAlign: item.titleAlign }}
+      }} placeholder="Untitled note" style={{ textAlign: item.titleAlign }}
       title={item.title}
       className="w-full min-w-0 truncate border-0 bg-transparent font-display text-[1.75rem] font-medium leading-normal text-foreground outline-none placeholder:text-muted-foreground/40" />
   </div>;
@@ -328,7 +334,7 @@ export function WriteView(props: WriteViewProps) {
   const ids = useMemo(() => inTrail && trail ? trail.itemIds : [item.id], [inTrail, trail, item.id]);
   const focusedId = ids.includes(focusedItemId) ? focusedItemId : item.id;
   const contentReady = ids.every((id) => items[id]?.content != null);
-  const context = inTrail ? `trail:${trail!.id}` : `item:${item.editorKey ?? item.id}`;
+  const context = inTrail ? `trail:${trail!.editorKey ?? trail!.id}` : `item:${item.editorKey ?? item.id}`;
   const revealed = contentReady && positionedContext === context;
   const { visibleIds, selectionIds, heights } = useVirtualNotes(editorInnerRef, slotRefs, ids, active && contentReady);
   const moveTarget = pendingMove?.context === context && pendingMove.sequence === navigationRequest?.sequence ? pendingMove : null;
@@ -401,7 +407,7 @@ export function WriteView(props: WriteViewProps) {
   }, [active, navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id, visibleIds]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || props.draft) return;
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest('[role="dialog"], [role="menu"], [role="listbox"], .find-replace-bar')) return;
@@ -472,8 +478,8 @@ export function WriteView(props: WriteViewProps) {
               </section>;
             })}
             {inTrail && trail && <div className="mt-16 flex justify-center pb-4">
-              <button type="button" onClick={() => props.onCreateItem(trail.id, 'Untitled')}
-                className="flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground">
+              <button type="button" disabled={props.draft} onClick={() => props.onCreateItem(trail.id, 'Untitled')}
+                className="flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground disabled:opacity-50">
                 <Plus className="h-3.5 w-3.5" /> Add next step <kbd>⌘↵</kbd>
               </button>
             </div>}
@@ -481,8 +487,8 @@ export function WriteView(props: WriteViewProps) {
         </div>
       </div>
     </div>
-    <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} mapPreviews={props.mapPreviews} onRetryMapPreviews={props.onRetryMapPreviews} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
+    {!props.draft && <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} mapPreviews={props.mapPreviews} onRetryMapPreviews={props.onRetryMapPreviews} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
       onSelectItem={props.onSelectItem} onOpenGraph={props.onOpenGraph}
-      open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />
+      open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />}
   </EditorImagesProvider>;
 }

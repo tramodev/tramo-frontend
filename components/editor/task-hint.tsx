@@ -14,12 +14,12 @@ function subscribe(callback: () => void) {
 
 export function TaskHint({ id, children }: { id: string; children: ReactNode }) {
   const key = `tramo:hint:${id}`;
-  const visible = useSyncExternalStore(subscribe, () => localStorage.getItem(key) !== 'dismissed', () => false);
+  const visible = useSyncExternalStore(subscribe, () => { try { return localStorage.getItem(key) !== 'dismissed'; } catch { return false; } }, () => false);
   if (!visible) return null;
   return <div className="flex items-start gap-3 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
     <div className="flex-1">{children}</div>
     <button type="button" aria-label="Dismiss tip" onClick={() => {
-      localStorage.setItem(key, 'dismissed');
+      try { localStorage.setItem(key, 'dismissed'); } catch { return; }
       window.dispatchEvent(new Event('storage'));
     }} className="shrink-0 rounded p-1 hover:bg-background"><X className="h-3 w-3" /></button>
   </div>;

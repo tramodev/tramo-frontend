@@ -8,7 +8,7 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
-    files: ["app/editor/[[]projectId]/page.tsx"],
+    files: ["app/editor/editor-workspace.tsx"],
     rules: { "@next/next/no-location-assign-relative-destination": "off" },
   },
   {

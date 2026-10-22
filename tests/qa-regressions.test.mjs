@@ -15,7 +15,9 @@ function load(path, modules = {}, extra = '') {
   }).outputText, {
     exports, Error, URLSearchParams, setTimeout: () => {},
     require: name => ({
+      '@/components/auth/current-user': { useCurrentUserId: () => '1' },
       react: {
+        useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
         useState: initial => {
           const i = state++;
           if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial;
@@ -68,7 +70,7 @@ test('an invalid project rename never enters the snapshot save barrier', async (
     '@/lib/project-validation': validation,
     '@/lib/pending-saves': pending,
     'next/navigation': { useRouter: () => ({}) },
-    './useAutoSave': { useAutoSave: () => ({}) },
+    '@/app/editor/[projectId]/hooks/useAutoSave': { useAutoSave: () => ({}) },
   });
   const project = hook.exports.useProjectEditorState('project', false);
   expect(() => project.handleRenameProject('x'.repeat(256))).toThrow('255 characters or fewer');
