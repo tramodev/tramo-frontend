@@ -16,7 +16,7 @@ const http = load('lib/http.ts', () => ({}));
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 function projectsSetup() {
-  const states = [], requests = [];
+  const states = [], requests = [], starts = [];
   let index = 0, lastDeps, effect, cleanup;
   const page = load('app/(app)/projects/page.tsx', name => ({
     react: {
@@ -27,16 +27,40 @@ function projectsSetup() {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'next/navigation': { useRouter: () => ({ push() {} }) },
     '@/components/ui/button': { Button: 'Button' },
-    '@/lib/projects-store': { listProjects: () => new Promise((resolve, reject) => requests.push({ resolve, reject })) },
-  })[name] ?? {});
+    'lucide-react': { Loader2: 'Spinner' },
+    '@/lib/projects-store': {
+      listProjects: () => new Promise((resolve, reject) => requests.push({ resolve, reject })),
+      startProject: () => new Promise((resolve, reject) => starts.push({ resolve, reject })),
+    },
+  })[name] ?? {}, { sessionStorage: { getItem: () => 'request', setItem() {}, removeItem() {} } });
   function render() {
     index = 0;
     const nodes = flatten(page.default());
     if (effect) { cleanup?.(); cleanup = effect(); effect = null; }
     return nodes;
   }
-  return { render, requests, cleanup: () => cleanup?.() };
+  return { render, requests, starts, cleanup: () => cleanup?.() };
 }
+
+test('creation uses a reserved inline status and clears it when the request fails', async () => {
+  const s = projectsSetup();
+  const idle = s.render().find(node => node.props.role === 'status');
+  expect(idle.type).toBe('span');
+  expect(flatten(idle).some(node => node.type === 'Spinner')).toBe(false);
+  const start = s.render().find(node => node.type === 'button' && flatten(node).some(child => child.props.children === 'Start writing'));
+  const opening = start.props.onClick();
+  const nodes = s.render();
+  const status = nodes.find(node => node.props.role === 'status');
+  expect(status.props.className).toBe(idle.props.className);
+  expect(flatten(status).some(node => node.type === 'Spinner')).toBe(true);
+  expect(nodes.some(node => node.type === 'p' && node.props.role === 'status')).toBe(false);
+  expect(nodes.find(node => node.type === 'button').props.disabled).toBe(true);
+  s.starts[0].reject(new Error('Creation unavailable'));
+  await opening;
+  expect(s.render().some(node => node.type === 'Spinner')).toBe(false);
+  expect(s.render().some(node => node.props.role === 'alert')).toBe(true);
+  expect(s.render().find(node => node.type === 'button').props.disabled).toBe(false);
+});
 
 test('a failed projects request exits loading and can be retried', async () => {
   const s = projectsSetup(); s.render();
