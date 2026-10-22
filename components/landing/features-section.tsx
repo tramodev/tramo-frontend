@@ -29,7 +29,7 @@ export function FeaturesSection() {
     </div>
     <div className="space-y-4">
       {STEPS.map(({ title, description, color }, index) => <FadeUp key={title}><article className={cn(
-        'grid items-center gap-8 rounded-lg border border-border bg-card p-5 sm:p-8 lg:gap-12',
+        'grid items-center gap-8 overflow-hidden rounded-lg border border-border bg-card p-5 sm:p-8 lg:gap-12',
         index === 0 ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]' : index === 1 ? 'lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]',
       )}>
         <div className={cn('min-w-0 py-3 lg:py-8', index === 1 && 'lg:col-start-2 lg:row-start-1', index === 2 && 'lg:col-span-2 lg:py-0')}>
@@ -39,7 +39,7 @@ export function FeaturesSection() {
         <div
           className={cn(
             'relative min-w-0 overflow-hidden rounded-lg border border-border',
-            index === 1 ? 'max-h-[35rem] rounded-l-none rounded-b-none border-l-0 border-b-0 pt-5 pr-5 sm:pt-8 sm:pr-8 lg:col-start-1 lg:row-start-1' : index === 2 ? 'p-5 sm:p-8 lg:col-span-2' : 'max-h-[35rem] rounded-r-none rounded-b-none border-r-0 border-b-0 pt-5 pl-5 sm:pt-8 sm:pl-8',
+            index === 1 ? '-mb-5 -ml-5 max-h-[35rem] self-end rounded-l-none rounded-b-none border-l-0 border-b-0 pt-5 pr-5 sm:-mb-8 sm:-ml-8 sm:pt-8 sm:pr-8 lg:col-start-1 lg:row-start-1' : index === 2 ? 'p-5 sm:p-8 lg:col-span-2' : '-mr-5 -mb-5 max-h-[35rem] self-end rounded-r-none rounded-b-none border-r-0 border-b-0 pt-5 pl-5 sm:-mr-8 sm:-mb-8 sm:pt-8 sm:pl-8',
           )}
           style={{ background: `var(${color})` }}
         >
