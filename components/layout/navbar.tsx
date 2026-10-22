@@ -1,9 +1,10 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import Link from 'next/link';
-import { AvatarMenu } from './avatar-menu';
-import { NavMobileMenu } from './nav-mobile-menu';
-import { Wordmark } from './logo';
+import { AvatarMenu } from '@/components/layout/avatar-menu';
+import { NavMobileMenu } from '@/components/layout/nav-mobile-menu';
+import { ResourcesMenu } from '@/components/layout/resources-menu';
+import { Wordmark } from '@/components/layout/logo';
 import { Button } from '@/components/ui/button';
 import { cookies } from 'next/headers';
 import { getMyProfile } from '@/lib/profile';
@@ -19,40 +20,43 @@ export async function Navbar() {
 
   return (
     <nav className="sticky top-0 z-10 bg-background">
-      <div className="container-app px-6 md:px-[72px] py-3 flex items-center gap-2">
-        <Link href={homeHref} className="mr-auto">
+      <div className="container-app grid grid-cols-[1fr_auto] items-center gap-2 px-6 py-3 md:px-12 lg:grid-cols-[1fr_auto_1fr]">
+        <Link href={homeHref} className="justify-self-start">
           <Wordmark />
         </Link>
-        <Link
-          href="/#product"
-          className="hidden md:block text-sm font-medium text-muted-foreground px-4 py-2.5 rounded-full transition-colors hover:bg-muted hover:text-foreground"
-        >
-          Product
-        </Link>
-        <Link
-          href="/#pricing"
-          className="hidden md:block text-sm font-medium text-muted-foreground px-4 py-2.5 rounded-full transition-colors hover:bg-muted hover:text-foreground"
-        >
-          Plans
-        </Link>
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-1 lg:flex">
+          <Link
+            href="/#product"
+            className="text-sm font-medium text-muted-foreground px-4 py-2.5 rounded-full transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Product
+          </Link>
+          <Link
+            href="/#pricing"
+            className="text-sm font-medium text-muted-foreground px-4 py-2.5 rounded-full transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Plans
+          </Link>
+          <ResourcesMenu />
+        </div>
+        <div className="flex items-center justify-self-end gap-2">
           {isLoggedIn ? (
             <AvatarMenu username={username} imageUrl={imageUrl} />
           ) : (
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2">
               <Link
                 href="/login"
                 className="text-sm font-medium text-primary px-4 py-2.5 rounded-full transition-colors hover:bg-muted"
               >
-                Log in
+                Log In
               </Link>
               <Button asChild size="lg">
-                <Link href="/signup">Get Started</Link>
+                <Link href="/signup">Get started</Link>
               </Button>
             </div>
           )}
+          <NavMobileMenu isLoggedIn={isLoggedIn} />
         </div>
-        <NavMobileMenu isLoggedIn={isLoggedIn} />
       </div>
     </nav>
   );
