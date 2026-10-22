@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createPendingSaves } from '@/lib/pending-saves';
 import { assertProjectText } from '@/lib/project-validation';
 import { useRouter } from 'next/navigation';
@@ -29,13 +29,24 @@ import { resolveItemTrail } from '../../trail-navigation';
 import { getEditorBootstrap } from '@/lib/editor-bootstrap-client';
 import { acceptLoadedContents, getItemContent, getTrailContents, resetItemContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
-import { useAutoSave } from './useAutoSave';
+import { useAutoSave } from '@/app/editor/[projectId]/hooks/useAutoSave';
+import { editorDraftForRoute, type DraftCommitResult } from '@/lib/editor-draft';
+import type { UserProfile } from '@/lib/profile';
+
+const subscribeIdle = () => () => {};
+const idleDraft = { status: 'saved' as const, error: '' };
+const getIdleDraft = () => idleDraft;
 
 export interface ReorderNotice {
   error?: string;
 }
 
-export function useProjectEditorState(projectId: string, connectionsPanelOpen: boolean) {
+export function useProjectEditorState(routeProjectId: string, connectionsPanelOpen: boolean, user?: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'>) {
+  const [draft] = useState(() => typeof window !== 'undefined' && user?.userId ? editorDraftForRoute(user.userId, routeProjectId) : null);
+  const draftState = useSyncExternalStore(draft?.subscribe ?? subscribeIdle, draft?.getSnapshot ?? getIdleDraft, getIdleDraft);
+  const isDraft = !!draft && draftState.status !== 'saved';
+  const [projectId, setProjectId] = useState(() => draft?.backup.result?.projectId ?? draft?.editorKey ?? routeProjectId);
+  const draftInitialized = useRef(false);
   const router = useRouter();
   const pendingSaves = useRef(createPendingSaves());
 
@@ -79,16 +90,80 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
 
   useEffect(() => {
+    if (!draft) return;
+    const applyIds = (result: DraftCommitResult) => {
+      setProjectId(result.projectId);
+      setRestoreEpoch(result.restoreEpoch);
+      setItems(previous => {
+        const item = Object.values(previous).find(item => item.editorKey === draft.editorKey);
+        return { [String(result.itemId)]: { ...item, id: String(result.itemId), editorKey: draft.editorKey,
+          title: draft.backup.latest.item.title, titleAlign: draft.backup.latest.item.titleAlign,
+          unfiled: false, content: draft.backup.latest.item.content } };
+      });
+      setTrails([{ id: String(result.trailId), editorKey: draft.editorKey, title: draft.backup.latest.trail.title,
+        description: '', version: 1, forkedFrom: null, itemIds: [String(result.itemId)], steps: [{ itemId: String(result.itemId) }] }]);
+      setNavigation(previous => ({ ...previous, trailId: String(result.trailId), itemId: String(result.itemId),
+        request: previous.request ? { ...previous.request, itemId: String(result.itemId) } : undefined }));
+      if (window.location.pathname !== `/editor/${result.projectId}`) router.replace(`/editor/${result.projectId}`);
+    };
+    draft.setOnCreated(applyIds);
+    const online = () => { if (draft.getSnapshot().status !== 'saved') draft.retry(); };
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (draft.needsUnloadWarning()) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('online', online);
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => {
+      draft.setOnCreated();
+      draft.dispose();
+      window.removeEventListener('online', online);
+      window.removeEventListener('beforeunload', beforeUnload);
+    };
+  }, [draft, router]);
+
+  useEffect(() => {
+    if (!draft || draftState.status !== 'saved' || !draft.backup.result) return;
+    void Promise.resolve().then(() => {
+      setProjectTitle(draft.backup.latest.project.title.trim() || 'Untitled project');
+      setTrails(previous => previous.map(trail => ({ ...trail, title: draft.backup.latest.trail.title.trim() || 'My first trail' })));
+      setItems(previous => Object.fromEntries(Object.entries(previous).map(([id, item]) => [id, { ...item,
+        title: draft.backup.latest.item.title.trim() || 'Untitled note' }])));
+    });
+  }, [draft, draftState.status]);
+
+  useEffect(() => {
     let cancelled = false;
+    if (draft && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId)) {
+      if (!draftInitialized.current) {
+        void Promise.resolve().then(() => {
+          if (cancelled || draftInitialized.current) return;
+          draftInitialized.current = true;
+          const latest = draft.backup.latest;
+          const itemId = draft.editorKey;
+          setProjectTitle(latest.project.title);
+          setProfile(user ? { username: user.username, imageUrl: user.imageUrl } : null);
+          setTrails([{ id: draft.editorKey, editorKey: draft.editorKey, title: latest.trail.title, description: '', version: 1,
+            forkedFrom: null, itemIds: [itemId], steps: [{ itemId }] }]);
+          setItems({ [itemId]: { id: itemId, editorKey: draft.editorKey, title: latest.item.title,
+            titleAlign: latest.item.titleAlign, unfiled: false, content: latest.item.content, textStats: countTextStats(latest.item.content) } });
+          setNavigation({ itemId, trailId: draft.editorKey, request: { itemId, sequence: ++navigationSequence.current, focus: true } });
+          setLoaded(true);
+          draft.start();
+        });
+      }
+      return () => { cancelled = true; };
+    }
     const entry = new URLSearchParams(window.location.search);
-    const preferredItemId = entry.get('note') ?? localStorage.getItem(lastItemStorageKey(projectId));
-    getEditorBootstrap(projectId, preferredItemId, entry.get('trail')).then((result) => {
+    let preferredItemId = entry.get('note');
+    try { preferredItemId ??= localStorage.getItem(lastItemStorageKey(routeProjectId)); } catch {}
+    getEditorBootstrap(routeProjectId, preferredItemId, entry.get('trail')).then((result) => {
       if (cancelled) return;
       if (!result) {
         router.replace('/projects');
         return;
       }
       const { project } = result;
+      setProjectId(routeProjectId);
       setRestoreEpoch(result.restoreEpoch);
       resetItemContents(Object.keys(project.items));
       const contents = acceptLoadedContents(result.contents);
@@ -116,10 +191,10 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     return () => {
       cancelled = true;
     };
-  }, [projectId, router, redirectToLogin]);
+  }, [routeProjectId, router, redirectToLogin, draft, user]);
 
   useEffect(() => {
-    if (!loaded || (!connectionsPanelOpen && view !== 'graph') || mapPreviews !== undefined) return;
+    if (isDraft || !loaded || (!connectionsPanelOpen && view !== 'graph') || mapPreviews !== undefined) return;
     let cancelled = false;
     getMapPreviews(projectId).then((data) => {
       if (!cancelled) setPreviewResult({ projectId, data });
@@ -127,16 +202,18 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
       if (!cancelled) setPreviewResult({ projectId, data: null });
     });
     return () => { cancelled = true; };
-  }, [projectId, loaded, connectionsPanelOpen, view, mapPreviews]);
+  }, [projectId, loaded, connectionsPanelOpen, view, mapPreviews, isDraft]);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || isDraft) return;
+    try {
     if (selectedItemId) {
       localStorage.setItem(lastItemStorageKey(projectId), selectedItemId);
     } else {
       localStorage.removeItem(lastItemStorageKey(projectId));
     }
-  }, [projectId, selectedItemId, loaded]);
+    } catch {}
+  }, [projectId, selectedItemId, loaded, isDraft]);
 
   const selectedItem = selectedItemId ? items[selectedItemId] : undefined;
 
@@ -148,14 +225,21 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     void handleRenameItem(itemId, trimmed).catch(() => {});
   };
 
-  const handleSetItemTitleAlign = (itemId: string, titleAlign: TitleAlign) => pendingSaves.current.track(`align:${itemId}`, async () => {
+  const handleSetItemTitleAlign = (itemId: string, titleAlign: TitleAlign) => {
+    if (draft && draft.getSnapshot().status !== 'saved') {
+      draft.update({ item: { ...draft.backup.latest.item, titleAlign } });
+      setItems(previous => ({ ...previous, [itemId]: { ...previous[itemId], titleAlign } }));
+      return Promise.resolve();
+    }
+    return pendingSaves.current.track(`align:${itemId}`, async () => {
     setItems(prevItems => {
       const item = prevItems[itemId];
       if (!item) return prevItems;
       return { ...prevItems, [itemId]: { ...item, titleAlign } };
     });
     await setItemTitleAlign(itemId, titleAlign, restoreEpoch, projectId);
-  }, true);
+    }, true);
+  };
 
   const handleSetGraphColors = (colors: string) => pendingSaves.current.track('graph-colors', async () => {
     await setProjectGraphColors(projectId, colors, restoreEpoch);
@@ -472,6 +556,11 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   }, false);
 
   const handleRenameTrail = (trailId: string, title: string) => {
+    if (draft && draft.getSnapshot().status !== 'saved') {
+      setTrails(previous => previous.map(trail => ({ ...trail, title })));
+      draft.update({ trail: { title } });
+      return Promise.resolve();
+    }
     setTrails(prevTrails => prevTrails.map(trail =>
       trail.id === trailId ? { ...trail, title } : trail
     ));
@@ -479,6 +568,11 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   };
 
   const handleRenameItem = (itemId: string, title: string) => {
+    if (draft && draft.getSnapshot().status !== 'saved') {
+      setItems(previous => Object.fromEntries(Object.entries(previous).map(([id, item]) => [id, { ...item, title }])));
+      draft.update({ item: { ...draft.backup.latest.item, title } });
+      return Promise.resolve();
+    }
     setItems(prevItems => {
       const item = prevItems[itemId];
       if (!item) return prevItems;
@@ -534,6 +628,9 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
 
   const handleRenameProject = (title: string) => {
     assertProjectText(title, 'title');
+    if (draft && draft.getSnapshot().status !== 'saved') {
+      setProjectTitle(title); draft.update({ project: { title } }); return Promise.resolve();
+    }
     return pendingSaves.current.track("project-title", async () => {
       await renameProject(projectId, title, restoreEpoch);
       setProjectTitle(title);
@@ -546,6 +643,14 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
   }, [projectId]);
 
   return {
+    projectId,
+    isDraft,
+    draftError: draftState.error,
+    retryDraft: draft?.retry,
+    resolveProjectId: draft && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId) ? draft.resolveProjectId : undefined,
+    onDraftProjectTitle: isDraft ? (title: string) => { void handleRenameProject(title); } : undefined,
+    onDraftTrailTitle: isDraft ? (id: string, title: string) => { void handleRenameTrail(id, title); } : undefined,
+    onDraftItemTitle: isDraft ? (id: string, title: string) => { void handleRenameItem(id, title); } : undefined,
     loaded,
     restoreEpoch,
     projectTitle,
@@ -604,5 +709,15 @@ export function useProjectEditorState(projectId: string, connectionsPanelOpen: b
     updateItemContentLocally,
     handleRenameProject,
     ...autoSave,
+    ...(isDraft ? { saveStatus: draftState.status === 'error' ? 'error' as const : draftState.status === 'draft' ? 'idle' as const : 'saving' as const,
+      saveError: draftState.error } : {}),
+    onChange: (itemId: string, editorState: import('lexical').EditorState) => {
+      if (draft && draft.getSnapshot().status !== 'saved') {
+        const content = JSON.stringify(editorState.toJSON());
+        const id = draft.backup.result ? String(draft.backup.result.itemId) : itemId;
+        updateItemContentLocally(id, content);
+        draft.update({ item: { ...draft.backup.latest.item, content } });
+      } else autoSave.onChange(itemId, editorState);
+    },
   };
 }

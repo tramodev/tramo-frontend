@@ -15,6 +15,7 @@ type ForkFeedItemDTO = ProjectFeedItemDTO;
 export type ForkFeedItem = ProjectFeedItem;
 
 export interface UserProfile {
+  userId: string;
   username: string;
   email: string;
   bio: string | null;

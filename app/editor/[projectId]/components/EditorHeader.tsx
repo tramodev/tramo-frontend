@@ -12,13 +12,15 @@ import { PROJECT_TEXT_MAX_LENGTH } from '@/lib/project-validation';
 import type { SaveStatus } from '../hooks/useAutoSave';
 
 interface EditorTitleSlotProps {
+  draft?: boolean;
+  onDraftTitleChange?: (title: string) => void;
   projectTitle: string;
   onRenameProject: (title: string) => Promise<void>;
   saveStatus: SaveStatus;
   saveError: string;
 }
 
-export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, saveError }: EditorTitleSlotProps) {
+export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange }: EditorTitleSlotProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [titleError, setTitleError] = useState('');
@@ -61,8 +63,9 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
           disabled={savingTitle}
           onFocus={(event) => event.currentTarget.select()}
           value={editingTitleValue}
+          placeholder="Untitled project"
           className="h-8 max-w-xs"
-          onChange={(e) => setEditingTitleValue(e.target.value)}
+          onChange={(e) => { setEditingTitleValue(e.target.value); onDraftTitleChange?.(e.target.value); }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') submitEditTitle();
             if (e.key === 'Escape') setIsEditingTitle(false);
@@ -78,11 +81,11 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
     <div className="flex min-w-0 items-center gap-4">
       <span
         data-tour="editor-title"
-        className="min-w-0 truncate cursor-text text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline"
+        className={`min-w-0 truncate cursor-text text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline ${draft && !projectTitle ? 'text-muted-foreground' : ''}`}
         onDoubleClick={startEditTitle}
         title="Double-click to rename"
       >
-        {projectTitle}
+        {projectTitle || 'Untitled project'}
       </span>
       <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground w-[60px]">
         {saveStatus === 'saving' && (
@@ -110,6 +113,7 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
 }
 
 interface EditorActionsProps {
+  disabled?: boolean;
   textStats: { words: number; characters: number } | null;
   projectId: string;
   beforeExport: () => Promise<void>;
@@ -123,6 +127,7 @@ export function EditorActions({
   profile,
   beforeExport,
   restoreEpoch,
+  disabled,
 }: EditorActionsProps) {
   return (
     <>
@@ -131,14 +136,14 @@ export function EditorActions({
           {textStats.words} words · {textStats.characters} characters
         </span>
       ) : <span className="hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
-      <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />
-      <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />
-      <Button data-tour="share" variant="secondary" size="lg" asChild>
+      {!disabled && <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />}
+      {!disabled && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
+      {disabled ? <Button variant="secondary" size="lg" disabled aria-label="Publish and share project"><Share2 className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish &amp; Share</span></Button> : <Button data-tour="share" variant="secondary" size="lg" asChild>
         <Link href={`/projects/${projectId}/share`} aria-label="Publish and share project">
           <Share2 className="h-[15px] w-[15px]" />
           <span className="hidden sm:inline">Publish &amp; Share</span>
         </Link>
-      </Button>
+      </Button>}
       <UserMenu loggedIn={!!profile} username={profile?.username ?? null} imageUrl={profile?.imageUrl ?? null} />
     </>
   );

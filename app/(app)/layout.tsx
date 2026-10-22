@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/layout/app-header"
 import { isLoggedIn } from "@/lib/auth"
 import { getMyProfile } from "@/lib/profile"
 import { getHomeHref } from "@/lib/nav"
+import { CurrentUserProvider } from "@/components/auth/current-user"
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [loggedIn, homeHref] = await Promise.all([isLoggedIn(), getHomeHref()])
@@ -19,7 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         username={profile?.username ?? null}
         imageUrl={profile?.imageUrl ?? null}
       />
-      {children}
+      <CurrentUserProvider userId={profile?.userId ?? null}>{children}</CurrentUserProvider>
     </div>
   )
 }

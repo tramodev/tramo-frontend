@@ -8,7 +8,7 @@ function setup(project = { items: {}, loaded: false }) {
   const document = { title: 'Editor | Tramo' };
   const exports = {};
   const jsx = (type, props) => ({ type, props });
-  runInNewContext(ts.transpileModule(readFileSync('app/editor/[projectId]/page.tsx', 'utf8'), {
+  runInNewContext(ts.transpileModule(readFileSync('app/editor/editor-workspace.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, {
     exports,
@@ -22,11 +22,11 @@ function setup(project = { items: {}, loaded: false }) {
       react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useEffect: effect => effects.push(effect), useMemo: fn => fn(), useRef: value => ({ current: value }) },
       'react/jsx-runtime': { jsx, jsxs: jsx },
       'next/navigation': { useParams: () => ({ projectId: 'project' }) },
-      '../editor-utils': { countProjectTextStats: () => null },
-      './hooks/useProjectEditorState': { useProjectEditorState: () => project },
+      '@/app/editor/editor-utils': { countProjectTextStats: () => null },
+      '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => project },
     })[name] ?? {},
   });
-  exports.default();
+  exports.ProjectEditor({ routeProjectId: 'project', user: { userId: '1', username: 'owner' } });
   const cleanups = effects.map(effect => effect());
   const listener = listeners.find(([type]) => type === 'keydown');
   const send = (keys, target = { closest: () => null }) => {

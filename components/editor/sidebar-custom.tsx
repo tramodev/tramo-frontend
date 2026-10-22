@@ -30,6 +30,9 @@ import { searchProjectItems } from "@/lib/projects-store"
 const EMPTY_MATCHES: Set<string> = new Set()
 
 interface SidebarCustomProps {
+  draft?: boolean;
+  onDraftTrailTitleChange?: (id: string, title: string) => void;
+  onDraftItemTitleChange?: (id: string, title: string) => void;
   homeHref: string;
   projectId: string;
   trails: Trail[];
@@ -72,6 +75,7 @@ function InlineInput({
       autoFocus
       onFocus={(event) => event.currentTarget.select()}
       value={value}
+      maxLength={255}
       placeholder={placeholder}
       className={className}
       onChange={(e) => onChange(e.target.value)}
@@ -118,6 +122,9 @@ function AddToTrailSelect({
 }
 
 export function SidebarCustom({
+  draft = false,
+  onDraftTrailTitleChange,
+  onDraftItemTitleChange,
   homeHref,
   projectId,
   trails,
@@ -233,14 +240,14 @@ export function SidebarCustom({
   });
 
   useEffect(() => {
-    if (q.length < MIN_SEARCH_LENGTH) return;
+    if (draft || q.length < MIN_SEARCH_LENGTH) return;
     const timeout = setTimeout(() => {
       searchProjectItems(projectId, q)
         .then((ids) => setBodyMatches({ query: q, ids: new Set(ids) }))
         .catch(() => setBodyMatches({ query: q, ids: EMPTY_MATCHES }));
     }, 250);
     return () => clearTimeout(timeout);
-  }, [projectId, q]);
+  }, [projectId, q, draft]);
 
   const bodyMatchIds = bodyMatches.query === q ? bodyMatches.ids : EMPTY_MATCHES;
 
@@ -409,7 +416,7 @@ export function SidebarCustom({
                             : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"
                         }
                       />
-                      <span className="truncate">{item.title}</span>
+                      <span className={`truncate ${!item.title ? "text-muted-foreground" : ""}`}>{item.title || "Untitled note"}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -435,7 +442,7 @@ export function SidebarCustom({
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[0.6875rem] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" title="New trail" onClick={() => setIsCreating(true)}>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" title="New trail" disabled={draft} onClick={() => setIsCreating(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </span>
@@ -474,7 +481,7 @@ export function SidebarCustom({
                             <SidebarMenuItem>
                               <div
                                 className={`group/trail -ml-4 -mr-2 flex items-center hover:bg-sidebar-accent ${dropTrailId === trail.id && drag?.overIndex === null ? "bg-accent ring-1 ring-inset ring-primary" : ""}`}
-                                draggable={editingTrailId !== trail.id}
+                                draggable={!draft && editingTrailId !== trail.id}
                                 onDragStart={event => {
                                   event.stopPropagation();
                                   event.dataTransfer.effectAllowed = "move";
@@ -520,7 +527,7 @@ export function SidebarCustom({
                                     <InlineInput
                                       value={editingTrailTitle}
                                       className="h-7 min-w-0 flex-1 rounded-none border-0 px-0 font-semibold shadow-none"
-                                      onChange={setEditingTrailTitle}
+                                      onChange={title => { setEditingTrailTitle(title); onDraftTrailTitleChange?.(trail.id, title); }}
                                       onSubmit={() => submitEditTrail(trail.id)}
                                       onCancel={() => {
                                         setEditingTrailId(null);
@@ -533,7 +540,7 @@ export function SidebarCustom({
                                     <CollapsibleTrigger asChild>
                                       <SidebarMenuButton className="min-w-0 flex-1 rounded-none pl-6 font-semibold hover:bg-transparent active:bg-transparent">
                                         <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                                        <span className="flex-1 truncate">{trail.title}</span>
+                                        <span className={`flex-1 truncate ${!trail.title ? "text-muted-foreground" : ""}`}>{trail.title || "My first trail"}</span>
                                         <span className="text-[0.6875rem] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
                                           {trailItems.length}
                                         </span>
@@ -544,6 +551,7 @@ export function SidebarCustom({
                                       size="icon"
                                       className="h-auto w-6 shrink-0 self-stretch rounded-none hover:bg-primary/10"
                                       title="New note"
+                                      disabled={draft}
                                       onClick={() => setCreatingItemTrailId(trail.id)}
                                     >
                                       <Plus className="h-3 w-3" />
@@ -564,21 +572,21 @@ export function SidebarCustom({
                                           <Pencil className="h-3.5 w-3.5" />
                                           Rename trail
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem disabled={trailIndex === 0} onSelect={() => reorderTrail(trail.id, trailIndex - 1)}>
+                                        <DropdownMenuItem disabled={draft || trailIndex === 0} onSelect={() => reorderTrail(trail.id, trailIndex - 1)}>
                                           <ArrowUp className="h-3.5 w-3.5" />
                                           Move trail up
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem disabled={trailIndex === trails.length - 1} onSelect={() => reorderTrail(trail.id, trailIndex + 1)}>
+                                        <DropdownMenuItem disabled={draft || trailIndex === trails.length - 1} onSelect={() => reorderTrail(trail.id, trailIndex + 1)}>
                                           <ArrowDown className="h-3.5 w-3.5" />
                                           Move trail down
                                         </DropdownMenuItem>
                                         {linkableItems.length > 0 && (
-                                          <DropdownMenuItem onSelect={() => startLinkingItem(trail.id)}>
+                                          <DropdownMenuItem disabled={draft} onSelect={() => startLinkingItem(trail.id)}>
                                             <Link2 className="h-3.5 w-3.5" />
                                             Add existing note
                                           </DropdownMenuItem>
                                         )}
-                                        <DropdownMenuItem onSelect={() => confirmDeleteTrail(trail)}>
+                                        <DropdownMenuItem disabled={draft} onSelect={() => confirmDeleteTrail(trail)}>
                                           <Trash2 className="h-3.5 w-3.5" />
                                           Delete trail
                                         </DropdownMenuItem>
@@ -636,7 +644,7 @@ export function SidebarCustom({
                                     return (
                                       <SidebarMenuSubItem
                                         key={item.id}
-                                        draggable={editingItem?.itemId !== item.id || editingItem.trailId !== trail.id}
+                                        draggable={!draft && (editingItem?.itemId !== item.id || editingItem.trailId !== trail.id)}
                                         onDragStart={(e) => {
                                           e.dataTransfer.effectAllowed = "move";
                                           setDrag({ trailId: trail.id, itemId: item.id, overIndex: null });
@@ -670,7 +678,7 @@ export function SidebarCustom({
                                             <InlineInput
                                               value={editingItemTitle}
                                               className="h-7 min-w-0 flex-1 rounded-none border-0 px-0 shadow-none"
-                                              onChange={setEditingItemTitle}
+                                              onChange={title => { setEditingItemTitle(title); onDraftItemTitleChange?.(item.id, title); }}
                                               onSubmit={() => submitEditItem(item.id)}
                                               onCancel={() => {
                                                 setEditingItem(null);
@@ -691,7 +699,7 @@ export function SidebarCustom({
                                               <span className="w-4 shrink-0 text-right text-[0.625rem] tabular-nums text-muted-foreground">
                                                 {index + 1}
                                               </span>
-                                              <span className="truncate">{item.title}</span>
+                                              <span className={`truncate ${!item.title ? "text-muted-foreground" : ""}`}>{item.title || "Untitled note"}</span>
                                               <SharedNoteIndicator trails={trailsForItem(item.id)} />
                                             </SidebarMenuSubButton>
                                             <DropdownMenu>
@@ -711,18 +719,18 @@ export function SidebarCustom({
                                                   Rename note
                                                 </DropdownMenuItem>
                                                 {trails.length > 1 && (
-                                                  <DropdownMenuItem onSelect={() => setMovingItem({ itemId: item.id, trailId: trail.id })}>
+                                                  <DropdownMenuItem disabled={draft} onSelect={() => setMovingItem({ itemId: item.id, trailId: trail.id })}>
                                                     <ListPlus className="h-3.5 w-3.5" />
                                                     Move to another trail
                                                   </DropdownMenuItem>
                                                 )}
                                                 {addableTrails.length > 0 && (
-                                                  <DropdownMenuItem onSelect={() => setAddToTrailItemId(item.id)}>
+                                                  <DropdownMenuItem disabled={draft} onSelect={() => setAddToTrailItemId(item.id)}>
                                                     <ListPlus className="h-3.5 w-3.5" />
                                                     Add to another trail
                                                   </DropdownMenuItem>
                                                 )}
-                                                <DropdownMenuItem onSelect={() => setPendingConfirm({
+                                                <DropdownMenuItem disabled={draft} onSelect={() => setPendingConfirm({
                                                   title: `Remove "${item.title}" from this trail?`,
                                                   confirmLabel: "Remove",
                                                   description: "The note is kept in your Notes list. This can't be undone.",
@@ -731,7 +739,7 @@ export function SidebarCustom({
                                                   <X className="h-3.5 w-3.5" />
                                                   Remove from this trail
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => confirmDeleteItem(item)}>
+                                                <DropdownMenuItem disabled={draft} onSelect={() => confirmDeleteItem(item)}>
                                                   <Trash2 className="h-3.5 w-3.5" />
                                                   Delete note
                                                 </DropdownMenuItem>
@@ -799,7 +807,7 @@ export function SidebarCustom({
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[0.6875rem] font-normal group-data-[state=open]/items:hidden">{allItems.length}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" title="New note" onClick={() => setIsCreatingLoose(true)}>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" title="New note" disabled={draft} onClick={() => setIsCreatingLoose(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </span>
@@ -831,7 +839,7 @@ export function SidebarCustom({
                               <InlineInput
                                 value={editingItemTitle}
                                 className="h-7 min-w-0 flex-1 rounded-none border-0 px-0 shadow-none"
-                                onChange={setEditingItemTitle}
+                                onChange={title => { setEditingItemTitle(title); onDraftItemTitleChange?.(item.id, title); }}
                                 onSubmit={() => submitEditItem(item.id)}
                                 onCancel={() => { setEditingItem(null); setEditingItemTitle(""); }}
                               />
@@ -853,7 +861,7 @@ export function SidebarCustom({
                                       : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"
                                   }
                                 />
-                                <span className="truncate">{item.title}</span>
+                                <span className={`truncate ${!item.title ? "text-muted-foreground" : ""}`}>{item.title || "Untitled note"}</span>
                                 <SharedNoteIndicator trails={memberTrails} />
                               </SidebarMenuButton>
                               <DropdownMenu>
@@ -873,12 +881,12 @@ export function SidebarCustom({
                                     Rename note
                                   </DropdownMenuItem>
                                   {addableTrails.length > 0 && (
-                                    <DropdownMenuItem onSelect={() => setAddToTrailItemId(item.id)}>
+                                    <DropdownMenuItem disabled={draft} onSelect={() => setAddToTrailItemId(item.id)}>
                                       <ListPlus className="h-3.5 w-3.5" />
                                       Add to a trail
                                     </DropdownMenuItem>
                                   )}
-                                  <DropdownMenuItem onSelect={() => confirmDeleteItem(item)}>
+                                  <DropdownMenuItem disabled={draft} onSelect={() => confirmDeleteItem(item)}>
                                     <Trash2 className="h-3.5 w-3.5" />
                                     Delete note
                                   </DropdownMenuItem>
