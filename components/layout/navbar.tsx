@@ -44,10 +44,10 @@ export async function Navbar() {
                 href="/login"
                 className="text-sm font-medium text-primary px-4 py-2.5 rounded-full transition-colors hover:bg-muted"
               >
-                Sign in
+                Log in
               </Link>
               <Button asChild size="lg">
-                <Link href="/signup">Start for free</Link>
+                <Link href="/signup">Get Started</Link>
               </Button>
             </div>
           )}
