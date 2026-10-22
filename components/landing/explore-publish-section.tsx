@@ -39,7 +39,7 @@ export function ExplorePublishSection() {
         <div className="flex h-full flex-col overflow-hidden rounded-t-[28px] rounded-b-sm bg-card">
           <div className="flex flex-1 flex-col p-6 sm:p-9">
           <h3 className="mb-3 font-display text-2xl font-medium">Find your next thread.</h3>
-          <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">Discover published projects, follow their trails, and fork a project to explore ideas in a new direction.</p>
+          <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">Discover published projects and follow their trails to find your next idea.</p>
           <Button asChild variant="secondary" size="lg" className="mt-auto self-start">
             <a href="/explore">Explore projects<ArrowRight className="h-4 w-4" /></a>
           </Button>
@@ -77,6 +77,20 @@ export function ExplorePublishSection() {
                 <Check className="h-4 w-4 shrink-0" />
               </div>
             </div>
+          </div>
+        </div>
+      </FadeUp>
+      <FadeUp delay={0.2} className="md:col-span-2">
+        <div className="grid gap-6 overflow-hidden rounded-[28px] bg-card p-6 sm:p-9 md:grid-cols-2 md:items-center">
+          <div>
+            <h3 className="mb-3 font-display text-2xl font-medium">Make it your own.</h3>
+            <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">Fork a project for free. The original author always gets credit.</p>
+            <Button asChild variant="secondary" size="lg">
+              <a href="/explore">Find a project to fork<ArrowRight className="h-4 w-4" /></a>
+            </Button>
+          </div>
+          <div aria-hidden="true" inert>
+            <ExploreCard project={{ ...PREVIEW_PROJECT, id: 'landing-fork', title: 'New trails through the Memex', description: 'A new perspective built on a shared starting point.', ownerUsername: 'nolan', thumbnailImageUrl: null, forkedFromProjectId: PREVIEW_PROJECT.id, forkedFromTitle: PREVIEW_PROJECT.title, forkedFromOwnerUsername: PREVIEW_PROJECT.ownerUsername }} loggedIn={false} username={null} interactive={false} />
           </div>
         </div>
       </FadeUp>

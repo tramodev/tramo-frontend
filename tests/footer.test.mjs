@@ -38,6 +38,11 @@ test('footer legal pages have working links', () => {
   expect(nodes.find(node => node.props.children === 'Privacy Policy').props.href).toBe('/privacy');
   expect(nodes.find(node => node.props.children === 'Terms of Service').props.href).toBe('/tos');
   expect(nodes.some(node => node.props['aria-disabled'] === 'true')).toBe(false);
-  expect(nodes.filter(node => node.type === 'ul')).toHaveLength(3);
-  expect(nodes.filter(node => node.type === 'h2').map(node => node.props.children)).toEqual(['Company', 'Product', 'Resources']);
+  expect(nodes.filter(node => node.type === 'ul')).toHaveLength(4);
+  expect(nodes.filter(node => node.type === 'h2').map(node => node.props.children)).toEqual(['Company', 'Product', 'Resources', 'Legal']);
+  const sections = nodes.filter(node => node.type === 'div' && Array.isArray(node.props.children) && node.props.children[0]?.type === 'h2');
+  const resources = sections.find(node => node.props.children[0].props.children === 'Resources');
+  expect(flatten(resources).filter(node => node.type === 'Link').map(node => node.props.children)).toEqual(['Wiki', 'Changelog', 'Roadmap', 'Blog']);
+  expect(nodes.find(node => node.type === 'Link' && node.props.children === 'Product').props.href).toBe('/#product');
+  expect(nodes.find(node => node.props.children === 'Plans').props.href).toBe('/#pricing');
 });

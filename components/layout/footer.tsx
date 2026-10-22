@@ -7,7 +7,7 @@ import { Wordmark } from "@/components/layout/logo";
 export function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="container-app grid gap-10 px-6 py-12 text-[0.8125rem] text-muted-foreground md:grid-cols-2 md:px-12">
+      <div className="container-app grid gap-10 px-6 py-12 text-[0.8125rem] text-muted-foreground md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:px-12">
         <div className="flex flex-col items-start gap-4">
           <Link href="/" aria-label="Tramo home" className="rounded-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Wordmark />
@@ -27,14 +27,14 @@ export function Footer() {
           </nav>
           <p>&copy; {new Date().getFullYear()} Tramo Inc. All rights reserved.</p>
         </div>
-        <nav aria-label="Footer" className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:gap-8">
-          {[{ title: "Company", pages: ["About", "Blog", "Contact"] }, { title: "Product", pages: ["Wiki", "Changelog", "Roadmap"] }, { title: "Resources", pages: ["Privacy Policy", "Terms of Service"] }].map(section => (
+        <nav aria-label="Footer" className="grid grid-cols-2 gap-6 md:gap-8 xl:grid-cols-4">
+          {[{ title: "Company", pages: ["About", "Contact"] }, { title: "Product", pages: ["Product", "Plans"] }, { title: "Resources", pages: ["Wiki", "Changelog", "Roadmap", "Blog"] }, { title: "Legal", pages: ["Privacy Policy", "Terms of Service"] }].map(section => (
             <div key={section.title}>
               <h2 className="mb-4 text-sm font-medium text-foreground">{section.title}</h2>
               <ul className="space-y-3">
                 {section.pages.map(page => (
                   <li key={page}>
-                     {page === "Contact" ? <a href="mailto:contact@tramo.dev" className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</a> : <Link href={page === "Privacy Policy" ? "/privacy" : page === "Terms of Service" ? "/tos" : `/${page.toLowerCase()}`} className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</Link>}
+                     {page === "Contact" ? <a href="mailto:contact@tramo.dev" className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</a> : <Link href={page === "Privacy Policy" ? "/privacy" : page === "Terms of Service" ? "/tos" : page === "Product" ? "/#product" : page === "Plans" ? "/#pricing" : `/${page.toLowerCase()}`} className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</Link>}
                   </li>
                 ))}
               </ul>
