@@ -123,7 +123,7 @@ const CONNECTIONS = [
 
 export const BrowserMockup: React.FC = () => {
   return (
-    <div className="w-full flex flex-col overflow-hidden rounded-[28px] border border-border bg-background shadow-elevation-2">
+    <div className="w-full flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-elevation-2">
       <div className="h-9 flex items-center gap-2 px-4 shrink-0 bg-card border-b border-border">
         <span className="flex gap-1.5 shrink-0">
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--ed-red)' }} />
@@ -135,9 +135,9 @@ export const BrowserMockup: React.FC = () => {
           tramo.app/memex
         </div>
       </div>
-      <div className="relative aspect-[16/9] overflow-hidden [container-type:inline-size]">
+      <div className="relative h-[36rem] overflow-hidden md:aspect-[16/9] md:h-auto">
       <div
-        className="absolute top-1/2 left-1/2 flex h-[383px] w-[680px] overflow-hidden [transform:translate(-50%,-50%)_scale(calc(100cqw/680px))] md:static md:h-full md:w-full md:[transform:none]"
+        className="flex h-full w-full overflow-hidden"
       >
         <div className="w-[184px] hidden lg:flex flex-col shrink-0 p-2.5 gap-2.5 overflow-hidden bg-card border-r border-border">
           <div className="flex items-center gap-2 pt-0.5">
@@ -207,19 +207,19 @@ export const BrowserMockup: React.FC = () => {
         </div>
 
         <div className="flex flex-1 flex-col min-w-0">
-      <div className="h-12 flex items-center gap-3 px-5 shrink-0 bg-background">
+      <div className="h-12 flex items-center gap-2 px-3 shrink-0 bg-background sm:gap-3 sm:px-5">
         <PanelLeft className="lg:hidden w-3.5 h-3.5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 truncate text-[0.8125rem] font-medium">Memex and Vannevar Bush</span>
-        <span className="flex items-center gap-1 text-[0.6875rem] text-primary">
+        <span className="hidden items-center gap-1 text-[0.6875rem] text-primary sm:flex">
           <Check className="w-3 h-3" />Saved
         </span>
         <div className="ml-auto flex shrink-0 items-center gap-3">
         <span className="hidden xl:inline text-[0.6875rem] text-muted-foreground">123 words · 645 characters</span>
-        <Download className="w-3.5 h-3.5 text-muted-foreground" />
-        <History className="w-3.5 h-3.5 text-muted-foreground" />
-        <Button variant="secondary" size="lg" className="h-8 gap-[6.4px] px-[12.8px] text-[0.7rem] has-[>svg]:px-[12.8px]">
+        <Download className="hidden w-3.5 h-3.5 text-muted-foreground sm:block" />
+        <History className="hidden w-3.5 h-3.5 text-muted-foreground sm:block" />
+        <Button variant="secondary" size="lg" aria-label="Publish & Share" className="h-8 gap-[6.4px] px-[12.8px] text-[0.7rem] has-[>svg]:px-[12.8px]">
           <Share2 className="size-3" />
-          Publish &amp; Share
+          <span className="hidden sm:inline">Publish &amp; Share</span>
         </Button>
         <span className="w-[26px] h-[26px] shrink-0 rounded-full flex items-center justify-center text-[0.6875rem] font-medium bg-primary text-primary-foreground">
           A
@@ -265,7 +265,7 @@ export const BrowserMockup: React.FC = () => {
           </div>
 
           <div
-            className="flex-1 min-h-0 cursor-text overflow-y-auto px-8 py-6"
+            className="flex-1 min-h-0 cursor-text overflow-y-auto px-4 py-6 sm:px-8"
             onClick={(event) => {
               if (event.target !== event.currentTarget) return;
               const content = event.currentTarget.querySelector<HTMLDivElement>('div[contenteditable]');
@@ -290,7 +290,7 @@ export const BrowserMockup: React.FC = () => {
               </div>
             </div>
             <div contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" aria-label="Demo note content (changes are not saved)" aria-multiline="true" className="cursor-text outline-none">
-            <p className="text-[0.8125rem] leading-6 mb-3 text-muted-foreground">
+            <p className="text-sm leading-6 mb-3 text-muted-foreground sm:text-[0.8125rem]">
               Bush&apos;s Memex is a proposed personal library for books, records and communications.
               Introduced in{' '}
               <span className="text-primary font-medium">
@@ -302,7 +302,7 @@ export const BrowserMockup: React.FC = () => {
               </span>
               .
             </p>
-            <ul className="flex flex-col gap-1.5 text-[0.8125rem] text-muted-foreground">
+            <ul className="flex flex-col gap-1.5 text-sm text-muted-foreground sm:text-[0.8125rem]">
               <li>— Connect records by association</li>
               <li>— Reuse the same record in different trails</li>
               <li>— Share a path for others to explore</li>
@@ -311,7 +311,7 @@ export const BrowserMockup: React.FC = () => {
             <div className="mt-8 flex justify-end">
               <button type="button" className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-[0.6875rem] hover:bg-muted">
                 Next trail: Thinking in trails
-                <kbd className="text-muted-foreground">⌘⌥→</kbd>
+                <kbd className="hidden text-muted-foreground sm:inline">⌘⌥→</kbd>
                 <ArrowRight className="h-3.5 w-3.5 shrink-0" />
               </button>
             </div>

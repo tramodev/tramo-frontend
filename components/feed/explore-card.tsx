@@ -3,7 +3,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowBigUp, Bookmark, Eye, MessageCircle, MoreHorizontal } from "lucide-react"
+import { Eye, MessageCircle } from "lucide-react"
 import { VoteButton } from "@/components/social/vote-button"
 import { BookmarkButton } from "@/components/social/bookmark-button"
 import { PostOptionsMenu } from "@/components/project/post-options-menu"
@@ -98,21 +98,14 @@ export function ExploreCard({
             ))}
           </div>
         )}
-        <div className="flex justify-between mt-3.5">
+        {interactive && <div className="flex justify-between mt-3.5">
           <div className="flex items-center gap-3.5">
-            {interactive ? (
-              <VoteButton
-                projectId={project.id}
-                initialVoted={project.votedByRequester}
-                initialCount={project.voteCount}
-                isLoggedIn={loggedIn}
-              />
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground">
-                <ArrowBigUp className="h-[18px] w-[18px]" />
-                {project.voteCount}
-              </span>
-            )}
+            <VoteButton
+              projectId={project.id}
+              initialVoted={project.votedByRequester}
+              initialCount={project.voteCount}
+              isLoggedIn={loggedIn}
+            />
             <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground">
               <Eye className="h-[17px] w-[17px]" />
               {project.viewCount.toLocaleString('en-US')}
@@ -122,32 +115,21 @@ export function ExploreCard({
               {project.commentCount.toLocaleString('en-US')}
             </span>
           </div>
-          {interactive ? (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <BookmarkButton
-                projectId={project.id}
-                initialBookmarked={project.bookmarkedByRequester}
-                isLoggedIn={loggedIn}
-              />
-              <PostOptionsMenu
-                projectId={project.id}
-                ownerUsername={project.ownerUsername}
-                isLoggedIn={loggedIn}
-                isOwnPost={project.ownerUsername === username}
-                canFork={project.canFork}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                <Bookmark className="h-4 w-4" />
-              </span>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                <MoreHorizontal className="h-4 w-4" />
-              </span>
-            </div>
-          )}
-        </div>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <BookmarkButton
+              projectId={project.id}
+              initialBookmarked={project.bookmarkedByRequester}
+              isLoggedIn={loggedIn}
+            />
+            <PostOptionsMenu
+              projectId={project.id}
+              ownerUsername={project.ownerUsername}
+              isLoggedIn={loggedIn}
+              isOwnPost={project.ownerUsername === username}
+              canFork={project.canFork}
+            />
+          </div>
+        </div>}
       </div>
       <div className="flex items-center gap-4 sm:shrink-0 sm:self-center">
         <ProjectThumbnail

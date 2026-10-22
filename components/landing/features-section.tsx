@@ -39,12 +39,13 @@ export function FeaturesSection() {
         <div
           className={cn(
             'relative min-w-0 overflow-hidden rounded-lg border border-border',
-            index === 1 ? 'rounded-l-none border-l-0 py-5 pr-5 sm:py-8 sm:pr-8 lg:col-start-1 lg:row-start-1' : index === 2 ? 'p-5 sm:p-8 lg:col-span-2' : 'rounded-r-none border-r-0 py-5 pl-5 sm:py-8 sm:pl-8',
+            index === 1 ? 'max-h-[35rem] rounded-l-none rounded-b-none border-l-0 border-b-0 pt-5 pr-5 sm:pt-8 sm:pr-8 lg:col-start-1 lg:row-start-1' : index === 2 ? 'p-5 sm:p-8 lg:col-span-2' : 'max-h-[35rem] rounded-r-none rounded-b-none border-r-0 border-b-0 pt-5 pl-5 sm:pt-8 sm:pl-8',
           )}
           style={{ background: `var(${color})` }}
         >
-          {index === 2 ? <div className="relative aspect-[1860/1298] overflow-hidden rounded-lg">
-            <Image src="/landing-product-map.png" alt="Two trails connected through the shared Memex note" fill sizes="100vw" className="object-contain" />
+          {index === 2 ? <div className="relative aspect-[1802/1332] overflow-hidden rounded-lg dark:aspect-[1860/1298]">
+            <Image src="/landing-product-map-light.png" alt="Two trails connected through the shared Memex note" fill sizes="100vw" className="object-contain dark:hidden" />
+            <Image src="/landing-product-map.png" alt="Two trails connected through the shared Memex note" fill sizes="100vw" className="hidden object-contain dark:block" />
           </div> : <ProductEditorDemo variant={index === 0 ? 'connections' : 'shared'} />}
         </div>
       </article></FadeUp>)}
