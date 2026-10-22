@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   List as ListIcon,
   HardDrive,
+  Loader2,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -164,8 +165,11 @@ export default function ProjectsPage() {
       <section className="bg-surface-container-high pb-8">
         <div className="container-app px-5 py-11 sm:px-10 lg:px-12">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-medium text-primary">
+          <span className="flex items-center gap-2 text-sm font-medium text-primary">
             Your workspace
+            <span role="status" className="inline-flex size-4 items-center justify-center">
+              {creating && <><Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" /><span className="sr-only">Opening your project…</span></>}
+            </span>
           </span>
           <PlanUsageChip />
         </div>
@@ -193,7 +197,6 @@ export default function ProjectsPage() {
             </span>
           </button>
         </div>
-        {creating && <p className="mt-3 text-sm text-muted-foreground" role="status">Opening your first note…</p>}
         {createError && <p className="mt-3 text-sm text-destructive" role="alert">{createError}</p>}
 
         </div>
