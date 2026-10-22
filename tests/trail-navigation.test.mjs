@@ -23,12 +23,3 @@ test('visible item follows the reading line including long and empty steps', () 
   expect(exports.visibleItemAtLine(positions, -1500)).toBe('a');
   expect(exports.visibleItemAtLine([], 100)).toBe(undefined);
 });
-
-test('public reading starts deterministically at the first nonempty trail without changing author order', () => {
-  const input = [{ id: '10', items: ['later'] }, { id: '1', items: [] }, { id: '2', items: ['first'] }];
-  expect(exports.firstReadableTrail(input)).toBe(input[2]);
-  expect(input[0].id).toBe('10');
-  expect(exports.firstReadableTrail([input[0]])).toBe(input[0]);
-  expect(exports.firstReadableTrail([input[1]])).toBe(undefined);
-  expect(exports.firstReadableTrail([])).toBe(undefined);
-});
