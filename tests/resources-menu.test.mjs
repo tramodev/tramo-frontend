@@ -9,7 +9,8 @@ const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.prop
 function load(file, modules = {}) {
   const exports = {};
   let state = false;
-  const ref = { current: null };
+  const refs = [];
+  let refIndex = 0;
   runInNewContext(ts.transpileModule(readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, {
@@ -20,8 +21,11 @@ function load(file, modules = {}) {
       'react/jsx-runtime': { jsx, jsxs: jsx },
       'next/link': { default: 'Link' },
       react: {
-        useState: () => [state, next => { state = next; }],
-        useRef: () => ref,
+        useState: () => {
+          refIndex = 0;
+          return [state, next => { state = next; }];
+        },
+        useRef: initial => refs[refIndex++] ??= { current: initial },
         useEffect: () => {},
       },
       ...modules,
@@ -62,10 +66,16 @@ test('hover opens resources, allows crossing into the menu and closes after leav
     content.props.onMouseLeave();
     jest.advanceTimersByTime(150);
     expect(resources.ResourcesMenu().props.open).toBe(false);
+    const hoverClose = { preventDefault: jest.fn() };
+    content.props.onCloseAutoFocus(hoverClose);
+    expect(hoverClose.preventDefault).toHaveBeenCalledTimes(1);
     resources.ResourcesMenu().props.onOpenChange(true);
     expect(resources.ResourcesMenu().props.open).toBe(true);
     resources.ResourcesMenu().props.onOpenChange(false);
     expect(resources.ResourcesMenu().props.open).toBe(false);
+    const keyboardClose = { preventDefault: jest.fn() };
+    content.props.onCloseAutoFocus(keyboardClose);
+    expect(keyboardClose.preventDefault).not.toHaveBeenCalled();
   } finally {
     jest.useRealTimers();
   }
