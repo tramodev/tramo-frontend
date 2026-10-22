@@ -81,7 +81,7 @@ export function ExplorePublishSection() {
         </div>
       </FadeUp>
       <FadeUp delay={0.2} className="md:col-span-2">
-        <div className="grid gap-6 overflow-hidden rounded-[28px] bg-card p-6 sm:p-9 md:grid-cols-2 md:items-center">
+        <div className="grid gap-8 overflow-hidden rounded-[28px] bg-card p-6 sm:p-9 md:grid-cols-2 md:items-center lg:gap-10">
           <div>
             <h3 className="mb-3 font-display text-2xl font-medium">Make it your own.</h3>
             <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">Fork a project for free. The original author always gets credit.</p>
@@ -89,8 +89,8 @@ export function ExplorePublishSection() {
               <a href="/explore">Find a project to fork<ArrowRight className="h-4 w-4" /></a>
             </Button>
           </div>
-          <div aria-hidden="true" inert>
-            <ExploreCard project={{ ...PREVIEW_PROJECT, id: 'landing-fork', title: 'New trails through the Memex', description: 'A new perspective built on a shared starting point.', ownerUsername: 'nolan', thumbnailImageUrl: null, forkedFromProjectId: PREVIEW_PROJECT.id, forkedFromTitle: PREVIEW_PROJECT.title, forkedFromOwnerUsername: PREVIEW_PROJECT.ownerUsername }} loggedIn={false} username={null} interactive={false} />
+          <div aria-hidden="true" inert className="min-w-0 rounded-lg shadow-elevation-1 ring-8 ring-primary/5 sm:ring-[12px]">
+            <ExploreCard project={{ ...PREVIEW_PROJECT, id: 'landing-fork', title: 'New trails through the Memex', description: 'A new perspective built on a shared starting point.', ownerUsername: 'nolan', forkedFromProjectId: PREVIEW_PROJECT.id, forkedFromTitle: PREVIEW_PROJECT.title, forkedFromOwnerUsername: PREVIEW_PROJECT.ownerUsername }} loggedIn={false} username={null} interactive={false} />
           </div>
         </div>
       </FadeUp>
