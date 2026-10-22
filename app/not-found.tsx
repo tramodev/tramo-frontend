@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export default function NotFound() {
   return <div className="flex min-h-svh flex-col">
-    <header className="container-app px-6 py-5 md:px-18">
+    <header className="container-app px-6 py-5 md:px-12">
       <Link href="/" aria-label="Tramo home"><Wordmark /></Link>
     </header>
     <main className="container-app flex flex-1 flex-col items-center justify-center gap-5 px-6 py-20 text-center">

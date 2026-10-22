@@ -49,7 +49,7 @@ export default async function SettingsPage({
 
   return (
     <main className="container-app flex-1">
-      <div className="pt-9 px-6 md:px-18 pb-16">
+      <div className="pt-9 px-6 md:px-12 pb-16">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[13.5rem_minmax(0,1fr)] md:gap-14 items-start">
           <nav className="flex flex-col gap-1 md:sticky md:top-6">
             <h1 className="font-display text-[2.25rem] font-normal leading-[1.1] mb-8">Settings</h1>

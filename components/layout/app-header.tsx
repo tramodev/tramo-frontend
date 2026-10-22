@@ -23,7 +23,7 @@ export function AppHeader({
   imageUrl: string | null
 }) {
   return (
-    <header className="container-app flex items-center gap-6 py-[18px] px-6 md:px-18">
+    <header className="container-app flex items-center gap-6 py-[18px] px-6 md:px-12">
       <Link href={homeHref} className="mr-auto">
         <Wordmark />
       </Link>
