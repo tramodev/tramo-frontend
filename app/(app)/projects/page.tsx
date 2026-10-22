@@ -172,20 +172,20 @@ export default function ProjectsPage() {
         <h1 className="font-display text-[2.75rem] font-normal leading-[1.1] mb-7">
           Start a new project
         </h1>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17.5rem),1fr))] gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <button
             disabled={creating}
             onClick={() => handleCreateProject()}
-            className="group flex aspect-[3/4] cursor-pointer flex-col items-start justify-end gap-2 rounded-lg p-5 transition-colors bg-card dark:bg-background border border-dashed border-input text-muted-foreground hover:bg-muted hover:border-primary hover:text-primary"
+            className="group flex w-[90%] justify-self-center aspect-[4/5] max-h-[25rem] sm:w-full cursor-pointer flex-col items-start justify-end gap-2 rounded-lg p-5 transition-colors bg-card dark:bg-background border border-dashed border-input text-muted-foreground hover:bg-muted hover:border-primary hover:text-primary"
           >
             <Plus strokeWidth={2} className="h-7 w-7 transition-colors" />
             <span className="text-sm font-medium transition-colors">
               Start writing
             </span>
           </button>
-          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex cursor-pointer aspect-[3/4] flex-col overflow-hidden rounded-lg border border-input bg-card dark:bg-background text-left hover:bg-muted disabled:opacity-50">
+          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex cursor-pointer w-[90%] justify-self-center aspect-[4/5] max-h-[25rem] sm:w-full flex-col overflow-hidden rounded-lg border border-input bg-card dark:bg-background text-left hover:bg-muted disabled:opacity-50">
             <span className="relative min-h-0 w-full flex-1">
-              <Image src="/memex-example.png" alt="Illustration of a wearable camera from Vannevar Bush’s vision" fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 220px" className="object-cover" />
+              <Image src="/memex-example.png" alt="Illustration of a wearable camera from Vannevar Bush’s vision" fill sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 90vw" className="object-cover" />
             </span>
             <span className="flex shrink-0 flex-col gap-2 p-5">
               <span className="text-sm font-medium">Try an example</span>
@@ -261,11 +261,11 @@ export default function ProjectsPage() {
               No projects yet. Start writing or try an example.
             </p>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17.5rem),1fr))] gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {sortedProjects.map((project, index) => (
                 <Card
                   key={project.id}
-                  className="group/card flex h-[300px] flex-col cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
+                  className="group/card flex w-[90%] justify-self-center h-[300px] sm:w-full flex-col cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
                   onClick={() => router.push(`/editor/${project.id}`)}
                 >
                   <CardContent className="mx-2 mt-2 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-sm p-0">
@@ -361,8 +361,8 @@ export default function ProjectsPage() {
               <div className="flex items-center gap-4 px-4 py-2 text-xs font-medium text-muted-foreground">
                 <div className="w-12 shrink-0" />
                 <div className="min-w-0 flex-1">Title</div>
-                <div className="w-28 shrink-0">Visibility</div>
-                <div className="w-32 shrink-0">Edited</div>
+                <div className="hidden w-28 shrink-0 md:block">Visibility</div>
+                <div className="hidden w-32 shrink-0 md:block">Edited</div>
                 <div className="w-8 shrink-0" />
               </div>
               {sortedProjects.map((project, index) => (
@@ -412,11 +412,14 @@ export default function ProjectsPage() {
                         )}
                       </span>
                     )}
+                    <p className="mt-1 text-xs text-muted-foreground md:hidden">
+                      <span className="capitalize">{project.visibility}</span> · {formatUpdatedAt(project.updatedAt)} · {formatBytes(project.storageBytes)}
+                    </p>
                   </div>
-                  <div className="w-28 shrink-0 text-sm capitalize text-muted-foreground">
+                  <div className="hidden w-28 shrink-0 md:block text-sm capitalize text-muted-foreground">
                     {project.visibility}
                   </div>
-                  <div className="w-32 shrink-0 text-xs tabular-nums text-muted-foreground">
+                  <div className="hidden w-32 shrink-0 md:block text-xs tabular-nums text-muted-foreground">
                     {formatUpdatedAt(project.updatedAt)} · {formatBytes(project.storageBytes)}
                   </div>
                   <div className="w-8 shrink-0">
