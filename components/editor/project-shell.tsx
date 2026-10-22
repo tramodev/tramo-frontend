@@ -23,7 +23,7 @@ export function ProjectShell({
     <>
       {sidebar}
       <SidebarInset className="min-w-0">
-        <header className="flex h-16 shrink-0 items-center gap-4 px-4 md:px-8">
+        <header className="flex h-28 shrink-0 flex-wrap items-center gap-2 px-4 py-2 md:h-16 md:flex-nowrap md:gap-4 md:px-8">
           <SidebarTrigger className="md:hidden" />
           {showLogo && (
             <>
@@ -34,7 +34,7 @@ export function ProjectShell({
             </>
           )}
           <div className="min-w-0 flex-1">{titleSlot}</div>
-          <div className="ml-auto flex min-w-0 max-w-[70%] items-center gap-3 overflow-x-auto">
+          <div className="ml-auto flex w-full min-w-0 items-center gap-3 overflow-x-auto md:w-auto md:max-w-[70%] [&>*]:shrink-0">
             {actions}
           </div>
         </header>

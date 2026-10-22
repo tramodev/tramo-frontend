@@ -127,16 +127,16 @@ export function EditorActions({
   return (
     <>
       {textStats ? (
-        <span className="text-xs text-muted-foreground" title="Total for the project">
+        <span className="hidden text-xs text-muted-foreground md:inline" title="Total for the project">
           {textStats.words} words · {textStats.characters} characters
         </span>
-      ) : <span className="text-xs text-muted-foreground" role="status">Counting project…</span>}
+      ) : <span className="hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
       <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />
       <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />
       <Button data-tour="share" variant="secondary" size="lg" asChild>
-        <Link href={`/projects/${projectId}/share`}>
+        <Link href={`/projects/${projectId}/share`} aria-label="Publish and share project">
           <Share2 className="h-[15px] w-[15px]" />
-          Publish &amp; Share
+          <span className="hidden sm:inline">Publish &amp; Share</span>
         </Link>
       </Button>
       <UserMenu loggedIn={!!profile} username={profile?.username ?? null} imageUrl={profile?.imageUrl ?? null} />
