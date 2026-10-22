@@ -3,7 +3,8 @@
 "use client"
 
 import Link from "next/link"
-import { Menu } from "lucide-react"
+import { ChevronDown, Menu } from "lucide-react"
+import { RESOURCE_LINKS } from "@/components/layout/resources-menu"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -18,7 +19,7 @@ export function NavMobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+        <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
           <Menu />
         </Button>
       </SheetTrigger>
@@ -32,16 +33,25 @@ export function NavMobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
               Product
             </Link>
           </SheetClose>
+          <SheetClose asChild>
+            <Link href="/#pricing" className="rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Plans</Link>
+          </SheetClose>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground [&::-webkit-details-marker]:hidden">Resources<ChevronDown aria-hidden="true" className="size-3.5 transition-transform group-open:rotate-180" /></summary>
+            <div className="ml-4 border-l border-border pl-2">
+              {RESOURCE_LINKS.map(({ href, label }) => <SheetClose key={href} asChild><Link href={href} className="block rounded-full px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">{label}</Link></SheetClose>)}
+            </div>
+          </details>
           {!isLoggedIn && (
             <>
               <SheetClose asChild>
                 <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-medium text-primary hover:bg-muted">
-                  Log in
+                  Log In
                 </Link>
               </SheetClose>
               <SheetClose asChild>
                 <Link href="/signup" className="mt-2">
-                  <Button size="lg" className="w-full">Get Started</Button>
+                  <Button size="lg" className="w-full">Get started</Button>
                 </Link>
               </SheetClose>
             </>
