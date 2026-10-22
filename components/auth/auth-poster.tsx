@@ -45,7 +45,7 @@ export const TRAIL_CIRCLES = [
 
 export function TrailArt() {
   return (
-    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 688 868" fill="none" preserveAspectRatio="xMidYMid slice">
+    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 688 868" fill="none" preserveAspectRatio="xMidYMid meet">
       {TRAIL_PATHS.map((p) => (
         <path key={p.d} d={p.d} className="stroke-primary" strokeWidth="10" strokeLinecap="round" opacity={p.opacity} />
       ))}

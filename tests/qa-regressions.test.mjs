@@ -203,3 +203,23 @@ test.each([['', '', '', 'Complete all password fields'], ['current', 'Abcdefgh1!
   expect(requests).toHaveLength(0);
   expect(flatten(view.render('ChangePasswordSection')).find(node => node.props.role === 'alert').props.children).toBe(error);
 });
+
+test('mismatched passwords show one inline error and never submit', async () => {
+  const requests = [];
+  const view = load('components/profile/settings-view.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/lib/password-strength': { getPasswordStrength: () => ({}) },
+    '@/lib/account': { changePassword: async (...args) => requests.push(args) },
+    '@/components/ui/field': { FieldError: 'FieldError' },
+  }, '\nexport { ChangePasswordSection };');
+  const render = () => flatten(view.render('ChangePasswordSection'));
+  for (const [id, value] of [['current-password', 'current'], ['new-password', 'Abcdefghijk1!'], ['confirm-new-password', 'Different123!']]) {
+    render().find(node => node.props.id === id).props.onChange({ target: { value } });
+  }
+  await render().find(node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  expect(requests).toHaveLength(0);
+  expect(render().filter(node => node.props.children === 'Passwords do not match')).toHaveLength(1);
+  expect(render().some(node => node.props.role === 'alert')).toBe(false);
+  render().find(node => node.props.id === 'confirm-new-password').props.onChange({ target: { value: 'Abcdefghijk1!' } });
+  expect(render().filter(node => node.props.children === 'Passwords do not match')).toHaveLength(0);
+});

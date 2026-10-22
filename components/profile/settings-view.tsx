@@ -96,7 +96,7 @@ function ChangePasswordSection() {
       return
     }
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match")
+      setError("")
       return
     }
 

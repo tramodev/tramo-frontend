@@ -49,9 +49,9 @@ export default async function SettingsPage({
 
   return (
     <main className="container-app flex-1">
-      <div className="pt-9 px-18 pb-16">
-        <div className="grid grid-cols-[216px_minmax(0,1fr)] gap-14 items-start">
-          <nav className="sticky top-6 flex flex-col gap-1">
+      <div className="pt-9 px-6 md:px-18 pb-16">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-[13.5rem_minmax(0,1fr)] md:gap-14 items-start">
+          <nav className="flex flex-col gap-1 md:sticky md:top-6">
             <h1 className="font-display text-[2.25rem] font-normal leading-[1.1] mb-8">Settings</h1>
             {TABS.map(({ key, label, icon: Icon }) => (
               <Link
@@ -68,7 +68,7 @@ export default async function SettingsPage({
             ))}
           </nav>
 
-          <div className="max-w-[560px] flex flex-col gap-11">
+          <div className="min-w-0 w-full max-w-[35rem] flex flex-col gap-11">
             {tab === "account" && (
               <>
                 <section>
@@ -77,16 +77,16 @@ export default async function SettingsPage({
                     Your username and email are used to sign in and can&apos;t be changed here.
                   </p>
                   <dl className="flex flex-col">
-                    <div className="flex items-center justify-between py-3 text-sm border-t border-border">
+                    <div className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm border-t border-border">
                       <dt className="text-muted-foreground">Username</dt>
-                      <dd className="font-medium">{profile.username}</dd>
+                      <dd className="min-w-0 break-all font-medium">{profile.username}</dd>
                     </div>
-                    <div className="flex items-center justify-between py-3 text-sm border-t border-border">
+                    <div className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm border-t border-border">
                       <dt className="text-muted-foreground">Email</dt>
-                      <dd className="font-medium">{profile.email || "—"}</dd>
+                      <dd className="min-w-0 break-all font-medium">{profile.email || "—"}</dd>
                     </div>
                     {profile.createdAt && (
-                      <div className="flex items-center justify-between py-3 text-sm border-t border-b border-border">
+                      <div className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm border-t border-b border-border">
                         <dt className="text-muted-foreground">Joined</dt>
                         <dd className="inline-flex items-center gap-1.5 font-medium">
                           <Calendar className="h-[14px] w-[14px]" />

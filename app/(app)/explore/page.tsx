@@ -46,7 +46,7 @@ export default async function ExplorePage({
 
   return (
     <main className="container-app flex-1">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-8 pt-9 px-6 md:px-18 pb-0">
+      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 md:gap-8 pt-9 px-6 md:px-18 pb-0">
         <div>
           <span className="block text-sm font-medium text-primary mb-2">
             The commons
@@ -55,9 +55,9 @@ export default async function ExplorePage({
             Explore
           </h1>
         </div>
-        <form action="/explore" method="get" className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+        <form action="/explore" method="get" className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
           <input type="hidden" name="sort" value={sort} />
-          <div className="relative w-full md:w-[340px]">
+          <div className="relative w-full lg:w-[21.25rem]">
             <Search className="pointer-events-none absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -100,7 +100,7 @@ export default async function ExplorePage({
       </div>
 
       {featured && (
-        <div className="relative grid items-center mt-7 mx-6 md:mx-18 py-6 px-5 lg:py-9 lg:px-10 grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 lg:gap-12 rounded-[28px] bg-card">
+        <div className="relative grid items-center mt-7 mx-6 md:mx-18 py-6 px-5 lg:py-9 lg:px-10 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] gap-6 lg:gap-12 rounded-[28px] bg-card">
           <Link href={`/p/${featured.id}`} className="absolute inset-0 z-0" aria-label={featured.title} />
 
           <div>
@@ -126,7 +126,7 @@ export default async function ExplorePage({
                 </span>
               )}
             </div>
-            <h2 className="font-display text-[2.125rem] font-normal leading-[1.2] mb-2.5">
+            <h2 className="break-words font-display text-[2.125rem] font-normal leading-[1.2] mb-2.5">
               {featured.title}
             </h2>
 

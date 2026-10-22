@@ -172,7 +172,7 @@ export default function ProjectsPage() {
         <h1 className="font-display text-[2.75rem] font-normal leading-[1.1] mb-7">
           Start a new project
         </h1>
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-[repeat(auto-fill,minmax(min(100%,17.5rem),1fr))]">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17.5rem),1fr))] gap-4">
           <button
             disabled={creating}
             onClick={() => handleCreateProject()}
