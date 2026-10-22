@@ -100,7 +100,7 @@ export default async function ExplorePage({
       </div>
 
       {featured && (
-        <div className="relative grid items-center mt-7 mx-6 md:mx-18 py-6 px-5 lg:py-9 lg:px-10 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] gap-6 lg:gap-12 rounded-[28px] bg-card">
+        <div className="relative grid items-center mt-7 mx-6 md:mx-12 py-6 px-5 lg:py-9 lg:px-10 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] gap-6 lg:gap-12 rounded-[28px] bg-card">
           <Link href={`/p/${featured.id}`} className="absolute inset-0 z-0" aria-label={featured.title} />
 
           <div>
