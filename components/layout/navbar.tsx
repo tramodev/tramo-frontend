@@ -51,7 +51,7 @@ export async function Navbar() {
                 Log In
               </Link>
               <Button asChild size="lg">
-                <Link href="/signup">Get started</Link>
+                <Link href="/signup">Start for free</Link>
               </Button>
             </div>
           )}
