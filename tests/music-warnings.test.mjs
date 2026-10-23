@@ -15,7 +15,7 @@ const { plainMusicWarning } = exports;
 test('actual ABC parser warnings display their position and character without span markup', () => {
   const [tune] = parseOnly('X:1\nK:C\n?');
   expect(tune.warnings).toHaveLength(1);
-  expect(plainMusicWarning(tune.warnings[0])).toBe('Music Line:3:1: Unknown character ignored:  ?');
+  expect(plainMusicWarning(tune.warnings[0])).toBe('Music Line:3:1: Unknown character ignored: ?');
 });
 
 test('encoded user notation stays literal text and is decoded only once', () => {
@@ -26,5 +26,18 @@ test('encoded user notation stays literal text and is decoded only once', () => 
 
 test('a raw angle bracket highlighted by ABC remains part of the warning', () => {
   const [tune] = parseOnly('X:1\nK:C\n<');
-  expect(plainMusicWarning(tune.warnings[0])).toBe('Music Line:3:1: Unknown character ignored:  <');
+  expect(plainMusicWarning(tune.warnings[0])).toBe('Music Line:3:1: Unknown character ignored: <');
+});
+
+test('unknown-character warnings show only the ignored character, not the surrounding valid notes', () => {
+  const [tune] = parseOnly('X:1\nK:C\nC D ? E F');
+  expect(tune.warnings.map(plainMusicWarning)).toEqual(['Music Line:3:5: Unknown character ignored: ?']);
+});
+
+test('each ignored character has its own warning and position', () => {
+  const [tune] = parseOnly('X:1\nK:C\n? @');
+  expect(tune.warnings.map(plainMusicWarning)).toEqual([
+    'Music Line:3:1: Unknown character ignored: ?',
+    'Music Line:3:3: Unknown character ignored: @',
+  ]);
 });
