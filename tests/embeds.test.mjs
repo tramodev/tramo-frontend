@@ -220,3 +220,32 @@ test('editor/public registrations and CSP include embeds without allowing extern
     expect(script).not.toContain('youtube');
   });
 });
+
+
+test('selecting /youtube captures the caret after removing the slash query', () => {
+  const s = pluginSetup();
+  s.editor.update(() => {
+    const text = lexical.$getRoot().getFirstDescendant();
+    text.setTextContent('/youtube');
+    text.selectEnd();
+  }, { discrete: true });
+  const slash = load('app/editor/plugins/SlashMenuPlugin.tsx', {
+    react: { useState: () => ['youtube', () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => fn() },
+    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [s.editor] },
+    '@lexical/react/LexicalTypeaheadMenuPlugin': { LexicalTypeaheadMenuPlugin: 'Typeahead', MenuOption: class {}, useBasicTypeaheadTriggerMatch: () => () => null },
+    './ImagesPlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
+    '@/app/editor/plugins/EmbedsPlugin': s.plugin,
+  });
+  const menu = slash.default().props.children.find(node => node.type === 'Typeahead').props;
+  expect(menu.options).toHaveLength(1);
+  expect(menu.options[0].label).toBe('Embed');
+  s.editor.update(() => {
+    menu.onSelectOption(menu.options[0], lexical.$getRoot().getFirstDescendant(), () => {});
+  }, { discrete: true });
+  expect(s.render().find(node => node.type === 'Dialog').props.open).toBe(true);
+  s.enter('https://youtu.be/dQw4w9WgXcQ');
+  s.submit();
+  const children = s.editor.getEditorState().toJSON().root.children;
+  expect(children.some(node => node.type === 'embed' && node.id === 'dQw4w9WgXcQ')).toBe(true);
+  expect(children.flatMap(node => node.children ?? []).some(node => node.text?.includes('/youtube'))).toBe(false);
+});
