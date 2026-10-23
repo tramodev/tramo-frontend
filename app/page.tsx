@@ -44,16 +44,16 @@ export default async function Home() {
             </div>
             <div aria-hidden="true" className="px-2 sm:px-4">
               <p className="mb-5 text-xs font-medium text-muted-foreground">A trail to a better cup of coffee</p>
-              <ol className="space-y-4 border-l border-border pl-4 sm:pl-6">
-                <li className="-rotate-2 rounded-lg border border-border bg-background p-5 shadow-elevation-1">
+              <ol className="space-y-4 rounded-md border border-border bg-muted/20 p-4 sm:p-6">
+                <li className="rounded-lg border border-border bg-card p-5 shadow-elevation-1">
                   <span className="mb-3 block text-xs text-muted-foreground">01 · A question</span>
                   <p className="font-display text-xl font-medium">Why does my coffee taste bitter?</p>
                 </li>
-                <li className="ml-3 rotate-2 rounded-lg border border-primary/30 bg-primary/5 p-5 shadow-elevation-1 sm:ml-6">
+                <li className="rounded-lg border border-primary/30 bg-primary/5 p-5 shadow-elevation-1">
                   <span className="mb-3 flex items-center justify-between gap-2 text-xs text-primary">02 · A shared idea<Link2 className="size-3.5" /></span>
                   <p className="font-display text-xl font-medium">Grind size &amp; extraction</p>
                 </li>
-                <li className="-rotate-1 rounded-lg border border-border bg-background p-5 shadow-elevation-1">
+                <li className="rounded-lg border border-border bg-card p-5 shadow-elevation-1">
                   <span className="mb-3 block text-xs text-muted-foreground">03 · Your next direction</span>
                   <p className="font-display text-xl font-medium">My new morning recipe</p>
                 </li>
