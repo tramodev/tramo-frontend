@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-function setup(hasDrafts, storageFails = false) {
+function setup(hasDrafts, storageFails = false, hasTitles = false) {
   const exports = {}, states = [], calls = [];
   let index = 0;
   const jsx = (type, props) => ({ type, props });
@@ -21,6 +21,7 @@ function setup(hasDrafts, storageFails = false) {
     '@/components/ui/dropdown-menu': dropdown,
     '@/components/shared/confirm-dialog': { ConfirmDialog: 'ConfirmDialog' },
     '@/components/shared/author-avatar': { initial: () => 'U' },
+    '@/lib/item-title-saves': { hasPendingItemTitles: () => hasTitles },
     '@/lib/editor-draft': { listDrafts: () => hasDrafts ? [{}] : [], clearLocalDrafts: () => calls.push('clear') },
     '@/app/actions': { handleLogout: async () => { calls.push('logout'); } },
   })[name] ?? {} });
@@ -54,6 +55,14 @@ test('logout without unsynced drafts needs no confirmation', () => {
 
 test('unavailable local storage still prompts before logging out', () => {
   const s = setup(false, true);
+  s.selectLogout();
+  expect(s.dialog().open).toBe(true);
+  expect(s.calls).toEqual([]);
+});
+
+
+test('pending note titles also require logout confirmation', () => {
+  const s = setup(false, false, true);
   s.selectLogout();
   expect(s.dialog().open).toBe(true);
   expect(s.calls).toEqual([]);

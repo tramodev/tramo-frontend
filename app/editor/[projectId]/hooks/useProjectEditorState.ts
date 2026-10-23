@@ -16,7 +16,6 @@ import {
   createItem,
   createLooseItem,
   deleteItem,
-  renameItem,
   setItemTitleAlign,
   attachItemToTrail,
   detachItemFromTrail,
@@ -32,6 +31,7 @@ import type { ExtractionResult } from '@/lib/extract-selection-client';
 import { useAutoSave } from '@/app/editor/[projectId]/hooks/useAutoSave';
 import { clearLocalDrafts, editorDraftForRoute, type DraftCommitResult } from '@/lib/editor-draft';
 import type { UserProfile } from '@/lib/profile';
+import { ItemTitleSaves } from '@/lib/item-title-saves';
 
 const subscribeIdle = () => () => {};
 const idleDraft = { status: 'saved' as const, error: '' };
@@ -50,6 +50,23 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   useEffect(() => { if (user?.userId) clearLocalDrafts(user.userId); }, [user?.userId]);
   const router = useRouter();
   const pendingSaves = useRef(createPendingSaves());
+  const [titleSaves] = useState(() => new ItemTitleSaves(user?.userId));
+  const titleState = useSyncExternalStore(titleSaves.subscribe, titleSaves.getSnapshot, titleSaves.getSnapshot);
+  useEffect(() => {
+    titleSaves.start();
+    const online = () => titleSaves.retry();
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      void titleSaves.flush().catch(() => {});
+      if (titleSaves.needsUnloadWarning()) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('online', online);
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => {
+      titleSaves.dispose();
+      window.removeEventListener('online', online);
+      window.removeEventListener('beforeunload', beforeUnload);
+    };
+  }, [titleSaves]);
 
   const authRedirectedRef = useRef(false);
   const redirectToLogin = useCallback(() => {
@@ -125,10 +142,10 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   useEffect(() => {
     if (!draft || draftState.status !== 'saved' || !draft.backup.result) return;
     void Promise.resolve().then(() => {
-      setProjectTitle(draft.backup.latest.project.title.trim() || 'Untitled project');
-      setTrails(previous => previous.map(trail => ({ ...trail, title: draft.backup.latest.trail.title.trim() || 'My first trail' })));
+      setProjectTitle(title => title.trim() || 'Untitled project');
+      setTrails(previous => previous.map(trail => ({ ...trail, title: trail.title.trim() || 'My first trail' })));
       setItems(previous => Object.fromEntries(Object.entries(previous).map(([id, item]) => [id, { ...item,
-        title: draft.backup.latest.item.title.trim() || 'Untitled note' }])));
+        title: item.title.trim() || 'Untitled note' }])));
     });
   }, [draft, draftState.status]);
 
@@ -173,6 +190,8 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
         const item = project.items[itemId];
         if (item) project.items[itemId] = { ...item, content, textStats: countTextStats(content) };
       }
+      const pendingTitles = titleSaves.restore(routeProjectId, Object.keys(project.items));
+      for (const [id, title] of Object.entries(pendingTitles)) project.items[id] = { ...project.items[id], title };
       setProjectTitle(project.title);
       setVisibility(project.visibility);
       setDescription(project.description);
@@ -193,7 +212,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     return () => {
       cancelled = true;
     };
-  }, [routeProjectId, router, redirectToLogin, draft, user]);
+  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves]);
 
   useEffect(() => {
     if (isDraft || !loaded || (!connectionsPanelOpen && view !== 'graph') || mapPreviews !== undefined) return;
@@ -289,6 +308,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   }, []);
 
   const handleSelectItem = (item: Item, trailId?: string) => {
+    void titleSaves.flush().catch(() => {});
     setView('write');
     setContentLoadError(false);
     const request = { itemId: item.id, sequence: ++navigationSequence.current, focus: true };
@@ -540,6 +560,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
 
   const handleDeleteItem = (itemId: string) => pendingSaves.current.track(`delete-item:${itemId}`, async () => {
     await deleteItem(itemId, restoreEpoch, projectId);
+    titleSaves.discard(projectId, itemId);
     setTrails(prevTrails => prevTrails.map(trail => ({
       ...trail,
       itemIds: trail.itemIds.filter(id => id !== itemId),
@@ -574,7 +595,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     if (result && itemId === draft.editorKey) itemId = String(result.itemId);
     if (draft && draft.getSnapshot().status !== 'saved') {
       setItems(previous => Object.fromEntries(Object.entries(previous).map(([id, item]) => [id, { ...item, title }])));
-      draft.update({ item: { ...draft.backup.latest.item, title } });
+      draft.update({ item: { ...draft.backup.latest.item, title } }, true);
       return Promise.resolve();
     }
     setItems(prevItems => {
@@ -582,7 +603,8 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       if (!item) return prevItems;
       return { ...prevItems, [itemId]: { ...item, title } };
     });
-    return pendingSaves.current.track(`item-title:${itemId}`, () => renameItem(itemId, title, result?.restoreEpoch ?? restoreEpoch, result?.projectId ?? projectId), true).catch(() => {});
+    titleSaves.update(result?.projectId ?? projectId, itemId, title, result?.restoreEpoch ?? restoreEpoch);
+    return Promise.resolve();
   };
 
   const handleDeleteTrail = (trailId: string) => pendingSaves.current.track(`delete-trail:${trailId}`, async () => {
@@ -651,10 +673,12 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     isDraft,
     draftError: draftState.error,
     retryDraft: draft?.retry,
+    titleSaveError: titleState.error,
+    retryItemTitles: titleSaves.retry,
     resolveProjectId: draft && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId) ? draft.resolveProjectId : undefined,
     onDraftProjectTitle: isDraft ? (title: string) => { void handleRenameProject(title); } : undefined,
     onDraftTrailTitle: isDraft ? (id: string, title: string) => { void handleRenameTrail(id, title); } : undefined,
-    onDraftItemTitle: draft ? (id: string, title: string) => { void handleRenameItem(id, title); } : undefined,
+    onDraftItemTitle: (id: string, title: string) => { void handleRenameItem(id, title); },
     loaded,
     restoreEpoch,
     projectTitle,
@@ -681,7 +705,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     handleVisibleItem,
     handleSelectTrail,
     redirectToLogin,
-    flushProjectChanges: () => pendingSaves.current.flush(),
+    flushProjectChanges: async () => { await Promise.all([titleSaves.flush(), pendingSaves.current.flush()]); },
     applyExtraction: (sourceId: string, expectedContent: string, result: ExtractionResult, applySource: boolean) => {
       setItems(previous => ({ ...previous,
         [result.item.id]: { ...result.item, textStats: countTextStats(result.item.content ?? '') },
@@ -715,6 +739,9 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     ...autoSave,
     ...(isDraft ? { saveStatus: draftState.status === 'error' ? 'error' as const : draftState.status === 'draft' ? 'idle' as const : 'saving' as const,
       saveError: draftState.error } : {}),
+    ...(!isDraft && titleState.status === 'error' ? { saveStatus: 'error' as const }
+      : !isDraft && titleState.status === 'saving' && autoSave.saveStatus !== 'error' ? { saveStatus: 'saving' as const }
+      : !isDraft && titleState.status === 'saved' && autoSave.saveStatus === 'idle' ? { saveStatus: 'saved' as const } : {}),
     onChange: (itemId: string, editorState: import('lexical').EditorState) => {
       const state = draft ? editorState.toJSON() : undefined;
       draft?.setPendingImages(JSON.stringify(state).includes('"imageId":""'));
