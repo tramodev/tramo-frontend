@@ -361,7 +361,7 @@ test('recovery of a deleted project creates a new project with the latest local 
   expect(draft.getSnapshot().status).toBe('saved');
 });
 
-test.each(['/', '/youtube', '/etc/hosts'])('slash text is saved as ordinary content (%s)', async text => {
+test.each(['/youtube', '/etc/hosts'])('slash text is saved as ordinary content (%s)', async text => {
   const s = setup(), draft = s.api.newDraft('user');
   draft.update({ item: { title: '', titleAlign: 'left', content: content(text) } });
   await draft.commit();
@@ -397,4 +397,17 @@ test('tabs with copied session storage fork a live draft and keep the original b
   await reloaded.claim();
   expect(reloaded.backup.clientRequestId).toBe(original.backup.clientRequestId);
   reloaded.dispose();
+});
+
+
+test('opening and cancelling the slash menu never creates an empty project', async () => {
+  const s = setup(), draft = s.api.newDraft('user');
+  draft.start();
+  draft.update({ item: { ...draft.backup.latest.item, content: content('/') } });
+  await settle();
+  expect(s.requests).toHaveLength(0);
+  draft.update({ item: { ...draft.backup.latest.item, content: content('') } });
+  await settle();
+  expect(s.requests).toHaveLength(0);
+  expect(s.api.hasDraftContent(draft.backup.latest)).toBe(false);
 });

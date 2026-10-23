@@ -45,6 +45,8 @@ export function beginDraft(userId: string) {
 function meaningfulNode(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
   const node = value as Record<string, unknown>;
+  if (node.type === 'paragraph' && Array.isArray(node.children) && node.children.every(child => child?.type === 'text')
+    && node.children.map(child => child.text).join('').trim() === '/') return false;
   if (typeof node.text === 'string' && hasVisibleText(node.text)) return true;
   if (node.type === 'equation' && typeof node.equation === 'string' && node.equation.trim()) return true;
   if (node.type === 'music' && typeof node.abc === 'string' && node.abc.trim()) return true;
