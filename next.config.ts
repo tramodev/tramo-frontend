@@ -25,6 +25,9 @@ const csp = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    agentUpgrade: "security",
+  },
   images: {
     remotePatterns: publicImageOrigins.map((origin) => ({
       protocol: "https" as const,
