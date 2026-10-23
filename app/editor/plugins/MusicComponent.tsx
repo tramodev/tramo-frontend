@@ -68,6 +68,8 @@ function fitToDrawing(svg: SVGSVGElement) {
 }
 
 function plainMusicWarning(warning: string): string {
+  const ignored = /^(Music Line:\d+:\d+: Unknown character ignored:)\s+.*?<span\b[^>]*>(.*?)<\/span>/.exec(warning);
+  if (ignored) warning = `${ignored[1]} ${ignored[2]}`;
   const entities: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&amp;': '&' };
   return warning.replace(/<\/?span\b[^>]*>|&(?:lt|gt|amp);/g, token => entities[token] ?? '');
 }
