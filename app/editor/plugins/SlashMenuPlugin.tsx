@@ -155,13 +155,13 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId }: { proje
     (option: SlashOption, textNodeContainingQuery: TextNode | null, closeMenu: () => void) => {
       editor.update(() => {
         textNodeContainingQuery?.remove();
+        if (option.run) {
+          option.run(editor);
+        } else {
+          fileInputRef.current?.click();
+        }
+        closeMenu();
       });
-      if (option.run) {
-        option.run(editor);
-      } else {
-        fileInputRef.current?.click();
-      }
-      closeMenu();
     },
     [editor],
   );
