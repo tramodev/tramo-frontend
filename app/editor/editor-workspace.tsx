@@ -149,6 +149,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
         content={
           <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden">
             {project.draftError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.draftError}<button type="button" className="underline" onClick={project.retryDraft}>Retry</button></div>}
+            {project.titleSaveError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.titleSaveError}<button type="button" className="underline" onClick={project.retryItemTitles}>Retry</button></div>}
             {project.loaded && project.profile && project.selectedItem && <TaskHint id={`${project.profile?.username ?? projectId}:${project.trails.length > 1 ? 'reuse' : Object.keys(project.items).length > 1 ? 'connect' : 'write'}`}>
               {project.trails.length > 1 ? 'Reuse a note with “Add existing note” in another trail. Edits appear everywhere that note is used.' : Object.keys(project.items).length > 1 ? 'Mention another note with @, or connect notes in the map.' : 'Start writing in the note. Your changes save automatically; you can add a title later.'}
             </TaskHint>}

@@ -20,10 +20,11 @@ function setup({ commit, save, metadata, storageFails = false, local = storage(s
   const localStorage = local, sessionStorage = session;
   const requests = [], saves = [], titles = [];
   let seed;
-  class DraftRequestError extends Error {
-    constructor(status, retryAfter = 0) { super(`Request failed with status ${status}`); this.status = status; this.retryAfter = retryAfter; }
-    get retryable() { return this.status === 429 || this.status >= 500; }
-  }
+  const client = {};
+  runInNewContext(ts.transpileModule(readFileSync('lib/editor-draft-client.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, { exports: client, Error });
+  const { DraftRequestError } = client;
   const exports = {}, utils = {};
   runInNewContext(ts.transpileModule(readFileSync('app/editor/editor-utils.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports: utils });
   const jsx = { exports, Error, TypeError, Date, setTimeout, clearTimeout, crypto: { randomUUID }, navigator: { locks }, localStorage, sessionStorage };
@@ -210,7 +211,7 @@ test('storage failure warns rather than claiming the text has a local backup', a
 });
 
 test('permanent API rejection does not retry in a loop', async () => {
-  const failing = setup({ commit: async () => { throw new failing.DraftRequestError(403); } });
+  const failing = setup({ commit: async () => { throw new failing.DraftRequestError('Request failed with status 403', 403); } });
   const draft = failing.api.newDraft('user');
   draft.update({ project: { title: 'kept' } });
   await draft.commit().catch(() => {});
@@ -222,7 +223,7 @@ test('permanent API rejection does not retry in a loop', async () => {
 test('Retry-After controls transient retry timing', async () => {
   jest.useFakeTimers();
   try {
-    const s = setup({ commit: async () => { throw new s.DraftRequestError(429, 5000); } });
+    const s = setup({ commit: async () => { throw new s.DraftRequestError('Request failed with status 429', 429, 5000); } });
     const draft = s.api.newDraft('user');
     draft.update({ project: { title: 'kept' } });
     await draft.commit().catch(() => {});
@@ -333,7 +334,7 @@ test('signing out prevents an in-flight save from recreating the local backup', 
   draft.update({ project: { title: 'Private unfinished text' } });
   const opening = draft.commit();
   s.api.clearLocalDrafts();
-  fail(new s.DraftRequestError(403));
+  fail(new s.DraftRequestError('Request failed with status 403', 403));
   await opening.catch(() => {});
   expect(s.api.listDrafts('alice')).toHaveLength(0);
 });
@@ -341,7 +342,7 @@ test('signing out prevents an in-flight save from recreating the local backup', 
 test('recovery of a deleted project creates a new project with the latest local content', async () => {
   let attempts = 0;
   const s = setup({ commit: async () => {
-    if (++attempts === 1) throw new s.DraftRequestError(404);
+    if (++attempts === 1) throw new s.DraftRequestError('Request failed with status 404', 404);
     return { ...result, projectId: 'recovered' };
   } });
   const draft = s.api.newDraft('alice');
@@ -410,4 +411,91 @@ test('opening and cancelling the slash menu never creates an empty project', asy
   await settle();
   expect(s.requests).toHaveLength(0);
   expect(s.api.hasDraftContent(draft.backup.latest)).toBe(false);
+});
+
+test('a draft title is backed up immediately and committed once after typing stops', async () => {
+  jest.useFakeTimers();
+  try {
+    const s = setup(), draft = s.api.newDraft('user');
+    let title = '';
+    for (const letter of 'Titulo de nota largo') {
+      title += letter;
+      draft.update({ item: { ...draft.backup.latest.item, title } }, true);
+      expect(s.api.readDraft('user', draft.backup.clientRequestId).latest.item.title).toBe(title);
+      await jest.advanceTimersByTimeAsync(30);
+    }
+    expect(s.requests).toHaveLength(0);
+    await jest.advanceTimersByTimeAsync(600);
+    expect(s.requests).toHaveLength(1);
+    expect(s.requests[0].snapshot.item.title).toBe('Titulo de nota largo');
+    expect(draft.getSnapshot().status).toBe('saved');
+    draft.dispose();
+  } finally { jest.useRealTimers(); }
+});
+
+test('a title typed during draft creation waits for debounce before metadata synchronization', async () => {
+  jest.useFakeTimers();
+  try {
+    let confirm;
+    const s = setup({ commit: () => new Promise(resolve => { confirm = resolve; }) });
+    const draft = s.api.newDraft('user');
+    draft.update({ item: { ...draft.backup.latest.item, content: content('Body') } });
+    const opening = draft.commit();
+    draft.update({ item: { ...draft.backup.latest.item, title: 'T' } }, true);
+    confirm(result);
+    await jest.advanceTimersByTimeAsync(30);
+    draft.update({ item: { ...draft.backup.latest.item, title: 'Titulo de nota largo' } }, true);
+    await jest.advanceTimersByTimeAsync(599);
+    expect(s.titles).toHaveLength(0);
+    await jest.advanceTimersByTimeAsync(1);
+    await opening;
+    expect(s.titles).toHaveLength(1);
+    expect(s.titles[0][2].title).toBe('Titulo de nota largo');
+    draft.dispose();
+  } finally { jest.useRealTimers(); }
+});
+
+test('clearing a pending draft title removes its backup without creating a project', async () => {
+  jest.useFakeTimers();
+  try {
+    const s = setup(), draft = s.api.newDraft('user');
+    draft.update({ item: { ...draft.backup.latest.item, title: 'T' } }, true);
+    draft.update({ item: { ...draft.backup.latest.item, title: '' } }, true);
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(s.requests).toHaveLength(0);
+    expect(s.api.listDrafts('user')).toHaveLength(0);
+    draft.dispose();
+  } finally { jest.useRealTimers(); }
+});
+
+test('account cleanup also clears pending note titles without exposing another account', () => {
+  const s = setup();
+  s.localStorage.setItem('tramo:item-title:alice:project:12', 'private');
+  s.localStorage.setItem('tramo:item-title:bob:project:13', 'kept');
+  s.api.clearLocalDrafts('bob');
+  expect(s.localStorage.getItem('tramo:item-title:alice:project:12')).toBeNull();
+  expect(s.localStorage.getItem('tramo:item-title:bob:project:13')).toBe('kept');
+  s.api.clearLocalDrafts();
+  expect(s.localStorage.getItem('tramo:item-title:bob:project:13')).toBeNull();
+});
+
+test('debouncing a newer draft title never bypasses metadata Retry-After', async () => {
+  jest.useFakeTimers();
+  try {
+    let attempts = 0;
+    const s = setup({ metadata: () => ++attempts === 1 ? { status: 429, retryAfter: 5000 } : { status: 200 } });
+    const draft = s.api.newDraft('user');
+    draft.update({ item: { ...draft.backup.latest.item, content: content('Body') } });
+    draft.update({ item: { ...draft.backup.latest.item, title: 'First' } }, true);
+    await jest.advanceTimersByTimeAsync(600);
+    expect(draft.getSnapshot().status).toBe('error');
+    draft.update({ item: { ...draft.backup.latest.item, title: 'Latest' } }, true);
+    await jest.advanceTimersByTimeAsync(4999);
+    expect(s.titles).toHaveLength(1);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(s.titles).toHaveLength(2);
+    expect(s.titles[1][2].title).toBe('Latest');
+    expect(draft.getSnapshot().status).toBe('saved');
+    draft.dispose();
+  } finally { jest.useRealTimers(); }
 });

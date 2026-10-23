@@ -61,6 +61,17 @@ async function setup(extraTrails = []) {
     Event: class { constructor(type) { this.type = type; } },
     console: { error: () => {} },
   });
+  const titleSaves = {}, titleClient = {}, titleTimers = new Map();
+  runInNewContext(transpile('lib/editor-draft-client.ts'), { exports: titleClient, Error });
+  let titleNow = 0, titleTimerId = 0;
+  runInNewContext(transpile('lib/item-title-saves.ts'), {
+    exports: titleSaves, Date: { now: () => titleNow }, Error,
+    setTimeout: (fn, delay) => { const id = ++titleTimerId; titleTimers.set(id, { fn, due: titleNow + delay }); return id; },
+    clearTimeout: id => titleTimers.delete(id),
+    require: name => name === '@/lib/projects-store' ? { saveDraftMetadata: (_projectId, _entity, itemId, fields) => new Promise((resolve, reject) => {
+      itemRenameRequests.push({ itemId, title: fields.title, resolve: () => resolve({ status: 200 }), reject });
+    }) } : name === '@/lib/editor-draft-client' ? titleClient : {},
+  });
   const exports = {};
   const router = { replace: () => {} };
   runInNewContext(transpile('app/editor/[projectId]/hooks/useProjectEditorState.ts'), {
@@ -96,9 +107,10 @@ async function setup(extraTrails = []) {
       '../../editor-utils': { lastItemStorageKey: () => 'last', countTextStats: () => ({ words: 0, characters: 0 }), isAuthError: () => false },
       '../../trail-navigation': navigation,
       '@/lib/pending-saves': saves,
+      '@/lib/item-title-saves': titleSaves,
       '@/app/editor/[projectId]/hooks/useAutoSave': autoSaveExports,
     })[name],
-    window: { location: { search: '', pathname: '/editor/project' } },
+    window: { location: { search: '', pathname: '/editor/project' }, addEventListener() {}, removeEventListener() {} },
     localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
     URLSearchParams, console: { error: () => {} },
   });
@@ -111,7 +123,7 @@ async function setup(extraTrails = []) {
   }
   render();
   await settle();
-  return { render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), createLooseFail: () => looseCreateReject(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews, contentResets, autoSaveRequests,
+  return { runTitleTimers: async () => { const [id, timer] = [...titleTimers].sort((a, b) => a[1].due - b[1].due)[0]; titleNow = timer.due; titleTimers.delete(id); timer.fn(); await settle(); }, render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), createLooseFail: () => looseCreateReject(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews, contentResets, autoSaveRequests,
     renameRequests,
     itemRenameRequests,
     attaches, detaches, orders, projectOrders,
@@ -148,35 +160,36 @@ test('failed trail renames remain optimistic and are retried on flush', async ()
   await flush;
 });
 
-test('sidebar and editor note renames update immediately without older saves restoring the title', async () => {
+test('sidebar and editor note renames stay optimistic and coalesce before saving', async () => {
   const s = await setup();
-  const first = s.render().handleRenameItem('a', 'First');
+  await s.render().handleRenameItem('a', 'First');
   expect(s.render().items.a.title).toBe('First');
   s.render().commitItemTitle('a', 'First', '  Second  ');
   expect(s.render().items.a.title).toBe('Second');
-  expect(s.render().selectedItem.title).toBe('Second');
+  expect(s.itemRenameRequests).toHaveLength(0);
+  const flush = s.render().flushProjectChanges();
   expect(s.itemRenameRequests).toHaveLength(1);
+  expect(s.itemRenameRequests[0].title).toBe('Second');
   s.itemRenameRequests[0].resolve();
-  await first;
-  await settle();
-  expect(s.render().items.a.title).toBe('Second');
-  expect(s.itemRenameRequests[1].title).toBe('Second');
-  s.itemRenameRequests[1].resolve();
-  await s.render().flushProjectChanges();
+  await flush;
   expect(s.render().items.a.title).toBe('Second');
   expect(s.render().items.a.content).toBe('');
 });
 
-test('failed note renames keep the new title and retry on flush', async () => {
+test('failed note renames stay visible and retry automatically after backoff', async () => {
   const s = await setup();
-  const pending = s.render().handleRenameItem('a', 'Renamed');
+  await s.render().handleRenameItem('a', 'Renamed');
+  const failed = s.render().flushProjectChanges();
   s.itemRenameRequests[0].reject(new Error('offline'));
-  await pending;
+  await expect(failed).rejects.toThrow('offline');
   expect(s.render().items.a.title).toBe('Renamed');
-  const flush = s.render().flushProjectChanges();
+  expect(s.render().titleSaveError).toContain('kept locally');
+  await s.runTitleTimers();
   expect(s.itemRenameRequests[1].title).toBe('Renamed');
   s.itemRenameRequests[1].resolve();
-  await flush;
+  await settle();
+  await s.render().flushProjectChanges();
+  expect(s.render().titleSaveError).toBe('');
 });
 
 test('moving a note is optimistic, attaches before detaching, and follows the selected note', async () => {

@@ -69,6 +69,7 @@ test('an invalid project rename never enters the snapshot save barrier', async (
   const hook = load('app/editor/[projectId]/hooks/useProjectEditorState.ts', {
     '@/lib/project-validation': validation,
     '@/lib/pending-saves': pending,
+    '@/lib/item-title-saves': load('lib/item-title-saves.ts').exports,
     'next/navigation': { useRouter: () => ({}) },
     '@/app/editor/[projectId]/hooks/useAutoSave': { useAutoSave: () => ({}) },
   });
@@ -140,6 +141,7 @@ function shareSetup(getProject, saveDescription = async () => {}) {
     '@/lib/profile': { getMyProfile: async () => null },
     '@/lib/project-validation': validation,
     '@/lib/pending-saves': pending,
+    '@/lib/item-title-saves': load('lib/item-title-saves.ts').exports,
     '@/lib/utils': { cn: (...args) => args.join(' ') },
   });
   return { render: () => flatten(page.render('default')), published, savedTags };

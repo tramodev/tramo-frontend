@@ -18,6 +18,15 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
     setPendingImages: pending => pendingImages.push(pending),
     update(change) { Object.assign(draft.backup.latest, change); changes.push(change); },
   };
+  const titleSaves = {};
+  runInNewContext(ts.transpileModule(readFileSync('lib/item-title-saves.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, { exports: titleSaves, setTimeout: () => 0, clearTimeout() {},
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    require: name => name === '@/lib/projects-store' ? { saveDraftMetadata: async (projectId, _entity, id, fields, epoch) => {
+      renames.push([id, fields.title, epoch, projectId]); return { status: 200 };
+    } } : {},
+  });
   const router = { replace: url => replacements.push(url) };
   runInNewContext(ts.transpileModule(readFileSync('app/editor/[projectId]/hooks/useProjectEditorState.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -37,12 +46,13 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
       },
       'next/navigation': { useRouter: () => router },
       '@/lib/editor-draft': { editorDraftForRoute: () => draft, clearLocalDrafts() {} },
-      '@/lib/pending-saves': { createPendingSaves: () => ({ track: (_key, action) => action() }) },
+      '@/lib/pending-saves': { createPendingSaves: () => ({ track: (_key, action) => action(), flush: async () => {} }) },
+      '@/lib/item-title-saves': titleSaves,
       '@/lib/project-validation': { assertProjectText() {} },
       '@/lib/projects-store': { renameItem: async (...args) => { renames.push(args); } },
       '../../editor-utils': { countTextStats: () => ({ words: 0, characters: 0 }), lastItemStorageKey: id => id },
       '@/lib/editor-bootstrap-client': { getEditorBootstrap: () => { bootstraps++; throw new Error('Drafts must not bootstrap'); } },
-      '@/app/editor/[projectId]/hooks/useAutoSave': { useAutoSave: () => ({ onChange: () => { ordinarySaves++; } }) },
+      '@/app/editor/[projectId]/hooks/useAutoSave': { useAutoSave: () => ({ saveStatus: 'idle', saveError: '', onChange: () => { ordinarySaves++; } }) },
     })[name] ?? {},
   });
   const render = (id = 'new', replayEffects = false) => {
@@ -84,13 +94,19 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   expect(bootstraps).toBe(0);
   draft.state = { status: 'saved', error: '' };
   beforeCreated.onDraftItemTitle('draft-note', 'Final character before render');
+  expect(renames).toHaveLength(0);
+  await beforeCreated.flushProjectChanges();
   expect(renames.at(-1)).toEqual(['22', 'Final character before render', 0, 'real']);
   hook = render('real');
   expect(hook.isDraft).toBe(false);
   hook.onDraftItemTitle('draft-note', 'Title still being typed');
   hook.onDraftItemTitle('other-note', 'Another title');
+  expect(render('real').saveStatus).toBe('saving');
+  await hook.flushProjectChanges();
+  expect(render('real').saveStatus).toBe('saved');
   expect(renames.slice(1).map(args => args.slice(0, 2))).toEqual([['22', 'Title still being typed'], ['other-note', 'Another title']]);
   hook.onChange('22', { toJSON: () => ({ root: { children: [] } }) });
   expect(pendingImages.at(-1)).toBe(false);
   expect(ordinarySaves).toBe(1);
+  expect(render('real').selectedItem.title).toBe('Title still being typed');
 });

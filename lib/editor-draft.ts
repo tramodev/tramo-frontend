@@ -67,7 +67,7 @@ function hasVisibleText(value: string): boolean {
 export function clearLocalDrafts(userId?: string | null) {
   try {
     localStorage.setItem('tramo:draft-owner', userId ?? '');
-    for (const [storage, prefix] of [[localStorage, 'tramo:draft:'], [sessionStorage, 'tramo:active-draft:']] as const) {
+    for (const [storage, prefix] of [[localStorage, 'tramo:draft:'], [localStorage, 'tramo:item-title:'], [sessionStorage, 'tramo:active-draft:']] as const) {
       for (const key of Object.keys(storage)) {
         if (key.startsWith(prefix) && (!userId || !key.startsWith(`${prefix}${userId}:`) && key !== `${prefix}${userId}`)) storage.removeItem(key);
       }
@@ -174,6 +174,9 @@ export class EditorDraft {
   private snapshot: { status: 'draft' | 'committing' | 'syncing' | 'saved' | 'error'; error: string } = { status: 'draft', error: '' };
   private inFlight: Promise<string> | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private titleTimer: ReturnType<typeof setTimeout> | null = null;
+  private titleReady: Promise<void> | null = null;
+  private finishTitle?: () => void;
   private attempt = 0;
   private disposed = false;
   private storageError = '';
@@ -229,13 +232,25 @@ export class EditorDraft {
       this.storageError = '';
     } catch { this.storageError = 'Local backup is unavailable. Keep this tab open until your changes are saved.'; }
   }
-  update(change: Partial<DraftEntities>) {
+  update(change: Partial<DraftEntities>, debounceTitle = false) {
     Object.assign(this.backup.latest, copy(change));
     if (this.snapshot.status === 'saved') return;
+    if (debounceTitle) {
+      if (this.titleTimer) clearTimeout(this.titleTimer);
+      this.titleReady ??= new Promise(resolve => { this.finishTitle = resolve; });
+      this.titleTimer = setTimeout(() => {
+        this.titleTimer = null;
+        this.titleReady = null;
+        this.finishTitle?.();
+        this.finishTitle = undefined;
+        if (!this.timer && (this.snapshot.status !== 'error' || !this.backup.submitted)
+          && (hasDraftContent(this.backup.latest) || this.backup.submitted)) void this.commit().catch(() => {});
+      }, 600);
+    }
     if (hasDraftContent(this.backup.latest) || this.backup.submitted) {
       this.persist();
-      if (!this.timer && (this.snapshot.status !== 'error' || !this.backup.submitted)) void this.commit().catch(() => {});
-    }
+      if (!this.timer && !this.titleTimer && (this.snapshot.status !== 'error' || !this.backup.submitted)) void this.commit().catch(() => {});
+    } else { try { localStorage.removeItem(draftStorageKey(this.backup.userId, this.backup.clientRequestId)); } catch {} }
   }
   start() {
     this.disposed = false;
@@ -253,6 +268,11 @@ export class EditorDraft {
     if (!this.inFlight) { this.release?.(); this.release = undefined; }
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    if (this.titleTimer) clearTimeout(this.titleTimer);
+    this.titleTimer = null;
+    this.titleReady = null;
+    this.finishTitle?.();
+    this.finishTitle = undefined;
   }
   setPendingImages(pending: boolean) { this.pendingImages = pending; }
   needsUnloadWarning = () => this.pendingImages || this.pendingFiles > 0 || (this.snapshot.status !== 'saved' && !!this.storageError);
@@ -294,6 +314,7 @@ export class EditorDraft {
   }
   private async save(): Promise<string> {
     try {
+      if (this.titleReady) await this.titleReady;
       if (!this.backup.submitted) this.backup.submitted = copy(this.backup.latest);
       this.persist();
       if (!this.confirmed || !this.backup.result) {
@@ -322,6 +343,7 @@ export class EditorDraft {
       this.backup.synced = base;
       acceptExtractionEpoch(String(result.itemId), 0, base.item.content);
       while (true) {
+        if (this.titleReady) await this.titleReady;
         const latest = copy(this.backup.latest);
         const epoch = result.restoreEpoch;
         if (base.project.title !== latest.project.title) {
@@ -348,7 +370,7 @@ export class EditorDraft {
           }
           base.item.content = latest.item.content; this.persist();
         }
-        if (JSON.stringify(latest) === JSON.stringify(this.backup.latest)) break;
+        if (!this.titleReady && JSON.stringify(latest) === JSON.stringify(this.backup.latest)) break;
       }
       try { discardDraft(this.backup.userId, this.backup.clientRequestId); } catch {}
       this.storageError = '';

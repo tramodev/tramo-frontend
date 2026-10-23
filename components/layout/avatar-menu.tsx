@@ -22,6 +22,7 @@ import {
 import { LogOut, Moon, Settings, Sun, SunMoon } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
 import { clearLocalDrafts, listDrafts } from '@/lib/editor-draft';
+import { hasPendingItemTitles } from '@/lib/item-title-saves';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { initial } from '@/components/shared/author-avatar';
 import type { NavItem } from '@/lib/nav-items';
@@ -121,7 +122,7 @@ export function AvatarMenu({
         <DropdownMenuItem variant="destructive" onSelect={() => {
           try {
             const userId = localStorage.getItem('tramo:draft-owner');
-            if (userId && listDrafts(userId).length) { setConfirmLogout(true); return; }
+            if (userId && (listDrafts(userId).length || hasPendingItemTitles(userId))) { setConfirmLogout(true); return; }
           } catch { setConfirmLogout(true); return; }
           logout();
         }}>
