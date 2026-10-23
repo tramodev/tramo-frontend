@@ -67,6 +67,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   expect(pendingImages.at(-1)).toBe(true);
   expect(changes).toHaveLength(4);
   expect(ordinarySaves).toBe(0);
+  const beforeCreated = hook;
   draft.backup.result = { projectId: 'real', trailId: 21, itemId: 22, restoreEpoch: 0 };
   draft.state = { status: 'syncing', error: '' };
   draft.onCreated(draft.backup.result);
@@ -82,11 +83,13 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   expect(replacements).toEqual(['/editor/real']);
   expect(bootstraps).toBe(0);
   draft.state = { status: 'saved', error: '' };
+  beforeCreated.onDraftItemTitle('draft-note', 'Final character before render');
+  expect(renames.at(-1)).toEqual(['22', 'Final character before render', 0, 'real']);
   hook = render('real');
   expect(hook.isDraft).toBe(false);
   hook.onDraftItemTitle('draft-note', 'Title still being typed');
   hook.onDraftItemTitle('other-note', 'Another title');
-  expect(renames.map(args => args.slice(0, 2))).toEqual([['22', 'Title still being typed'], ['other-note', 'Another title']]);
+  expect(renames.slice(1).map(args => args.slice(0, 2))).toEqual([['22', 'Title still being typed'], ['other-note', 'Another title']]);
   hook.onChange('22', { toJSON: () => ({ root: { children: [] } }) });
   expect(pendingImages.at(-1)).toBe(false);
   expect(ordinarySaves).toBe(1);
