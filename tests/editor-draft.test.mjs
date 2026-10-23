@@ -16,8 +16,8 @@ function storage(fail = false) {
   });
   return entries;
 }
-function setup({ commit, save, metadata, storageFails = false } = {}) {
-  const localStorage = storage(storageFails), sessionStorage = storage();
+function setup({ commit, save, metadata, storageFails = false, local = storage(storageFails), session = storage(), locks } = {}) {
+  const localStorage = local, sessionStorage = session;
   const requests = [], saves = [], titles = [];
   let seed;
   class DraftRequestError extends Error {
@@ -26,7 +26,7 @@ function setup({ commit, save, metadata, storageFails = false } = {}) {
   }
   const exports = {}, utils = {};
   runInNewContext(ts.transpileModule(readFileSync('app/editor/editor-utils.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports: utils });
-  const jsx = { exports, Error, TypeError, Date, setTimeout, clearTimeout, crypto: { randomUUID }, localStorage, sessionStorage };
+  const jsx = { exports, Error, TypeError, Date, setTimeout, clearTimeout, crypto: { randomUUID }, navigator: { locks }, localStorage, sessionStorage };
   runInNewContext(ts.transpileModule(readFileSync('lib/editor-draft.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText, { ...jsx, require: name => ({
@@ -290,8 +290,8 @@ test('metadata synchronization preserves retryable HTTP errors without repeating
   expect(draft.getSnapshot().status).toBe('saved');
 });
 
-test.each(['\u200b', '\u200c', '\u200d', '\u2060', '\u00a0', '\u3000', '/', '/youtube', '/equation'])(
-  'invisible text and slash queries do not create a project (%j)', async text => {
+test.each(['\u200b', '\u200c', '\u200d', '\u2060', '\u00a0', '\u3000'])(
+  'invisible text does not create a project (%j)', async text => {
     const s = setup(), draft = s.api.newDraft('user');
     draft.update({ item: { title: '', titleAlign: 'left', content: content(text) } });
     await settle();
@@ -338,16 +338,63 @@ test('signing out prevents an in-flight save from recreating the local backup', 
   expect(s.api.listDrafts('alice')).toHaveLength(0);
 });
 
-test('recovery checks an existing receipt before navigating to a deleted project', async () => {
-  const s = setup({ commit: async () => { throw new s.DraftRequestError(404); } });
+test('recovery of a deleted project creates a new project with the latest local content', async () => {
+  let attempts = 0;
+  const s = setup({ commit: async () => {
+    if (++attempts === 1) throw new s.DraftRequestError(404);
+    return { ...result, projectId: 'recovered' };
+  } });
   const draft = s.api.newDraft('alice');
+  const originalId = draft.backup.clientRequestId;
   draft.backup.latest.project.title = 'Private note';
   draft.backup.submitted = structuredClone(draft.backup.latest);
+  draft.backup.latest.item.content = content('Latest unsynced edits');
   draft.backup.result = result;
   const created = jest.fn();
   draft.setOnCreated(created);
   draft.start();
-  await draft.commit().catch(() => {});
-  expect(created).not.toHaveBeenCalled();
-  expect(draft.getSnapshot().status).toBe('error');
+  await draft.commit();
+  expect(s.requests).toHaveLength(2);
+  expect(s.requests[1].id).not.toBe(originalId);
+  expect(s.requests[1].snapshot.item.content).toBe(content('Latest unsynced edits'));
+  expect(created).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'recovered' }));
+  expect(draft.getSnapshot().status).toBe('saved');
+});
+
+test.each(['/', '/youtube', '/etc/hosts'])('slash text is saved as ordinary content (%s)', async text => {
+  const s = setup(), draft = s.api.newDraft('user');
+  draft.update({ item: { title: '', titleAlign: 'left', content: content(text) } });
+  await draft.commit();
+  expect(s.requests[0].snapshot.item.content).toBe(content(text));
+});
+
+test('tabs with copied session storage fork a live draft and keep the original backup', async () => {
+  const held = new Set();
+  const locks = { request: async (key, _options, callback) => {
+    if (held.has(key)) return callback(null);
+    held.add(key);
+    try { return await callback({ name: key }); }
+    finally { held.delete(key); }
+  } };
+  const first = setup({ locks, commit: async () => { throw new TypeError('offline'); } });
+  const original = first.api.newDraft('user');
+  await original.claim();
+  original.update({ project: { title: 'Original text' } });
+  await original.commit().catch(() => {});
+  const second = setup({ locks, local: first.localStorage, session: storage(), commit: async () => { throw new TypeError('offline'); } });
+  Object.assign(second.sessionStorage, first.sessionStorage);
+  const duplicate = second.api.newDraft('user');
+  await duplicate.claim();
+  expect(duplicate.backup.clientRequestId).not.toBe(original.backup.clientRequestId);
+  expect(duplicate.backup.submitted).toBeUndefined();
+  duplicate.update({ project: { title: 'Duplicate text' } });
+  await duplicate.commit().catch(() => {});
+  expect(first.api.readDraft('user', original.backup.clientRequestId).latest.project.title).toBe('Original text');
+  expect(second.api.readDraft('user', duplicate.backup.clientRequestId).latest.project.title).toBe('Duplicate text');
+  original.dispose(); duplicate.dispose();
+  await settle();
+  const reloaded = first.api.newDraft('user');
+  await reloaded.claim();
+  expect(reloaded.backup.clientRequestId).toBe(original.backup.clientRequestId);
+  reloaded.dispose();
 });

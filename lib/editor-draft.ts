@@ -45,8 +45,6 @@ export function beginDraft(userId: string) {
 function meaningfulNode(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
   const node = value as Record<string, unknown>;
-  if (node.type === 'paragraph' && Array.isArray(node.children) && node.children.every(child => child?.type === 'text')
-    && /^\/\S*$/.test(node.children.map(child => child.text).join('').trim())) return false;
   if (typeof node.text === 'string' && hasVisibleText(node.text)) return true;
   if (node.type === 'equation' && typeof node.equation === 'string' && node.equation.trim()) return true;
   if (node.type === 'music' && typeof node.abc === 'string' && node.abc.trim()) return true;
@@ -182,7 +180,37 @@ export class EditorDraft {
   private created = false;
   private confirmed = false;
   private retryable = false;
+  private claimPromise?: Promise<void>;
+  private release?: () => void;
   constructor(readonly backup: DraftBackup) { this.editorKey = `draft-${backup.clientRequestId}`; }
+  claim(): Promise<void> {
+    return this.claimPromise ??= this.acquire();
+  }
+  private async acquire(): Promise<void> {
+    if (!globalThis.navigator?.locks) return;
+    await new Promise<void>((resolve, reject) => {
+      void navigator.locks.request(draftStorageKey(this.backup.userId, this.backup.clientRequestId), { ifAvailable: true }, async lock => {
+        if (this.disposed && !this.inFlight) { resolve(); return; }
+        if (!lock) {
+          this.fork();
+          await this.acquire();
+          resolve();
+          return;
+        }
+        await new Promise<void>(release => { this.release = release; resolve(); });
+      }).catch(reject);
+    });
+  }
+  private fork() {
+    this.backup.clientRequestId = crypto.randomUUID();
+    this.backup.submitted = undefined;
+    this.backup.result = undefined;
+    this.backup.synced = undefined;
+    this.confirmed = false;
+    this.created = false;
+    try { sessionStorage.setItem(sessionKey(this.backup.userId), this.backup.clientRequestId); } catch {}
+    this.persist();
+  }
   setOnCreated(callback?: (result: DraftCommitResult) => void) { this.onCreated = callback; if (callback) this.disposed = false; }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   getSnapshot = () => this.snapshot;
@@ -218,7 +246,12 @@ export class EditorDraft {
     this.attempt = 0;
     void this.commit().catch(() => {});
   };
-  dispose() { this.disposed = true; if (this.timer) clearTimeout(this.timer); this.timer = null; }
+  dispose() {
+    this.disposed = true;
+    if (!this.inFlight) { this.release?.(); this.release = undefined; }
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+  }
   setPendingImages(pending: boolean) { this.pendingImages = pending; }
   needsUnloadWarning = () => this.pendingImages || this.pendingFiles > 0 || (this.snapshot.status !== 'saved' && !!this.storageError);
   resolveProjectId = async (): Promise<string | undefined> => {
@@ -246,7 +279,10 @@ export class EditorDraft {
     if (!this.backup.submitted && !hasDraftContent(this.backup.latest)) return Promise.reject(new Error('Write something first.'));
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
-    this.inFlight = this.save().finally(() => { this.inFlight = null; });
+    this.inFlight = this.save().finally(() => {
+      this.inFlight = null;
+      if (this.disposed) { this.release?.(); this.release = undefined; }
+    });
     return this.inFlight;
   }
   private async metadata(entity: 'project' | 'trail' | 'item', id: string, fields: { title?: string; titleAlign?: TitleAlign }) {
@@ -260,7 +296,20 @@ export class EditorDraft {
       this.persist();
       if (!this.confirmed || !this.backup.result) {
         this.emit('committing');
-        this.backup.result = await commitEditorDraft(this.backup.clientRequestId, this.backup.submitted);
+        try {
+          this.backup.result = await commitEditorDraft(this.backup.clientRequestId, this.backup.submitted);
+        } catch (error) {
+          if (!(error instanceof DraftRequestError) || error.status !== 404) throw error;
+          const previousId = this.backup.clientRequestId;
+          this.fork();
+          this.release?.();
+          this.release = undefined;
+          await this.acquire();
+          this.backup.submitted = copy(this.backup.latest);
+          this.persist();
+          if (!this.storageError) localStorage.removeItem(draftStorageKey(this.backup.userId, previousId));
+          this.backup.result = await commitEditorDraft(this.backup.clientRequestId, this.backup.submitted);
+        }
         this.confirmed = true;
         this.persist();
       }
