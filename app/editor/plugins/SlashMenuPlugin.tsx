@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { ChangeEvent, useCallback, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {
@@ -10,7 +10,7 @@ import {
   MenuOption,
   useBasicTypeaheadTriggerMatch,
 } from '@lexical/react/LexicalTypeaheadMenuPlugin';
-import { $createParagraphNode, $getSelection, $isRangeSelection, ElementNode, LexicalEditor, TextNode } from 'lexical';
+import { $createParagraphNode, $getSelection, $isRangeSelection, COMMAND_PRIORITY_HIGH, ElementNode, KEY_ESCAPE_COMMAND, LexicalEditor, TextNode } from 'lexical';
 import { $createHeadingNode, $createQuoteNode, HeadingTagType } from '@lexical/rich-text';
 import { $createCodeNode } from '@lexical/code';
 import { $setBlocksType } from '@lexical/selection';
@@ -74,12 +74,24 @@ function headingOption(label: string, Icon: typeof Type, tag: HeadingTagType): S
   );
 }
 
-export default function SlashMenuPlugin({ projectId, resolveProjectId }: { projectId?: string; resolveProjectId?: () => Promise<string> } = {}) {
+export default function SlashMenuPlugin({ projectId, resolveProjectId }: { projectId?: string; resolveProjectId?: () => Promise<string | undefined> } = {}) {
   const [editor] = useLexicalComposerContext();
   const [queryString, setQueryString] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dismissed = useRef<string | null>(null);
+  const triggerText = useRef('');
 
   const checkForTriggerMatch = useBasicTypeaheadTriggerMatch('/', { minLength: 0 });
+  const trigger = useCallback((text: string, editor: LexicalEditor) => {
+    triggerText.current = text;
+    if (dismissed.current === text) return null;
+    dismissed.current = null;
+    return checkForTriggerMatch(text, editor);
+  }, [checkForTriggerMatch]);
+  useEffect(() => editor.registerCommand(KEY_ESCAPE_COMMAND, () => {
+    if (queryString !== null) dismissed.current = triggerText.current;
+    return false;
+  }, COMMAND_PRIORITY_HIGH), [editor, queryString]);
 
   const allOptions = useMemo(
     () => [
@@ -173,7 +185,7 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId }: { proje
       <LexicalTypeaheadMenuPlugin<SlashOption>
         onQueryChange={setQueryString}
         onSelectOption={onSelectOption}
-        triggerFn={checkForTriggerMatch}
+        triggerFn={trigger}
         options={options}
         menuRenderFn={(anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) =>
           anchorElementRef.current && options.length > 0

@@ -290,12 +290,12 @@ export function SidebarCustom({
   };
 
   const startEditTrail = (trail: Trail) => {
-    setEditingTrailId(trail.id);
+    setEditingTrailId(trail.editorKey ?? trail.id);
     setEditingTrailTitle(trail.title);
   };
 
   const submitEditTrail = (trailId: string) => {
-    if (editingTrailId !== trailId) return;
+    if (editingTrailId !== (trails.find(trail => trail.id === trailId)?.editorKey ?? trailId)) return;
     const title = editingTrailTitle.trim();
     if (title) {
       onRenameTrail(trailId, title);
@@ -305,12 +305,12 @@ export function SidebarCustom({
   };
 
   const startEditItem = (item: Item, trailId?: string) => {
-    setEditingItem({ itemId: item.id, trailId });
+    setEditingItem({ itemId: item.editorKey ?? item.id, trailId: trails.find(trail => trail.id === trailId)?.editorKey ?? trailId });
     setEditingItemTitle(item.title);
   };
 
   const submitEditItem = (itemId: string) => {
-    if (editingItem?.itemId !== itemId) return;
+    if (editingItem?.itemId !== (items[itemId]?.editorKey ?? itemId)) return;
     const title = editingItemTitle.trim();
     if (title) {
       onRenameItem(itemId, title);
@@ -475,13 +475,13 @@ export function SidebarCustom({
                         );
 
                         return (
-                          <Collapsible key={trail.id} defaultOpen className={`group/collapsible relative ${trailDrag?.trailId === trail.id ? "opacity-40" : ""}`}>
+                          <Collapsible key={trail.editorKey ?? trail.id} defaultOpen className={`group/collapsible relative ${trailDrag?.trailId === trail.id ? "opacity-40" : ""}`}>
                             {trailDrag?.overIndex === trailIndex && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 top-0 z-10 h-0.5 bg-primary" />}
                             {trailDrag?.overIndex === trails.length && trailIndex === trails.length - 1 && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 bottom-0 z-10 h-0.5 bg-primary" />}
                             <SidebarMenuItem>
                               <div
                                 className={`group/trail -ml-4 -mr-2 flex items-center hover:bg-sidebar-accent ${dropTrailId === trail.id && drag?.overIndex === null ? "bg-accent ring-1 ring-inset ring-primary" : ""}`}
-                                draggable={!draft && editingTrailId !== trail.id}
+                                draggable={!draft && editingTrailId !== (trail.editorKey ?? trail.id)}
                                 onDragStart={event => {
                                   event.stopPropagation();
                                   event.dataTransfer.effectAllowed = "move";
@@ -521,7 +521,7 @@ export function SidebarCustom({
                                   moveItem(drag.trailId, trail.id, drag.itemId);
                                 }}
                               >
-                                {editingTrailId === trail.id ? (
+                                {editingTrailId === (trail.editorKey ?? trail.id) ? (
                                   <div className="flex h-8 min-w-0 flex-1 items-center gap-2 pl-6 pr-12">
                                     <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90" />
                                     <InlineInput
@@ -540,7 +540,7 @@ export function SidebarCustom({
                                     <CollapsibleTrigger asChild>
                                       <SidebarMenuButton className="min-w-0 flex-1 rounded-none pl-6 font-semibold hover:bg-transparent active:bg-transparent">
                                         <ChevronRight className="transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                                        <span className={`flex-1 truncate ${!trail.title ? "text-muted-foreground" : ""}`}>{trail.title || "My first trail"}</span>
+                                        <span className={`flex-1 truncate ${(!trail.title || draft && trail.title === "My first trail") ? "text-muted-foreground/40" : ""}`}>{trail.title || "My first trail"}</span>
                                         <span className="text-[0.6875rem] font-normal text-muted-foreground group-data-[state=open]/collapsible:hidden">
                                           {trailItems.length}
                                         </span>
@@ -613,7 +613,7 @@ export function SidebarCustom({
                                       Choose a note...
                                     </option>
                                     {linkableItems.map((item) => (
-                                      <option key={item.id} value={item.id}>
+                                      <option key={item.editorKey ?? item.id} value={item.id}>
                                         {item.title}
                                       </option>
                                     ))}
@@ -643,8 +643,8 @@ export function SidebarCustom({
 
                                     return (
                                       <SidebarMenuSubItem
-                                        key={item.id}
-                                        draggable={!draft && (editingItem?.itemId !== item.id || editingItem.trailId !== trail.id)}
+                                        key={item.editorKey ?? item.id}
+                                        draggable={!draft && (editingItem?.itemId !== (item.editorKey ?? item.id) || editingItem.trailId !== (trail.editorKey ?? trail.id))}
                                         onDragStart={(e) => {
                                           e.dataTransfer.effectAllowed = "move";
                                           setDrag({ trailId: trail.id, itemId: item.id, overIndex: null });
@@ -672,7 +672,7 @@ export function SidebarCustom({
                                           ? "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary" : ""
                                         } ${drag?.itemId === item.id ? "opacity-40" : ""}`}
                                       >
-                                        {editingItem?.itemId === item.id && editingItem.trailId === trail.id ? (
+                                        {editingItem?.itemId === (item.editorKey ?? item.id) && editingItem.trailId === (trail.editorKey ?? trail.id) ? (
                                           <div className="flex items-center gap-2 pl-10 pr-6">
                                             <span className="w-4 shrink-0 text-right text-[0.625rem] tabular-nums text-muted-foreground">{index + 1}</span>
                                             <InlineInput
@@ -832,8 +832,8 @@ export function SidebarCustom({
                         const memberTrails = trailsForItem(item.id);
                         const addableTrails = trails.filter((t) => !t.itemIds.includes(item.id));
                         return (
-                        <SidebarMenuItem key={item.id} className="group/loose">
-                          {editingItem?.itemId === item.id && editingItem.trailId === undefined ? (
+                        <SidebarMenuItem key={item.editorKey ?? item.id} className="group/loose">
+                          {editingItem?.itemId === (item.editorKey ?? item.id) && editingItem.trailId === undefined ? (
                             <div className="-ml-4 -mr-2 flex items-center gap-2 pl-6 pr-6">
                               <span className={isActive ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary" : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"} />
                               <InlineInput

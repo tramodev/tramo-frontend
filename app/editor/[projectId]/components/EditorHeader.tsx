@@ -81,7 +81,7 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
     <div className="flex min-w-0 items-center gap-4">
       <span
         data-tour="editor-title"
-        className={`min-w-0 truncate cursor-text text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline ${draft && !projectTitle ? 'text-muted-foreground' : ''}`}
+        className={`min-w-0 truncate cursor-text text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline ${draft && (!projectTitle || projectTitle === 'Untitled project') ? 'text-muted-foreground/40' : ''}`}
         onDoubleClick={startEditTitle}
         title="Double-click to rename"
       >

@@ -182,3 +182,13 @@ test('zero-height caret rectangles use adjacent text geometry', () => {
   expect(s.exports.isOnBoundaryLine(s.editor, -1)).toBe(true);
   expect(expanded).toBe(true);
 });
+
+test('Enter focuses the body before the next keystroke or animation frame', () => {
+  const s = setup();
+  let blurred = false;
+  s.titleInput.props.onKeyDown({ key: 'Enter', nativeEvent: {}, currentTarget: { blur: () => { blurred = true; } }, preventDefault() {} });
+  expect(blurred).toBe(true);
+  expect(s.focused).toEqual(['content']);
+  s.editor.update(() => lexical.$getSelection().insertText('ABC'), { discrete: true });
+  expect(s.editor.getEditorState().read(() => lexical.$getRoot().getTextContent())).toMatch(/^ABC/);
+});

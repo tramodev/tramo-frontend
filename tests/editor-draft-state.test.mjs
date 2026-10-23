@@ -4,7 +4,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
 test('the draft remaps every ID without bootstrapping or changing the editor keys', async () => {
-  const exports = {}, states = [], refs = [], deps = [], pending = [], replacements = [], changes = [];
+  const exports = {}, states = [], refs = [], deps = [], pending = [], replacements = [], changes = [], pendingImages = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, bootstraps = 0, ordinarySaves = 0;
   const user = { userId: '1', username: 'owner', imageUrl: null };
   const draft = {
@@ -14,6 +14,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
     getSnapshot() { return draft.state; },
     setOnCreated(callback) { draft.onCreated = callback; },
     start() {}, dispose() {}, retry() {}, needsUnloadWarning() { return false; },
+    setPendingImages: pending => pendingImages.push(pending),
     update(change) { Object.assign(draft.backup.latest, change); changes.push(change); },
   };
   const router = { replace: url => replacements.push(url) };
@@ -34,7 +35,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
         useEffect: (callback, next) => { const i = effectIndex++; if (!deps[i] || next.some((value, j) => value !== deps[i][j])) pending.push(callback); deps[i] = next; },
       },
       'next/navigation': { useRouter: () => router },
-      '@/lib/editor-draft': { editorDraftForRoute: () => draft },
+      '@/lib/editor-draft': { editorDraftForRoute: () => draft, clearLocalDrafts() {} },
       '@/lib/pending-saves': { createPendingSaves: () => ({ track: (_key, action) => action() }) },
       '@/lib/project-validation': { assertProjectText() {} },
       '../../editor-utils': { countTextStats: () => ({ words: 0, characters: 0 }), lastItemStorageKey: id => id },
@@ -59,7 +60,9 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   hook.onDraftProjectTitle('Project');
   hook.onDraftTrailTitle('draft-note', 'Trail');
   hook.onDraftItemTitle('draft-note', 'Note');
-  hook.onChange('draft-note', { toJSON: () => ({ root: { children: [] } }) });
+  hook.onChange('draft-note', { toJSON: () => ({ root: { children: [{ type: 'image', imageId: '' }] } }) });
+  expect(changes[3].item.content).toBe(JSON.stringify({ root: { children: [] } }));
+  expect(pendingImages.at(-1)).toBe(true);
   expect(changes).toHaveLength(4);
   expect(ordinarySaves).toBe(0);
   draft.backup.result = { projectId: 'real', trailId: 21, itemId: 22, restoreEpoch: 0 };
@@ -79,6 +82,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   draft.state = { status: 'saved', error: '' };
   hook = render('real');
   expect(hook.isDraft).toBe(false);
-  hook.onChange('22', {});
+  hook.onChange('22', { toJSON: () => ({ root: { children: [] } }) });
+  expect(pendingImages.at(-1)).toBe(false);
   expect(ordinarySaves).toBe(1);
 });

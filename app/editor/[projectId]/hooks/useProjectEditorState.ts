@@ -30,7 +30,7 @@ import { getEditorBootstrap } from '@/lib/editor-bootstrap-client';
 import { acceptLoadedContents, getItemContent, getTrailContents, resetItemContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
 import { useAutoSave } from '@/app/editor/[projectId]/hooks/useAutoSave';
-import { editorDraftForRoute, type DraftCommitResult } from '@/lib/editor-draft';
+import { clearLocalDrafts, editorDraftForRoute, type DraftCommitResult } from '@/lib/editor-draft';
 import type { UserProfile } from '@/lib/profile';
 
 const subscribeIdle = () => () => {};
@@ -47,6 +47,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const isDraft = !!draft && draftState.status !== 'saved';
   const [projectId, setProjectId] = useState(() => draft?.backup.result?.projectId ?? draft?.editorKey ?? routeProjectId);
   const draftInitialized = useRef(false);
+  useEffect(() => { if (user?.userId) clearLocalDrafts(user.userId); }, [user?.userId]);
   const router = useRouter();
   const pendingSaves = useRef(createPendingSaves());
 
@@ -712,8 +713,11 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     ...(isDraft ? { saveStatus: draftState.status === 'error' ? 'error' as const : draftState.status === 'draft' ? 'idle' as const : 'saving' as const,
       saveError: draftState.error } : {}),
     onChange: (itemId: string, editorState: import('lexical').EditorState) => {
+      const state = draft ? editorState.toJSON() : undefined;
+      draft?.setPendingImages(JSON.stringify(state).includes('"imageId":""'));
       if (draft && draft.getSnapshot().status !== 'saved') {
-        const content = JSON.stringify(editorState.toJSON());
+        const content = JSON.stringify(state, (key, value) => key === 'children' && Array.isArray(value)
+          ? value.filter(node => node.type !== 'image' || node.imageId) : value);
         const id = draft.backup.result ? String(draft.backup.result.itemId) : itemId;
         updateItemContentLocally(id, content);
         draft.update({ item: { ...draft.backup.latest.item, content } });

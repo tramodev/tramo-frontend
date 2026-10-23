@@ -5,7 +5,7 @@ import ts from 'typescript';
 
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 
-function setup({ trails = [{ id: 'trail', title: 'Original', itemIds: [] }], items = {} } = {}) {
+function setup({ trails = [{ id: 'trail', title: 'Original', itemIds: [] }], items = {}, draft = false } = {}) {
   const states = [];
   let state = 0;
   const exports = {};
@@ -33,10 +33,11 @@ function setup({ trails = [{ id: 'trail', title: 'Original', itemIds: [] }], ite
   const moves = [];
   const reorders = [];
   const trailReorders = [];
-  const render = () => {
+  const render = (next = {}) => {
+    trails = next.trails ?? trails; items = next.items ?? items;
     state = 0;
     return flatten(exports.SidebarCustom({
-      homeHref: '/projects', projectId: 'project', items, trails,
+      homeHref: '/projects', projectId: 'project', items, trails, draft,
       onRenameTrail: (...args) => renames.push(args),
       onRenameItem: (...args) => renames.push(args),
       onMoveItemToTrail: async (...args) => { moves.push(args); },
@@ -146,4 +147,19 @@ test.each([0, 1, 2])('note rename opens only the input for the selected occurren
   inputs[0].props.onSubmit();
   expect(renames).toEqual([['note', 'Renamed']]);
   expect(render().some(node => node.type?.name === 'InlineInput')).toBe(false);
+});
+
+test.each(['trail', 'note'])('draft %s rename survives ID remapping and submits all characters', entity => {
+  const initial = { id: 'draft', editorKey: 'stable', title: '', itemIds: ['draft'] };
+  const s = setup({ draft: true, trails: [initial], items: { draft: { id: 'draft', editorKey: 'stable', title: '' } } });
+  s.render().find(node => node.type === 'DropdownMenuItem' && node.props.children.includes(entity === 'trail' ? 'Rename trail' : 'Rename note')).props.onSelect();
+  s.render().find(node => node.type?.name === 'InlineInput').props.onChange('T');
+  let nodes = s.render({ trails: [{ ...initial, id: '11', itemIds: ['12'] }], items: { 12: { id: '12', editorKey: 'stable', title: 'T' } } });
+  let input = nodes.find(node => node.type?.name === 'InlineInput');
+  expect(input).toBeDefined();
+  expect(input.props.value).toBe('T');
+  input.props.onChange('Trail rapido');
+  input = s.render().find(node => node.type?.name === 'InlineInput');
+  input.props.onSubmit();
+  expect(s.renames).toEqual([[entity === 'trail' ? '11' : '12', 'Trail rapido']]);
 });

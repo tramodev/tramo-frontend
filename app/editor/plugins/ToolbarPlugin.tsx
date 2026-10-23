@@ -290,7 +290,7 @@ export default function ToolbarPlugin({
   history,
 }: {
   projectId?: string;
-  resolveProjectId?: () => Promise<string>;
+  resolveProjectId?: () => Promise<string | undefined>;
   titleFocused?: boolean;
   titleAlign?: 'left' | 'center' | 'right';
   onSetTitleAlign?: (align: 'left' | 'center' | 'right') => void;
