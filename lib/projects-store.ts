@@ -212,7 +212,7 @@ export async function startProject(requestId: string): Promise<{ projectId: stri
 }
 
 export async function saveDraftMetadata(projectId: string, entity: 'project' | 'trail' | 'item', id: string,
-  fields: { title?: string; titleAlign?: TitleAlign }, epoch: number): Promise<{ status: number; message?: string; retryAfter?: number }> {
+  fields: { title?: string; titleAlign?: TitleAlign }, epoch: number): Promise<{ status: number; message?: string; retryAfter?: number; code?: string }> {
   if (!/^[a-zA-Z0-9]+$/.test(projectId) || !Number.isSafeInteger(epoch) || epoch < 0
     || !['project', 'trail', 'item'].includes(entity) || (entity === 'project' ? id !== projectId : !/^\d+$/.test(id))
     || !fields || (fields.title !== undefined && (typeof fields.title !== 'string' || fields.title.length > PROJECT_TEXT_MAX_LENGTH))
@@ -225,7 +225,7 @@ export async function saveDraftMetadata(projectId: string, entity: 'project' | '
     if (response.ok) return { status: response.status };
     const body = await response.json().catch(() => null);
     const retry = response.headers.get('Retry-After');
-    return { status: response.status, message: typeof body?.message === 'string' ? body.message : `Request failed with status ${response.status}`,
+    return { status: response.status, code: typeof body?.code === 'string' ? body.code : undefined, message: typeof body?.message === 'string' ? body.message : `Request failed with status ${response.status}`,
       retryAfter: retry ? Math.max(0, /^\d+$/.test(retry) ? Number(retry) * 1000 : Date.parse(retry) - Date.now()) : 0 };
   } catch (error) {
     if (error instanceof TypeError || (error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name))) {

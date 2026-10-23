@@ -79,3 +79,8 @@ test('draft route forwards the body and retry status through authenticated fetch
   expect(response.headers.get('Retry-After')).toBe('4');
   expect(response.headers.get('Cache-Control')).toBe('private, no-store');
 });
+
+test.each([{}, { 'Retry-After': '4' }])('storage quota failures are permanent even with retry headers (%j)', async headers => {
+  const client = load('lib/editor-draft-client.ts', {}, { fetch: async () => Response.json({ code: 'STORAGE_QUOTA_EXCEEDED' }, { status: 429, headers }) });
+  await expect(client.commitEditorDraft('uuid', entities)).rejects.toMatchObject({ code: 'STORAGE_QUOTA_EXCEEDED', status: 429, retryable: false });
+});

@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogOut, Moon, Settings, Sun, SunMoon } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
+import { clearLocalDrafts } from '@/lib/editor-draft';
 import { initial } from '@/components/shared/author-avatar';
 import type { NavItem } from '@/lib/nav-items';
 
@@ -114,7 +115,7 @@ export function AvatarMenu({
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => { void handleLogout(); }}>
+        <DropdownMenuItem variant="destructive" onSelect={() => { clearLocalDrafts(); void handleLogout(); }}>
           <LogOut />
           Log Out
         </DropdownMenuItem>

@@ -65,11 +65,11 @@ export async function insertImageWithUpload(
   editor: ReturnType<typeof useLexicalComposerContext>[0],
   file: File,
   projectId?: string,
-  resolveProjectId?: () => Promise<string>,
+  resolveProjectId?: () => Promise<string | undefined>,
 ): Promise<void> {
   if (editor.getEditorState().read($isSelectionInCode) || (!projectId && !resolveProjectId)) return;
   const selection = editor.getEditorState().read(() => $getSelection()?.clone());
-  let uploadProjectId: string;
+  let uploadProjectId: string | undefined;
   try {
     uploadProjectId = resolveProjectId ? await resolveProjectId() : projectId!;
   } catch (error) {
@@ -125,7 +125,7 @@ async function insertImageFiles(
   editor: ReturnType<typeof useLexicalComposerContext>[0],
   files: File[],
   projectId?: string,
-  resolveProjectId?: () => Promise<string>,
+  resolveProjectId?: () => Promise<string | undefined>,
 ): Promise<void> {
   let nextIndex = 0;
 
@@ -141,7 +141,7 @@ async function insertImageFiles(
   );
 }
 
-export default function ImagesPlugin({ projectId, previewUrls, resolveProjectId }: { projectId?: string; previewUrls?: Set<string>; resolveProjectId?: () => Promise<string> }): null {
+export default function ImagesPlugin({ projectId, previewUrls, resolveProjectId }: { projectId?: string; previewUrls?: Set<string>; resolveProjectId?: () => Promise<string | undefined> }): null {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {

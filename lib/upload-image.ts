@@ -28,7 +28,7 @@ export async function uploadImage(blob: Blob, kind: UploadKind, projectId?: stri
   return completePublicUpload(uploadId);
 }
 
-export async function uploadEditorImage(blob: Blob, projectId: string): Promise<string> {
+export async function uploadEditorImage(blob: Blob, projectId?: string): Promise<string> {
   const contentHash = await sha256Hex(blob);
   const { imageId, uploadUrl } = await beginEditorImageUpload(projectId, blob.type, contentHash, blob.size);
   const response = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': blob.type }, body: blob });

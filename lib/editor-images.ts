@@ -5,7 +5,7 @@
 import { authenticatedFetch } from './api';
 import { API_BASE_URL } from './config';
 
-export async function beginEditorImageUpload(projectId: string, contentType: string, contentHash: string, contentBytes: number): Promise<{ imageId: string; uploadUrl: string }> {
+export async function beginEditorImageUpload(projectId: string | undefined, contentType: string, contentHash: string, contentBytes: number): Promise<{ imageId: string; uploadUrl: string }> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/uploads/editor-images/presign`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ projectId, contentType, contentHash, contentBytes }), cache: 'no-store',

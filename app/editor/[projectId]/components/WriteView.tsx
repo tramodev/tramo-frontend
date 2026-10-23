@@ -58,7 +58,7 @@ import type { MapPreviews } from '@/lib/projects-store';
 interface WriteViewProps {
   draft?: boolean;
   onDraftTitleChange?: (id: string, title: string) => void;
-  resolveProjectId?: () => Promise<string>;
+  resolveProjectId?: () => Promise<string | undefined>;
   active?: boolean;
   projectId: string;
   item: Item;
@@ -303,7 +303,7 @@ function ItemTitle({ item, onCommitTitle, onFocus, move, onDraftTitleChange }: {
         if (event.key !== 'Enter' || event.metaKey || event.ctrlKey || event.nativeEvent.isComposing) return;
         event.preventDefault();
         event.currentTarget.blur();
-        requestAnimationFrame(() => focusEditor(editor));
+        focusEditor(editor);
       }} placeholder="Untitled note" style={{ textAlign: item.titleAlign }}
       title={item.title}
       className="w-full min-w-0 truncate border-0 bg-transparent font-display text-[1.75rem] font-medium leading-normal text-foreground outline-none placeholder:text-muted-foreground/40" />

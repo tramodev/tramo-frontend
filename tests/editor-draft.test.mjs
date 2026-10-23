@@ -24,11 +24,13 @@ function setup({ commit, save, metadata, storageFails = false } = {}) {
     constructor(status, retryAfter = 0) { super(`Request failed with status ${status}`); this.status = status; this.retryAfter = retryAfter; }
     get retryable() { return this.status === 429 || this.status >= 500; }
   }
-  const exports = {};
+  const exports = {}, utils = {};
+  runInNewContext(ts.transpileModule(readFileSync('app/editor/editor-utils.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports: utils });
   const jsx = { exports, Error, TypeError, Date, setTimeout, clearTimeout, crypto: { randomUUID }, localStorage, sessionStorage };
   runInNewContext(ts.transpileModule(readFileSync('lib/editor-draft.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText, { ...jsx, require: name => ({
+    '@/app/editor/editor-utils': utils,
     '@/app/editor/plugins/embed': { validateEmbed: (provider, id) => provider === 'youtube' && /^[\w-]{11}$/.test(id ?? '') },
     '@/lib/editor-draft-client': { DraftRequestError, commitEditorDraft: async (id, snapshot) => {
       requests.push({ id, snapshot: JSON.parse(JSON.stringify(snapshot)) });
@@ -156,31 +158,33 @@ test('backup restoration validates ownership and the editor-state shape', async 
   expect(s.api.readDraft('user', draft.backup.clientRequestId)).toBe(null);
 });
 
-test('loading silently removes empty image-only backups without restoring another draft', async () => {
+test('empty drafts never force a commit', async () => {
   const s = setup({ commit: async () => { throw new TypeError('offline'); } });
   const draft = s.api.newDraft('user');
-  await draft.commit(true).catch(() => {}); draft.dispose();
-  expect(Object.keys(s.localStorage)).toHaveLength(1);
+  await expect(draft.commit()).rejects.toThrow('Write something first.'); draft.dispose();
+  expect(s.requests).toHaveLength(0);
+  expect(Object.keys(s.localStorage)).toHaveLength(0);
   expect(s.api.listDrafts('user')).toHaveLength(0);
   expect(Object.keys(s.localStorage)).toHaveLength(0);
 });
 
-test('images force an empty commit and share the pending request', async () => {
-  let confirm;
-  const s = setup({ commit: () => new Promise(resolve => { confirm = resolve; }) });
-  const draft = s.api.newDraft('user');
-  const first = draft.resolveProjectId(), second = draft.resolveProjectId();
-  expect(s.requests).toHaveLength(1);
+test('an image-first draft uploads without creating an empty project', async () => {
+  const s = setup(), draft = s.api.newDraft('user');
+  expect(await draft.resolveProjectId()).toBeUndefined();
+  expect(s.requests).toHaveLength(0);
+  draft.setPendingImages(true);
   expect(draft.needsUnloadWarning()).toBe(true);
-  confirm(result);
-  expect(await first).toBe('project');
-  expect(await second).toBe('project');
+  draft.setPendingImages(false);
   expect(draft.needsUnloadWarning()).toBe(false);
+  expect(s.requests).toHaveLength(0);
+  draft.update({ item: { title: '', titleAlign: 'left', content: JSON.stringify({ root: { children: [{ type: 'image', imageId: 'confirmed' }] } }) } });
+  await draft.commit();
+  expect(s.requests).toHaveLength(1);
 });
 
-test('canonical URL reload resumes unsynchronized edits without repeating the POST', async () => {
+test('canonical URL reload resumes unsynchronized edits after verifying the idempotent receipt', async () => {
   let confirm;
-  const s = setup({ commit: () => new Promise(resolve => { confirm = resolve; }), save: async () => { throw new TypeError('offline'); } });
+  const s = setup({ commit: () => s.requests.length === 1 ? new Promise(resolve => { confirm = resolve; }) : result, save: async () => { throw new TypeError('offline'); } });
   const draft = s.api.newDraft('user');
   draft.update({ item: { title: '', titleAlign: 'left', content: content('a') } });
   const opening = draft.commit();
@@ -190,7 +194,8 @@ test('canonical URL reload resumes unsynchronized edits without repeating the PO
   expect(recovered.backup.latest.item.content).toBe(content('latest'));
   expect(recovered.backup.result.projectId).toBe('project');
   await recovered.commit().catch(() => {}); recovered.dispose();
-  expect(s.requests).toHaveLength(1);
+  expect(s.requests).toHaveLength(2);
+  expect(s.requests[1]).toEqual(s.requests[0]);
   expect(s.api.editorDraftForRoute('user', 'another-project')).toBe(null);
 });
 
@@ -235,6 +240,7 @@ test('an image waits through a transient commit failure and uploads against the 
     let tries = 0;
     const s = setup({ commit: async () => { if (++tries === 1) throw new TypeError('offline'); return result; } });
     const draft = s.api.newDraft('user');
+    draft.update({ project: { title: 'Written title' } });
     const opening = draft.resolveProjectId();
     await jest.advanceTimersByTimeAsync(1000);
     expect(await opening).toBe('project');
@@ -282,4 +288,66 @@ test('metadata synchronization preserves retryable HTTP errors without repeating
   expect(s.requests).toHaveLength(1);
   expect(s.titles).toHaveLength(2);
   expect(draft.getSnapshot().status).toBe('saved');
+});
+
+test.each(['\u200b', '\u200c', '\u200d', '\u2060', '\u00a0', '\u3000', '/', '/youtube', '/equation'])(
+  'invisible text and slash queries do not create a project (%j)', async text => {
+    const s = setup(), draft = s.api.newDraft('user');
+    draft.update({ item: { title: '', titleAlign: 'left', content: content(text) } });
+    await settle();
+    expect(s.requests).toHaveLength(0);
+    expect(Object.keys(s.localStorage)).toHaveLength(0);
+  });
+
+test('slash queries do not suppress other written paragraphs', async () => {
+  const s = setup(), draft = s.api.newDraft('user');
+  const body = JSON.parse(content('Written'));
+  body.root.children.push(...JSON.parse(content('/image')).root.children);
+  draft.update({ item: { title: '', titleAlign: 'left', content: JSON.stringify(body) } });
+  await draft.commit();
+  expect(s.requests).toHaveLength(1);
+});
+
+test('body-only drafts have a text excerpt and clearing another account removes its drafts', async () => {
+  const s = setup({ commit: async () => { throw new TypeError('offline'); } });
+  const alice = s.api.newDraft('alice');
+  alice.update({ item: { title: '', titleAlign: 'left', content: content('An unfinished note') } });
+  await alice.commit().catch(() => {}); alice.dispose();
+  expect(s.api.draftLabel(alice.backup)).toBe('An unfinished note');
+  const bob = s.api.newDraft('bob');
+  bob.update({ project: { title: 'Bob draft' } });
+  await bob.commit().catch(() => {}); bob.dispose();
+  s.api.clearLocalDrafts('bob');
+  expect(s.api.listDrafts('alice')).toHaveLength(0);
+  expect(s.api.listDrafts('bob')).toHaveLength(1);
+  s.api.clearLocalDrafts();
+  expect(Object.keys(s.localStorage).filter(key => key.startsWith('tramo:draft:'))).toHaveLength(0);
+  expect(s.localStorage.getItem('tramo:draft-owner')).toBe('');
+  expect(Object.keys(s.sessionStorage)).toHaveLength(0);
+});
+
+test('signing out prevents an in-flight save from recreating the local backup', async () => {
+  let fail;
+  const s = setup({ commit: () => new Promise((_resolve, reject) => { fail = reject; }) });
+  const draft = s.api.newDraft('alice');
+  draft.update({ project: { title: 'Private unfinished text' } });
+  const opening = draft.commit();
+  s.api.clearLocalDrafts();
+  fail(new s.DraftRequestError(403));
+  await opening.catch(() => {});
+  expect(s.api.listDrafts('alice')).toHaveLength(0);
+});
+
+test('recovery checks an existing receipt before navigating to a deleted project', async () => {
+  const s = setup({ commit: async () => { throw new s.DraftRequestError(404); } });
+  const draft = s.api.newDraft('alice');
+  draft.backup.latest.project.title = 'Private note';
+  draft.backup.submitted = structuredClone(draft.backup.latest);
+  draft.backup.result = result;
+  const created = jest.fn();
+  draft.setOnCreated(created);
+  draft.start();
+  await draft.commit().catch(() => {});
+  expect(created).not.toHaveBeenCalled();
+  expect(draft.getSnapshot().status).toBe('error');
 });

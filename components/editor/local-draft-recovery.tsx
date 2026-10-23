@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { discardDraft, listDrafts, recoverDraft, type DraftBackup } from '@/lib/editor-draft';
+import { discardDraft, draftLabel, listDrafts, recoverDraft, type DraftBackup } from '@/lib/editor-draft';
 
 export function LocalDraftRecovery({ userId }: { userId: string | null }) {
   const router = useRouter();
@@ -23,7 +23,10 @@ export function LocalDraftRecovery({ userId }: { userId: string | null }) {
     <p className="mb-3 text-xs text-muted-foreground">These drafts have not finished syncing and are only available on this device.</p>
     <ul className="divide-y divide-border rounded-lg border border-border px-4">
       {drafts.map(draft => <li key={draft.clientRequestId} className="flex items-center justify-between gap-3 py-3">
-        <span className="min-w-0 truncate text-sm">{draft.latest.project.title || draft.latest.item.title || 'Untitled draft'}</span>
+        <span className="min-w-0 text-sm">
+          <span className="block truncate">{draftLabel(draft)}</span>
+          <time dateTime={new Date(draft.updatedAt).toISOString()} className="block text-xs text-muted-foreground">{new Date(draft.updatedAt).toLocaleString()}</time>
+        </span>
         <span className="flex shrink-0 gap-2">
           <Button variant="outline" size="sm" onClick={() => {
             try { recoverDraft(userId, draft.clientRequestId); router.push('/editor/new'); }

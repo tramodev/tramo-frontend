@@ -1,8 +1,8 @@
 import type { DraftCommitResult, DraftEntities } from '@/lib/editor-draft';
 
 export class DraftRequestError extends Error {
-  constructor(message: string, readonly status: number, readonly retryAfter = 0) { super(message); }
-  get retryable() { return this.status === 408 || this.status === 429 || this.status >= 500; }
+  constructor(message: string, readonly status: number, readonly retryAfter = 0, readonly code?: string) { super(message); }
+  get retryable() { return this.code !== 'STORAGE_QUOTA_EXCEEDED' && (this.status === 408 || this.status === 429 || this.status >= 500); }
 }
 
 export async function commitEditorDraft(clientRequestId: string, entities: DraftEntities): Promise<DraftCommitResult> {
@@ -23,7 +23,7 @@ export async function commitEditorDraft(clientRequestId: string, entities: Draft
     const body = await response.json().catch(() => null);
     const retry = response.headers.get('Retry-After');
     const retryAfter = retry ? Math.max(0, /^\d+$/.test(retry) ? Number(retry) * 1000 : Date.parse(retry) - Date.now()) : 0;
-    throw new DraftRequestError(body?.message ?? `Could not save your draft (${response.status}).`, response.status, retryAfter);
+    throw new DraftRequestError(body?.message ?? `Could not save your draft (${response.status}).`, response.status, retryAfter, body?.code);
   }
   return response.json();
 }

@@ -3,6 +3,7 @@ import { commitEditorDraft, DraftRequestError } from '@/lib/editor-draft-client'
 import { acceptExtractionEpoch, getItemContent, saveItemContent } from '@/lib/item-content-client';
 import { saveDraftMetadata } from '@/lib/projects-store';
 import { validateEmbed } from '@/app/editor/plugins/embed';
+import { collectPlainText } from '@/app/editor/editor-utils';
 
 export interface DraftEntities {
   project: { title: string };
@@ -44,7 +45,9 @@ export function beginDraft(userId: string) {
 function meaningfulNode(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
   const node = value as Record<string, unknown>;
-  if (typeof node.text === 'string' && node.text.trim()) return true;
+  if (node.type === 'paragraph' && Array.isArray(node.children) && node.children.every(child => child?.type === 'text')
+    && /^\/\S*$/.test(node.children.map(child => child.text).join('').trim())) return false;
+  if (typeof node.text === 'string' && hasVisibleText(node.text)) return true;
   if (node.type === 'equation' && typeof node.equation === 'string' && node.equation.trim()) return true;
   if (node.type === 'music' && typeof node.abc === 'string' && node.abc.trim()) return true;
   if (node.type === 'embed' && validateEmbed(node.provider, node.id)) return true;
@@ -53,8 +56,31 @@ function meaningfulNode(value: unknown): boolean {
 }
 
 export function hasDraftContent(value: DraftEntities): boolean {
-  if ([value.project.title, value.trail.title, value.item.title].some(title => title.trim())) return true;
+  if ([value.project.title, value.trail.title, value.item.title].some(hasVisibleText)) return true;
   try { return meaningfulNode(JSON.parse(value.item.content).root); } catch { return false; }
+}
+
+function hasVisibleText(value: string): boolean {
+  return !!value.replace(/\p{Default_Ignorable_Code_Point}/gu, '').trim();
+}
+
+export function clearLocalDrafts(userId?: string | null) {
+  try {
+    localStorage.setItem('tramo:draft-owner', userId ?? '');
+    for (const [storage, prefix] of [[localStorage, 'tramo:draft:'], [sessionStorage, 'tramo:active-draft:']] as const) {
+      for (const key of Object.keys(storage)) {
+        if (key.startsWith(prefix) && (!userId || !key.startsWith(`${prefix}${userId}:`) && key !== `${prefix}${userId}`)) storage.removeItem(key);
+      }
+    }
+  } catch {}
+}
+
+export function draftLabel(draft: DraftBackup): string {
+  const latest = draft.latest;
+  const title = latest.project.title || latest.item.title || latest.trail.title;
+  if (title) return title;
+  try { return collectPlainText(latest.item.content).join(' ').trim().slice(0, 120) || 'Untitled draft'; }
+  catch { return 'Untitled draft'; }
 }
 
 function validEntities(value: unknown): value is DraftEntities {
@@ -152,7 +178,9 @@ export class EditorDraft {
   private disposed = false;
   private storageError = '';
   private pendingFiles = 0;
+  private pendingImages = false;
   private created = false;
+  private confirmed = false;
   private retryable = false;
   constructor(readonly backup: DraftBackup) { this.editorKey = `draft-${backup.clientRequestId}`; }
   setOnCreated(callback?: (result: DraftCommitResult) => void) { this.onCreated = callback; if (callback) this.disposed = false; }
@@ -165,6 +193,8 @@ export class EditorDraft {
   private persist() {
     this.backup.updatedAt = Date.now();
     try {
+      const owner = localStorage.getItem('tramo:draft-owner');
+      if (owner !== null && owner !== this.backup.userId) return;
       localStorage.setItem(draftStorageKey(this.backup.userId, this.backup.clientRequestId), JSON.stringify(this.backup));
       this.storageError = '';
     } catch { this.storageError = 'Local backup is unavailable. Keep this tab open until your changes are saved.'; }
@@ -180,7 +210,6 @@ export class EditorDraft {
   start() {
     this.disposed = false;
     try { sessionStorage.setItem(sessionKey(this.backup.userId), this.backup.clientRequestId); } catch {}
-    if (this.backup.result) { this.created = true; this.onCreated?.(this.backup.result); }
     if (this.backup.submitted || hasDraftContent(this.backup.latest)) void this.commit().catch(() => {});
   }
   retry = () => {
@@ -190,8 +219,10 @@ export class EditorDraft {
     void this.commit().catch(() => {});
   };
   dispose() { this.disposed = true; if (this.timer) clearTimeout(this.timer); this.timer = null; }
-  needsUnloadWarning = () => this.pendingFiles > 0 || (this.snapshot.status !== 'saved' && !!this.storageError);
-  resolveProjectId = async (): Promise<string> => {
+  setPendingImages(pending: boolean) { this.pendingImages = pending; }
+  needsUnloadWarning = () => this.pendingImages || this.pendingFiles > 0 || (this.snapshot.status !== 'saved' && !!this.storageError);
+  resolveProjectId = async (): Promise<string | undefined> => {
+    if (!this.backup.submitted && !hasDraftContent(this.backup.latest)) return undefined;
     this.pendingFiles++;
     try {
       return await new Promise<string>((resolve, reject) => {
@@ -203,16 +234,16 @@ export class EditorDraft {
           }
         };
         const unsubscribe = this.subscribe(finish);
-        void this.commit(true).then(() => finish()).catch(error => {
+        void this.commit().then(() => finish()).catch(error => {
           if (!this.retryable) { unsubscribe(); reject(error); }
         });
       });
     } finally { this.pendingFiles--; }
   };
-  commit(force = false): Promise<string> {
+  commit(): Promise<string> {
     if (this.snapshot.status === 'saved' && this.backup.result) return Promise.resolve(this.backup.result.projectId);
     if (this.inFlight) return this.inFlight;
-    if (!force && !this.backup.submitted && !hasDraftContent(this.backup.latest)) return Promise.reject(new Error('Write something first.'));
+    if (!this.backup.submitted && !hasDraftContent(this.backup.latest)) return Promise.reject(new Error('Write something first.'));
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     this.inFlight = this.save().finally(() => { this.inFlight = null; });
@@ -221,15 +252,16 @@ export class EditorDraft {
   private async metadata(entity: 'project' | 'trail' | 'item', id: string, fields: { title?: string; titleAlign?: TitleAlign }) {
     const result = this.backup.result!;
     const response = await saveDraftMetadata(result.projectId, entity, id, fields, result.restoreEpoch);
-    if (response.status >= 400) throw new DraftRequestError(response.message ?? 'Could not save draft metadata.', response.status, response.retryAfter);
+    if (response.status >= 400) throw new DraftRequestError(response.message ?? 'Could not save draft metadata.', response.status, response.retryAfter, response.code);
   }
   private async save(): Promise<string> {
     try {
       if (!this.backup.submitted) this.backup.submitted = copy(this.backup.latest);
       this.persist();
-      if (!this.backup.result) {
+      if (!this.confirmed || !this.backup.result) {
         this.emit('committing');
         this.backup.result = await commitEditorDraft(this.backup.clientRequestId, this.backup.submitted);
+        this.confirmed = true;
         this.persist();
       }
       const result = this.backup.result;
