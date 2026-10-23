@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogOut, Moon, Settings, Sun, SunMoon } from 'lucide-react';
 import { handleLogout } from '@/app/actions';
-import { clearLocalDrafts } from '@/lib/editor-draft';
+import { clearLocalDrafts, listDrafts } from '@/lib/editor-draft';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { initial } from '@/components/shared/author-avatar';
 import type { NavItem } from '@/lib/nav-items';
 
@@ -34,6 +35,8 @@ export function AvatarMenu({
   imageUrl?: string | null;
   navItems?: NavItem[];
 }) {
+  const [confirmLogout, setConfirmLogout] = React.useState(false);
+  const logout = () => { clearLocalDrafts(); void handleLogout(); };
   const initials = initial(username);
   const { theme, resolvedTheme, setTheme } = useTheme();
   const mounted = useMounted();
@@ -41,7 +44,7 @@ export function AvatarMenu({
   const isDark = mounted && resolvedTheme === 'dark';
   const ThemeIcon = mounted && theme === 'system' ? SunMoon : isDark ? Moon : Sun;
 
-  return (
+  return <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
@@ -115,11 +118,21 @@ export function AvatarMenu({
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => { clearLocalDrafts(); void handleLogout(); }}>
+        <DropdownMenuItem variant="destructive" onSelect={() => {
+          try {
+            const userId = localStorage.getItem('tramo:draft-owner');
+            if (userId && listDrafts(userId).length) { setConfirmLogout(true); return; }
+          } catch { setConfirmLogout(true); return; }
+          logout();
+        }}>
           <LogOut />
           Log Out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+    <ConfirmDialog open={confirmLogout} onOpenChange={setConfirmLogout}
+      title="Discard unsynced drafts and log out?"
+      description="You have drafts that have not finished syncing. Logging out will delete their local backups. Cancel to keep editing or wait for them to sync."
+      confirmLabel="Discard drafts and log out" onConfirm={logout} />
+  </>;
 }
