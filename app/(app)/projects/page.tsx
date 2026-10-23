@@ -191,7 +191,7 @@ export default function ProjectsPage() {
               Start writing
             </span>
           </button>
-          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex cursor-pointer w-[90%] justify-self-center aspect-[4/5] max-h-[25rem] sm:w-full flex-col overflow-hidden rounded-lg border border-input bg-card dark:bg-background text-left hover:bg-muted disabled:opacity-50">
+          <button disabled={creating} onClick={() => handleCreateProject(true)} className="flex cursor-pointer w-[90%] justify-self-center aspect-[4/5] max-h-[25rem] sm:w-full flex-col overflow-hidden rounded-lg border border-input bg-card dark:bg-background text-left transition-colors hover:bg-muted hover:border-primary hover:text-primary disabled:opacity-50">
             <span className="relative min-h-0 w-full flex-1">
               <Image src="/memex-example.png" alt="Illustration of a wearable camera from Vannevar Bush’s vision" fill sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 90vw" className="object-cover" />
             </span>
