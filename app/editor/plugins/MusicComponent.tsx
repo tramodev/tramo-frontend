@@ -67,6 +67,11 @@ function fitToDrawing(svg: SVGSVGElement) {
   svg.setAttribute('width', String(Math.ceil(drawn.width)));
 }
 
+function plainMusicWarning(warning: string): string {
+  const entities: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&amp;': '&' };
+  return warning.replace(/<\/?span\b[^>]*>|&(?:lt|gt|amp);/g, token => entities[token] ?? '');
+}
+
 function renderScore(
   abcjs: typeof import('abcjs'),
   target: HTMLElement,
@@ -81,7 +86,7 @@ function renderScore(
   target.querySelectorAll('style').forEach((node) => node.remove());
   const svg = target.querySelector('svg');
   if (svg !== null) fitToDrawing(svg);
-  return tune?.warnings ?? [];
+  return (tune?.warnings ?? []).map(plainMusicWarning);
 }
 
 function $placeCaret(node: LexicalNode, edge: Edge) {
