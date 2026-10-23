@@ -6,6 +6,7 @@ import ts from 'typescript';
 test('the draft remaps every ID without bootstrapping or changing the editor keys', async () => {
   const exports = {}, states = [], refs = [], deps = [], pending = [], replacements = [], changes = [], pendingImages = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, bootstraps = 0, ordinarySaves = 0;
+  const renames = [];
   const user = { userId: '1', username: 'owner', imageUrl: null };
   const draft = {
     editorKey: 'draft-note', backup: { latest: { project: { title: '' }, trail: { title: '' }, item: { title: '', titleAlign: 'left', content: '' } } },
@@ -13,7 +14,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
     subscribe() { return () => {}; },
     getSnapshot() { return draft.state; },
     setOnCreated(callback) { draft.onCreated = callback; },
-    start() {}, dispose() {}, retry() {}, needsUnloadWarning() { return false; },
+    async claim() {}, start() {}, dispose() {}, retry() {}, needsUnloadWarning() { return false; },
     setPendingImages: pending => pendingImages.push(pending),
     update(change) { Object.assign(draft.backup.latest, change); changes.push(change); },
   };
@@ -38,6 +39,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
       '@/lib/editor-draft': { editorDraftForRoute: () => draft, clearLocalDrafts() {} },
       '@/lib/pending-saves': { createPendingSaves: () => ({ track: (_key, action) => action() }) },
       '@/lib/project-validation': { assertProjectText() {} },
+      '@/lib/projects-store': { renameItem: async (...args) => { renames.push(args); } },
       '../../editor-utils': { countTextStats: () => ({ words: 0, characters: 0 }), lastItemStorageKey: id => id },
       '@/lib/editor-bootstrap-client': { getEditorBootstrap: () => { bootstraps++; throw new Error('Drafts must not bootstrap'); } },
       '@/app/editor/[projectId]/hooks/useAutoSave': { useAutoSave: () => ({ onChange: () => { ordinarySaves++; } }) },
@@ -82,6 +84,9 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   draft.state = { status: 'saved', error: '' };
   hook = render('real');
   expect(hook.isDraft).toBe(false);
+  hook.onDraftItemTitle('draft-note', 'Title still being typed');
+  hook.onDraftItemTitle('other-note', 'Another title');
+  expect(renames.map(args => args.slice(0, 2))).toEqual([['22', 'Title still being typed'], ['other-note', 'Another title']]);
   hook.onChange('22', { toJSON: () => ({ root: { children: [] } }) });
   expect(pendingImages.at(-1)).toBe(false);
   expect(ordinarySaves).toBe(1);

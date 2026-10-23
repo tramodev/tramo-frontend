@@ -136,10 +136,11 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     let cancelled = false;
     if (draft && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId)) {
       if (!draftInitialized.current) {
-        void Promise.resolve().then(() => {
+        void draft.claim().then(() => {
           if (cancelled || draftInitialized.current) return;
           draftInitialized.current = true;
           const latest = draft.backup.latest;
+          setProjectId(draft.backup.result?.projectId ?? draft.editorKey);
           const itemId = draft.editorKey;
           setProjectTitle(latest.project.title);
           setProfile(user ? { username: user.username, imageUrl: user.imageUrl } : null);
@@ -651,7 +652,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     resolveProjectId: draft && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId) ? draft.resolveProjectId : undefined,
     onDraftProjectTitle: isDraft ? (title: string) => { void handleRenameProject(title); } : undefined,
     onDraftTrailTitle: isDraft ? (id: string, title: string) => { void handleRenameTrail(id, title); } : undefined,
-    onDraftItemTitle: isDraft ? (id: string, title: string) => { void handleRenameItem(id, title); } : undefined,
+    onDraftItemTitle: draft ? (id: string, title: string) => { void handleRenameItem(id === draft.editorKey && draft.backup.result ? String(draft.backup.result.itemId) : id, title); } : undefined,
     loaded,
     restoreEpoch,
     projectTitle,
