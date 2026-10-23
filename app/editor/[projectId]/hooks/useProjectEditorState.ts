@@ -570,6 +570,8 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   };
 
   const handleRenameItem = (itemId: string, title: string) => {
+    const result = draft?.backup.result;
+    if (result && itemId === draft.editorKey) itemId = String(result.itemId);
     if (draft && draft.getSnapshot().status !== 'saved') {
       setItems(previous => Object.fromEntries(Object.entries(previous).map(([id, item]) => [id, { ...item, title }])));
       draft.update({ item: { ...draft.backup.latest.item, title } });
@@ -580,7 +582,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       if (!item) return prevItems;
       return { ...prevItems, [itemId]: { ...item, title } };
     });
-    return pendingSaves.current.track(`item-title:${itemId}`, () => renameItem(itemId, title, restoreEpoch, projectId), true).catch(() => {});
+    return pendingSaves.current.track(`item-title:${itemId}`, () => renameItem(itemId, title, result?.restoreEpoch ?? restoreEpoch, result?.projectId ?? projectId), true).catch(() => {});
   };
 
   const handleDeleteTrail = (trailId: string) => pendingSaves.current.track(`delete-trail:${trailId}`, async () => {
@@ -652,7 +654,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     resolveProjectId: draft && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId) ? draft.resolveProjectId : undefined,
     onDraftProjectTitle: isDraft ? (title: string) => { void handleRenameProject(title); } : undefined,
     onDraftTrailTitle: isDraft ? (id: string, title: string) => { void handleRenameTrail(id, title); } : undefined,
-    onDraftItemTitle: draft ? (id: string, title: string) => { void handleRenameItem(id === draft.editorKey && draft.backup.result ? String(draft.backup.result.itemId) : id, title); } : undefined,
+    onDraftItemTitle: draft ? (id: string, title: string) => { void handleRenameItem(id, title); } : undefined,
     loaded,
     restoreEpoch,
     projectTitle,
