@@ -609,10 +609,9 @@ div.editor-equation {
   overflow-x: auto;
 }
 
-.editor-music-rendered > div,
+.editor-music-rendered > div[role="img"],
 .editor-music-preview > div {
-  display: inline-block;
-  vertical-align: top;
+  width: 100%;
 }
 
 .editor-music-rendered.selected {
@@ -621,7 +620,7 @@ div.editor-equation {
 
 .editor-music-rendered svg,
 .editor-music-preview svg {
-  max-width: none;
+  max-width: 100%;
 }
 
 .editor-music-editor {

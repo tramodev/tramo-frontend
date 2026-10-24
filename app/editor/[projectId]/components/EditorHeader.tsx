@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AlertCircle, Check, Loader2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { UserMenu } from '@/components/layout/user-menu';
 import { ExportProjectButton } from '@/components/editor/export-project-button';
 import { ProjectHistorySheet } from '@/components/editor/project-history-sheet';
@@ -18,10 +19,12 @@ interface EditorTitleSlotProps {
   onRenameProject: (title: string) => Promise<void>;
   saveStatus: SaveStatus;
   saveError: string;
+  onDiscardRecoveredChanges?: () => void;
 }
 
-export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange }: EditorTitleSlotProps) {
+export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange, onDiscardRecoveredChanges }: EditorTitleSlotProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [discardRecoveryOpen, setDiscardRecoveryOpen] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [titleError, setTitleError] = useState('');
   const [savingTitle, setSavingTitle] = useState(false);
@@ -108,6 +111,13 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
         )}
       </span>
       {saveStatus === 'error' && saveError && <span role="alert" className="max-w-sm text-xs text-destructive">{saveError}</span>}
+      {onDiscardRecoveredChanges && <>
+        <Button variant="outline" size="sm" onClick={() => setDiscardRecoveryOpen(true)}>Use server version</Button>
+        <ConfirmDialog open={discardRecoveryOpen} onOpenChange={setDiscardRecoveryOpen}
+          title="Discard recovered changes?"
+          description="Copy any recovered text you want to keep first. This removes the local backups for conflicting notes and reloads their server versions."
+          confirmLabel="Use server version" onConfirm={onDiscardRecoveredChanges} />
+      </>}
     </div>
   );
 }

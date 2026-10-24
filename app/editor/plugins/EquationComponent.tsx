@@ -25,11 +25,14 @@ import {
   KEY_DELETE_COMMAND,
   KEY_ENTER_COMMAND,
   HISTORIC_TAG,
+  HISTORY_PUSH_TAG,
+  HISTORY_MERGE_TAG,
   LexicalEditor,
   LexicalNode,
   NodeKey,
 } from 'lexical';
 import katex from 'katex';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { $isEquationNode } from '@/app/editor/nodes/EquationNode';
 import { $caretOnEdgeLine, $caretTouches, type Edge } from '@/app/editor/plugins/decoratorCaret';
 
@@ -104,6 +107,7 @@ function returnFocusTo(editor: LexicalEditor, nodeKey: NodeKey, edge: Edge) {
     const node = $getNodeByKey(nodeKey);
     if (node !== null) $placeCaret(node, edge);
   });
+  editor.focus();
 }
 
 export default function EquationComponent({
@@ -122,10 +126,11 @@ export default function EquationComponent({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
+  const firstChangeRef = useRef(true);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isEditing || katexRef.current === null) return;
-    renderKatex(katexRef.current, equation, inline);
+    setError(renderKatex(katexRef.current, equation, inline));
   }, [equation, inline, isEditing]);
 
   useLayoutEffect(() => {
@@ -144,6 +149,7 @@ export default function EquationComponent({
 
   useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
     if (!tags.has(HISTORIC_TAG)) return;
+    firstChangeRef.current = true;
     editorState.read(() => {
       const node = $getNodeByKey(nodeKey);
       if ($isEquationNode(node)) setDraft(node.getEquation());
@@ -155,7 +161,8 @@ export default function EquationComponent({
     editor.update(() => {
       const node = $getNodeByKey(nodeKey);
       if ($isEquationNode(node)) node.setEquation(value);
-    });
+    }, { tag: firstChangeRef.current ? HISTORY_PUSH_TAG : HISTORY_MERGE_TAG });
+    firstChangeRef.current = false;
   }, [editor, nodeKey]);
 
   const pendingSelection = useRef<[number, number] | null>(null);
@@ -220,6 +227,7 @@ export default function EquationComponent({
     (from: Edge | null = null) => {
       if (!isEditable) return;
       entryEdgeRef.current = from;
+      firstChangeRef.current = true;
       setDraft(equation);
       setIsEditing(true);
     },
@@ -372,11 +380,17 @@ export default function EquationComponent({
   }
 
   return (
-    <span
-      key="rendered"
-      ref={katexRef}
-      className={isSelected ? 'editor-equation-rendered selected' : 'editor-equation-rendered'}
-      onDoubleClick={() => startEditing()}
-    />
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          key="rendered"
+          ref={katexRef}
+          tabIndex={error ? 0 : undefined}
+          className={isSelected ? 'editor-equation-rendered selected' : 'editor-equation-rendered'}
+          onDoubleClick={() => startEditing()}
+        />
+      </TooltipTrigger>
+      {error && <TooltipContent className="max-w-xs">{error}</TooltipContent>}
+    </Tooltip>
   );
 }

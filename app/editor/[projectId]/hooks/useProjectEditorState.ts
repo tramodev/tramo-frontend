@@ -1,3 +1,4 @@
+import { readItemContentBackup, removeItemContentBackup, type ItemContentBackup } from '@/lib/item-content-backup';
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -104,6 +105,44 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const navigationSequence = useRef(0);
   const selectedItemId = navigation.itemId;
   const activeTrailId = navigation.trailId;
+  const updateItemContentLocally = useCallback((itemId: string, content: string) => {
+    setItems(prevItems => {
+      const item = prevItems[itemId];
+      if (!item) return prevItems;
+      return { ...prevItems, [itemId]: { ...item, content, textStats: countTextStats(content) } };
+    });
+  }, []);
+
+  const autoSave = useAutoSave({
+    projectId,
+    userId: user?.userId,
+    restoreEpoch,
+    contextId: activeTrailId,
+    onOptimisticUpdate: updateItemContentLocally,
+    redirectToLogin,
+  });
+
+  const { recoverItemContent } = autoSave;
+  const recoveredContents = useRef(new Map<string, { backup: ItemContentBackup; serverContent: string }>());
+  const recoverContents = useCallback((projectId: string, contents: Record<string, string>) => {
+    if (!user?.userId) return contents;
+    const recovered = { ...contents };
+    for (const [itemId, serverContent] of Object.entries(contents)) {
+      try {
+        const backup = readItemContentBackup(user.userId, projectId, itemId);
+        if (!backup) continue;
+        if (backup.content === serverContent) { removeItemContentBackup(user.userId, projectId, itemId, serverContent); continue; }
+        recovered[itemId] = backup.content;
+        recoveredContents.current.set(itemId, { backup, serverContent });
+      } catch {}
+    }
+    return recovered;
+  }, [user]);
+  useEffect(() => {
+    if (!loaded) return;
+    for (const [itemId, { backup, serverContent }] of recoveredContents.current) recoverItemContent(itemId, backup, serverContent);
+    recoveredContents.current.clear();
+  }, [loaded, items, recoverItemContent]);
   const [view, setView] = useState<'write' | 'graph'>('write');
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
 
@@ -185,7 +224,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       setProjectId(routeProjectId);
       setRestoreEpoch(result.restoreEpoch);
       resetItemContents(Object.keys(project.items));
-      const contents = acceptLoadedContents(result.contents);
+      const contents = recoverContents(routeProjectId, acceptLoadedContents(result.contents));
       for (const [itemId, content] of Object.entries(contents)) {
         const item = project.items[itemId];
         if (item) project.items[itemId] = { ...item, content, textStats: countTextStats(content) };
@@ -212,7 +251,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     return () => {
       cancelled = true;
     };
-  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves]);
+  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves, recoverContents]);
 
   useEffect(() => {
     if (isDraft || !loaded || (!connectionsPanelOpen && view !== 'graph') || mapPreviews !== undefined) return;
@@ -279,9 +318,10 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       .then((byId) => {
         if (cancelled) return;
         setContentLoadError(false);
+        const contents = recoverContents(projectId, byId);
         setItems((prev) => {
           const next = { ...prev };
-          for (const [itemId, content] of Object.entries(byId)) {
+          for (const [itemId, content] of Object.entries(contents)) {
             if (next[itemId] && next[itemId].content == null) next[itemId] = { ...next[itemId], content, textStats: countTextStats(content) };
           }
           return next;
@@ -289,7 +329,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       })
       .catch(() => { if (!cancelled) setContentLoadError(true); });
     return () => { cancelled = true; };
-  }, [activeTrailId, trailContentIds, contentRetry, activeTrail, items]);
+  }, [activeTrailId, trailContentIds, contentRetry, activeTrail, items, projectId, recoverContents]);
 
   useEffect(() => {
     let cancelled = false;
@@ -297,11 +337,12 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     getItemContent(selectedItemId).then((content) => {
       if (cancelled) return;
       setContentLoadError(false);
+      content = recoverContents(projectId, { [selectedItemId]: content })[selectedItemId];
       setItems((prev) => prev[selectedItemId] && prev[selectedItemId].content == null
         ? { ...prev, [selectedItemId]: { ...prev[selectedItemId], content, textStats: countTextStats(content) } } : prev);
     }).catch(() => { if (!cancelled) setContentLoadError(true); });
     return () => { cancelled = true; };
-  }, [activeTrailId, selectedItemId, contentRetry, items]);
+  }, [activeTrailId, selectedItemId, contentRetry, items, projectId, recoverContents]);
 
   const handleVisibleItem = useCallback((itemId: string) => {
     setNavigation((prev) => prev.itemId === itemId ? prev : { ...prev, itemId });
@@ -636,21 +677,6 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     setVisibility(next);
   };
 
-  const updateItemContentLocally = useCallback((itemId: string, content: string) => {
-    setItems(prevItems => {
-      const item = prevItems[itemId];
-      if (!item) return prevItems;
-      return { ...prevItems, [itemId]: { ...item, content, textStats: countTextStats(content) } };
-    });
-  }, []);
-
-  const autoSave = useAutoSave({
-    projectId,
-    restoreEpoch,
-    contextId: activeTrailId,
-    onOptimisticUpdate: updateItemContentLocally,
-    redirectToLogin,
-  });
 
   const handleRenameProject = (title: string) => {
     assertProjectText(title, 'title');

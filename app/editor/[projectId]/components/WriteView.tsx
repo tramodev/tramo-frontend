@@ -263,7 +263,7 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
             return $isTextNode(node) && matchSlash(node.getTextContent().slice(0, selection.anchor.offset), editor) !== null;
           });
           props.onChange(item.id, state, pendingCommand);
-        }} ignoreSelectionChange />
+        }} ignoreSelectionChange ignoreHistoryMergeTagChange={false} />
         {focused && props.active !== false && <>
           {!props.draft && <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail} history={history}
             sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}

@@ -5,6 +5,7 @@ import { parseResponse, expectOk } from "./http";
 const extractionEpochs = new Map<string, number>();
 const savedContents = new Map<string, string>();
 const contentSessions = new Map<string, number>();
+export const getSavedItemContent = (id: string) => savedContents.get(id) ?? '';
 export const getExtractionEpoch = (id: string) => extractionEpochs.get(id) ?? 0;
 export const acceptExtractionEpoch = (id: string, epoch: number, content: string) => { extractionEpochs.set(id, epoch); savedContents.set(id, content); };
 
