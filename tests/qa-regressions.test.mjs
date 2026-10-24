@@ -7,13 +7,13 @@ const jsx = (type, props) => ({ type, props });
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-function load(path, modules = {}, extra = '') {
+function load(path, modules = {}, extra = '', globals = {}) {
   const exports = {}, states = [], refs = [], dependencies = [];
   let state = 0, ref = 0, effect = 0, effects = [];
   runInNewContext(ts.transpileModule(readFileSync(path, 'utf8') + extra, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, {
-    exports, Error, URLSearchParams, setTimeout: () => {},
+    exports, Error, URLSearchParams, setTimeout: () => {}, ...globals,
     require: name => ({
       '@/components/auth/current-user': { useCurrentUserId: () => '1' },
       react: {
@@ -130,11 +130,12 @@ test('the editor keeps a rejected project title editable and blocks duplicate su
 });
 
 function shareSetup(getProject, saveDescription = async () => {}) {
-  const published = [], savedTags = [];
+  const published = [], savedTags = [], copied = [];
   const page = load('app/projects/[projectId]/share/page.tsx', {
     'next/navigation': { useParams: () => ({ projectId: 'project' }), useRouter: () => ({}) },
     '@/lib/projects-store': {
       getProject, setProjectDescription: saveDescription,
+      setProjectVisibility: async () => ({ error: null }),
       setProjectTags: async (...args) => { savedTags.push(args); },
       publishProject: async (...args) => { published.push(args); return { error: null }; },
     },
@@ -143,8 +144,8 @@ function shareSetup(getProject, saveDescription = async () => {}) {
     '@/lib/pending-saves': pending,
     '@/lib/item-title-saves': load('lib/item-title-saves.ts').exports,
     '@/lib/utils': { cn: (...args) => args.join(' ') },
-  });
-  return { render: () => flatten(page.render('default')), published, savedTags };
+  }, '', { window: { location: { origin: 'http://localhost:3000' } }, navigator: { clipboard: { writeText: async text => { copied.push(text); } } } });
+  return { render: () => flatten(page.render('default')), published, savedTags, copied };
 }
 
 test.each([null, new Error('Unavailable')])('share load failures render a visible state and a way back', async result => {
@@ -226,4 +227,18 @@ test('mismatched passwords show one inline error and never submit', async () => 
   expect(render().some(node => node.props.role === 'alert')).toBe(false);
   render().find(node => node.props.id === 'confirm-new-password').props.onChange({ target: { value: 'Abcdefghijk1!' } });
   expect(render().filter(node => node.props.children === 'Passwords do not match')).toHaveLength(0);
+});
+
+
+test('saving Share exposes a working public link and copy button next to Save', async () => {
+  const s = shareSetup(async () => project);
+  s.render(); await settle();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
+  expect(s.render().some(node => node.props['aria-label'] === 'Copy public link')).toBe(false);
+  await s.render().find(node => node.type === 'button' && node.props.children === 'Save').props.onClick();
+  const sticky = s.render().find(node => node.props.className?.includes('sticky bottom-0'));
+  const children = flatten(sticky);
+  expect(children.some(node => node.type === 'a' && node.props.href === 'http://localhost:3000/p/project')).toBe(true);
+  await children.find(node => node.props['aria-label'] === 'Copy public link').props.onClick();
+  expect(s.copied).toEqual(['http://localhost:3000/p/project']);
 });

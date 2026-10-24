@@ -110,3 +110,19 @@ test.each(['item', 'trail'])('opening another project does not invalidate an unr
   await loaded;
   expect(s.getExtractionEpoch('42')).toBe(2);
 });
+
+
+test('reading a conflict snapshot validates it without replacing the active save baseline', async () => {
+  const s = setup(); s.acceptExtractionEpoch('42', 0, 'local baseline');
+  const reading = s.getItemContentSnapshot('42');
+  s.requests[0].resolve(Response.json({ content: 'other tab', extractionEpoch: 2 }));
+  expect(await reading).toEqual({ content: 'other tab', extractionEpoch: 2 });
+  expect(s.getSavedItemContent('42')).toBe('local baseline');
+  expect(s.getExtractionEpoch('42')).toBe(0);
+});
+
+test.each([{ content: 1 }, { content: 'text', extractionEpoch: -1 }, { content: 'text', extractionEpoch: '1' }])('invalid conflict snapshots are rejected: %j', response => {
+  const s = setup(); const reading = s.getItemContentSnapshot('42');
+  s.requests[0].resolve(Response.json(response));
+  return expect(reading).rejects.toThrow('Invalid note content response');
+});

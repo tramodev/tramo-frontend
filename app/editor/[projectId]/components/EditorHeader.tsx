@@ -20,11 +20,13 @@ interface EditorTitleSlotProps {
   saveStatus: SaveStatus;
   saveError: string;
   onDiscardRecoveredChanges?: () => void;
+  onKeepRecoveredChanges?: () => Promise<void>;
 }
 
-export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange, onDiscardRecoveredChanges }: EditorTitleSlotProps) {
+export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange, onDiscardRecoveredChanges, onKeepRecoveredChanges }: EditorTitleSlotProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [discardRecoveryOpen, setDiscardRecoveryOpen] = useState(false);
+  const [keepRecoveryOpen, setKeepRecoveryOpen] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [titleError, setTitleError] = useState('');
   const [savingTitle, setSavingTitle] = useState(false);
@@ -81,7 +83,7 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-4">
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
       <span
         data-tour="editor-title"
         className={`min-w-0 truncate cursor-text text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline ${draft && (!projectTitle || projectTitle === 'Untitled project') ? 'text-muted-foreground/40' : ''}`}
@@ -110,9 +112,14 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
           </>
         )}
       </span>
-      {saveStatus === 'error' && saveError && <span role="alert" className="max-w-sm text-xs text-destructive">{saveError}</span>}
+      {saveStatus === 'error' && saveError && <span role="alert" className="basis-full text-xs text-destructive">{saveError}</span>}
       {onDiscardRecoveredChanges && <>
+        {onKeepRecoveredChanges && <Button variant="outline" size="sm" onClick={() => setKeepRecoveryOpen(true)}>Keep my version</Button>}
         <Button variant="outline" size="sm" onClick={() => setDiscardRecoveryOpen(true)}>Use server version</Button>
+        {onKeepRecoveredChanges && <ConfirmDialog open={keepRecoveryOpen} onOpenChange={setKeepRecoveryOpen}
+          title="Save your recovered version?"
+          description="This replaces the server content of the conflicting notes with your recovered text, including your latest edits in this tab."
+          confirmLabel="Keep my version" onConfirm={() => { void onKeepRecoveredChanges(); }} />}
         <ConfirmDialog open={discardRecoveryOpen} onOpenChange={setDiscardRecoveryOpen}
           title="Discard recovered changes?"
           description="Copy any recovered text you want to keep first. This removes the local backups for conflicting notes and reloads their server versions."

@@ -17,12 +17,13 @@ function find(element, type) {
   if (element.type === type) return element;
   return [element.props?.children].flat().map(child => find(child, type)).find(Boolean);
 }
-function setup(kind, initial = '') {
+function setup(kind, initial = '', fresh = initial === '') {
   const field = kind === 'Equation' ? 'equation' : 'abc';
   const states = [], effects = [], listeners = [], refs = [], updates = [];
   let index = 0, refIndex = 0, content = initial, removed = false;
   const node = { setEquation: value => { content = value; }, setAbc: value => { content = value; }, getEquation: () => content, getAbc: () => content, remove: () => { removed = true; } };
   const editor = { isEditable: () => true, update: (fn, options) => { updates.push(options); fn(); }, registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
+  const editingDecorators = new WeakMap([[editor, new Set(fresh ? ['embed'] : [])]]);
   const component = load(`app/editor/plugins/${kind}Component.tsx`, {
     react: {
       useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; },
@@ -32,7 +33,7 @@ function setup(kind, initial = '') {
     '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [false, () => {}, () => {}] },
     lexical: { $getNodeByKey: () => node, HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
     [`@/app/editor/nodes/${kind}Node`]: { [`$is${kind}Node`]: value => value === node },
-    '@/app/editor/plugins/decoratorCaret': {},
+    '@/app/editor/plugins/decoratorCaret': { editingDecorators },
     '@/app/editor/plugins/MusicPlugin': { DEFAULT_ABC: 'X:1\nK:C\n' },
   }).default;
   const render = () => { index = refIndex = 0; const tree = component({ [field]: content, inline: false, nodeKey: 'embed' }); effects.splice(0).forEach(fn => fn()); return tree; };
@@ -134,6 +135,8 @@ test.each(['Equation', 'Music'])('%s reflects undo while editing and never commi
   s.enter();
   s.type('changed');
   s.restore('original');
+  expect(s.input()).toBeUndefined();
+  s.enter();
   expect(s.input().props.value).toBe('original');
   s.escape();
   expect(s.content).toBe('original');
@@ -168,6 +171,27 @@ test.each(['Equation', 'Music'])('%s groups typing into one undo step and starts
   const s = setup(kind);
   s.type('k'); s.type('k='); s.type('k=1');
   expect(s.updates.map(update => update.tag)).toEqual(['history-push', 'history-merge', 'history-merge']);
-  s.restore(''); s.type('new edit');
+  s.restore(''); s.enter(); s.type('new edit');
   expect(s.updates.at(-1).tag).toBe('history-push');
+});
+
+
+test.each(['Equation', 'Music'])('%s restored empty by redo stays out of editing and accepts its subsequent restored content', kind => {
+  const s = setup(kind, '', false);
+  expect(s.input()).toBeUndefined();
+  s.restore('restored content');
+  expect(s.input()).toBeUndefined();
+  expect(s.content).toBe('restored content');
+  s.enter();
+  expect(s.input().props.value).toBe('restored content');
+});
+
+test.each(['Equation', 'Music'])('%s ignores an obsolete blur after history replaces its content', kind => {
+  const s = setup(kind);
+  s.type('k=1');
+  const oldBlur = s.input().props.onBlur;
+  s.restore('restored content');
+  oldBlur();
+  expect(s.content).toBe('restored content');
+  expect(s.removed).toBe(false);
 });

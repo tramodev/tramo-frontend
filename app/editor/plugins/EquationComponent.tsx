@@ -34,7 +34,7 @@ import {
 import katex from 'katex';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { $isEquationNode } from '@/app/editor/nodes/EquationNode';
-import { $caretOnEdgeLine, $caretTouches, type Edge } from '@/app/editor/plugins/decoratorCaret';
+import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@/app/editor/plugins/decoratorCaret';
 
 interface EquationComponentProps {
   equation: string;
@@ -118,7 +118,7 @@ export default function EquationComponent({
   const [editor] = useLexicalComposerContext();
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
-  const [isEditing, setIsEditing] = useState(equation === '');
+  const [isEditing, setIsEditing] = useState(() => editingDecorators.get(editor)?.has(nodeKey) === true);
   const [draft, setDraft] = useState(equation);
   const [error, setError] = useState<string | null>(null);
   const katexRef = useRef<HTMLSpanElement | null>(null);
@@ -127,6 +127,11 @@ export default function EquationComponent({
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
   const firstChangeRef = useRef(true);
+  const editingRef = useRef(isEditing);
+
+  useLayoutEffect(() => {
+    editingDecorators.get(editor)?.delete(nodeKey);
+  }, [editor, nodeKey]);
 
   useLayoutEffect(() => {
     if (isEditing || katexRef.current === null) return;
@@ -150,6 +155,9 @@ export default function EquationComponent({
   useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
     if (!tags.has(HISTORIC_TAG)) return;
     firstChangeRef.current = true;
+    editingRef.current = false;
+    exitEdgeRef.current = null;
+    setIsEditing(false);
     editorState.read(() => {
       const node = $getNodeByKey(nodeKey);
       if ($isEquationNode(node)) setDraft(node.getEquation());
@@ -202,25 +210,22 @@ export default function EquationComponent({
 
   const commit = useCallback(
     (exitTo: Edge | null = 'after') => {
-      const next = draft.trim();
-      if (next === '') {
-        editor.update(() => {
-          const node = $getNodeByKey(nodeKey);
-          if ($isEquationNode(node)) node.remove();
-        });
-        setIsEditing(false);
-        return;
-      }
-      if (next !== equation) {
-        editor.update(() => {
-          const node = $getNodeByKey(nodeKey);
-          if ($isEquationNode(node)) node.setEquation(next);
-        });
-      }
-      exitEdgeRef.current = exitTo;
+      if (!editingRef.current) return;
+      editingRef.current = false;
+      editor.update(() => {
+        const node = $getNodeByKey(nodeKey);
+        if (!$isEquationNode(node)) return;
+        const next = node.getEquation().trim();
+        if (next === '') {
+          node.remove();
+          return;
+        }
+        if (next !== node.getEquation()) node.setEquation(next);
+        exitEdgeRef.current = exitTo;
+      }, { discrete: true, tag: HISTORY_MERGE_TAG });
       setIsEditing(false);
     },
-    [draft, editor, equation, nodeKey],
+    [editor, nodeKey],
   );
 
   const startEditing = useCallback(
@@ -228,6 +233,7 @@ export default function EquationComponent({
       if (!isEditable) return;
       entryEdgeRef.current = from;
       firstChangeRef.current = true;
+      editingRef.current = true;
       setDraft(equation);
       setIsEditing(true);
     },
@@ -388,6 +394,10 @@ export default function EquationComponent({
           tabIndex={error ? 0 : undefined}
           className={isSelected ? 'editor-equation-rendered selected' : 'editor-equation-rendered'}
           onDoubleClick={() => startEditing()}
+          onKeyDown={event => {
+            event.stopPropagation();
+            if (event.key === 'Enter') { event.preventDefault(); startEditing(); }
+          }}
         />
       </TooltipTrigger>
       {error && <TooltipContent className="max-w-xs">{error}</TooltipContent>}

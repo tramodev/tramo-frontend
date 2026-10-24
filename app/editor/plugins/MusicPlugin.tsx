@@ -16,6 +16,7 @@ import {
 } from 'lexical';
 import { $createMusicNode, MusicNode } from '../nodes/MusicNode';
 import { $isSelectionInCode } from './codeBlockGuard';
+import { markDecoratorForEditing } from '@/app/editor/plugins/decoratorCaret';
 
 export const INSERT_MUSIC_COMMAND: LexicalCommand<void> = createCommand('INSERT_MUSIC_COMMAND');
 
@@ -35,6 +36,7 @@ export default function MusicPlugin(): null {
         if ($isSelectionInCode()) return true;
         const node = $createMusicNode({ abc: '' });
         $insertNodes([node]);
+        markDecoratorForEditing(editor, node.getKey());
 
         const parent = node.getParentOrThrow();
         if ($isRootOrShadowRoot(parent) && node.getNextSibling() === null) {
