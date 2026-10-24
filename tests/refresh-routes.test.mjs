@@ -11,7 +11,7 @@ test.each(['notifications', 'export'])('%s preserves refresh outages, authentica
     runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     }).outputText, {
-      exports, Response,
+      exports, Response, Headers,
       require: name => ({
         '@/lib/config': { API_BASE_URL: 'http://backend' },
         '@/lib/auth': {
@@ -34,4 +34,26 @@ test.each(['notifications', 'export'])('%s preserves refresh outages, authentica
     expect(requests.every(options => options.signal === request.signal)).toBe(true);
     if (refreshed === true) expect(await response.text()).toBe('payload');
   }
+});
+
+test.each([503, 429, 499])('notification stream preserves failure status %s', async status => {
+  const exports = {};
+  const controller = new AbortController();
+  if (status === 499) controller.abort();
+  runInNewContext(ts.transpileModule(readFileSync('app/api/notifications/stream/route.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, {
+    exports, Response, Headers,
+    require: name => ({
+      '@/lib/config': { API_BASE_URL: 'http://backend' },
+      '@/lib/auth': { getAccessToken: async () => 'token' },
+    })[name],
+    fetch: async () => {
+      if (status !== 429) throw new TypeError('connection failed');
+      return new Response(null, { status: 429, headers: { 'Retry-After': '30' } });
+    },
+  });
+  const response = await exports.GET(new Request('http://frontend/api/notifications/stream', { signal: controller.signal }));
+  expect(response.status).toBe(status);
+  if (status === 429) expect(response.headers.get('Retry-After')).toBe('30');
 });

@@ -3,6 +3,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { subscribeNotificationCount } from "@/lib/notification-stream"
 import { useRouter } from "next/navigation"
 import { ArrowBigUp, Award, Bell, GitFork, MessageCircle, Rocket, Share2, UserPlus, X } from "lucide-react"
 import {
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   getNotifications,
-  getUnreadCount,
   markAllNotificationsRead,
   deleteNotification,
   type AppNotification,
@@ -65,7 +65,7 @@ function notificationHref(n: AppNotification): string {
 
 const PAGE_SIZE = 20
 
-export function NotificationButton({ loggedIn }: { loggedIn: boolean }) {
+export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; userId: string | null }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<AppNotification[] | null>(null)
   const [hasMore, setHasMore] = useState(false)
@@ -74,27 +74,9 @@ export function NotificationButton({ loggedIn }: { loggedIn: boolean }) {
   const router = useRouter()
 
   useEffect(() => {
-    if (!loggedIn) return
-    let cancelled = false
-    getUnreadCount().then((count) => {
-      if (!cancelled) setUnreadCount(count)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [loggedIn])
-
-  useEffect(() => {
-    if (!loggedIn) return
-
-    const source = new EventSource("/api/notifications/stream")
-    source.addEventListener("unread-count", (event) => {
-      const data: { unreadCount: number } = JSON.parse((event as MessageEvent<string>).data)
-      setUnreadCount(data.unreadCount)
-    })
-
-    return () => source.close()
-  }, [loggedIn])
+    if (!loggedIn || !userId) return
+    return subscribeNotificationCount(userId, setUnreadCount)
+  }, [loggedIn, userId])
 
   function handleOpenChange(open: boolean) {
     if (!open || notifications !== null) return

@@ -16,6 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppHeader
         homeHref={admin ? "/explore" : homeHref}
         loggedIn={loggedIn}
+        userId={profile?.userId ?? null}
         isAdmin={admin}
         username={profile?.username ?? null}
         imageUrl={profile?.imageUrl ?? null}

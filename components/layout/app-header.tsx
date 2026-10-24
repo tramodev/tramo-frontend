@@ -12,12 +12,14 @@ import { Button } from "@/components/ui/button"
 export function AppHeader({
   homeHref,
   loggedIn,
+  userId,
   isAdmin,
   username,
   imageUrl,
 }: {
   homeHref: string
   loggedIn: boolean
+  userId: string | null
   isAdmin: boolean
   username: string | null
   imageUrl: string | null
@@ -31,7 +33,7 @@ export function AppHeader({
         <div className="hidden md:flex">
           <PrimaryNav loggedIn={loggedIn} isAdmin={isAdmin} />
         </div>
-        <NotificationButton loggedIn={loggedIn} />
+        <NotificationButton loggedIn={loggedIn} userId={userId} />
         <UserMenu loggedIn={loggedIn} username={username} imageUrl={imageUrl} navItems={getNavItems(loggedIn, isAdmin)} />
         {!loggedIn && (
           <div className="flex items-center gap-2">

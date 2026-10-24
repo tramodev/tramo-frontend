@@ -13,7 +13,7 @@ function open(token: string | null, signal: AbortSignal) {
   });
 }
 
-export async function GET(request: Request) {
+async function stream(request: Request) {
   let upstream = await open(await getAccessToken(), request.signal);
 
   if (upstream.status === 401) {
@@ -23,7 +23,10 @@ export async function GET(request: Request) {
   }
 
   if (!upstream.ok || !upstream.body) {
-    return new Response(null, { status: upstream.status });
+    const headers = new Headers();
+    const retryAfter = upstream.headers.get("Retry-After");
+    if (retryAfter) headers.set("Retry-After", retryAfter);
+    return new Response(null, { status: upstream.status, headers });
   }
 
   return new Response(upstream.body, {
@@ -34,4 +37,12 @@ export async function GET(request: Request) {
       "X-Accel-Buffering": "no",
     },
   });
+}
+
+export async function GET(request: Request) {
+  try {
+    return await stream(request);
+  } catch {
+    return new Response(null, { status: request.signal.aborted ? 499 : 503 });
+  }
 }
