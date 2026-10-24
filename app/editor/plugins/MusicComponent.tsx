@@ -23,6 +23,8 @@ import {
   KEY_DELETE_COMMAND,
   KEY_ENTER_COMMAND,
   HISTORIC_TAG,
+  HISTORY_PUSH_TAG,
+  HISTORY_MERGE_TAG,
   LexicalEditor,
   LexicalNode,
   NodeKey,
@@ -53,21 +55,6 @@ const RENDER_PARAMS = {
   paddingright: 0,
 } as const;
 
-function naturalWidth(abcjs: typeof import('abcjs'), abc: string): number {
-  const widths = abcjs
-    .tuneMetrics(abc, RENDER_PARAMS)
-    .flatMap((tune) => tune.sections.map((section) => section.left + section.total));
-  return widths.length === 0 ? 0 : Math.ceil(Math.max(...widths));
-}
-
-function fitToDrawing(svg: SVGSVGElement) {
-  const drawn = svg.getBBox();
-  if (drawn.width === 0) return;
-  const height = svg.getAttribute('height') ?? String(drawn.height);
-  svg.setAttribute('viewBox', `${drawn.x} 0 ${drawn.width} ${height}`);
-  svg.setAttribute('width', String(Math.ceil(drawn.width)));
-}
-
 function plainMusicWarning(warning: string): string {
   const ignored = /^(Music Line:\d+:\d+: Unknown character ignored:)\s+.*?<span\b[^>]*>(.*?)<\/span>/.exec(warning);
   if (ignored) warning = `${ignored[1]} ${ignored[2]}`;
@@ -80,15 +67,13 @@ function renderScore(
   target: HTMLElement,
   abc: string,
 ): string[] {
-  const staffwidth = naturalWidth(abcjs, abc);
+  const staffwidth = Math.max(240, target.parentElement?.clientWidth ?? 600);
   const [tune] = abcjs.renderAbc(
     target,
     abc,
-    staffwidth > 0 ? { ...RENDER_PARAMS, staffwidth } : RENDER_PARAMS,
+    { ...RENDER_PARAMS, staffwidth, responsive: 'resize', wrap: { minSpacing: 1.8, maxSpacing: 2.7, preferredMeasuresPerLine: 4 } },
   );
   target.querySelectorAll('style').forEach((node) => node.remove());
-  const svg = target.querySelector('svg');
-  if (svg !== null) fitToDrawing(svg);
   return (tune?.warnings ?? []).map(plainMusicWarning);
 }
 
@@ -111,6 +96,7 @@ function returnFocusTo(editor: LexicalEditor, nodeKey: NodeKey, edge: Edge) {
     const node = $getNodeByKey(nodeKey);
     if (node !== null) $placeCaret(node, edge);
   });
+  editor.focus();
 }
 
 export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
@@ -126,16 +112,20 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
+  const firstChangeRef = useRef(true);
 
   useEffect(() => {
     const target = scoreRef.current;
     if (isEditing || target === null || abc === '') return;
     let cancelled = false;
-    loadAbcjs().then((abcjs) => {
-      if (!cancelled) renderScore(abcjs, target, abc);
+    const observer = new ResizeObserver(() => {
+      void loadAbcjs().then(abcjs => { if (!cancelled) renderScore(abcjs, target, abc); });
     });
+    if (target.parentElement) observer.observe(target.parentElement);
+    void loadAbcjs().then(abcjs => { if (!cancelled) renderScore(abcjs, target, abc); });
     return () => {
       cancelled = true;
+      observer.disconnect();
     };
   }, [abc, isEditing]);
 
@@ -165,6 +155,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
 
   useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
     if (!tags.has(HISTORIC_TAG)) return;
+    firstChangeRef.current = true;
     editorState.read(() => {
       const node = $getNodeByKey(nodeKey);
       if ($isMusicNode(node)) setDraft(node.getAbc());
@@ -176,7 +167,8 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     editor.update(() => {
       const node = $getNodeByKey(nodeKey);
       if ($isMusicNode(node)) node.setAbc(value);
-    });
+    }, { tag: firstChangeRef.current ? HISTORY_PUSH_TAG : HISTORY_MERGE_TAG });
+    firstChangeRef.current = false;
   }, [editor, nodeKey]);
 
   useLayoutEffect(() => {
@@ -220,6 +212,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     (from: Edge | null = null) => {
       if (!isEditable) return;
       entryEdgeRef.current = from;
+      firstChangeRef.current = true;
       setDraft(abc === '' ? DEFAULT_ABC : abc);
       setIsEditing(true);
     },
@@ -357,12 +350,10 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     <div
       key="rendered"
       ref={scoreBoxRef}
-      role="img"
-      aria-label="Music score"
       className={isSelected ? 'editor-music-rendered selected' : 'editor-music-rendered'}
       onDoubleClick={() => startEditing()}
     >
-      <div ref={scoreRef} />
+      <div ref={scoreRef} role="img" aria-label="Music score" />
     </div>
   );
 }

@@ -5,15 +5,24 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-function setup(restoreEpoch = 0) {
-  const refs = [];
+function setup(restoreEpoch = 0, { userId, storage = {} } = {}) {
+  const localStorage = {
+    getItem: key => storage[key] ?? null,
+    setItem: (key, value) => { storage[key] = value; },
+    removeItem: key => { delete storage[key]; },
+  };
+  const backups = {};
+  runInNewContext(ts.transpileModule(readFileSync('lib/item-content-backup.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, { exports: backups, localStorage });
+  const refs = [], stateValues = [], reloads = [];
   const timers = new Map();
   const requests = [];
   const statuses = [];
   const errors = [];
   const optimistic = [];
   const redirects = [];
-  let refIndex = 0;
+  let refIndex = 0, stateIndex = 0;
   let timerId = 0;
   let cleanups = [];
   const listeners = new Map();
@@ -26,11 +35,13 @@ function setup(restoreEpoch = 0) {
     require: (name) => ({
       react: {
         useRef: (value) => refs[refIndex++] ?? (refs[refIndex - 1] = { current: value }),
-        useState: (initial) => [initial, (value) => (initial === 'idle' ? statuses : errors).push(value)],
+        useState: initial => { const i = stateIndex++; stateValues[i] ??= initial; return [stateValues[i], value => { stateValues[i] = value; (initial === 'idle' ? statuses : errors).push(value); }]; },
         useCallback: (fn) => fn,
         useEffect: (fn) => { cleanups.push(fn()); },
       },
+      '@/lib/item-content-backup': backups,
       '@/lib/item-content-client': {
+        getSavedItemContent: () => '', getExtractionEpoch: () => 0,
         saveItemContent: (itemId, content, epoch, projectId) => new Promise((resolve, reject) => {
           requests.push({ itemId, content, epoch, projectId, resolve, reject });
         }),
@@ -40,6 +51,7 @@ function setup(restoreEpoch = 0) {
     setTimeout: (fn) => { timers.set(++timerId, fn); return timerId; },
     clearTimeout: (id) => timers.delete(id),
     window: {
+      location: { reload: () => reloads.push(true) },
       addEventListener: (name, fn) => { listeners.set(name, fn); },
       removeEventListener: () => {},
       dispatchEvent: () => {},
@@ -54,9 +66,10 @@ function setup(restoreEpoch = 0) {
     currentItemId = itemId;
     for (const cleanup of cleanups) cleanup?.();
     cleanups = [];
-    refIndex = 0;
+    refIndex = stateIndex = 0;
     hook = exports.useAutoSave({
       contextId: itemId,
+      userId,
       restoreEpoch,
       projectId: 'project-context',
       onOptimisticUpdate: (itemId, content) => optimistic.push([itemId, content]),
@@ -64,7 +77,9 @@ function setup(restoreEpoch = 0) {
     });
   }
   return {
-    requests, statuses, errors, optimistic, redirects, select,
+    requests, statuses, errors, optimistic, redirects, select, storage, backups, reloads,
+    discardRecovered: () => hook.onDiscardRecoveredChanges?.(),
+    recover: (backup, serverContent = '') => hook.recoverItemContent(currentItemId, backup, serverContent),
     edit: (content) => hook.onChange(currentItemId, { read: (fn) => fn(), toJSON: () => content }),
     flush: () => { for (const [id, fn] of timers) { timers.delete(id); fn(); } },
     unload: (event) => listeners.get('beforeunload')(event),
@@ -358,4 +373,76 @@ test('reconnecting retries the latest content after an offline failure', async (
   expect(s.requests[1].content).toBe(JSON.stringify('latest embed draft'));
   s.requests[1].resolve(); await settle();
   expect(s.statuses.at(-1)).toBe('saved');
+});
+
+
+const embedContent = text => ({ root: { type: 'root', children: [{ type: 'equation', equation: text, inline: false, version: 1 }] } });
+
+test('offline embed edits survive a new hook instance and sync only after restoration', async () => {
+  const storage = {};
+  const s = setup(0, { userId: 'alice', storage }); s.select('a'); s.edit(embedContent('k=1'));
+  const backup = s.backups.readItemContentBackup('alice', 'project-context', 'a');
+  expect(backup.content).toBe(JSON.stringify(embedContent('k=1')));
+  const failed = s.barrier(); s.requests[0].reject(new TypeError('Failed to fetch')); expect(await failed).toBe(false);
+  const recovered = setup(0, { userId: 'alice', storage }); recovered.select('a');
+  recovered.recover(backup); recovered.flush();
+  expect(recovered.requests[0].content).toBe(backup.content);
+  recovered.requests[0].resolve(); await settle();
+  expect(recovered.backups.readItemContentBackup('alice', 'project-context', 'a')).toBeNull();
+});
+
+test('saving an older snapshot retains a newer offline backup and advances its base', async () => {
+  const s = setup(0, { userId: 'alice' }); s.select('a'); s.edit(embedContent('first'));
+  s.flush(); s.edit(embedContent('latest')); s.requests[0].resolve(); await settle();
+  const backup = s.backups.readItemContentBackup('alice', 'project-context', 'a');
+  expect(backup.content).toBe(JSON.stringify(embedContent('latest')));
+  expect(backup.expectedContent).toBe(JSON.stringify(embedContent('first')));
+  s.requests[1].reject(new TypeError('Failed to fetch')); await settle();
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'a').content).toBe(backup.content);
+});
+
+test.each([
+  { restoreEpoch: 1, extractionEpoch: 0, expectedContent: '' },
+  { restoreEpoch: 0, extractionEpoch: 1, expectedContent: '' },
+  { restoreEpoch: 0, extractionEpoch: 0, expectedContent: 'older server version' },
+])('recovered edits never overwrite a changed server generation or content: %j', fields => {
+  const s = setup(0, { userId: 'alice' }); s.select('a');
+  s.recover({ ...fields, content: JSON.stringify(embedContent('recovered')) }); s.flush();
+  expect(s.requests).toHaveLength(0);
+  expect(s.statuses.at(-1)).toBe('error');
+  expect(s.errors.at(-1)).toContain('changed on the server');
+});
+
+test('content backups stay scoped to their user and project and exclude unfinished images', () => {
+  const s = setup(0, { userId: 'alice' }); s.select('a');
+  s.edit({ root: { type: 'root', children: [{ type: 'image', imageId: '' }, { type: 'music', abc: 'K:C\nCDEF|' }] } });
+  expect(s.backups.readItemContentBackup('bob', 'project-context', 'a')).toBeNull();
+  expect(s.backups.readItemContentBackup('alice', 'another-project', 'a')).toBeNull();
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'a').content).not.toContain('image');
+  s.discard('a'); expect(s.backups.readItemContentBackup('alice', 'project-context', 'a')).toBeNull();
+});
+
+
+test('temporary note IDs migrate their local content backups', () => {
+  const s = setup(0, { userId: 'alice' }); s.select('temp'); s.edit(embedContent('draft'));
+  s.renameItem('temp', 'real');
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'temp')).toBeNull();
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'real').content).toBe(JSON.stringify(embedContent('draft')));
+});
+
+test.each(['{', '{}', '{"content":123}', '{"content":"null","expectedContent":"","restoreEpoch":0,"extractionEpoch":0}'])('malformed local content is rejected: %s', raw => {
+  const s = setup(0, { storage: { 'tramo:item-content:alice:project-context:a': raw } });
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'a')).toBeNull();
+});
+
+
+test('discarding recovered conflicts keeps other offline note backups', () => {
+  const s = setup(0, { userId: 'alice' }); s.select('a');
+  s.edit(embedContent('conflict')); s.editItem('b', embedContent('other unsaved note'));
+  s.recover({ content: JSON.stringify(embedContent('conflict')), expectedContent: 'changed remotely', restoreEpoch: 0, extractionEpoch: 0 });
+  s.select('a'); s.discardRecovered();
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'a')).toBeNull();
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'b')).not.toBeNull();
+  expect(s.reloads).toHaveLength(1);
+  expect(s.requests).toHaveLength(0);
 });

@@ -9,7 +9,7 @@ function load(path, overrides, suffix = '', globals = {}) {
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync(path, 'utf8') + suffix, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText, { exports, require: name => overrides[name] ?? require(name), ...globals });
+  }).outputText, { exports, require: name => overrides[name] ?? (name.startsWith('@/') ? {} : require(name)), ...globals });
   return exports;
 }
 function find(element, type) {
@@ -19,28 +19,28 @@ function find(element, type) {
 }
 function setup(kind, initial = '') {
   const field = kind === 'Equation' ? 'equation' : 'abc';
-  const states = [], effects = [], listeners = [];
-  let index = 0, content = initial, removed = false;
+  const states = [], effects = [], listeners = [], refs = [], updates = [];
+  let index = 0, refIndex = 0, content = initial, removed = false;
   const node = { setEquation: value => { content = value; }, setAbc: value => { content = value; }, getEquation: () => content, getAbc: () => content, remove: () => { removed = true; } };
-  const editor = { isEditable: () => true, update: fn => fn(), registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
+  const editor = { isEditable: () => true, update: (fn, options) => { updates.push(options); fn(); }, registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
   const component = load(`app/editor/plugins/${kind}Component.tsx`, {
     react: {
       useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; },
-      useRef: value => ({ current: value }), useCallback: fn => fn, useEffect: fn => effects.push(fn), useLayoutEffect() {},
+      useRef: value => refs[refIndex++] ??= { current: value }, useCallback: fn => fn, useEffect: fn => effects.push(fn), useLayoutEffect() {},
     },
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
     '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [false, () => {}, () => {}] },
-    lexical: { $getNodeByKey: () => node, HISTORIC_TAG: 'historic' },
+    lexical: { $getNodeByKey: () => node, HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
     [`@/app/editor/nodes/${kind}Node`]: { [`$is${kind}Node`]: value => value === node },
     '@/app/editor/plugins/decoratorCaret': {},
     '@/app/editor/plugins/MusicPlugin': { DEFAULT_ABC: 'X:1\nK:C\n' },
   }).default;
-  const render = () => { index = 0; const tree = component({ [field]: content, inline: false, nodeKey: 'embed' }); effects.splice(0).forEach(fn => fn()); return tree; };
+  const render = () => { index = refIndex = 0; const tree = component({ [field]: content, inline: false, nodeKey: 'embed' }); effects.splice(0).forEach(fn => fn()); return tree; };
   const input = () => find(render(), 'textarea');
   return {
-    input,
+    input, updates,
     restore: value => { content = value; listeners.forEach(fn => fn({ editorState: { read: fn => fn() }, tags: new Set(['historic']) })); },
-    enter: () => render().props.onDoubleClick(),
+    enter: () => find(render(), kind === 'Equation' ? 'span' : 'div').props.onDoubleClick(),
     type: value => input().props.onChange({ target: { value } }),
     escape: () => input().props.onKeyDown({ key: 'Escape', currentTarget: { value: content, selectionStart: 0, selectionEnd: 0 }, stopPropagation() {}, preventDefault() {} }),
     get content() { return content; }, get removed() { return removed; },
@@ -161,4 +161,13 @@ test('two undo and redo steps retain the equation and its serialized text', () =
   step(lexical.REDO_COMMAND);
   expect(editor.getEditorState().toJSON().root.children[0].children[0]).toMatchObject({ type: 'equation', equation: 'x + y' });
   unregister();
+});
+
+
+test.each(['Equation', 'Music'])('%s groups typing into one undo step and starts a new step after history changes', kind => {
+  const s = setup(kind);
+  s.type('k'); s.type('k='); s.type('k=1');
+  expect(s.updates.map(update => update.tag)).toEqual(['history-push', 'history-merge', 'history-merge']);
+  s.restore(''); s.type('new edit');
+  expect(s.updates.at(-1).tag).toBe('history-push');
 });

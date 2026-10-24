@@ -102,6 +102,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             onRenameProject={project.handleRenameProject}
             saveStatus={project.saveStatus}
             saveError={project.isDraft ? '' : project.saveError}
+            onDiscardRecoveredChanges={project.onDiscardRecoveredChanges}
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={

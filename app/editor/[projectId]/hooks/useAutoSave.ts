@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EditorState } from 'lexical';
-import { saveItemContent } from '@/lib/item-content-client';
+import { getExtractionEpoch, getSavedItemContent, saveItemContent } from '@/lib/item-content-client';
+import { readItemContentBackup, writeItemContentBackup, removeItemContentBackup, type ItemContentBackup } from '@/lib/item-content-backup';
 import { isAuthError } from '../../editor-utils';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 interface UseAutoSaveParams {
+  userId?: string;
   projectId?: string;
   restoreEpoch?: number;
   contextId: string | undefined;
@@ -17,6 +19,7 @@ interface UseAutoSaveParams {
 
 
 export function useAutoSave({
+  userId,
   projectId,
   restoreEpoch = 0,
   contextId,
@@ -25,6 +28,8 @@ export function useAutoSave({
 }: UseAutoSaveParams) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState('');
+  const [recoveredConflict, setRecoveredConflict] = useState(false);
+  const conflictedBackupsRef = useRef(new Set<string>());
   const pendingContentRef = useRef(new Map<string, string>());
   const optimisticContentRef = useRef(new Map<string, string>());
   const optimisticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,7 +46,8 @@ export function useAutoSave({
     optimisticContentRef.current.delete(itemId);
     incompleteImagesRef.current.delete(itemId);
     pausedItemsRef.current.delete(itemId);
-  }, []);
+    try { if (userId && projectId) removeItemContentBackup(userId, projectId, itemId); } catch {}
+  }, [userId, projectId]);
 
   const flushOptimisticContent = useCallback(() => {
     if (optimisticTimeoutRef.current) clearTimeout(optimisticTimeoutRef.current);
@@ -71,6 +77,13 @@ export function useAutoSave({
           pendingContentRef.current.delete(itemId);
           try {
             await saveItemContent(itemId, content, restoreEpoch, projectId);
+            try {
+              if (userId && projectId) {
+                const backup = readItemContentBackup(userId, projectId, itemId);
+                if (backup && backup.content !== content) writeItemContentBackup(userId, projectId, itemId, { ...backup, expectedContent: content });
+                else removeItemContentBackup(userId, projectId, itemId, content);
+              }
+            } catch {}
             window.dispatchEvent(new Event('editor-images-saved'));
           } catch (err) {
             console.error(err);
@@ -92,7 +105,7 @@ export function useAutoSave({
     };
     inFlightRef.current = save();
     return inFlightRef.current;
-  }, [flushOptimisticContent, redirectToLogin, restoreEpoch, projectId]);
+  }, [flushOptimisticContent, redirectToLogin, restoreEpoch, projectId, userId]);
 
   useEffect(() => {
     return () => { void flushPendingContent(); };
@@ -122,18 +135,55 @@ export function useAutoSave({
       setSaveStatus('saving');
       optimisticContentRef.current.set(itemId, json);
       if (!optimisticTimeoutRef.current) optimisticTimeoutRef.current = setTimeout(flushOptimisticContent, 150);
+      try {
+        if (userId && projectId) {
+          const previous = readItemContentBackup(userId, projectId, itemId);
+          writeItemContentBackup(userId, projectId, itemId, {
+            content: JSON.stringify(editorState.toJSON(), (key, value) => key === 'children' && Array.isArray(value)
+              ? value.filter(node => node.type !== 'image' || node.imageId) : value), expectedContent: previous?.expectedContent ?? getSavedItemContent(itemId),
+            extractionEpoch: previous?.extractionEpoch ?? getExtractionEpoch(itemId), restoreEpoch: previous?.restoreEpoch ?? restoreEpoch,
+          });
+        }
+      } catch { setSaveError('Local backup is unavailable. Keep this tab open until your changes are saved.'); }
+
       if (json.includes('"imageId":""')) {
         incompleteImagesRef.current.add(itemId);
         pendingContentRef.current.delete(itemId);
         return;
       }
       incompleteImagesRef.current.delete(itemId);
-
       pendingContentRef.current.set(itemId, json);
       if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
       saveContentTimeoutRef.current = setTimeout(() => flushPendingContent(), 600);
     });
-  }, [flushOptimisticContent, flushPendingContent]);
+  }, [flushOptimisticContent, flushPendingContent, userId, projectId, restoreEpoch]);
+
+  const recoverItemContent = useCallback((itemId: string, backup: ItemContentBackup, serverContent: string) => {
+    if (backup.restoreEpoch !== restoreEpoch || backup.extractionEpoch !== getExtractionEpoch(itemId)
+      || backup.expectedContent !== serverContent) {
+      conflictRef.current = true;
+      conflictedBackupsRef.current.add(itemId);
+      setRecoveredConflict(true);
+      setSaveStatus('error');
+      setSaveError('Local changes were recovered, but this note changed on the server. Copy your recovered text before choosing the server version; automatic saving is stopped.');
+      return;
+    }
+    pendingContentRef.current.set(itemId, backup.content);
+    setSaveStatus('saving');
+    if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
+    saveContentTimeoutRef.current = setTimeout(() => { void flushPendingContent(); }, 600);
+  }, [restoreEpoch, flushPendingContent]);
+
+  const discardRecoveredChanges = () => {
+    try {
+      if (!userId || !projectId) return;
+      for (const itemId of conflictedBackupsRef.current) {
+        removeItemContentBackup(userId, projectId, itemId);
+        pendingContentRef.current.delete(itemId);
+      }
+      window.location.reload();
+    } catch { setSaveError('Could not discard local changes. Your recovered text is still available.'); }
+  };
 
   const pauseItem = (id: string) => { pausedItemsRef.current.add(id); };
   const resumeItem = (id: string) => {
@@ -144,6 +194,7 @@ export function useAutoSave({
     pendingContentRef.current.delete(id);
     optimisticContentRef.current.delete(id);
     incompleteImagesRef.current.delete(id);
+    try { if (userId && projectId) removeItemContentBackup(userId, projectId, id); } catch {}
     setSaveStatus(pendingContentRef.current.size > 0 || inFlightRef.current || incompleteImagesRef.current.size > 0 ? 'saving' : 'saved');
   };
   const renameItemId = useCallback((oldId: string, newId: string) => {
@@ -155,6 +206,12 @@ export function useAutoSave({
     }
     if (pausedItemsRef.current.has(oldId)) { pausedItemsRef.current.delete(oldId); pausedItemsRef.current.add(newId); }
     if (incompleteImagesRef.current.has(oldId)) { incompleteImagesRef.current.delete(oldId); incompleteImagesRef.current.add(newId); }
-  }, [flushOptimisticContent]);
-  return { saveStatus, saveError, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
+    try {
+      if (userId && projectId) {
+        const backup = readItemContentBackup(userId, projectId, oldId);
+        if (backup) { writeItemContentBackup(userId, projectId, newId, backup); removeItemContentBackup(userId, projectId, oldId); }
+      }
+    } catch { setSaveError('Local backup is unavailable. Keep this tab open until your changes are saved.'); }
+  }, [flushOptimisticContent, userId, projectId]);
+  return { saveStatus, saveError, onDiscardRecoveredChanges: recoveredConflict ? discardRecoveredChanges : undefined, recoverItemContent, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
 }
