@@ -16,7 +16,7 @@ function setup(restoreEpoch = 0) {
   let refIndex = 0;
   let timerId = 0;
   let cleanups = [];
-  let beforeUnload;
+  const listeners = new Map();
   const exports = {};
   const source = readFileSync('app/editor/[projectId]/hooks/useAutoSave.ts', 'utf8');
   runInNewContext(ts.transpileModule(source, {
@@ -40,7 +40,7 @@ function setup(restoreEpoch = 0) {
     setTimeout: (fn) => { timers.set(++timerId, fn); return timerId; },
     clearTimeout: (id) => timers.delete(id),
     window: {
-      addEventListener: (_, fn) => { beforeUnload = fn; },
+      addEventListener: (name, fn) => { listeners.set(name, fn); },
       removeEventListener: () => {},
       dispatchEvent: () => {},
     },
@@ -67,7 +67,8 @@ function setup(restoreEpoch = 0) {
     requests, statuses, errors, optimistic, redirects, select,
     edit: (content) => hook.onChange(currentItemId, { read: (fn) => fn(), toJSON: () => content }),
     flush: () => { for (const [id, fn] of timers) { timers.delete(id); fn(); } },
-    unload: (event) => beforeUnload(event),
+    unload: (event) => listeners.get('beforeunload')(event),
+    online: () => listeners.get('online')(),
     barrier: () => hook.flushPendingContent(),
     discard: (id) => hook.discardItem(id),
     pause: (id) => hook.pauseItem(id),
@@ -344,4 +345,17 @@ test('a restoration conflict preserves local content and stops obsolete retries'
   expect(s.requests).toHaveLength(1);
   expect(s.optimistic.at(-1)).toEqual(['a', JSON.stringify('newer local edit')]);
   expect(s.errors.at(-1)).toContain('restored');
+});
+
+
+test('reconnecting retries the latest content after an offline failure', async () => {
+  const s = setup(); s.select('a'); s.edit('before failure');
+  const pending = s.barrier();
+  s.edit('latest embed draft');
+  s.requests[0].reject(new TypeError('Failed to fetch'));
+  expect(await pending).toBe(false);
+  s.online();
+  expect(s.requests[1].content).toBe(JSON.stringify('latest embed draft'));
+  s.requests[1].resolve(); await settle();
+  expect(s.statuses.at(-1)).toBe('saved');
 });

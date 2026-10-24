@@ -44,6 +44,9 @@ function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, c
     require: name => {
       if (name === 'react') return { useEffect: fn => fn(), useRef: value => ({ current: value }), useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
+      if (name === '@lexical/react/LexicalTypeaheadMenuPlugin') return { useBasicTypeaheadTriggerMatch: () => text => text.startsWith('/') ? { matchingString: text.slice(1) } : null };
+      if (name === '@lexical/react/LexicalOnChangePlugin') return { OnChangePlugin: 'OnChange' };
+      if (name === '../../plugins/SlashMenuPlugin') return { default: 'SlashMenu' };
       if (name === '@lexical/react/LexicalComposerContext') return { useLexicalComposerContext: () => [editor] };
       if (name === '@/app/editor/item-editor-session') return { restoreItemHistory: () => ({ current: null, undoStack: [], redoStack: [] }) };
       if (name === 'lexical' || name === '@lexical/utils') return require(name);
@@ -191,4 +194,23 @@ test('Enter focuses the body before the next keystroke or animation frame', () =
   expect(s.focused).toEqual(['content']);
   s.editor.update(() => lexical.$getSelection().insertText('ABC'), { discrete: true });
   expect(s.editor.getEditorState().read(() => lexical.$getRoot().getTextContent())).toMatch(/^ABC/);
+});
+
+
+test('draft changes defer creation while typing slash queries and flush after the menu closes', () => {
+  const s = setup(), changes = [];
+  s.editor.update(() => {
+    const text = lexical.$getRoot().getFirstDescendant();
+    text.setTextContent('/e'); text.selectEnd();
+  }, { discrete: true });
+  const tree = s.exports.ItemEditorContent({
+    item: { id: 'draft', title: '' }, props: { trails: [], draft: true, onChange: (...args) => changes.push(args) },
+    session: { previewUrls: new Set() }, onFocus() {}, onPendingImages() {}, focused: false,
+  });
+  const children = tree.props.children.flat();
+  children.find(node => node?.type === 'OnChange').props.onChange(s.editor.getEditorState(), s.editor, new Set());
+  expect(changes[0][2]).toBe(true);
+  children.find(node => node?.type === 'SlashMenu').props.onClose();
+  s.flush();
+  expect(changes[1][2]).toBe(false);
 });

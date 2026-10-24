@@ -37,7 +37,7 @@ export const HR: ElementTransformer = {
 };
 
 function equationTransformer(inline: boolean): TextMatchTransformer {
-  const open = inline ? '(?<!\\$)\\$' : '\\$\\$';
+  const open = inline ? '(?<![\\$\\\\])\\$(?![\\d\\s])' : '\\$\\$';
   const close = inline ? '\\$' : '\\$\\$';
   return {
     dependencies: [EquationNode],

@@ -25,8 +25,6 @@ export type InsertEquationPayload = Readonly<{
 export const INSERT_EQUATION_COMMAND: LexicalCommand<InsertEquationPayload> =
   createCommand('INSERT_EQUATION_COMMAND');
 
-export const freshlyInserted = new Set<string>();
-
 export default function EquationsPlugin(): null {
   const [editor] = useLexicalComposerContext();
 
@@ -40,7 +38,6 @@ export default function EquationsPlugin(): null {
       ({ equation, inline }) => {
         if ($isSelectionInCode()) return true;
         const node = $createEquationNode({ equation, inline });
-        freshlyInserted.add(node.getKey());
         $insertNodes([node]);
 
         if (!inline) {

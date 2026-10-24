@@ -99,6 +99,12 @@ export function useAutoSave({
   }, [contextId, flushPendingContent]);
 
   useEffect(() => {
+    const retry = () => { void flushPendingContent(); };
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, [flushPendingContent]);
+
+  useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (pendingContentRef.current.size === 0 && !inFlightRef.current && incompleteImagesRef.current.size === 0) return;
       flushPendingContent();

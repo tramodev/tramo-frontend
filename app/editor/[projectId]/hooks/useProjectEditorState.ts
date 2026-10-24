@@ -742,7 +742,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     ...(!isDraft && titleState.status === 'error' ? { saveStatus: 'error' as const }
       : !isDraft && titleState.status === 'saving' && autoSave.saveStatus !== 'error' ? { saveStatus: 'saving' as const }
       : !isDraft && titleState.status === 'saved' && autoSave.saveStatus === 'idle' ? { saveStatus: 'saved' as const } : {}),
-    onChange: (itemId: string, editorState: import('lexical').EditorState) => {
+    onChange: (itemId: string, editorState: import('lexical').EditorState, pendingCommand = false) => {
       const state = draft ? editorState.toJSON() : undefined;
       draft?.setPendingImages(JSON.stringify(state).includes('"imageId":""'));
       if (draft && draft.getSnapshot().status !== 'saved') {
@@ -750,7 +750,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
           ? value.filter(node => node.type !== 'image' || node.imageId) : value);
         const id = draft.backup.result ? String(draft.backup.result.itemId) : itemId;
         updateItemContentLocally(id, content);
-        draft.update({ item: { ...draft.backup.latest.item, content } });
+        draft.update({ item: { ...draft.backup.latest.item, content } }, false, pendingCommand);
       } else autoSave.onChange(itemId, editorState);
     },
   };

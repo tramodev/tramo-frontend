@@ -499,3 +499,27 @@ test('debouncing a newer draft title never bypasses metadata Retry-After', async
     draft.dispose();
   } finally { jest.useRealTimers(); }
 });
+
+
+test('typing a slash query is backed up without creating a project until it closes', async () => {
+  const s = setup(), draft = s.api.newDraft('user');
+  draft.update({ item: { ...draft.backup.latest.item, content: content('/e') } }, false, true);
+  await settle();
+  expect(s.requests).toHaveLength(0);
+  expect(s.api.readDraft('user', draft.backup.clientRequestId).latest.item.content).toBe(content('/e'));
+  const equation = JSON.stringify({ root: { type: 'root', children: [{ type: 'equation', equation: 'x', inline: false }] } });
+  draft.update({ item: { ...draft.backup.latest.item, content: equation } }, false, false);
+  await draft.commit();
+  expect(s.requests).toHaveLength(1);
+  expect(s.requests[0].snapshot.item.content).toBe(equation);
+});
+
+test('dismissing a slash query saves it as ordinary text', async () => {
+  const s = setup(), draft = s.api.newDraft('user');
+  draft.update({ item: { ...draft.backup.latest.item, content: content('/etc/hosts') } }, false, true);
+  await settle();
+  expect(s.requests).toHaveLength(0);
+  draft.update({ item: { ...draft.backup.latest.item, content: content('/etc/hosts') } });
+  await draft.commit();
+  expect(s.requests[0].snapshot.item.content).toBe(content('/etc/hosts'));
+});

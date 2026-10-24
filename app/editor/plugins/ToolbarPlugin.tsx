@@ -311,6 +311,7 @@ export default function ToolbarPlugin({
   const colorSelection = useRef<RangeSelection | null>(null);
   const [elementFormat, setElementFormat] = useState<ElementFormat>('left');
   const [insertMenuOpen, setInsertMenuOpen] = useState(false);
+  const insertEmbedRef = useRef<(() => void) | null>(null);
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -696,7 +697,13 @@ export default function ToolbarPlugin({
           <Plus size={18} />
           <ChevronDown size={12} />
         </ToolbarMenuButton>
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" onCloseAutoFocus={(event) => {
+          const insert = insertEmbedRef.current;
+          if (!insert) return;
+          event.preventDefault();
+          insertEmbedRef.current = null;
+          requestAnimationFrame(insert);
+        }}>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <TableIcon className="h-4 w-4" />
@@ -724,7 +731,7 @@ export default function ToolbarPlugin({
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code'}
-            onSelect={() => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: true })}
+            onSelect={() => { insertEmbedRef.current = () => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: true }); }}
           >
             <Radical className="h-4 w-4" />
             Inline equation
@@ -732,7 +739,7 @@ export default function ToolbarPlugin({
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code'}
-            onSelect={() => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: false })}
+            onSelect={() => { insertEmbedRef.current = () => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: false }); }}
           >
             <Sigma className="h-4 w-4" />
             Equation
@@ -740,7 +747,7 @@ export default function ToolbarPlugin({
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code'}
-            onSelect={() => editor.dispatchCommand(INSERT_MUSIC_COMMAND, undefined)}
+            onSelect={() => { insertEmbedRef.current = () => editor.dispatchCommand(INSERT_MUSIC_COMMAND, undefined); }}
           >
             <Music className="h-4 w-4" />
             Music score

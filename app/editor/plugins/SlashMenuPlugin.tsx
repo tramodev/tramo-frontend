@@ -74,7 +74,7 @@ function headingOption(label: string, Icon: typeof Type, tag: HeadingTagType): S
   );
 }
 
-export default function SlashMenuPlugin({ projectId, resolveProjectId }: { projectId?: string; resolveProjectId?: () => Promise<string | undefined> } = {}) {
+export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }: { projectId?: string; resolveProjectId?: () => Promise<string | undefined>; onClose?: () => void } = {}) {
   const [editor] = useLexicalComposerContext();
   const [queryString, setQueryString] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -184,6 +184,7 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId }: { proje
       />
       <LexicalTypeaheadMenuPlugin<SlashOption>
         onQueryChange={setQueryString}
+        onClose={onClose}
         onSelectOption={onSelectOption}
         triggerFn={trigger}
         options={options}
