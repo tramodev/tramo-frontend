@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { subscribeNotificationCount } from "@/lib/notification-stream"
 import { useRouter } from "next/navigation"
-import { ArrowBigUp, Award, Bell, GitFork, MessageCircle, Rocket, Share2, UserPlus, X } from "lucide-react"
+import { ArrowBigUp, Award, Bell, Check, CheckCheck, GitFork, MessageCircle, Rocket, Share2, UserPlus, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   getNotifications,
+  getUnreadCount,
+  markNotificationRead,
   markAllNotificationsRead,
   deleteNotification,
   type AppNotification,
@@ -71,44 +73,106 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
   const [hasMore, setHasMore] = useState(false)
   const [loadedPages, setLoadedPages] = useState(0)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const request = useRef(0)
+  const isOpen = useRef(false)
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loggedIn || !userId) return
-    return subscribeNotificationCount(userId, setUnreadCount)
-  }, [loggedIn, userId])
-
-  function handleOpenChange(open: boolean) {
-    if (!open || notifications !== null) return
-    getNotifications(0, PAGE_SIZE).then((page) => {
+  const refreshNotifications = useCallback(async () => {
+    const current = ++request.current
+    setError(null)
+    setNotifications(null)
+    setHasMore(false)
+    setIsLoadingMore(false)
+    try {
+      const page = await getNotifications(0, PAGE_SIZE)
+      if (request.current !== current) return
       setNotifications(page.items)
       setHasMore(page.hasMore)
       setLoadedPages(1)
-      markAllNotificationsRead()
-      setUnreadCount(0)
-    })
+    } catch {
+      if (request.current === current) {
+        setNotifications([])
+        setError("Couldn't load notifications. Close and reopen to retry.")
+      }
+    }
+  }, [])
+
+  function handleOpenChange(open: boolean) {
+    isOpen.current = open
+    if (open) return refreshNotifications()
+    request.current++
   }
 
-  function loadMore(event: React.MouseEvent) {
+  useEffect(() => {
+    if (!loggedIn || !userId) return
+    return subscribeNotificationCount(userId, (count) => {
+      setUnreadCount(count)
+      if (isOpen.current) void refreshNotifications()
+    })
+  }, [loggedIn, userId, refreshNotifications])
+
+  async function loadMore(event: React.MouseEvent) {
     event.preventDefault()
+    const current = request.current
     setIsLoadingMore(true)
-    getNotifications(loadedPages, PAGE_SIZE).then((page) => {
-      setNotifications((current) => [...(current ?? []), ...page.items])
+    setError(null)
+    try {
+      const page = await getNotifications(loadedPages, PAGE_SIZE)
+      if (request.current !== current) return
+      setNotifications((items) => [...(items ?? []), ...page.items])
       setHasMore(page.hasMore)
       setLoadedPages((n) => n + 1)
-      setIsLoadingMore(false)
-    })
+    } catch {
+      if (request.current === current) setError("Couldn't load older notifications. Please try again.")
+    } finally {
+      if (request.current === current) setIsLoadingMore(false)
+    }
   }
 
-  function handleSelect(n: AppNotification) {
+  async function handleRead(event: React.MouseEvent, notification?: AppNotification) {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsUpdating(true)
+    setError(null)
+    try {
+      if (notification) await markNotificationRead(notification.id)
+      else await markAllNotificationsRead()
+      if (isOpen.current) await refreshNotifications()
+      setUnreadCount(await getUnreadCount())
+    } catch {
+      setError("Couldn't mark notifications as read. Please try again.")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  async function handleSelect(n: AppNotification) {
+    if (!n.read) {
+      try {
+        await markNotificationRead(n.id)
+      } catch {
+        setError("Couldn't mark the notification as read. Please try again.")
+      }
+    }
     router.push(notificationHref(n))
   }
 
-  function handleDelete(event: React.MouseEvent, id: string) {
+  async function handleDelete(event: React.MouseEvent, id: string) {
     event.preventDefault()
     event.stopPropagation()
-    setNotifications((current) => current?.filter((n) => n.id !== id) ?? current)
-    deleteNotification(id)
+    setIsUpdating(true)
+    setError(null)
+    try {
+      await deleteNotification(id)
+      if (isOpen.current) await refreshNotifications()
+      setUnreadCount(await getUnreadCount())
+    } catch {
+      setError("Couldn't dismiss the notification. Please try again.")
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   if (!loggedIn) return null
@@ -129,7 +193,23 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="max-h-[min(32rem,80dvh)] w-80 max-w-[calc(100vw-1rem)] overflow-y-auto">
+        <div className="flex items-center justify-between gap-2 border-b border-border px-2 py-2">
+          <span className="text-sm font-semibold">Notifications</span>
+          <DropdownMenuItem asChild>
+            <button
+              type="button"
+              aria-label="Mark all as read"
+              disabled={isUpdating || unreadCount === 0}
+              onClick={(event) => handleRead(event)}
+              className="text-xs disabled:opacity-50"
+            >
+              <CheckCheck className="h-4 w-4" />
+              Mark all as read
+            </button>
+          </DropdownMenuItem>
+        </div>
+        {error && <p role="alert" className="px-2 py-2 text-sm text-destructive">{error}</p>}
         {notifications === null ? (
           <div className="px-2 py-3 text-sm text-muted-foreground">
             Loading...
@@ -142,32 +222,52 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
           notifications.map((n) => {
             const Icon = ICONS[n.type]
             return (
-              <DropdownMenuItem
-                key={n.id}
-                onSelect={() => handleSelect(n)}
-                className="group relative items-start gap-2 py-2 pr-7"
-              >
-                <span
-                  className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
-                    n.read
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-primary text-primary-foreground"
-                  }`}
+              <div key={n.id} className="flex items-start gap-1 py-1">
+                <DropdownMenuItem
+                  onSelect={() => handleSelect(n)}
+                  className="min-w-0 flex-1 items-start gap-2 py-2"
                 >
-                  <Icon className="h-3.5 w-3.5" />
-                </span>
-                <span className={`min-w-0 text-sm ${n.read ? "font-normal" : "font-bold"}`}>
-                  {notificationText(n)}
-                </span>
-                <button
-                  type="button"
-                  onClick={(event) => handleDelete(event, n.id)}
-                  aria-label="Dismiss notification"
-                  className="absolute right-1 top-1.5 shrink-0 rounded-md p-1 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </DropdownMenuItem>
+                  <span
+                    className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
+                      n.read
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-primary text-primary-foreground"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span className={`min-w-0 text-sm ${n.read ? "font-normal" : "font-bold"}`}>
+                    {notificationText(n)}
+                    <time dateTime={n.updatedDate} className="mt-1 block text-xs font-normal text-muted-foreground">
+                      {new Date(n.updatedDate).toLocaleString()}
+                    </time>
+                  </span>
+                </DropdownMenuItem>
+                {!n.read && (
+                  <DropdownMenuItem asChild>
+                    <button
+                      type="button"
+                      aria-label="Mark as read"
+                      disabled={isUpdating}
+                      onClick={(event) => handleRead(event, n)}
+                      className="mt-1 shrink-0 p-2 disabled:opacity-50"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem asChild>
+                  <button
+                    type="button"
+                    onClick={(event) => handleDelete(event, n.id)}
+                    aria-label="Dismiss notification"
+                    disabled={isUpdating}
+                    className="mt-1 shrink-0 p-2 disabled:opacity-50"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuItem>
+              </div>
             )
           })
         )}

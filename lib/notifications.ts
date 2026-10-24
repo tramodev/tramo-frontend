@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 
-import { API_BASE_URL } from "./config";
-import { authenticatedFetch } from "./api";
+import { API_BASE_URL } from "@/lib/config";
+import { authenticatedFetch } from "@/lib/api";
+import { expectOk } from "@/lib/http";
 
 export type NotificationType = "UPVOTE" | "FORK" | "FOLLOW" | "BADGE" | "FEATURED" | "PUBLISH" | "SHARE" | "COMMENT";
 
@@ -35,7 +36,7 @@ export interface AppNotification {
 
 export async function getUnreadCount(): Promise<number> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/notifications/unread-count`);
-  if (!response.ok) return 0;
+  await expectOk(response);
   const data: { unreadCount: number } = await response.json();
   return data.unreadCount;
 }
@@ -47,7 +48,7 @@ export interface NotificationPage {
 
 export async function getNotifications(page = 0, size = 20): Promise<NotificationPage> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/notifications?page=${page}&size=${size}`);
-  if (!response.ok) return { items: [], hasMore: false };
+  await expectOk(response);
   const data: { content: NotificationDTO[]; hasMore: boolean } = await response.json();
   return {
     items: data.content.map((n) => ({
@@ -60,9 +61,13 @@ export async function getNotifications(page = 0, size = 20): Promise<Notificatio
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
-  await authenticatedFetch(`${API_BASE_URL}/api/notifications/read`, { method: "POST" });
+  await expectOk(await authenticatedFetch(`${API_BASE_URL}/api/notifications/read`, { method: "POST" }));
 }
 
 export async function deleteNotification(id: string): Promise<void> {
-  await authenticatedFetch(`${API_BASE_URL}/api/notifications/${id}`, { method: "DELETE" });
+  await expectOk(await authenticatedFetch(`${API_BASE_URL}/api/notifications/${id}`, { method: "DELETE" }));
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await expectOk(await authenticatedFetch(`${API_BASE_URL}/api/notifications/${id}/read`, { method: "POST" }));
 }
