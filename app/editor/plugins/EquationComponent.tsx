@@ -24,14 +24,14 @@ import {
   KEY_BACKSPACE_COMMAND,
   KEY_DELETE_COMMAND,
   KEY_ENTER_COMMAND,
+  HISTORIC_TAG,
   LexicalEditor,
   LexicalNode,
   NodeKey,
 } from 'lexical';
 import katex from 'katex';
-import { $isEquationNode } from '../nodes/EquationNode';
-import { $caretOnEdgeLine, $caretTouches, type Edge } from './decoratorCaret';
-import { freshlyInserted } from './EquationsPlugin';
+import { $isEquationNode } from '@/app/editor/nodes/EquationNode';
+import { $caretOnEdgeLine, $caretTouches, type Edge } from '@/app/editor/plugins/decoratorCaret';
 
 interface EquationComponentProps {
   equation: string;
@@ -53,6 +53,7 @@ const TEMPLATES: { label: string; title: string; latex: string; at: number; len:
 ];
 
 function renderKatex(target: HTMLElement, equation: string, inline: boolean): string | null {
+  target.removeAttribute('title');
   try {
     katex.render(equation, target, {
       displayMode: !inline,
@@ -63,14 +64,10 @@ function renderKatex(target: HTMLElement, equation: string, inline: boolean): st
     });
     return null;
   } catch (parseError) {
-    katex.render(equation, target, {
-      displayMode: !inline,
-      throwOnError: false,
-      trust: false,
-      strict: 'warn',
-      output: 'html',
-    });
-    return String((parseError as Error).message).replace(/^KaTeX parse error:\s*/, '');
+    const message = String((parseError as Error).message).replace(/^KaTeX parse error:\s*/, '');
+    target.textContent = equation;
+    target.title = message;
+    return message;
   }
 }
 
@@ -117,7 +114,7 @@ export default function EquationComponent({
   const [editor] = useLexicalComposerContext();
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
-  const [isEditing, setIsEditing] = useState(() => freshlyInserted.delete(nodeKey));
+  const [isEditing, setIsEditing] = useState(equation === '');
   const [draft, setDraft] = useState(equation);
   const [error, setError] = useState<string | null>(null);
   const katexRef = useRef<HTMLSpanElement | null>(null);
@@ -125,17 +122,6 @@ export default function EquationComponent({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
-
-  const discardedOnMount = useRef(false);
-  useEffect(() => {
-    if (discardedOnMount.current) return;
-    discardedOnMount.current = true;
-    if (!isEditable || isEditing || equation !== '') return;
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isEquationNode(node)) node.remove();
-    });
-  }, [editor, equation, isEditable, isEditing, nodeKey]);
 
   useEffect(() => {
     if (isEditing || katexRef.current === null) return;
@@ -156,6 +142,22 @@ export default function EquationComponent({
     textarea.setSelectionRange(at, at);
   }, [isEditing]);
 
+  useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
+    if (!tags.has(HISTORIC_TAG)) return;
+    editorState.read(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isEquationNode(node)) setDraft(node.getEquation());
+    });
+  }), [editor, nodeKey]);
+
+  const updateDraft = useCallback((value: string) => {
+    setDraft(value);
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isEquationNode(node)) node.setEquation(value);
+    });
+  }, [editor, nodeKey]);
+
   const pendingSelection = useRef<[number, number] | null>(null);
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
@@ -171,10 +173,10 @@ export default function EquationComponent({
       if (textarea === null) return;
       const from = textarea.selectionStart;
       const to = textarea.selectionEnd;
-      setDraft(draft.slice(0, from) + latex + draft.slice(to));
+      updateDraft(draft.slice(0, from) + latex + draft.slice(to));
       pendingSelection.current = [from + at, from + at + len];
     },
-    [draft],
+    [draft, updateDraft],
   );
 
   useLayoutEffect(() => {
@@ -213,24 +215,6 @@ export default function EquationComponent({
     },
     [draft, editor, equation, nodeKey],
   );
-
-  const cancel = useCallback(() => {
-    if (equation === '') {
-      if (draft.trim() !== '') {
-        commit();
-        return;
-      }
-      editor.update(() => {
-        const node = $getNodeByKey(nodeKey);
-        if ($isEquationNode(node)) node.remove();
-      });
-      setIsEditing(false);
-      return;
-    }
-    setDraft(equation);
-    exitEdgeRef.current = 'after';
-    setIsEditing(false);
-  }, [commit, draft, editor, equation, nodeKey]);
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
@@ -329,8 +313,8 @@ export default function EquationComponent({
           value={draft}
           rows={1}
           spellCheck={false}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={() => commit()}
+          onChange={(event) => updateDraft(event.target.value)}
+          onBlur={() => commit(null)}
           onKeyDown={(event) => {
             event.stopPropagation();
             const textarea = event.currentTarget;
@@ -340,7 +324,7 @@ export default function EquationComponent({
               commit();
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              cancel();
+              commit();
             } else if (event.key === 'ArrowLeft' && collapsed && textarea.selectionStart === 0) {
               event.preventDefault();
               commit('before');

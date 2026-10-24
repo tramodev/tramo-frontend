@@ -398,6 +398,9 @@ div.editor-equation {
 
 .editor-equation-rendered {
   display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  vertical-align: middle;
   padding: 0 2px;
   border-radius: 3px;
 }
@@ -419,7 +422,8 @@ div.editor-equation {
 .editor-equation-editor.inline {
   display: inline-block;
   width: auto;
-  min-width: 260px;
+  min-width: min(260px, 100%);
+  max-width: 100%;
   vertical-align: middle;
 }
 
@@ -617,7 +621,7 @@ div.editor-equation {
 
 .editor-music-rendered svg,
 .editor-music-preview svg {
-  max-width: 100%;
+  max-width: none;
 }
 
 .editor-music-editor {

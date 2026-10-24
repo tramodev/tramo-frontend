@@ -22,13 +22,14 @@ import {
   KEY_BACKSPACE_COMMAND,
   KEY_DELETE_COMMAND,
   KEY_ENTER_COMMAND,
+  HISTORIC_TAG,
   LexicalEditor,
   LexicalNode,
   NodeKey,
 } from 'lexical';
-import { $isMusicNode } from '../nodes/MusicNode';
-import { $caretOnEdgeLine, $caretTouches, type Edge } from './decoratorCaret';
-import { DEFAULT_ABC, freshlyInsertedMusic } from './MusicPlugin';
+import { $isMusicNode } from '@/app/editor/nodes/MusicNode';
+import { $caretOnEdgeLine, $caretTouches, type Edge } from '@/app/editor/plugins/decoratorCaret';
+import { DEFAULT_ABC } from '@/app/editor/plugins/MusicPlugin';
 
 interface MusicComponentProps {
   abc: string;
@@ -116,7 +117,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const [editor] = useLexicalComposerContext();
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
-  const [isEditing, setIsEditing] = useState(() => freshlyInsertedMusic.delete(nodeKey));
+  const [isEditing, setIsEditing] = useState(abc === '');
   const [draft, setDraft] = useState(() => (abc === '' ? DEFAULT_ABC : abc));
   const [warnings, setWarnings] = useState<string[]>([]);
   const scoreRef = useRef<HTMLDivElement | null>(null);
@@ -125,17 +126,6 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
-
-  const discardedOnMount = useRef(false);
-  useEffect(() => {
-    if (discardedOnMount.current) return;
-    discardedOnMount.current = true;
-    if (!isEditable || isEditing || abc !== '') return;
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isMusicNode(node)) node.remove();
-    });
-  }, [abc, editor, isEditable, isEditing, nodeKey]);
 
   useEffect(() => {
     const target = scoreRef.current;
@@ -153,11 +143,14 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     const target = previewRef.current;
     if (!isEditing || target === null) return;
     let cancelled = false;
-    loadAbcjs().then((abcjs) => {
-      if (!cancelled) setWarnings(renderScore(abcjs, target, draft));
-    });
+    const timer = setTimeout(() => {
+      loadAbcjs().then((abcjs) => {
+        if (!cancelled) setWarnings(renderScore(abcjs, target, draft));
+      });
+    }, 250);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [draft, isEditing]);
 
@@ -169,6 +162,22 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     entryEdgeRef.current = null;
     textarea.setSelectionRange(at, at);
   }, [isEditing]);
+
+  useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
+    if (!tags.has(HISTORIC_TAG)) return;
+    editorState.read(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isMusicNode(node)) setDraft(node.getAbc());
+    });
+  }), [editor, nodeKey]);
+
+  const updateDraft = useCallback((value: string) => {
+    setDraft(value);
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isMusicNode(node)) node.setAbc(value);
+    });
+  }, [editor, nodeKey]);
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
@@ -206,20 +215,6 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     },
     [abc, draft, editor, nodeKey],
   );
-
-  const cancel = useCallback(() => {
-    if (abc === '') {
-      editor.update(() => {
-        const node = $getNodeByKey(nodeKey);
-        if ($isMusicNode(node)) node.remove();
-      });
-      setIsEditing(false);
-      return;
-    }
-    setDraft(abc);
-    exitEdgeRef.current = 'after';
-    setIsEditing(false);
-  }, [abc, editor, nodeKey]);
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
@@ -314,8 +309,8 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
           value={draft}
           rows={1}
           spellCheck={false}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={() => commit()}
+          onChange={(event) => updateDraft(event.target.value)}
+          onBlur={() => commit(null)}
           onKeyDown={(event) => {
             event.stopPropagation();
             const { selectionStart: from, selectionEnd: to, value } = event.currentTarget;
@@ -327,7 +322,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
               commit();
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              cancel();
+              commit();
             } else if (event.key === 'ArrowLeft' && collapsed && from === 0) {
               event.preventDefault();
               commit('before');

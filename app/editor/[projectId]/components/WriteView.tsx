@@ -5,7 +5,7 @@ import { Loader2, Plus } from 'lucide-react';
 import type { EditorState } from 'lexical';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $getSelection, $isRangeSelection, $nodesOfType, COMMAND_PRIORITY_HIGH, KEY_ARROW_UP_COMMAND, KEY_ARROW_DOWN_COMMAND, type LexicalEditor } from 'lexical';
+import { $getRoot, $getSelection, $isRangeSelection, $isTextNode, $nodesOfType, COMMAND_PRIORITY_HIGH, KEY_ARROW_UP_COMMAND, KEY_ARROW_DOWN_COMMAND, type LexicalEditor } from 'lexical';
 import { mergeRegister } from '@lexical/utils';
 import { useScrollSpy } from '@/hooks/use-scroll-spy';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
@@ -21,6 +21,7 @@ import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPl
 import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin';
 import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { useBasicTypeaheadTriggerMatch } from '@lexical/react/LexicalTypeaheadMenuPlugin';
 import { EDITOR_TRANSFORMERS } from '../../plugins/markdownTransformers';
 
 import ToolbarPlugin from '../../plugins/ToolbarPlugin';
@@ -81,7 +82,7 @@ interface WriteViewProps {
   onSelectItem: (item: Item, trailId?: string) => void;
   onCreateItem: (trailId: string, title: string) => void;
   onOpenGraph: () => void;
-  onChange: (itemId: string, editorState: EditorState) => void;
+  onChange: (itemId: string, editorState: EditorState, pendingCommand?: boolean) => void;
   extractionActions: ExtractionActions;
   connectionsPanelOpen: boolean;
   onToggleConnectionsPanelOpen: () => void;
@@ -197,6 +198,7 @@ function ItemEditor(props: ItemEditorProps) {
 function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, move, session, onPendingImages }: ItemEditorProps) {
   const [editor] = useLexicalComposerContext();
   const [titleFocused, setTitleFocused] = useState(false);
+  const matchSlash = useBasicTypeaheadTriggerMatch('/', { minLength: 0 });
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
   const [history] = useState(() => restoreItemHistory(session, editor));
   useEffect(() => {
@@ -244,12 +246,24 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
         <ListTabPlugin />
         <TabIndentationPlugin />
         <HorizontalRulePlugin />
-        <SlashMenuPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId} />
+        <SlashMenuPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId}
+          onClose={() => {
+            if (props.draft) requestAnimationFrame(() => props.onChange(item.id, editor.getEditorState(), false));
+          }} />
         <ItemMentionPlugin items={props.items} currentItemId={item.id} />
         <WikiLinkPlugin items={props.items} currentItemId={item.id} />
         <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         <ItemNavigationPlugin itemId={item.id} register={register} move={move} />
-        <OnChangePlugin onChange={(state, _editor, tags) => { if (!tags.has('extraction')) props.onChange(item.id, state); }} ignoreSelectionChange />
+        <OnChangePlugin onChange={(state, editor, tags) => {
+          if (tags.has('extraction')) return;
+          const pendingCommand = !!props.draft && state.read(() => {
+            const selection = $getSelection();
+            if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+            const node = selection.anchor.getNode();
+            return $isTextNode(node) && matchSlash(node.getTextContent().slice(0, selection.anchor.offset), editor) !== null;
+          });
+          props.onChange(item.id, state, pendingCommand);
+        }} ignoreSelectionChange />
         {focused && props.active !== false && <>
           {!props.draft && <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail} history={history}
             sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}

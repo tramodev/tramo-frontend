@@ -19,8 +19,6 @@ import { $isSelectionInCode } from './codeBlockGuard';
 
 export const INSERT_MUSIC_COMMAND: LexicalCommand<void> = createCommand('INSERT_MUSIC_COMMAND');
 
-export const freshlyInsertedMusic = new Set<string>();
-
 export const DEFAULT_ABC = 'X:1\nT:\nM:4/4\nL:1/8\nK:C\n';
 
 export default function MusicPlugin(): null {
@@ -36,7 +34,6 @@ export default function MusicPlugin(): null {
       () => {
         if ($isSelectionInCode()) return true;
         const node = $createMusicNode({ abc: '' });
-        freshlyInsertedMusic.add(node.getKey());
         $insertNodes([node]);
 
         const parent = node.getParentOrThrow();

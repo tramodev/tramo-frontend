@@ -182,6 +182,7 @@ export class EditorDraft {
   private storageError = '';
   private pendingFiles = 0;
   private pendingImages = false;
+  private pendingCommand = false;
   private created = false;
   private confirmed = false;
   private retryable = false;
@@ -232,7 +233,8 @@ export class EditorDraft {
       this.storageError = '';
     } catch { this.storageError = 'Local backup is unavailable. Keep this tab open until your changes are saved.'; }
   }
-  update(change: Partial<DraftEntities>, debounceTitle = false) {
+  update(change: Partial<DraftEntities>, debounceTitle = false, pendingCommand = false) {
+    this.pendingCommand = pendingCommand;
     Object.assign(this.backup.latest, copy(change));
     if (this.snapshot.status === 'saved') return;
     if (debounceTitle) {
@@ -243,13 +245,13 @@ export class EditorDraft {
         this.titleReady = null;
         this.finishTitle?.();
         this.finishTitle = undefined;
-        if (!this.timer && (this.snapshot.status !== 'error' || !this.backup.submitted)
+        if (!this.pendingCommand && !this.timer && (this.snapshot.status !== 'error' || !this.backup.submitted)
           && (hasDraftContent(this.backup.latest) || this.backup.submitted)) void this.commit().catch(() => {});
       }, 600);
     }
     if (hasDraftContent(this.backup.latest) || this.backup.submitted) {
       this.persist();
-      if (!this.timer && !this.titleTimer && (this.snapshot.status !== 'error' || !this.backup.submitted)) void this.commit().catch(() => {});
+      if (!this.pendingCommand && !this.timer && !this.titleTimer && (this.snapshot.status !== 'error' || !this.backup.submitted)) void this.commit().catch(() => {});
     } else { try { localStorage.removeItem(draftStorageKey(this.backup.userId, this.backup.clientRequestId)); } catch {} }
   }
   start() {

@@ -7,10 +7,10 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 const { parseOnly } = require('abcjs');
 const exports = {};
-runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/MusicComponent.tsx', 'utf8') + '\nexport { plainMusicWarning };', {
+runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/MusicComponent.tsx', 'utf8') + '\nexport { plainMusicWarning, renderScore };', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText, { exports, require: () => ({}) });
-const { plainMusicWarning } = exports;
+const { plainMusicWarning, renderScore } = exports;
 
 test('actual ABC parser warnings display their position and character without span markup', () => {
   const [tune] = parseOnly('X:1\nK:C\n?');
@@ -40,4 +40,18 @@ test('each ignored character has its own warning and position', () => {
     'Music Line:3:1: Unknown character ignored: ?',
     'Music Line:3:3: Unknown character ignored: @',
   ]);
+});
+
+
+test('rendered scores expose parser warnings as plain text', () => {
+  const abc = 'X:1\nK:C\nC D ? E F';
+  const warnings = renderScore({
+    tuneMetrics: () => [],
+    renderAbc: () => parseOnly(abc),
+  }, { querySelectorAll: () => [], querySelector: () => null }, abc);
+  expect(warnings).toEqual(['Music Line:3:5: Unknown character ignored: ?']);
+});
+
+test('the reported invalid example contains a valid ABC comment', () => {
+  expect(parseOnly('X:1\nK:C\nc2 &%$ zz ]]')[0].warnings ?? []).toEqual([]);
 });
