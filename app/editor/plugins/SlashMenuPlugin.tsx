@@ -120,13 +120,13 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
         e.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined),
       ),
       new SlashOption('Image', ImageIcon, 'image photo picture upload', null),
-      new SlashOption('Equation', Sigma, 'math equation latex formula katex block display', (e) =>
+      new SlashOption('Equation', Sigma, 'math equation ecuacion ecuación fórmula latex formula katex block display', (e) =>
         e.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: false }),
       ),
-      new SlashOption('Inline equation', Radical, 'math equation latex formula katex inline', (e) =>
+      new SlashOption('Inline equation', Radical, 'math equation ecuacion ecuación fórmula latex formula katex inline', (e) =>
         e.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: true }),
       ),
-      new SlashOption('Music', Music, 'music score sheet abc notation partitura', (e) =>
+      new SlashOption('Music', Music, 'music musica música score sheet abc notation partitura', (e) =>
         e.dispatchCommand(INSERT_MUSIC_COMMAND, undefined),
       ),
       new SlashOption('Embed', Video, 'embed tweet twitter x youtube video', (e) =>

@@ -340,6 +340,9 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
           placeholder={DEFAULT_ABC}
           aria-label="ABC notation"
         />
+        <div className="text-xs text-muted-foreground">
+          Ctrl/⌘+Enter to finish · Example: CDEF GABc | cBAG FEDC |
+        </div>
         <div className="editor-music-preview" aria-hidden>
           <div ref={previewRef} />
         </div>
