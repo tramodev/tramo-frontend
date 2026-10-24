@@ -17,7 +17,7 @@ function setup(restoreEpoch = 0, { userId, storage = {} } = {}) {
   }).outputText, { exports: backups, localStorage });
   const refs = [], stateValues = [], reloads = [];
   const timers = new Map();
-  const requests = [];
+  const requests = [], snapshotRequests = [], bases = new Map();
   const statuses = [];
   const errors = [];
   const optimistic = [];
@@ -41,9 +41,11 @@ function setup(restoreEpoch = 0, { userId, storage = {} } = {}) {
       },
       '@/lib/item-content-backup': backups,
       '@/lib/item-content-client': {
-        getSavedItemContent: () => '', getExtractionEpoch: () => 0,
+        getSavedItemContent: id => bases.get(id)?.content ?? '', getExtractionEpoch: id => bases.get(id)?.extractionEpoch ?? 0,
+        acceptExtractionEpoch: (id, extractionEpoch, content) => bases.set(id, { extractionEpoch, content }),
+        getItemContentSnapshot: id => new Promise((resolve, reject) => snapshotRequests.push({ id, resolve, reject })),
         saveItemContent: (itemId, content, epoch, projectId) => new Promise((resolve, reject) => {
-          requests.push({ itemId, content, epoch, projectId, resolve, reject });
+          requests.push({ itemId, content, epoch, projectId, expectedContent: bases.get(itemId)?.content ?? '', extractionEpoch: bases.get(itemId)?.extractionEpoch ?? 0, resolve, reject });
         }),
       },
       '../../editor-utils': { isAuthError: error => error instanceof Error && error.message.includes('401') },
@@ -77,7 +79,9 @@ function setup(restoreEpoch = 0, { userId, storage = {} } = {}) {
     });
   }
   return {
-    requests, statuses, errors, optimistic, redirects, select, storage, backups, reloads,
+    requests, snapshotRequests, statuses, errors, optimistic, redirects, select, storage, backups, reloads,
+    get status() { return hook.saveStatus; }, get error() { return hook.saveError; },
+    keepRecovered: () => hook.onKeepRecoveredChanges?.(),
     discardRecovered: () => hook.onDiscardRecoveredChanges?.(),
     recover: (backup, serverContent = '') => hook.recoverItemContent(currentItemId, backup, serverContent),
     edit: (content) => hook.onChange(currentItemId, { read: (fn) => fn(), toJSON: () => content }),
@@ -444,5 +448,39 @@ test('discarding recovered conflicts keeps other offline note backups', () => {
   expect(s.backups.readItemContentBackup('alice', 'project-context', 'a')).toBeNull();
   expect(s.backups.readItemContentBackup('alice', 'project-context', 'b')).not.toBeNull();
   expect(s.reloads).toHaveLength(1);
+  expect(s.requests).toHaveLength(0);
+});
+
+
+test('typing during a recovery conflict keeps the error visible and backs up the latest changes', () => {
+  const s = setup(0, { userId: 'alice' }); s.select('a');
+  s.recover({ content: JSON.stringify(embedContent('recovered')), expectedContent: 'old server', restoreEpoch: 0, extractionEpoch: 0 }, 'server newer');
+  s.edit(embedContent('edited while deciding')); s.select('a'); s.flush();
+  expect(s.status).toBe('error');
+  expect(s.error).toContain('Keep my version');
+  expect(s.requests).toHaveLength(0);
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'a').content).toBe(JSON.stringify(embedContent('edited while deciding')));
+});
+
+test('keeping the recovered version saves the latest local edits against a fresh server snapshot', async () => {
+  const s = setup(0, { userId: 'alice' }); s.select('a');
+  s.recover({ content: JSON.stringify(embedContent('recovered')), expectedContent: 'old', restoreEpoch: 0, extractionEpoch: 0 }, 'server newer');
+  s.select('a'); const keeping = s.keepRecovered();
+  s.edit(embedContent('last local change'));
+  expect(s.requests).toHaveLength(0);
+  s.snapshotRequests[0].resolve({ content: 'fresh server', extractionEpoch: 2 }); await settle();
+  expect(s.requests[0]).toMatchObject({ content: JSON.stringify(embedContent('last local change')), expectedContent: 'fresh server', extractionEpoch: 2 });
+  s.requests[0].resolve(); await keeping; s.select('a');
+  expect(s.status).toBe('saved');
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'a')).toBeNull();
+});
+
+test('a failed conflict resolution keeps the local backup and remains actionable', async () => {
+  const s = setup(0, { userId: 'alice' }); s.select('a'); s.edit(embedContent('local'));
+  s.recover({ content: JSON.stringify(embedContent('local')), expectedContent: 'old', restoreEpoch: 0, extractionEpoch: 0 }, 'new');
+  s.select('a'); const keeping = s.keepRecovered();
+  s.snapshotRequests[0].reject(new Error('Offline')); await keeping; s.select('a');
+  expect(s.status).toBe('error'); expect(s.error).toContain('Offline');
+  expect(s.backups.readItemContentBackup('alice', 'project-context', 'a')).not.toBeNull();
   expect(s.requests).toHaveLength(0);
 });

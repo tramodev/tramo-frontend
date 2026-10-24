@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $findMatchingParent } from '@lexical/utils';
 import { $isListItemNode } from '@lexical/list';
+import { $isCodeNode } from '@lexical/code';
 import {
   $getSelection,
   $isRangeSelection,
@@ -23,9 +24,9 @@ export default function ListTabPlugin(): null {
       KEY_TAB_COMMAND,
       (event) => {
         const selection = $getSelection();
-        if (!$isRangeSelection(selection)) return false;
+        if (!$isRangeSelection(selection)) return true;
         const listItem = $findMatchingParent(selection.anchor.getNode(), $isListItemNode);
-        if (listItem === null) return false;
+        if (listItem === null) return !$isCodeNode(selection.anchor.getNode().getTopLevelElement());
         event.preventDefault();
         editor.dispatchCommand(
           event.shiftKey ? OUTDENT_CONTENT_COMMAND : INDENT_CONTENT_COMMAND,

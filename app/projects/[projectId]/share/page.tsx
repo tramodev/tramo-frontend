@@ -281,6 +281,31 @@ export default function PublishPage() {
         />
 
         <div className="sticky bottom-0 -mx-6 flex flex-col gap-2 bg-background px-6 pb-6 pt-3">
+          {shareUrl && (
+            <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
+              <a href={shareUrl} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate text-[0.8125rem] text-primary underline">
+                Open public link
+              </a>
+              <button
+                type="button"
+                onClick={copyShareUrl}
+                aria-label="Copy public link"
+                className="flex shrink-0 items-center gap-1.5 text-[0.8125rem] font-medium hover:text-foreground"
+              >
+                {linkCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+          )}
           {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
           <button
             type="button"
@@ -303,31 +328,6 @@ export default function PublishPage() {
             )}
           </button>
         </div>
-
-        {shareUrl && (
-          <div className="mb-6 flex items-center gap-2 rounded-md border border-border px-3 py-2">
-            <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
-              {shareUrl}
-            </span>
-            <button
-              type="button"
-              onClick={copyShareUrl}
-              className="flex shrink-0 items-center gap-1.5 text-[0.8125rem] font-medium hover:text-foreground"
-            >
-              {linkCopied ? (
-                <>
-                  <Check className="h-3.5 w-3.5" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5" />
-                  Copy
-                </>
-              )}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ import {
   NodeKey,
 } from 'lexical';
 import { $isMusicNode } from '@/app/editor/nodes/MusicNode';
-import { $caretOnEdgeLine, $caretTouches, type Edge } from '@/app/editor/plugins/decoratorCaret';
+import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@/app/editor/plugins/decoratorCaret';
 import MusicPlayback from '@/app/editor/plugins/MusicPlayback';
 import { loadAbcjs } from '@/app/editor/plugins/music-audio';
 import { DEFAULT_ABC } from '@/app/editor/plugins/MusicPlugin';
@@ -98,7 +98,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const [editor] = useLexicalComposerContext();
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
-  const [isEditing, setIsEditing] = useState(abc === '');
+  const [isEditing, setIsEditing] = useState(() => editingDecorators.get(editor)?.has(nodeKey) === true);
   const [draft, setDraft] = useState(() => (abc === '' ? DEFAULT_ABC : abc));
   const [warnings, setWarnings] = useState<string[]>([]);
   const scoreRef = useRef<HTMLDivElement | null>(null);
@@ -108,6 +108,11 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
   const firstChangeRef = useRef(true);
+  const editingRef = useRef(isEditing);
+
+  useLayoutEffect(() => {
+    editingDecorators.get(editor)?.delete(nodeKey);
+  }, [editor, nodeKey]);
 
   useEffect(() => {
     const target = scoreRef.current;
@@ -151,6 +156,9 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
     if (!tags.has(HISTORIC_TAG)) return;
     firstChangeRef.current = true;
+    editingRef.current = false;
+    exitEdgeRef.current = null;
+    setIsEditing(false);
     editorState.read(() => {
       const node = $getNodeByKey(nodeKey);
       if ($isMusicNode(node)) setDraft(node.getAbc());
@@ -182,25 +190,22 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
 
   const commit = useCallback(
     (exitTo: Edge | null = 'after') => {
-      const next = draft.trim();
-      if (next === '' || next === DEFAULT_ABC.trim()) {
-        editor.update(() => {
-          const node = $getNodeByKey(nodeKey);
-          if ($isMusicNode(node)) node.remove();
-        });
-        setIsEditing(false);
-        return;
-      }
-      if (next !== abc) {
-        editor.update(() => {
-          const node = $getNodeByKey(nodeKey);
-          if ($isMusicNode(node)) node.setAbc(next);
-        });
-      }
-      exitEdgeRef.current = exitTo;
+      if (!editingRef.current) return;
+      editingRef.current = false;
+      editor.update(() => {
+        const node = $getNodeByKey(nodeKey);
+        if (!$isMusicNode(node)) return;
+        const next = node.getAbc().trim();
+        if (next === '' || next === DEFAULT_ABC.trim()) {
+          node.remove();
+          return;
+        }
+        if (next !== node.getAbc()) node.setAbc(next);
+        exitEdgeRef.current = exitTo;
+      }, { discrete: true, tag: HISTORY_MERGE_TAG });
       setIsEditing(false);
     },
-    [abc, draft, editor, nodeKey],
+    [editor, nodeKey],
   );
 
   const startEditing = useCallback(
@@ -208,6 +213,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
       if (!isEditable) return;
       entryEdgeRef.current = from;
       firstChangeRef.current = true;
+      editingRef.current = true;
       setDraft(abc === '' ? DEFAULT_ABC : abc);
       setIsEditing(true);
     },

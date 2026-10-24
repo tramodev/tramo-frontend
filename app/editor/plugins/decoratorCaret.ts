@@ -8,6 +8,14 @@ import {
   LexicalNode,
 } from 'lexical';
 
+export const editingDecorators = new WeakMap<LexicalEditor, Set<string>>();
+
+export function markDecoratorForEditing(editor: LexicalEditor, nodeKey: string) {
+  const keys = editingDecorators.get(editor) ?? new Set<string>();
+  keys.add(nodeKey);
+  editingDecorators.set(editor, keys);
+}
+
 export type Edge = 'before' | 'after';
 
 export function $caretOnEdgeLine(

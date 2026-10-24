@@ -23,7 +23,7 @@ export function ProjectShell({
     <>
       {sidebar}
       <SidebarInset className="min-w-0">
-        <header className="flex h-28 shrink-0 flex-wrap items-center gap-2 px-4 py-2 md:h-16 md:flex-nowrap md:gap-4 md:px-8">
+        <header className="flex min-h-28 shrink-0 flex-wrap items-center gap-2 px-4 py-2 md:min-h-16 md:flex-nowrap md:gap-4 md:px-8">
           <SidebarTrigger className="md:hidden" />
           {showLogo && (
             <>

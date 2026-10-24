@@ -22,10 +22,20 @@ export function acceptLoadedContents(rows: { id: number; content: string; extrac
   return Object.fromEntries(rows.map((row) => [String(row.id), row.content ?? '']));
 }
 
+export async function getItemContentSnapshot(itemId: string): Promise<{ content: string; extractionEpoch: number }> {
+  const response = await fetch(`/api/item/${itemId}/content`);
+  const data = await parseResponse<{ content?: unknown; extractionEpoch?: unknown }>(response);
+  const content = data.content ?? '';
+  const extractionEpoch = data.extractionEpoch ?? 0;
+  if (typeof content !== 'string' || typeof extractionEpoch !== 'number' || !Number.isSafeInteger(extractionEpoch) || extractionEpoch < 0) {
+    throw new Error('Invalid note content response.');
+  }
+  return { content, extractionEpoch };
+}
+
 export async function getItemContent(itemId: string): Promise<string> {
   const session = contentSessions.get(itemId);
-  const response = await fetch(`/api/item/${itemId}/content`);
-  const data = await parseResponse<{ content?: string; extractionEpoch?: number }>(response);
+  const data = await getItemContentSnapshot(itemId);
   if (session === contentSessions.get(itemId) && !extractionEpochs.has(itemId)) acceptExtractionEpoch(itemId, data.extractionEpoch ?? 0, data.content ?? '');
   return data.content ?? "";
 }

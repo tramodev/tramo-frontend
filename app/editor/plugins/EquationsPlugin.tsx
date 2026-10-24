@@ -16,6 +16,7 @@ import {
 } from 'lexical';
 import { $createEquationNode, EquationNode } from '../nodes/EquationNode';
 import { $isSelectionInCode } from './codeBlockGuard';
+import { markDecoratorForEditing } from '@/app/editor/plugins/decoratorCaret';
 
 export type InsertEquationPayload = Readonly<{
   equation: string;
@@ -39,6 +40,7 @@ export default function EquationsPlugin(): null {
         if ($isSelectionInCode()) return true;
         const node = $createEquationNode({ equation, inline });
         $insertNodes([node]);
+        markDecoratorForEditing(editor, node.getKey());
 
         if (!inline) {
           const parent = node.getParentOrThrow();

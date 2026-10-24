@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EditorState } from 'lexical';
-import { getExtractionEpoch, getSavedItemContent, saveItemContent } from '@/lib/item-content-client';
+import { acceptExtractionEpoch, getExtractionEpoch, getItemContentSnapshot, getSavedItemContent, saveItemContent } from '@/lib/item-content-client';
 import { readItemContentBackup, writeItemContentBackup, removeItemContentBackup, type ItemContentBackup } from '@/lib/item-content-backup';
 import { isAuthError } from '../../editor-utils';
 
@@ -30,6 +30,7 @@ export function useAutoSave({
   const [saveError, setSaveError] = useState('');
   const [recoveredConflict, setRecoveredConflict] = useState(false);
   const conflictedBackupsRef = useRef(new Set<string>());
+  const resolvingConflictsRef = useRef(false);
   const pendingContentRef = useRef(new Map<string, string>());
   const optimisticContentRef = useRef(new Map<string, string>());
   const optimisticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,6 +89,10 @@ export function useAutoSave({
           } catch (err) {
             console.error(err);
             if (err instanceof Error && (err.name === 'ProjectVersionConflict' || err.name === 'ContentConflict')) conflictRef.current = true;
+            if (err instanceof Error && err.name === 'ContentConflict') {
+              conflictedBackupsRef.current.add(itemId);
+              setRecoveredConflict(true);
+            }
             if (!deletedItemsRef.current.has(itemId) && !pendingContentRef.current.has(itemId)) {
               pendingContentRef.current.set(itemId, content);
             }
@@ -132,7 +137,7 @@ export function useAutoSave({
     editorState.read(() => {
       if (deletedItemsRef.current.has(itemId)) return;
       const json = JSON.stringify(editorState.toJSON());
-      setSaveStatus('saving');
+      if (!conflictRef.current) setSaveStatus('saving');
       optimisticContentRef.current.set(itemId, json);
       if (!optimisticTimeoutRef.current) optimisticTimeoutRef.current = setTimeout(flushOptimisticContent, 150);
       try {
@@ -159,20 +164,48 @@ export function useAutoSave({
   }, [flushOptimisticContent, flushPendingContent, userId, projectId, restoreEpoch]);
 
   const recoverItemContent = useCallback((itemId: string, backup: ItemContentBackup, serverContent: string) => {
+    if (!pendingContentRef.current.has(itemId)) pendingContentRef.current.set(itemId, backup.content);
     if (backup.restoreEpoch !== restoreEpoch || backup.extractionEpoch !== getExtractionEpoch(itemId)
       || backup.expectedContent !== serverContent) {
       conflictRef.current = true;
       conflictedBackupsRef.current.add(itemId);
       setRecoveredConflict(true);
       setSaveStatus('error');
-      setSaveError('Local changes were recovered, but this note changed on the server. Copy your recovered text before choosing the server version; automatic saving is stopped.');
+      setSaveError('Local changes were recovered, but this note changed on the server. Choose Keep my version to save your recovered text, or Use server version to discard it. New edits stay backed up in this browser until you choose.');
       return;
     }
     pendingContentRef.current.set(itemId, backup.content);
-    setSaveStatus('saving');
+    if (!conflictRef.current) setSaveStatus('saving');
     if (saveContentTimeoutRef.current) clearTimeout(saveContentTimeoutRef.current);
     saveContentTimeoutRef.current = setTimeout(() => { void flushPendingContent(); }, 600);
   }, [restoreEpoch, flushPendingContent]);
+
+  const keepRecoveredChanges = async () => {
+    if (resolvingConflictsRef.current || !userId || !projectId) return;
+    resolvingConflictsRef.current = true;
+    try {
+      for (const itemId of conflictedBackupsRef.current) {
+        if (deletedItemsRef.current.has(itemId)) continue;
+        const snapshot = await getItemContentSnapshot(itemId);
+        const content = pendingContentRef.current.get(itemId);
+        if (content === undefined) continue;
+        writeItemContentBackup(userId, projectId, itemId, {
+          content, expectedContent: snapshot.content, extractionEpoch: snapshot.extractionEpoch, restoreEpoch,
+        });
+        acceptExtractionEpoch(itemId, snapshot.extractionEpoch, snapshot.content);
+      }
+      conflictRef.current = false;
+      if (await flushPendingContent()) {
+        conflictedBackupsRef.current.clear();
+        setRecoveredConflict(false);
+      } else conflictRef.current = true;
+    } catch (error) {
+      conflictRef.current = true;
+      setSaveError(error instanceof Error ? error.message : 'Could not save your recovered changes. Try again.');
+    } finally {
+      resolvingConflictsRef.current = false;
+    }
+  };
 
   const discardRecoveredChanges = () => {
     try {
@@ -195,7 +228,7 @@ export function useAutoSave({
     optimisticContentRef.current.delete(id);
     incompleteImagesRef.current.delete(id);
     try { if (userId && projectId) removeItemContentBackup(userId, projectId, id); } catch {}
-    setSaveStatus(pendingContentRef.current.size > 0 || inFlightRef.current || incompleteImagesRef.current.size > 0 ? 'saving' : 'saved');
+    if (!conflictRef.current) setSaveStatus(pendingContentRef.current.size > 0 || inFlightRef.current || incompleteImagesRef.current.size > 0 ? 'saving' : 'saved');
   };
   const renameItemId = useCallback((oldId: string, newId: string) => {
     if (oldId === newId) return;
@@ -213,5 +246,5 @@ export function useAutoSave({
       }
     } catch { setSaveError('Local backup is unavailable. Keep this tab open until your changes are saved.'); }
   }, [flushOptimisticContent, userId, projectId]);
-  return { saveStatus, saveError, onDiscardRecoveredChanges: recoveredConflict ? discardRecoveredChanges : undefined, recoverItemContent, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
+  return { saveStatus: recoveredConflict ? 'error' as const : saveStatus, saveError: recoveredConflict && !saveError ? 'Recovered changes need a decision before they can sync.' : saveError, onKeepRecoveredChanges: recoveredConflict ? keepRecoveredChanges : undefined, onDiscardRecoveredChanges: recoveredConflict ? discardRecoveredChanges : undefined, recoverItemContent, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
 }
