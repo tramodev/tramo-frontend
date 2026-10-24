@@ -31,18 +31,13 @@ import {
 } from 'lexical';
 import { $isMusicNode } from '@/app/editor/nodes/MusicNode';
 import { $caretOnEdgeLine, $caretTouches, type Edge } from '@/app/editor/plugins/decoratorCaret';
+import MusicPlayback from '@/app/editor/plugins/MusicPlayback';
+import { loadAbcjs } from '@/app/editor/plugins/music-audio';
 import { DEFAULT_ABC } from '@/app/editor/plugins/MusicPlugin';
 
 interface MusicComponentProps {
   abc: string;
   nodeKey: NodeKey;
-}
-
-let abcjsModule: Promise<typeof import('abcjs')> | null = null;
-
-function loadAbcjs() {
-  abcjsModule ??= import('abcjs');
-  return abcjsModule;
 }
 
 const RENDER_PARAMS = {
@@ -334,8 +329,10 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
           aria-label="ABC notation"
         />
         <div className="text-xs text-muted-foreground">
-          Ctrl/⌘+Enter to finish · Example: CDEF GABc | cBAG FEDC |
+          Ctrl/⌘+Enter to finish · Example: CDEF GABc | cBAG FEDC | ·{' '}
+          <a className="underline" href="https://abcnotation.com/learn" target="_blank" rel="noopener noreferrer">ABC notation guide</a>
         </div>
+        <MusicPlayback key={draft} abc={draft} />
         <div className="editor-music-preview" aria-hidden>
           <div ref={previewRef} />
         </div>
@@ -354,6 +351,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
       onDoubleClick={() => startEditing()}
     >
       <div ref={scoreRef} role="img" aria-label="Music score" />
+      <MusicPlayback key={abc} abc={abc} />
     </div>
   );
 }
