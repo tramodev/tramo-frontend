@@ -1,5 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import { backendFetch } from '@/lib/backend-fetch';
 import { NextRequest, NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/config';
 
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
   if (!username) {
     return NextResponse.json({ available: false }, { status: 400 });
   }
-  const response = await fetch(
+  const response = await backendFetch(
     `${API_BASE_URL}/api/auth/check-username?username=${encodeURIComponent(username)}`
   );
   const body = await response.text();

@@ -1,4 +1,5 @@
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 
 import { updateTag, revalidatePath } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
@@ -47,7 +48,7 @@ export interface SiteContent {
 export type ContentKind = keyof SiteContent;
 
 async function publicContent(path: string): Promise<Response> {
-  return fetch(`${API_BASE_URL}/api/public/content/${path}`, {
+  return backendFetch(`${API_BASE_URL}/api/public/content/${path}`, {
     cache: 'force-cache',
     next: { tags: ['site-content'], revalidate: 3600 },
   });

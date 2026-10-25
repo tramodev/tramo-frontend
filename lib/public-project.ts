@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 
 import { cookies } from "next/headers";
 import { API_BASE_URL, EXPLORE_PAGE_SIZE } from "./config";
@@ -131,7 +132,7 @@ export async function getExploreBundle(
   url.searchParams.set("page", String(page));
   url.searchParams.set("size", String(size));
 
-  const response = await fetch(url, { cache: "no-store", headers: await authHeaders() });
+  const response = await backendFetch(url, { cache: "no-store", headers: await authHeaders() });
 
   if (!response.ok) return { feed: [], hasMore: false, featured: null, hotTopics: [], activeAuthors: [], trendingProjects: [] };
 
@@ -152,7 +153,7 @@ export interface TagCount {
 }
 
 export async function getPublicProject(projectId: string): Promise<PublicProject | null> {
-  const response = await fetch(`${API_BASE_URL}/api/public/project/${projectId}`, {
+  const response = await backendFetch(`${API_BASE_URL}/api/public/project/${projectId}`, {
     cache: "no-store",
     headers: { ...(await authHeaders()), ...(await anonIdHeader()) },
   });

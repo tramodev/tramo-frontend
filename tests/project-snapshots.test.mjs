@@ -10,7 +10,7 @@ function load(path, modules, globals = {}) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, {
     exports,
-    require: name => ({ 'react/jsx-runtime': { jsx, jsxs: jsx }, ...modules })[name] ?? {},
+    require: name => ({ 'react/jsx-runtime': { jsx, jsxs: jsx }, '@/lib/backend-fetch': { backendFetch: globals.fetch }, ...modules })[name] ?? {},
     ...globals,
   });
   return exports;

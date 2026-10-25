@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 
 import { authHeaders } from "@/lib/auth";
 import type { TitleAlign } from "@/app/editor/types";
@@ -89,7 +90,7 @@ export async function getPublicProjectSnapshot(
   projectId: string,
   snapshotId: string,
 ): Promise<ProjectSnapshotDetail | null> {
-  const response = await fetch(`${API_BASE_URL}/api/public/project/${projectId}/versions/${snapshotId}`, {
+  const response = await backendFetch(`${API_BASE_URL}/api/public/project/${projectId}/versions/${snapshotId}`, {
     cache: "no-store",
     headers: await authHeaders(),
   });

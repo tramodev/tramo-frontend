@@ -17,7 +17,7 @@ function setup() {
   const refreshModule = {};
   const stores = [new Map([['refreshToken', 'old']]), new Map([['refreshToken', 'old']])];
   const refreshRuntime = {
-    require: () => ({ API_BASE_URL: 'http://backend' }),
+    require: () => ({ API_BASE_URL: 'http://backend', backendFetch: (...args) => refreshRuntime.fetch(...args) }),
     fetch: (url, options) => new Promise((resolve, reject) => {
       options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
       requests.push({ url, options, resolve, reject });
@@ -43,6 +43,7 @@ function setup() {
   }).outputText, {
     exports,
     require: (name) => ({
+      '@/lib/backend-fetch': { backendFetch: () => new Promise((resolve, reject) => requests.push({ resolve, reject })) },
       'next/headers': {
         cookies: async () => {
           const store = context.getStore();
@@ -66,7 +67,11 @@ function setup() {
   }).outputText, {
     exports: api,
     Response,
-    require: (name) => ({ './auth': exports, 'next/navigation': {} })[name],
+    require: (name) => ({ './auth': exports, 'next/navigation': {}, '@/lib/backend-fetch': { backendFetch: async (_, options) => {
+      const token = options.headers.Authorization;
+      accessTokens.push(token);
+      return new Response(null, { status: token === 'Bearer new-access' ? 200 : 401 });
+    } } })[name],
     fetch: async (_, options) => {
       const token = options.headers.Authorization;
       accessTokens.push(token);
@@ -80,6 +85,7 @@ function setup() {
   }).outputText, {
     exports: proxyModule,
     require: (name) => ({
+      '@/lib/backend-fetch': { backendFetch: (...args) => refreshRuntime.fetch(...args) },
       'next/server': { NextResponse },
       '@/lib/config': { API_BASE_URL: 'http://backend', REFRESH_TOKEN_MAX_AGE: 2592000 },
       '@/lib/refresh': proxyRefresh,

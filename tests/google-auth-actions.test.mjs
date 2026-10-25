@@ -12,6 +12,7 @@ function setup(response) {
   }).outputText, {
     exports, fetch,
     require: name => ({
+      '@/lib/backend-fetch': { backendFetch: fetch },
       './config': { API_BASE_URL: 'http://localhost:8080' },
       './auth': { setAuthCookies },
     })[name],

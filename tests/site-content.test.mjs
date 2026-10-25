@@ -19,6 +19,7 @@ function setup({ admin = true, status = 200, networkError = false } = {}) {
     exports,
     fetch: async (...args) => { publicCalls.push(args); return response; },
     require: name => ({
+      '@/lib/backend-fetch': { backendFetch: async (...args) => { publicCalls.push(args); return response; } },
       '@/lib/config': { API_BASE_URL: 'http://api.test' },
       '@/lib/http': http,
       '@/lib/session': { isAdmin: async () => admin },

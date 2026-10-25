@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 
-import { headers } from "next/headers";
 import { Item, Trail, TitleAlign } from "@/app/editor/types";
 import { authenticatedFetch } from "./api";
 import { API_BASE_URL } from "./config";
@@ -294,11 +293,9 @@ interface VoteResponseDTO {
 }
 
 export async function toggleProjectVote(id: string): Promise<VoteResult> {
-  const clientIp = (await headers()).get("x-forwarded-for");
   return apiJson<VoteResponseDTO>(`/api/project/${id}/vote`, {
     method: "POST",
     headers: {
-      ...(clientIp ? { "X-Forwarded-For": clientIp } : undefined),
       ...(await anonIdHeader()),
     },
   });

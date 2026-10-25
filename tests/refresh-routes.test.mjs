@@ -8,11 +8,18 @@ test.each(['notifications', 'export'])('%s preserves refresh outages, authentica
   for (const [refreshed, status, attempts] of [['unavailable', 503, 1], [false, 401, 1], [true, 200, 2]]) {
     const exports = {}, requests = [];
     let token = 'expired';
+    const backendFetch = async (_url, options) => {
+      requests.push(options);
+      return options.headers.Authorization === 'Bearer renewed'
+        ? new Response('payload', { headers: { 'Content-Type': kind === 'notifications' ? 'text/event-stream' : 'application/zip' } })
+        : new Response(null, { status: 401 });
+    };
     runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     }).outputText, {
       exports, Response, Headers,
       require: name => ({
+        '@/lib/backend-fetch': { backendFetch },
         '@/lib/config': { API_BASE_URL: 'http://backend' },
         '@/lib/auth': {
           getAccessToken: async () => token,
@@ -45,6 +52,10 @@ test.each([503, 429, 499])('notification stream preserves failure status %s', as
   }).outputText, {
     exports, Response, Headers,
     require: name => ({
+      '@/lib/backend-fetch': { backendFetch: async () => {
+        if (status !== 429) throw new TypeError('connection failed');
+        return new Response(null, { status: 429, headers: { 'Retry-After': '30' } });
+      } },
       '@/lib/config': { API_BASE_URL: 'http://backend' },
       '@/lib/auth': { getAccessToken: async () => 'token' },
     })[name],

@@ -1,5 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import { backendFetch } from '@/lib/backend-fetch';
 import type { MetadataRoute } from "next"
 import { API_BASE_URL, SITE_URL } from "@/lib/config"
 import { SECTIONS } from "@/app/wiki/content"
@@ -19,7 +20,7 @@ interface SitemapUser {
 
 async function getSitemapProjects(): Promise<SitemapProject[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/public/sitemap/projects`)
+    const response = await backendFetch(`${API_BASE_URL}/api/public/sitemap/projects`, { cache: "force-cache", next: { revalidate: 3600 } })
     if (!response.ok) return []
     return await response.json()
   } catch {
@@ -29,7 +30,7 @@ async function getSitemapProjects(): Promise<SitemapProject[]> {
 
 async function getSitemapUsers(): Promise<SitemapUser[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/public/sitemap/users`)
+    const response = await backendFetch(`${API_BASE_URL}/api/public/sitemap/users`, { cache: "force-cache", next: { revalidate: 3600 } })
     if (!response.ok) return []
     return await response.json()
   } catch {

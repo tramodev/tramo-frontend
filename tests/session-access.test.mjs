@@ -23,7 +23,7 @@ function setup(responses) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017 },
   }).outputText, {
     exports: refresh,
-    require: () => ({ API_BASE_URL: 'http://backend' }),
+    require: () => ({ API_BASE_URL: 'http://backend', backendFetch: fetchResponse }),
     fetch: fetchResponse,
     setTimeout: () => ({ unref() {} }),
     AbortSignal,
@@ -33,6 +33,7 @@ function setup(responses) {
   }).outputText, {
     exports,
     require: (name) => ({
+      '@/lib/backend-fetch': { backendFetch: fetchResponse },
       'next/server': { NextResponse },
       '@/lib/config': { API_BASE_URL: 'http://backend', REFRESH_TOKEN_MAX_AGE: 2592000 },
       '@/lib/refresh': refresh,

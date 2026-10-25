@@ -13,6 +13,7 @@ function setup(action, response) {
   }).outputText, {
     exports, fetch, encodeURIComponent,
     require: name => ({
+      '@/lib/backend-fetch': { backendFetch: fetch },
       'next/navigation': { redirect },
       '@/lib/config': { API_BASE_URL: 'https://configured-api.example.com' },
     })[name],

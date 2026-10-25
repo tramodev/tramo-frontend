@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 import { redirect } from 'next/navigation';
 import { API_BASE_URL } from '@/lib/config';
 
@@ -20,7 +21,7 @@ export async function forgotPasswordHandler(
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+    response = await backendFetch(`${API_BASE_URL}/api/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),

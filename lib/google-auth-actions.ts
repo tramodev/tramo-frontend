@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 import { API_BASE_URL } from './config';
 import { setAuthCookies } from './auth';
 
@@ -9,7 +10,7 @@ export type GoogleAuthResult =
   | { success: false; error: string; linkRequired?: boolean };
 
 export async function googleAuthHandler(idToken: string, password?: string): Promise<GoogleAuthResult> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+  const response = await backendFetch(`${API_BASE_URL}/api/auth/google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken, password }),

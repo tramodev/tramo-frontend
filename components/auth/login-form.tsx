@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input"
 import { authenticateHandler } from "@/app/(auth)/login/actions"
 import { ResendVerificationButton } from "@/components/auth/resend-verification-button"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
-import { useActionState, useState } from 'react';
+import { startTransition, useActionState, useState } from 'react';
+import Script from 'next/script';
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
   return (
@@ -30,13 +31,47 @@ export function LoginForm({
 }: React.ComponentProps<"form">) {
   const [state, formAction, isPending] = useActionState(authenticateHandler, null);
   const [username, setUsername] = useState("");
+  const [captchaError, setCaptchaError] = useState("");
+  const [checkingCaptcha, setCheckingCaptcha] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (checkingCaptcha || isPending) return;
+    setCaptchaError("");
+    const formData = new FormData(event.currentTarget);
+    if (state?.captchaRequired) {
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      if (!siteKey || !window.grecaptcha) {
+        setCaptchaError("Captcha failed to load. Please refresh and try again.");
+        return;
+      }
+      setCheckingCaptcha(true);
+      try {
+        const captchaToken = await new Promise<string>((resolve, reject) => {
+          window.grecaptcha!.ready(() => {
+            window.grecaptcha!.execute(siteKey, { action: "login" }).then(resolve, reject);
+          });
+        });
+        formData.set("captchaToken", captchaToken);
+      } catch {
+        setCaptchaError("Captcha verification failed. Please try again.");
+        return;
+      } finally {
+        setCheckingCaptcha(false);
+      }
+    }
+    startTransition(() => formAction(formData));
+  };
 
   return (
     <form
-      action={formAction}
+      onSubmit={handleSubmit}
       className={cn("flex flex-col gap-6", className)}
       {...props}
     >
+      {state?.captchaRequired && (
+        <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
+      )}
       <div>
         <h1 className="font-display text-[2.25rem] font-normal">Log in</h1>
         <p className="mt-3 text-[0.9375rem] leading-6 text-muted-foreground">
@@ -44,10 +79,10 @@ export function LoginForm({
         </p>
       </div>
       <FieldGroup className="mt-2 gap-[22px]">
-        {state?.error && (
+        {(captchaError || state?.error) && (
           <div className="flex flex-col items-center gap-2 text-sm text-center text-destructive">
-            {state.error}
-            {state.needsVerification && (
+            {captchaError || state?.error}
+            {state?.needsVerification && (
               <ResendVerificationButton username={username} />
             )}
           </div>
@@ -76,7 +111,7 @@ export function LoginForm({
           </a>
         </div>
         <Field>
-          <SubmitButton isPending={isPending} />
+          <SubmitButton isPending={isPending || checkingCaptcha} />
         </Field>
         <FieldSeparator>
           <span className="text-xs font-medium text-muted-foreground">

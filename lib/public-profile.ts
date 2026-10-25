@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 
 import { API_BASE_URL } from "./config";
 import { authHeaders, isLoggedIn } from "./auth";
@@ -13,7 +14,7 @@ async function publicProfileFetch(url: string): Promise<Response> {
   if (await isLoggedIn()) {
     return authenticatedFetch(url, { cache: "no-store" });
   }
-  return fetch(url, { cache: "no-store", headers: await authHeaders() });
+  return backendFetch(url, { cache: "no-store", headers: await authHeaders() });
 }
 
 interface PublicProfileDTO {

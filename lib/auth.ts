@@ -1,5 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import { backendFetch } from '@/lib/backend-fetch';
 import 'server-only';
 import { cookies } from 'next/headers';
 import { API_BASE_URL, REFRESH_TOKEN_MAX_AGE } from './config';
@@ -56,7 +57,7 @@ export async function isLoggedIn(): Promise<boolean> {
 export async function isAdmin(): Promise<boolean> {
   const token = await getAccessToken();
   if (!token) return false;
-  const response = await fetch(`${API_BASE_URL}/api/profile/me`, {
+  const response = await backendFetch(`${API_BASE_URL}/api/profile/me`, {
     cache: 'no-store',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -96,7 +97,7 @@ export async function logout() {
   const refreshToken = cookieStore.get('refreshToken')?.value;
   if (refreshToken) {
     invalidateRefreshTokens(refreshToken);
-    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    await backendFetch(`${API_BASE_URL}/api/auth/logout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),

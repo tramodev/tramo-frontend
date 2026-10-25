@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 
 import { API_BASE_URL } from "./config";
 import { authHeaders } from "./auth";
@@ -74,7 +75,7 @@ export interface ActivityItem {
 }
 
 export async function getMyProfile(): Promise<UserProfile | null> {
-  const response = await fetch(`${API_BASE_URL}/api/profile/me`, { cache: "no-store", headers: await authHeaders() });
+  const response = await backendFetch(`${API_BASE_URL}/api/profile/me`, { cache: "no-store", headers: await authHeaders() });
   if (!response.ok) return null;
   return response.json();
 }
@@ -101,7 +102,7 @@ export interface ProfileStatsBundle {
 const EMPTY_STATS_BUNDLE: ProfileStatsBundle = { stats: null, badges: [] };
 
 export async function getMyProfileStats(): Promise<ProfileStatsBundle> {
-  const response = await fetch(`${API_BASE_URL}/api/profile/stats`, { cache: "no-store", headers: await authHeaders() });
+  const response = await backendFetch(`${API_BASE_URL}/api/profile/stats`, { cache: "no-store", headers: await authHeaders() });
   if (!response.ok) return EMPTY_STATS_BUNDLE;
   const data: ProfileStatsBundleDTO = await response.json();
   return { stats: data.stats, badges: data.badges };
@@ -123,7 +124,7 @@ async function fetchProfilePage<T, D>(
   size: number,
   map: (item: D) => T
 ): Promise<ProfilePage<T>> {
-  const response = await fetch(`${API_BASE_URL}/api/profile/${path}?page=${page}&size=${size}`, {
+  const response = await backendFetch(`${API_BASE_URL}/api/profile/${path}?page=${page}&size=${size}`, {
     cache: "no-store",
     headers: await authHeaders(),
   });

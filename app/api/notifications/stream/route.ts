@@ -1,12 +1,13 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import { backendFetch } from '@/lib/backend-fetch';
 import { API_BASE_URL } from "@/lib/config";
 import { getAccessToken, refreshAccessToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 function open(token: string | null, signal: AbortSignal) {
-  return fetch(`${API_BASE_URL}/api/notifications/stream`, {
+  return backendFetch(`${API_BASE_URL}/api/notifications/stream`, {
     headers: { Accept: "text/event-stream", Authorization: `Bearer ${token}` },
     cache: "no-store",
     signal,

@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 import { redirect } from 'next/navigation';
 import { API_BASE_URL } from '@/lib/config';
 import { setAuthCookies } from '@/lib/auth';
@@ -8,6 +9,7 @@ import { setAuthCookies } from '@/lib/auth';
 export type AuthResult = {
   error?: string;
   needsVerification?: boolean;
+  captchaRequired?: boolean;
 };
 
 export async function authenticateHandler(
@@ -16,19 +18,25 @@ export async function authenticateHandler(
 ): Promise<AuthResult | null> {
   const username = formData.get('username');
   const password = formData.get('password');
+  const captchaToken = formData.get('captchaToken');
 
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const response = await backendFetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, captchaToken }),
   });
 
   if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const captchaRequired = data?.code === 'CAPTCHA_REQUIRED';
     return {
-      error: await extractErrorMessage(response),
-      needsVerification: response.status === 403,
+      error: captchaRequired ? 'Please try again to complete the security check.'
+        : typeof data?.message === 'string' ? data.message : 'Invalid credentials',
+      needsVerification: response.status === 403
+        && data?.message === 'Please verify your email before logging in.',
+      captchaRequired: captchaRequired || prevState?.captchaRequired,
     };
   }
 
@@ -45,13 +53,4 @@ export async function authenticateHandler(
   });
 
   redirect(data.requiresBirthDate ? '/onboarding/birth-date' : '/');
-}
-
-async function extractErrorMessage(response: Response): Promise<string> {
-  try {
-    const data = await response.json();
-    if (typeof data?.message === 'string') return data.message;
-  } catch {
-  }
-  return 'Invalid credentials';
 }

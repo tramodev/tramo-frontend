@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import 'server-only';
+import { backendFetch } from '@/lib/backend-fetch';
 import { redirect } from 'next/navigation';
 import { getAccessToken, refreshAccessToken } from './auth';
 
@@ -12,7 +13,7 @@ export async function authenticatedFetch(
 ): Promise<Response> {
   let token = await getAccessToken();
 
-  let response = await fetch(url, {
+  let response = await backendFetch(url, {
     ...options,
     cache: 'no-store',
     headers: {
@@ -29,7 +30,7 @@ export async function authenticatedFetch(
 
     if (refreshed) {
       token = await getAccessToken();
-      response = await fetch(url, {
+      response = await backendFetch(url, {
         ...options,
         cache: 'no-store',
         headers: {

@@ -1,5 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import { backendFetch } from '@/lib/backend-fetch';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { API_BASE_URL, REFRESH_TOKEN_MAX_AGE } from '@/lib/config';
@@ -51,10 +52,10 @@ export async function proxy(request: NextRequest) {
 
   if (accessValid && (isProtected || isAuthPage)) {
     try {
-      const profile = await fetch(`${API_BASE_URL}/api/profile/me`, {
+      const profile = await backendFetch(`${API_BASE_URL}/api/profile/me`, {
         cache: 'no-store',
         headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      }, request.headers);
       if (profile.status >= 500) {
         return new NextResponse('Session validation unavailable', { status: 503 });
       }
@@ -68,7 +69,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if ((isProtected || isAuthPage) && !accessValid && refreshToken) {
-    const result = await refreshTokens(refreshToken);
+    const result = await refreshTokens(refreshToken, undefined, request.headers);
     if (result === 'unavailable') {
       return new NextResponse('Session validation unavailable', { status: 503 });
     }

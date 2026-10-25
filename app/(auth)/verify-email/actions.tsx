@@ -1,6 +1,8 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { API_BASE_URL } from '@/lib/config';
+import { backendFetch } from '@/lib/backend-fetch';
 import { cookies } from 'next/headers';
 import { REFRESH_TOKEN_MAX_AGE } from '@/lib/config';
 
@@ -9,7 +11,7 @@ export type VerifyEmailResult =
   | { success: false; error: string };
 
 export async function verifyEmailHandler(token: string): Promise<VerifyEmailResult> {
-  const response = await fetch('http://localhost:8080/api/auth/verify-email', {
+  const response = await backendFetch(`${API_BASE_URL}/api/auth/verify-email`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

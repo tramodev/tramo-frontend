@@ -1,3 +1,4 @@
+import { backendFetch } from '@/lib/backend-fetch';
 import { API_BASE_URL } from '@/lib/config';
 import type { AuthTokens } from '@/lib/auth';
 
@@ -15,7 +16,7 @@ export function invalidateRefreshTokens(refreshToken: string): void {
   }
 }
 
-export function refreshTokens(refreshToken: string, rejectedAccessToken?: string): Promise<RefreshResult> {
+export function refreshTokens(refreshToken: string, rejectedAccessToken?: string, incomingHeaders?: Headers): Promise<RefreshResult> {
   if (rejectedAccessToken && refreshes.get(refreshToken)?.tokens?.accessToken === rejectedAccessToken) {
     invalidateRefreshTokens(refreshToken);
   }
@@ -24,13 +25,13 @@ export function refreshTokens(refreshToken: string, rejectedAccessToken?: string
 
   const requestTokens = async (): Promise<RefreshResult> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      const response = await backendFetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
         cache: 'no-store',
         signal: AbortSignal.timeout(10000),
-      });
+      }, incomingHeaders);
       if (response.status === 401 || response.status === 403) return null;
       if (!response.ok) return 'unavailable';
       const tokens = await response.json();

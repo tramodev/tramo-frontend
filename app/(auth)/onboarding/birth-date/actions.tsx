@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
+import { backendFetch } from '@/lib/backend-fetch';
 import { redirect } from 'next/navigation';
 import { API_BASE_URL } from '@/lib/config';
 import { getAccessToken, setAuthCookies } from '@/lib/auth';
@@ -18,7 +19,7 @@ export async function submitBirthDateHandler(
     redirect('/login');
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/auth/birth-date`, {
+  const response = await backendFetch(`${API_BASE_URL}/api/auth/birth-date`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

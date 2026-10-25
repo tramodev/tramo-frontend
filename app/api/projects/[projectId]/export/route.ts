@@ -1,3 +1,4 @@
+import { backendFetch } from '@/lib/backend-fetch';
 import { API_BASE_URL } from '@/lib/config';
 import { getAccessToken, refreshAccessToken } from '@/lib/auth';
 
@@ -10,7 +11,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   const open = async () => {
     const token = await getAccessToken();
     if (!token) return new Response(null, { status: 401 });
-    return fetch(`${API_BASE_URL}/api/project/${projectId}/export`, {
+    return backendFetch(`${API_BASE_URL}/api/project/${projectId}/export`, {
       headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: request.signal,
     });
   };
