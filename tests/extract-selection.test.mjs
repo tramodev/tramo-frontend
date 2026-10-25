@@ -4,6 +4,15 @@ import { createRequire } from 'node:module';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 const require = createRequire(import.meta.url);
+const styles = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/styleConfig.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS },
+}).outputText, { exports: styles });
+const noteContent = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/note-content.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: noteContent, require: () => styles });
+
 const lexical = require('lexical');
 const rich = require('@lexical/rich-text');
 const lists = require('@lexical/list');
@@ -13,7 +22,7 @@ const config = { namespace: 'test', nodes: [rich.HeadingNode, rich.QuoteNode, li
 const exports = {};
 runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/extract-selection.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, {
   exports, Error,
-  require: name => name === '../lexical-config' ? { editorConfig: config } : require(name),
+  require: name => name === '../lexical-config' ? { editorConfig: config } : name === '@/app/editor/note-content' ? noteContent : require(name),
 });
 function make(build) { const editor = lexical.createEditor(config); editor.update(build, { discrete: true }); return editor; }
 const text = json => json.text ?? json.children?.map(text).join('') ?? '';
@@ -102,4 +111,27 @@ test('captures and extracts from an unfocused editor when multiple editors exist
   expect(text(JSON.parse(draft.sourceContent).root)).toBe('before New note after');
   expect(JSON.stringify(first.getEditorState().toJSON())).toBe(capture.content);
   expect(text(second.getEditorState().toJSON().root)).toBe('other note');
+});
+
+test('invalid extracted content leaves the current note and history untouched', () => {
+  const editor = make(() => lexical.$getRoot().append(lexical.$createParagraphNode().append(lexical.$createTextNode('original'))));
+  const state = editor.getEditorState();
+  const current = { editor, editorState: state };
+  const history = { current, undoStack: [current], redoStack: [] };
+  const invalid = JSON.stringify({ root: { type: 'root', version: 1, children: [{ type: 'heading', version: 1, tag: 'script', children: [] }] } });
+  expect(() => exports.applyExtractedContent(editor, history, invalid)).toThrow('Invalid heading tag');
+  expect(editor.getEditorState()).toBe(state);
+  expect(history.current).toBe(current);
+  expect(history.undoStack).toEqual([current]);
+});
+
+test('extracted content passes through the same style filter as a loaded note', () => {
+  const editor = make(() => lexical.$getRoot().append(lexical.$createParagraphNode().append(lexical.$createTextNode('original'))));
+  const history = { current: null, undoStack: [], redoStack: [] };
+  const incoming = editor.getEditorState().toJSON();
+  incoming.root.children[0].children[0].style = 'position:fixed;color:rgb(1, 2, 3)';
+  exports.applyExtractedContent(editor, history, JSON.stringify(incoming));
+  editor.getEditorState().read(() => {
+    expect(lexical.$getRoot().getFirstChild().getFirstChild().getStyle()).toBe('color: rgb(1, 2, 3);');
+  });
 });

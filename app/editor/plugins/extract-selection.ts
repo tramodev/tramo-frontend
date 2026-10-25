@@ -2,13 +2,14 @@ import { $getSelection, $isRangeSelection, $setSelection, $getRoot, $createTextN
 import type { HistoryState } from '@lexical/react/LexicalHistoryPlugin';
 import { $createLinkNode } from '@lexical/link';
 import { $generateJSONFromSelectedNodes, $generateNodesFromSerializedNodes, $insertGeneratedNodes } from '@lexical/clipboard';
+import { sanitizeNoteContent } from '@/app/editor/note-content';
 import { editorConfig } from '../lexical-config';
 
 const supported = new Set(['root', 'paragraph', 'heading', 'quote', 'list', 'listitem', 'text', 'link', 'autolink', 'linebreak', 'tab']);
 export type CapturedSelection = { state: EditorState; selection: RangeSelection; content: string };
 
 export function applyExtractedContent(editor: LexicalEditor, history: HistoryState, content: string) {
-  editor.setEditorState(editor.parseEditorState(content), { tag: 'extraction' });
+  editor.setEditorState(editor.parseEditorState(sanitizeNoteContent(content)), { tag: 'extraction' });
   editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
   history.current = { editor, editorState: editor.getEditorState() };
 }

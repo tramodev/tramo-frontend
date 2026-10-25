@@ -210,15 +210,13 @@ test('selected embeds can be deleted without deleting surrounding text', () => {
 test('editor/public registrations and CSP include embeds without allowing external parent scripts', () => {
   expect(readFileSync('app/editor/lexical-config.ts', 'utf8')).toMatch(/\bEmbedNode,/);
   expect(readFileSync('components/project/lexical-read-only.tsx', 'utf8')).toMatch(/\.\.\.editorConfig/);
-  const next = load('next.config.ts', {}, { process: { env: {} } }).default;
-  return next.headers().then(headers => {
-    const csp = headers[0].headers.find(header => header.key === 'Content-Security-Policy').value;
-    const frame = csp.split('; ').find(rule => rule.startsWith('frame-src '));
-    const script = csp.split('; ').find(rule => rule.startsWith('script-src '));
-    expect(frame).toContain('https://www.youtube-nocookie.com https://platform.twitter.com');
-    expect(script).not.toContain('twitter');
-    expect(script).not.toContain('youtube');
-  });
+  const { contentSecurityPolicy } = load('lib/csp.ts', {}, { process: { env: {} } });
+  const csp = contentSecurityPolicy('test-nonce');
+  const frame = csp.split('; ').find(rule => rule.startsWith('frame-src '));
+  const script = csp.split('; ').find(rule => rule.startsWith('script-src '));
+  expect(frame).toContain('https://www.youtube-nocookie.com https://platform.twitter.com');
+  expect(script).not.toContain('twitter');
+  expect(script).not.toContain('youtube');
 });
 
 

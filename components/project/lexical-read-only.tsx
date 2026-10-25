@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { LexicalComposer } from "@lexical/react/LexicalComposer"
+import { SafeNoteComposer } from "@/components/editor/safe-note-composer"
 import { ContentEditable } from "@lexical/react/LexicalContentEditable"
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin"
@@ -23,7 +23,7 @@ export function LexicalReadOnly({
   if (!content) return null
 
   return (
-    <LexicalComposer
+    <SafeNoteComposer
       initialConfig={{
         ...editorConfig,
         namespace: "public-view",
@@ -39,6 +39,6 @@ export function LexicalReadOnly({
       {onItemClick && <ItemLinkClickPlugin onNavigate={onItemClick} />}
       <CodeHighlightPlugin />
       <ClickableLinkPlugin newTab />
-    </LexicalComposer>
+    </SafeNoteComposer>
   )
 }

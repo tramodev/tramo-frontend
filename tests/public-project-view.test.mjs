@@ -96,11 +96,11 @@ test('public reader shares the editor column and connections panel without mutat
 test('read-only text uses the editor node configuration and never enables editing', () => {
   const config = { nodes: ['image', 'equation', 'music', 'embed', 'table'], theme: { paragraph: 'editor-paragraph' } };
   const render = load('components/project/lexical-read-only.tsx', {
-    '@lexical/react/LexicalComposer': { LexicalComposer: 'LexicalComposer' },
+    '@/components/editor/safe-note-composer': { SafeNoteComposer: 'SafeNoteComposer' },
     '@/app/editor/lexical-config': { editorConfig: config },
   });
   const content = '{"root":{"children":[]}}';
-  const composer = render('LexicalReadOnly', { content }).find(node => node.type === 'LexicalComposer');
+  const composer = render('LexicalReadOnly', { content }).find(node => node.type === 'SafeNoteComposer');
   expect(composer.props.initialConfig.nodes).toBe(config.nodes);
   expect(composer.props.initialConfig.theme).toBe(config.theme);
   expect(composer.props.initialConfig.editorState).toBe(content);

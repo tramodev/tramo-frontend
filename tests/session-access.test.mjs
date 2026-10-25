@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { NextRequest, NextResponse } from 'next/server.js';
 import ts from 'typescript';
+import { randomBytes } from 'node:crypto';
 
 const token = `header.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 900, role: 'USER' })).toString('base64url')}.signature`;
 
@@ -34,6 +35,8 @@ function setup(responses) {
     exports,
     require: (name) => ({
       '@/lib/backend-fetch': { backendFetch: fetchResponse },
+      'node:crypto': { randomBytes },
+      '@/lib/csp': { contentSecurityPolicy: nonce => `script-src 'nonce-${nonce}'` },
       'next/server': { NextResponse },
       '@/lib/config': { API_BASE_URL: 'http://backend', REFRESH_TOKEN_MAX_AGE: 2592000 },
       '@/lib/refresh': refresh,

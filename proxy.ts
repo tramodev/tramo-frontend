@@ -1,5 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import { randomBytes } from 'node:crypto';
+import { contentSecurityPolicy } from '@/lib/csp';
 import { backendFetch } from '@/lib/backend-fetch';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -37,6 +39,17 @@ function needsBirthDate(token: string): boolean {
 }
 
 export async function proxy(request: NextRequest) {
+  const nonce = randomBytes(16).toString('base64');
+  const policy = contentSecurityPolicy(nonce);
+  request.headers.set('x-nonce', nonce);
+  request.headers.set('Content-Security-Policy', policy);
+  const response = await routeRequest(request);
+  response.headers.set('Content-Security-Policy', policy);
+  response.headers.set('Cache-Control', 'private, no-store');
+  return response;
+}
+
+async function routeRequest(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isOnboarding = path.startsWith('/onboarding/birth-date');
   const isProtected = path.startsWith('/editor') || path.startsWith('/projects') || path.startsWith('/profile') || path.startsWith('/admin') || path.startsWith('/settings') || isOnboarding;
@@ -161,15 +174,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/editor/:path*',
-    '/projects/:path*',
-    '/profile/:path*',
-    '/admin/:path*',
-    '/settings/:path*',
-    '/onboarding/:path*',
-    '/login',
-    '/signup',
-    '/p/:path*',
-  ],
+  matcher: ['/((?!api(?:/|$)|_next(?:/|$)|favicon.ico$|robots.txt$|sitemap.xml$|opengraph-image$|gif.worker.js$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|mp3|wav)$).*)'],
 };

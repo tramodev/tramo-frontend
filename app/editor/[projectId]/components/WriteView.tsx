@@ -8,7 +8,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { $getRoot, $getSelection, $isRangeSelection, $isTextNode, $nodesOfType, COMMAND_PRIORITY_HIGH, KEY_ARROW_UP_COMMAND, KEY_ARROW_DOWN_COMMAND, type LexicalEditor } from 'lexical';
 import { mergeRegister } from '@lexical/utils';
 import { useScrollSpy } from '@/hooks/use-scroll-spy';
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { SafeNoteComposer } from '@/components/editor/safe-note-composer';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
@@ -186,13 +186,19 @@ interface ItemEditorProps {
   move: (itemId: string, direction: -1 | 1, title?: boolean) => boolean;
   session: ItemEditorSession;
   onPendingImages: (itemId: string, pending: boolean) => void;
+  onContentError: (itemId: string) => void;
 }
 
 function ItemEditor(props: ItemEditorProps) {
   const [initialContent] = useState(() => props.session.state?.clone(null) ?? props.item.content);
-  return <LexicalComposer initialConfig={{ ...editorConfig, editorState: initialContent || undefined }}>
+  return <SafeNoteComposer initialConfig={{ ...editorConfig, editorState: initialContent || undefined }}
+    onError={() => props.onContentError(props.item.id)}
+    fallback={<div className="trail-item-editor pl-7 py-4">
+      <h3 className="font-display text-[1.75rem]">{props.item.title}</h3>
+      <p role="alert" className="mt-2 text-sm text-destructive">Could not open this note. Its original content has not been changed.</p>
+    </div>}>
     <ItemEditorContent {...props} />
-  </LexicalComposer>;
+  </SafeNoteComposer>;
 }
 
 function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, move, session, onPendingImages }: ItemEditorProps) {
@@ -339,6 +345,7 @@ export function WriteView(props: WriteViewProps) {
   const slotRefs = useRef(new Map<string, HTMLElement>());
   const editors = useRef(new Map<string, LexicalEditor>());
   const [sessions] = useState(() => new Map<string, ItemEditorSession>());
+  const [invalidItems, setInvalidItems] = useState<Set<string>>(() => new Set());
   const [busyItems, setBusyItems] = useState<Set<string>>(() => new Set());
   const [pendingMove, setPendingMove] = useState<{ itemId: string; direction: -1 | 1; title: boolean; context: string; sequence?: number } | null>(null);
   const handledRequest = useRef<number | null>(null);
@@ -381,8 +388,18 @@ export function WriteView(props: WriteViewProps) {
     });
   }, []);
   const register = useCallback((id: string, editor: LexicalEditor | null) => {
-    if (editor) editors.current.set(id, editor);
-    else editors.current.delete(id);
+    if (editor) {
+      editors.current.set(id, editor);
+      setInvalidItems(previous => {
+        if (!previous.has(id)) return previous;
+        const next = new Set(previous);
+        next.delete(id);
+        return next;
+      });
+    } else editors.current.delete(id);
+  }, []);
+  const onContentError = useCallback((id: string) => {
+    setInvalidItems(previous => new Set(previous).add(id));
   }, []);
   const move = useCallback((id: string, direction: -1 | 1, title = false) => {
     const next = ids[ids.indexOf(id) + direction];
@@ -394,14 +411,16 @@ export function WriteView(props: WriteViewProps) {
     if (!active || !moveTarget) return;
     const frame = requestAnimationFrame(() => {
       const editor = editors.current.get(moveTarget.itemId);
-      if (!editor) return;
+      if (!editor && !invalidItems.has(moveTarget.itemId)) return;
       slotRefs.current.get(moveTarget.itemId)?.scrollIntoView({ block: 'nearest' });
-      if (moveTarget.title) focusTitle(editor);
-      else focusEditor(editor, moveTarget.direction === -1 ? 'end' : 'start');
+      if (editor) {
+        if (moveTarget.title) focusTitle(editor);
+        else focusEditor(editor, moveTarget.direction === -1 ? 'end' : 'start');
+      } else slotRefs.current.get(moveTarget.itemId)?.focus();
       setPendingMove(previous => previous === moveTarget ? null : previous);
     });
     return () => cancelAnimationFrame(frame);
-  }, [active, moveTarget, visibleIds]);
+  }, [active, moveTarget, visibleIds, invalidItems]);
 
   useEffect(() => {
     const request = navigationRequest;
@@ -409,16 +428,16 @@ export function WriteView(props: WriteViewProps) {
     const frame = requestAnimationFrame(() => {
       const targetId = request?.itemId ?? item.id;
       const editor = editors.current.get(targetId);
-      if (!editor) return;
+      if (!editor && !invalidItems.has(targetId)) return;
       handledRequest.current = request?.sequence ?? null;
       slotRefs.current.get(targetId)?.scrollIntoView({ block: 'start' });
       setFocusedItemId(targetId);
       onVisibleItem(targetId);
       setPositionedContext(context);
-      if (request?.focus) requestAnimationFrame(() => focusEditor(editor));
+      if (request?.focus && editor) requestAnimationFrame(() => focusEditor(editor));
     });
     return () => cancelAnimationFrame(frame);
-  }, [active, navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id, visibleIds]);
+  }, [active, navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id, visibleIds, invalidItems]);
 
   useEffect(() => {
     if (!active || props.draft) return;
@@ -471,7 +490,7 @@ export function WriteView(props: WriteViewProps) {
                 session = { undo: [], redo: [], previewUrls: new Set() };
                 sessions.set(editorKey, session);
               }
-              return <section key={editorKey} data-item-id={step.itemId} data-mounted={mounted} aria-label={`Step ${index + 1}: ${stepItem.title}`}
+              return <section key={editorKey} tabIndex={-1} data-item-id={step.itemId} data-mounted={mounted} aria-label={`Step ${index + 1}: ${stepItem.title}`}
                 style={mounted ? undefined : { height: heights.get(stepItem.id) ?? 240, overflow: 'hidden' }}
                 ref={(element) => { if (element) slotRefs.current.set(step.itemId, element); else slotRefs.current.delete(step.itemId); }}>
                 {index > 0 && trail && <div className="trail-divider mt-4">
@@ -481,7 +500,7 @@ export function WriteView(props: WriteViewProps) {
                   Step {index + 1}
                 </div>
                 {stepItem.content != null && (mounted ? <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
-                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} session={session} onPendingImages={onPendingImages} /> : <button type="button"
+                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} session={session} onPendingImages={onPendingImages} onContentError={onContentError} /> : <button type="button"
                   aria-label={`Open note: ${stepItem.title}`} onClick={() => props.onSelectItem(stepItem, props.activeTrailId)}
                   className="w-full pl-7 pt-2 text-left font-display text-[1.75rem] font-medium" style={{ textAlign: stepItem.titleAlign }}>
                   {stepItem.title}

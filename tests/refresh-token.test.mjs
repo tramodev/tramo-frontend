@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { NextRequest, NextResponse } from 'next/server.js';
 import ts from 'typescript';
+import { randomBytes } from 'node:crypto';
 
 function setup() {
   const context = new AsyncLocalStorage();
@@ -86,6 +87,8 @@ function setup() {
     exports: proxyModule,
     require: (name) => ({
       '@/lib/backend-fetch': { backendFetch: (...args) => refreshRuntime.fetch(...args) },
+      'node:crypto': { randomBytes },
+      '@/lib/csp': { contentSecurityPolicy: nonce => `script-src 'nonce-${nonce}'` },
       'next/server': { NextResponse },
       '@/lib/config': { API_BASE_URL: 'http://backend', REFRESH_TOKEN_MAX_AGE: 2592000 },
       '@/lib/refresh': proxyRefresh,
