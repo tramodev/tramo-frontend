@@ -117,20 +117,23 @@ test('isolates accounts and ignores malformed counts', async () => {
   one.stop(); two.stop();
 });
 
-test('retries with capped backoff, resets after recovery and cancels timers on cleanup', async () => {
+test('keeps retry waits within five seconds through a long outage and resets after recovery', async () => {
   const b = browser();
   const tab = b.tab();
   await flush();
-  for (let i = 0; i < 8; i++) {
+  let elapsed = 0;
+  for (let i = 0; i < 12; i++) {
     const source = b.sources.at(-1);
     source.onerror();
     source.onerror();
     expect(source.closed).toBe(true);
     expect(b.timers.size).toBe(1);
     const delay = b.retry();
-    expect(delay).toBeGreaterThanOrEqual(Math.min(30000, 1000 * 2 ** i));
-    expect(delay).toBeLessThanOrEqual(30000);
+    expect(delay).toBeGreaterThanOrEqual(Math.min(5000, 1000 * 2 ** i));
+    expect(delay).toBeLessThanOrEqual(5000);
+    elapsed += delay;
   }
+  expect(elapsed).toBeGreaterThan(45000);
   b.sources.at(-1).emit('unread-count', { unreadCount: 7 });
   b.sources.at(-1).onerror();
   expect([...b.timers.values()][0].delay).toBeLessThanOrEqual(1200);

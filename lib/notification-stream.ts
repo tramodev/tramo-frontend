@@ -46,7 +46,7 @@ export function subscribeNotificationCount(userId: string, onCount: (count: numb
     function retry() {
       if (stopped || evicted || source !== current) return
       closeStream()
-      const delay = Math.min(30000, 1000 * 2 ** Math.min(attempt++, 5) * (1 + Math.random() * 0.2))
+      const delay = Math.min(5000, 1000 * 2 ** Math.min(attempt++, 3) * (1 + Math.random() * 0.2))
       timer = setTimeout(connect, delay)
     }
     function heartbeat() {

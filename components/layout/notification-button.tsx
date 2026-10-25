@@ -196,7 +196,7 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-[min(32rem,80dvh)] w-80 max-w-[calc(100vw-1rem)] overflow-y-auto">
+      <DropdownMenuContent align="end" collisionPadding={8} className="max-h-[min(32rem,80dvh)] w-80 max-w-[calc(100vw-1rem)] overflow-y-auto">
         <div className="flex items-center justify-between gap-2 border-b border-border px-2 py-2">
           <span className="text-sm font-semibold">Notifications</span>
           <DropdownMenuItem asChild>
