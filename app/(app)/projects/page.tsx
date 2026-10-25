@@ -166,7 +166,7 @@ export default function ProjectsPage() {
   return (
     <main className="w-full flex-1 pb-[84px]">
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
-      <section className="bg-surface-container-high pb-8">
+      <section className="bg-surface-container-high pb-16">
         <div className="container-app px-5 py-11 sm:px-10 lg:px-12">
         <div className="mb-2 flex items-center justify-between">
           <span className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -206,7 +206,7 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-      <section className="relative -mt-8 rounded-t-[32px] bg-background pt-[34px]">
+      <section className="relative -mt-16 rounded-t-[64px] border-t border-border bg-background pt-[34px]">
         <LocalDraftRecovery userId={userId} />
         <div className="container-app min-h-[310px] px-5 sm:px-10 lg:px-12">
           <div className="mb-5 flex items-center justify-between">
