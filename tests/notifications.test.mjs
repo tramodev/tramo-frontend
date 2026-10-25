@@ -29,7 +29,7 @@ function panel() {
   let index = 0, refIndex = 0, first = true, fail = false, counter = 2, items = [{ id: '42', type: 'UPVOTE', count: 1, read: false, updatedDate: '2026-10-24T20:00:00Z' }];
   const jsx = (type, props) => ({ type, props });
   const api = {
-    getNotifications: async () => { calls.push('list'); return { items, hasMore: false }; },
+    getNotifications: async (page = 0, size = 20) => { calls.push('list'); if (fail) throw Error('500'); return { items: items.slice(page * size, (page + 1) * size), hasMore: (page + 1) * size < items.length }; },
     getUnreadCount: async () => counter,
     markAllNotificationsRead: async () => { calls.push('all'); if (fail) throw Error('500'); counter = 0; items = items.map(n => ({ ...n, read: true })); },
     markNotificationRead: async () => { calls.push('one'); if (fail) throw Error('500'); counter--; items = items.map(n => ({ ...n, read: true })); },
@@ -61,6 +61,7 @@ function panel() {
     items: value => { items = value; },
     async open(value = true) { await render().find(n => n.type === 'Panel').props.onOpenChange(value); await flush(); },
     async click(label) { await render().find(n => n.props['aria-label'] === label).props.onClick({ preventDefault() {}, stopPropagation() {} }); await flush(); },
+    async older() { await render().find(n => n.type === 'button' && n.props.children === 'Load older').props.onClick({ preventDefault() {} }); await flush(); },
   };
 }
 
@@ -101,4 +102,24 @@ test('a stream update refreshes an open panel and leaves a closed panel alone', 
   await p.open(false);
   await p.publish(1);
   expect(p.calls).toEqual(['list', 'list']);
+});
+
+test('stream updates retain loaded pages and keep the existing list mounted while fetching', async () => {
+  const p = panel();
+  const items = Array.from({ length: 45 }, (_, i) => ({ id: String(i), type: 'FOLLOW', count: 1, read: false, updatedDate: '2026-10-24T20:00:00Z' }));
+  p.items(items);
+  await p.open();
+  await p.older();
+  expect(p.render().filter(n => n.type === 'time')).toHaveLength(40);
+  p.items([{ ...items[0], id: 'new' }, ...items]);
+  const updating = p.publish(46);
+  expect(p.render().filter(n => n.type === 'time')).toHaveLength(40);
+  await updating;
+  expect(p.render().filter(n => n.type === 'time')).toHaveLength(40);
+  await p.older();
+  expect(p.render().filter(n => n.type === 'time')).toHaveLength(46);
+  p.fail(true);
+  await p.publish(47);
+  expect(p.render().filter(n => n.type === 'time')).toHaveLength(46);
+  expect(p.render().some(n => n.props.role === 'alert')).toBe(true);
 });

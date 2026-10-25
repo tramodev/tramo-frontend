@@ -71,7 +71,7 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<AppNotification[] | null>(null)
   const [hasMore, setHasMore] = useState(false)
-  const [loadedPages, setLoadedPages] = useState(0)
+  const loadedPages = useRef(1)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -79,21 +79,24 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
   const isOpen = useRef(false)
   const router = useRouter()
 
-  const refreshNotifications = useCallback(async () => {
+  const refreshNotifications = useCallback(async (reset = false) => {
     const current = ++request.current
     setError(null)
-    setNotifications(null)
-    setHasMore(false)
+    if (reset) {
+      loadedPages.current = 1
+      setNotifications(null)
+      setHasMore(false)
+    }
     setIsLoadingMore(false)
     try {
-      const page = await getNotifications(0, PAGE_SIZE)
+      const pages = await Promise.all(Array.from({ length: loadedPages.current }, (_, page) => getNotifications(page, PAGE_SIZE)))
       if (request.current !== current) return
-      setNotifications(page.items)
-      setHasMore(page.hasMore)
-      setLoadedPages(1)
+      const items = new Map(pages.flatMap((page) => page.items).map((item) => [item.id, item]))
+      setNotifications([...items.values()])
+      setHasMore(pages.at(-1)?.hasMore ?? false)
     } catch {
       if (request.current === current) {
-        setNotifications([])
+        if (reset) setNotifications([])
         setError("Couldn't load notifications. Close and reopen to retry.")
       }
     }
@@ -101,7 +104,7 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
 
   function handleOpenChange(open: boolean) {
     isOpen.current = open
-    if (open) return refreshNotifications()
+    if (open) return refreshNotifications(true)
     request.current++
   }
 
@@ -119,11 +122,11 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
     setIsLoadingMore(true)
     setError(null)
     try {
-      const page = await getNotifications(loadedPages, PAGE_SIZE)
+      const page = await getNotifications(loadedPages.current, PAGE_SIZE)
       if (request.current !== current) return
-      setNotifications((items) => [...(items ?? []), ...page.items])
+      setNotifications((items) => [...new Map([...(items ?? []), ...page.items].map((item) => [item.id, item])).values()])
       setHasMore(page.hasMore)
-      setLoadedPages((n) => n + 1)
+      loadedPages.current++
     } catch {
       if (request.current === current) setError("Couldn't load older notifications. Please try again.")
     } finally {
