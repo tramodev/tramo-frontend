@@ -17,7 +17,7 @@ function find(element, type) {
   if (element.type === type) return element;
   return [element.props?.children].flat().map(child => find(child, type)).find(Boolean);
 }
-function setup(kind, initial = '', fresh = initial === '') {
+function setup(kind, initial = '', fresh = initial === '', selected = false) {
   const field = kind === 'Equation' ? 'equation' : 'abc';
   const states = [], effects = [], listeners = [], refs = [], updates = [];
   let index = 0, refIndex = 0, content = initial, removed = false;
@@ -30,7 +30,7 @@ function setup(kind, initial = '', fresh = initial === '') {
       useRef: value => refs[refIndex++] ??= { current: value }, useCallback: fn => fn, useEffect: fn => effects.push(fn), useLayoutEffect() {},
     },
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
-    '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [false, () => {}, () => {}] },
+    '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [selected, () => {}, () => {}] },
     lexical: { $getNodeByKey: () => node, HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
     [`@/app/editor/nodes/${kind}Node`]: { [`$is${kind}Node`]: value => value === node },
     '@/app/editor/plugins/decoratorCaret': { editingDecorators },
@@ -41,6 +41,7 @@ function setup(kind, initial = '', fresh = initial === '') {
   return {
     input, updates,
     restore: value => { content = value; listeners.forEach(fn => fn({ editorState: { read: fn => fn() }, tags: new Set(['historic']) })); },
+    edit: () => find(render(), 'button').props.onClick({ stopPropagation() {} }),
     enter: () => find(render(), kind === 'Equation' ? 'span' : 'div').props.onDoubleClick(),
     type: value => input().props.onChange({ target: { value } }),
     escape: () => input().props.onKeyDown({ key: 'Escape', currentTarget: { value: content, selectionStart: 0, selectionEnd: 0 }, stopPropagation() {}, preventDefault() {} }),
@@ -194,4 +195,12 @@ test.each(['Equation', 'Music'])('%s ignores an obsolete blur after history repl
   oldBlur();
   expect(s.content).toBe('restored content');
   expect(s.removed).toBe(false);
+});
+
+
+test.each(['Equation', 'Music'])('%s exposes a single-tap edit action when selected', kind => {
+  const s = setup(kind, 'original', false, true);
+  expect(s.input()).toBeUndefined();
+  s.edit();
+  expect(s.input()).toBeDefined();
 });

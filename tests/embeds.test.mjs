@@ -15,6 +15,7 @@ function load(path, overrides = {}, globals = {}) {
   }).outputText, { exports, URL, require: name => overrides[name] ?? modules[name] ?? require(name), ...globals });
   return exports;
 }
+modules['@/app/editor/plugins/TypeaheadMenu'] = { TypeaheadMenu: 'TypeaheadMenu' };
 modules['@/app/editor/plugins/embed'] = load('app/editor/plugins/embed.ts');
 modules['@/app/editor/nodes/EmbedNode'] = load('app/editor/nodes/EmbedNode.tsx', {}, {
   document: { createElement: () => {

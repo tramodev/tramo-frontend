@@ -81,7 +81,7 @@ export function BadgesPanel({ badges }: { badges: Badge[] }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+          className="min-h-6 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
         >
           View all ({earned.length}/{badges.length})
         </button>

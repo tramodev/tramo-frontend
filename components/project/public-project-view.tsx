@@ -281,7 +281,8 @@ export function PublicProjectView({
         />
       }
       content={
-        <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
+        <div className="editor-write-layout relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
+          {view === 'graph' && <h1 className="sr-only">{project.title}</h1>}
           {view === 'graph' ? (
             <GraphView
               trails={trails}

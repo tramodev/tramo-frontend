@@ -195,6 +195,15 @@ export function SidebarCustom({
     void onMoveItemToTrail(sourceId, targetId, itemId, targetIndex).catch(error => setMoveError(error.message));
   };
 
+  const reorderItem = (trail: Trail, itemId: string, to: number) => {
+    const from = trail.itemIds.indexOf(itemId);
+    if (from < 0 || from === to || to < 0 || to >= trail.itemIds.length) return;
+    const next = [...trail.itemIds];
+    next.splice(from, 1);
+    next.splice(to, 0, itemId);
+    onReorderTrailItems(trail.id, next);
+  };
+
   const commitDrag = (trail: Trail) => {
     if (!drag || dropTrailId !== trail.id || drag.overIndex === null) {
       setDrag(null);
@@ -208,11 +217,7 @@ export function SidebarCustom({
     const to = drag.overIndex - (from < drag.overIndex ? 1 : 0);
     setDrag(null);
     setDropTrailId(null);
-    if (from < 0 || from === to) return;
-    const next = [...trail.itemIds];
-    next.splice(from, 1);
-    next.splice(to, 0, drag.itemId);
-    onReorderTrailItems(trail.id, next);
+    reorderItem(trail, drag.itemId, to);
   };
 
   useEffect(() => {
@@ -350,7 +355,7 @@ export function SidebarCustom({
       collapsible="icon"
       className="border-r"
     >
-      <SidebarContent className="project-sidebar gap-0.5 overflow-x-hidden">
+      <SidebarContent role="navigation" aria-label="Project notes" className="project-sidebar gap-0.5 overflow-x-hidden">
         {state !== "collapsed" && (
           <div className="flex items-center gap-2 px-2.5 pt-4">
             <Link href={homeHref} title="Back to projects" className="shrink-0">
@@ -361,6 +366,7 @@ export function SidebarCustom({
               <Input
                 value={query}
                 placeholder="Search this project"
+                aria-label="Search this project"
                 className="h-8 pl-8 rounded-full"
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -387,7 +393,7 @@ export function SidebarCustom({
               <div ref={resultsRef}>
               <SidebarMenu>
                 {resultTrails.length > 0 && (
-                  <p className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Trails</p>
+                  <SidebarMenuItem className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Trails</SidebarMenuItem>
                 )}
                 {resultTrails.map((trail) => (
                   <SidebarMenuItem key={`result-trail-${trail.id}`}>
@@ -398,7 +404,7 @@ export function SidebarCustom({
                   </SidebarMenuItem>
                 ))}
                 {resultItems.length > 0 && (
-                  <p className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Notes</p>
+                  <SidebarMenuItem className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Notes</SidebarMenuItem>
                 )}
                 {resultItems.map((item) => (
                   <SidebarMenuItem key={`result-item-${item.id}`}>
@@ -421,7 +427,7 @@ export function SidebarCustom({
                   </SidebarMenuItem>
                 ))}
                 {resultTrails.length === 0 && resultItems.length === 0 && (
-                  <p className="px-2 py-1 text-xs italic text-muted-foreground">No matches</p>
+                  <SidebarMenuItem className="px-2 py-1 text-xs italic text-muted-foreground">No matches</SidebarMenuItem>
                 )}
               </SidebarMenu>
               </div>
@@ -475,10 +481,10 @@ export function SidebarCustom({
                         );
 
                         return (
-                          <Collapsible key={trail.editorKey ?? trail.id} defaultOpen className={`group/collapsible relative ${trailDrag?.trailId === trail.id ? "opacity-40" : ""}`}>
+                          <Collapsible key={trail.editorKey ?? trail.id} defaultOpen asChild>
+                            <SidebarMenuItem className={`group/collapsible relative ${trailDrag?.trailId === trail.id ? "opacity-40" : ""}`}>
                             {trailDrag?.overIndex === trailIndex && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 top-0 z-10 h-0.5 bg-primary" />}
                             {trailDrag?.overIndex === trails.length && trailIndex === trails.length - 1 && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 bottom-0 z-10 h-0.5 bg-primary" />}
-                            <SidebarMenuItem>
                               <div
                                 className={`group/trail -ml-4 -mr-2 flex items-center hover:bg-sidebar-accent ${dropTrailId === trail.id && drag?.overIndex === null ? "bg-accent ring-1 ring-inset ring-primary" : ""}`}
                                 draggable={!draft && editingTrailId !== (trail.editorKey ?? trail.id)}
@@ -561,8 +567,8 @@ export function SidebarCustom({
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/trail:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
-                                          title="Trail actions"
+                                          className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/trail:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
+                                          title="Trail actions" aria-label="Trail actions"
                                         >
                                           <MoreVertical className="h-3 w-3" />
                                         </Button>
@@ -692,23 +698,26 @@ export function SidebarCustom({
                                             className="flex items-center hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent"
                                           >
                                             <SidebarMenuSubButton
+                                              asChild
                                               className="min-w-0 flex-1 translate-x-0 rounded-none pl-10 hover:bg-transparent active:bg-transparent data-[active=true]:bg-transparent"
                                               isActive={selectedItemId === item.id && activeTrailId === trail.id}
                                               onClick={() => onSelectItem(item, trail.id)}
                                             >
+                                              <button type="button">
                                               <span className="w-4 shrink-0 text-right text-[0.625rem] tabular-nums text-muted-foreground">
                                                 {index + 1}
                                               </span>
                                               <span className={`truncate ${!item.title ? "text-muted-foreground" : ""}`}>{item.title || "Untitled note"}</span>
                                               <SharedNoteIndicator trails={trailsForItem(item.id)} />
+                                              </button>
                                             </SidebarMenuSubButton>
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"
-                                                  className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/item:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
-                                                  title="Note actions"
+                                                  className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/item:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
+                                                  title="Note actions" aria-label="Note actions"
                                                 >
                                                   <MoreVertical className="h-3 w-3" />
                                                 </Button>
@@ -717,6 +726,14 @@ export function SidebarCustom({
                                                 <DropdownMenuItem onSelect={() => startEditItem(item, trail.id)}>
                                                   <Pencil className="h-3.5 w-3.5" />
                                                   Rename note
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem disabled={draft || index === 0} onSelect={() => reorderItem(trail, item.id, trail.itemIds.indexOf(item.id) - 1)}>
+                                                  <ArrowUp className="h-3.5 w-3.5" />
+                                                  Move note up
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem disabled={draft || index === trailItems.length - 1} onSelect={() => reorderItem(trail, item.id, trail.itemIds.indexOf(item.id) + 1)}>
+                                                  <ArrowDown className="h-3.5 w-3.5" />
+                                                  Move note down
                                                 </DropdownMenuItem>
                                                 {trails.length > 1 && (
                                                   <DropdownMenuItem disabled={draft} onSelect={() => setMovingItem({ itemId: item.id, trailId: trail.id })}>
@@ -786,9 +803,9 @@ export function SidebarCustom({
                         );
                       })}
                       {trails.length === 0 && !isCreating && (
-                        <p className="px-2 py-1 text-xs italic text-muted-foreground">
+                        <SidebarMenuItem className="px-2 py-1 text-xs italic text-muted-foreground">
                           No trails yet
-                        </p>
+                        </SidebarMenuItem>
                       )}
                     </SidebarMenu>
                   </SidebarGroupContent>
@@ -869,8 +886,8 @@ export function SidebarCustom({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/loose:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
-                                    title="Note actions"
+                                    className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/loose:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
+                                    title="Note actions" aria-label="Note actions"
                                   >
                                     <MoreVertical className="h-3 w-3" />
                                   </Button>
@@ -905,9 +922,9 @@ export function SidebarCustom({
                         );
                       })}
                       {allItems.length === 0 && !isCreatingLoose && (
-                        <p className="px-2 py-1 text-xs italic text-muted-foreground">
+                        <SidebarMenuItem className="px-2 py-1 text-xs italic text-muted-foreground">
                           No notes yet
-                        </p>
+                        </SidebarMenuItem>
                       )}
                     </SidebarMenu>
                   </SidebarGroupContent>

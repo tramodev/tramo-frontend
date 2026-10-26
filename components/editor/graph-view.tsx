@@ -3,6 +3,7 @@
 "use client"
 
 import { X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Trail, Item } from '@/app/editor/types';
 import type { MapPreviews } from '@/lib/projects-store';
@@ -26,12 +27,24 @@ interface GraphViewProps {
 }
 
 export function GraphView({ projectId, graphColors, onSaveColors, trails, items, mapPreviews, onRetryMapPreviews, activeTrailId, selectedItemId, onSelectItem, onClose }: GraphViewProps) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
+  const closeMap = () => {
+    onClose();
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-map-trigger]')?.focus());
+  };
   return (
-    <div className="relative flex-1 overflow-hidden rounded-md">
+    <div role="region" aria-label="Project map" className="relative flex-1 overflow-hidden rounded-md" onKeyDown={event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeMap(); }
+    }}>
       <button
+        ref={closeRef}
         type="button"
-        onClick={onClose}
+        onClick={closeMap}
         title="Close map"
+        aria-label="Close map"
         className="absolute top-6 right-6 z-10 flex h-9 w-9 items-center justify-center rounded-md bg-card hover:bg-muted"
       >
         <X className="h-4 w-4" />

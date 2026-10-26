@@ -163,3 +163,29 @@ test.each(['trail', 'note'])('draft %s rename survives ID remapping and submits 
   input.props.onSubmit();
   expect(s.renames).toEqual([[entity === 'trail' ? '11' : '12', 'Trail rapido']]);
 });
+
+test('note menus can reorder without dragging and disable the list boundaries', () => {
+  const s = setup({
+    trails: [{ id: 'trail', title: 'Trail', itemIds: ['a', 'b', 'c'] }],
+    items: { a: { id: 'a', title: 'A' }, b: { id: 'b', title: 'B' }, c: { id: 'c', title: 'C' } },
+  });
+  const menus = s.render().filter(node => node.type === 'DropdownMenuItem');
+  const up = menus.filter(node => node.props.children.includes('Move note up'));
+  const down = menus.filter(node => node.props.children.includes('Move note down'));
+  expect(up.map(node => node.props.disabled)).toEqual([true, false, false]);
+  expect(down.map(node => node.props.disabled)).toEqual([false, false, true]);
+  up[1].props.onSelect();
+  down[1].props.onSelect();
+  expect(s.reorders).toEqual([['trail', ['b', 'a', 'c']], ['trail', ['a', 'c', 'b']]]);
+});
+
+test('draft note menus disable reordering until the project is saved', () => {
+  const s = setup({
+    draft: true,
+    trails: [{ id: 'trail', title: 'Trail', itemIds: ['a', 'b'] }],
+    items: { a: { id: 'a', title: 'A' }, b: { id: 'b', title: 'B' } },
+  });
+  const actions = s.render().filter(node => node.type === 'DropdownMenuItem' && node.props.children.some(child => typeof child === 'string' && child.startsWith('Move note ')));
+  expect(actions).toHaveLength(4);
+  expect(actions.every(node => node.props.disabled)).toBe(true);
+});

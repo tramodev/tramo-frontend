@@ -53,6 +53,8 @@ export function BlockButton({
             type="button"
             onClick={handleClick}
             disabled={isPending}
+            aria-label={blocked ? "Unblock this user" : "Block this user"}
+            aria-pressed={blocked}
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-muted ${
               blocked ? "text-destructive" : "text-muted-foreground"
             }`}

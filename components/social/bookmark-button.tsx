@@ -54,6 +54,7 @@ export function BookmarkButton({
           onClick={handleClick}
           disabled={isPending}
           aria-pressed={bookmarked}
+          aria-label={bookmarked ? "Remove bookmark" : "Bookmark this project"}
           className={`relative z-10 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted ${
             bookmarked ? "text-[var(--ed-orange)]" : "text-muted-foreground"
           }`}

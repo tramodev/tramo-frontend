@@ -224,9 +224,9 @@ export default async function ExplorePage({
             {showSupportCard && <PatreonSupportCard />}
             {trendingProjects.length > 0 && (
               <div className="overflow-hidden rounded-2xl bg-card p-5">
-                <h3 className="text-xl font-semibold text-foreground">
+                <h2 className="text-xl font-semibold text-foreground">
                   Trending projects
-                </h3>
+                </h2>
                 <div className="mt-2 flex flex-col">
                   {trendingProjects.map((project) => (
                     <Link
@@ -252,9 +252,9 @@ export default async function ExplorePage({
             )}
             {hotTopics.length > 0 && (
               <div className="rounded-2xl bg-card p-5">
-                <h3 className="text-xl font-semibold text-foreground">
+                <h2 className="text-xl font-semibold text-foreground">
                   Popular topics
-                </h3>
+                </h2>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {hotTopics.map(({ tag }) => (
                     <Link
@@ -270,9 +270,9 @@ export default async function ExplorePage({
             )}
             {activeAuthors.length > 0 && (
               <div className="overflow-hidden rounded-2xl bg-card p-5">
-                <h3 className="text-xl font-semibold text-foreground">
+                <h2 className="text-xl font-semibold text-foreground">
                   Popular authors
-                </h3>
+                </h2>
                 <div className="mt-2 flex flex-col">
                   {activeAuthors.map(({ username, avatar }) => (
                     <Link

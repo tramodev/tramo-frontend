@@ -49,7 +49,7 @@ export function AvatarMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm font-medium text-primary-foreground outline-none"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm font-medium text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           aria-label="Account menu"
         >
           {imageUrl ? (

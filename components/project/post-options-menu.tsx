@@ -137,6 +137,7 @@ export function PostOptionsMenu({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
+                aria-label="More options"
                 onClick={(e) => e.stopPropagation()}
                 className={`z-10 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${className ?? "relative"}`}
               >

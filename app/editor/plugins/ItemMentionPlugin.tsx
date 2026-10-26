@@ -4,6 +4,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { TypeaheadMenu } from '@/app/editor/plugins/TypeaheadMenu';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {
   LexicalTypeaheadMenuPlugin,
@@ -71,13 +72,13 @@ export default function ItemMentionPlugin({
       menuRenderFn={(anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) =>
         anchorElementRef.current && options.length > 0
           ? createPortal(
-              <ul className="item-mention-menu">
+              <TypeaheadMenu>
                 {options.map((option, index) => (
                   <li
                     key={option.key}
-                    ref={(el) => {
-                      if (selectedIndex === index) el?.scrollIntoView({ block: 'nearest' });
-                    }}
+                    id={`typeahead-item-${index}`}
+                    role="option"
+                    aria-selected={selectedIndex === index}
                     className={'item-mention-menu-item' + (selectedIndex === index ? ' selected' : '')}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => selectOptionAndCleanUp(option)}
@@ -85,7 +86,7 @@ export default function ItemMentionPlugin({
                     {option.item.title}
                   </li>
                 ))}
-              </ul>,
+              </TypeaheadMenu>,
               anchorElementRef.current,
             )
           : null

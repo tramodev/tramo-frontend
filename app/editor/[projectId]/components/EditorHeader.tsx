@@ -83,15 +83,18 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
   }
 
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-2">
-      <span
+    <div className="editor-project-title flex min-w-0 flex-wrap items-center gap-2">
+      <button
+        type="button"
         data-tour="editor-title"
-        className={`min-w-0 truncate cursor-text text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline ${draft && (!projectTitle || projectTitle === 'Untitled project') ? 'text-muted-foreground/40' : ''}`}
+        className={`min-h-6 min-w-0 truncate text-left text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline ${draft && (!projectTitle || projectTitle === 'Untitled project') ? 'text-muted-foreground/40' : ''}`}
+        onClick={startEditTitle}
         onDoubleClick={startEditTitle}
-        title="Double-click to rename"
+        aria-label={`Rename project: ${projectTitle || 'Untitled project'}`}
+        title="Rename project"
       >
         {projectTitle || 'Untitled project'}
-      </span>
+      </button>
       <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground w-[60px]">
         {saveStatus === 'saving' && (
           <>
@@ -149,10 +152,10 @@ export function EditorActions({
   return (
     <>
       {textStats ? (
-        <span className="hidden text-xs text-muted-foreground md:inline" title="Total for the project">
+        <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" title="Total for the project">
           {textStats.words} words · {textStats.characters} characters
         </span>
-      ) : <span className="hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
+      ) : <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
       {!disabled && <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />}
       {!disabled && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
       {disabled ? <Button variant="secondary" size="lg" disabled aria-label="Publish and share project"><Share2 className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish &amp; Share</span></Button> : <Button data-tour="share" variant="secondary" size="lg" asChild>

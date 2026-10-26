@@ -37,9 +37,9 @@ export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapP
       <CircleHelp className="h-4 w-4" />{open && <span>Help</span>}
     </button>
   </div>;
-  if (!open) return <aside id="editor-connections" aria-label="Connections tools" className="flex w-12 shrink-0 flex-col items-center gap-2 rounded-2xl bg-popover py-3">
+  if (!open) return <aside id="editor-connections" aria-label="Connections tools" className="connections-tools flex w-12 shrink-0 flex-col items-center gap-2 rounded-2xl bg-popover py-3">
     <button type="button" data-tour="connections-toggle" aria-label="Connections" title="Connections" aria-expanded={false} onClick={onToggleOpen} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><PanelRightOpen className="h-4 w-4" /></button>
-    <button type="button" aria-label="Open map" title="Open map" onClick={onOpenGraph} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Network className="h-4 w-4" /></button>
+    <button type="button" aria-label="Open map" title="Open map" data-map-trigger onClick={onOpenGraph} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Network className="h-4 w-4" /></button>
     {utilities}
   </aside>;
   return <aside id="editor-connections" aria-label="Connections" className="absolute inset-y-0 right-0 z-20 flex w-72 max-w-full flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-popover p-4 shadow-elevation-2 md:static md:shrink-0 md:shadow-none">
@@ -55,7 +55,7 @@ export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapP
         </div>;
       })}
     </section>
-    <div className="flex h-40 shrink-0 flex-col border-t border-border pt-2"><button type="button" onClick={onOpenGraph} className="mb-1 self-start text-sm text-primary">Open map</button><div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">{mapPreviews === undefined && !readOnly ? <div role="status" aria-label="Loading map" className="flex h-full items-center justify-center text-muted-foreground"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" /></div> : mapPreviews === null ? <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph trails={trails} items={items} mapPreviews={mapPreviews} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" />}</div></div>
+    <div className="flex h-40 shrink-0 flex-col border-t border-border pt-2"><button type="button" data-map-trigger onClick={onOpenGraph} className="mb-1 self-start text-sm text-primary">Open map</button><div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">{mapPreviews === undefined && !readOnly ? <div role="status" aria-label="Loading map" className="flex h-full items-center justify-center text-muted-foreground"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" /></div> : mapPreviews === null ? <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph trails={trails} items={items} mapPreviews={mapPreviews} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" />}</div></div>
     {utilities}
   </aside>;
 }

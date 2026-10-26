@@ -67,7 +67,7 @@ export function SharePreview({ card, visibility }: { card: ProjectFeedItem; visi
       <span className="mx-auto w-full max-w-[47rem] text-[0.75rem] font-semibold uppercase tracking-[.04em] text-muted-foreground">
         Explore preview
       </span>
-      <div className="mx-auto w-full max-w-[47rem] opacity-40">
+      <div aria-hidden="true" inert className="mx-auto w-full max-w-[47rem] opacity-40">
         <ExploreCard project={MOCK_NEIGHBORS[0]} loggedIn={false} username={null} interactive={false} />
       </div>
       <div className={cn("relative mx-auto w-full max-w-[47rem] rounded-[14px] ring-2 transition-shadow", isPublished ? "ring-foreground" : "ring-border")}>
@@ -80,7 +80,7 @@ export function SharePreview({ card, visibility }: { card: ProjectFeedItem; visi
           <ExploreCard project={card} loggedIn={false} username={null} interactive={false} />
         </div>
       </div>
-      <div className="mx-auto w-full max-w-[47rem] opacity-40">
+      <div aria-hidden="true" inert className="mx-auto w-full max-w-[47rem] opacity-40">
         <ExploreCard project={MOCK_NEIGHBORS[1]} loggedIn={false} username={null} interactive={false} />
       </div>
     </div>

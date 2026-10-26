@@ -69,6 +69,7 @@ function renderScore(
     { ...RENDER_PARAMS, staffwidth, responsive: 'resize', wrap: { minSpacing: 1.8, maxSpacing: 2.7, preferredMeasuresPerLine: 4 } },
   );
   target.querySelectorAll('style').forEach((node) => node.remove());
+  target.querySelectorAll('svg').forEach((node) => node.setAttribute('aria-hidden', 'true'));
   return (tune?.warnings ?? []).map(plainMusicWarning);
 }
 
@@ -357,6 +358,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
       onDoubleClick={() => startEditing()}
     >
       <div ref={scoreRef} role="img" aria-label="Music score" />
+      {isEditable && isSelected && <button type="button" className="inline-flex min-h-6 items-center rounded px-2 text-xs text-primary hover:bg-muted" onKeyDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); startEditing(); }}>Edit score</button>}
       <MusicPlayback key={abc} abc={abc} />
     </div>
   );

@@ -358,8 +358,9 @@ export default function ToolbarPlugin({
 
       setTextColor($getSelectionStyleValueForProperty(selection, 'color', ''));
       setFontFamily($getSelectionStyleValueForProperty(selection, 'font-family', 'Arial'));
+      const root = editor.getRootElement();
       setFontSize(
-        $getSelectionStyleValueForProperty(selection, 'font-size', `${MIN_FONT_SIZE + 7}px`).replace('px', ''),
+        $getSelectionStyleValueForProperty(selection, 'font-size', root ? getComputedStyle(root).fontSize : '15px').replace('px', ''),
       );
     }
   }, [editor]);

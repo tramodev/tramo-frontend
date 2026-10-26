@@ -9,6 +9,7 @@ import "./editor/Editor.css";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { robotoFlex, roboto, robotoMono } from "@/lib/fonts";
 import { SITE_URL } from "@/lib/config";
+import { SkipLink } from "@/components/layout/skip-link";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -42,6 +43,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <SkipLink />
           {children}
         </ThemeProvider>
       </body>

@@ -21,6 +21,18 @@ export function EditorWorkspace({ user }: { user: Pick<UserProfile, 'userId' | '
 }
 
 export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string; user: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'> }) {
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const resize = () => {
+      workspaceRef.current?.style.setProperty('--editor-viewport-height', `${viewport.height}px`);
+      if (workspaceRef.current) workspaceRef.current.dataset.keyboardOpen = String(viewport.height < window.innerHeight * 0.75);
+    };
+    resize();
+    viewport.addEventListener('resize', resize);
+    return () => viewport.removeEventListener('resize', resize);
+  }, []);
 
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(
     () => { try { return typeof window === 'undefined' || localStorage.getItem(SIDEBAR_OPEN_STORAGE_KEY) !== 'false'; } catch { return true; } }
@@ -86,10 +98,11 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
 
   return (
     <SidebarProvider
+      ref={workspaceRef}
       open={leftSidebarOpen}
       onOpenChange={setLeftSidebarOpen}
       style={{ "--sidebar-width": "288px", "--sidebar-width-icon": "272px" } as React.CSSProperties}
-      className="h-screen min-h-0"
+      className="editor-workspace h-dvh min-h-0"
     >
       <ProjectShell
         homeHref="/projects"
@@ -150,6 +163,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
         }
         content={
           <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden">
+            <h1 className="sr-only">{project.projectTitle || 'Untitled project'}</h1>
             {project.draftError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.draftError}<button type="button" className="underline" onClick={project.retryDraft}>Retry</button></div>}
             {project.titleSaveError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.titleSaveError}<button type="button" className="underline" onClick={project.retryItemTitles}>Retry</button></div>}
             {project.loaded && project.profile && project.selectedItem && <TaskHint id={`${project.profile?.username ?? projectId}:${project.trails.length > 1 ? 'reuse' : Object.keys(project.items).length > 1 ? 'connect' : 'write'}`}>
@@ -172,7 +186,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
                 onClose={() => project.setView('write')}
               />
             )}
-            <div className={project.view === 'graph' ? 'hidden' : 'flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden'} inert={project.view === 'graph'}>
+            <div className={project.view === 'graph' ? 'hidden' : 'editor-write-layout flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden'} inert={project.view === 'graph'}>
             {project.selectedItem ? (
               <WriteView
                 draft={project.isDraft}

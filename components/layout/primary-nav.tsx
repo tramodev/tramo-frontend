@@ -17,7 +17,7 @@ export function PrimaryNav({
   const items = getNavItems(loggedIn, isAdmin)
 
   return (
-    <nav className="flex items-center gap-2">
+    <nav aria-label="Primary" className="flex items-center gap-2">
       {items.map((item) => {
         const active = pathname.startsWith(item.href)
         return (

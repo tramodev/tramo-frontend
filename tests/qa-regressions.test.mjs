@@ -242,3 +242,32 @@ test('saving Share exposes a working public link and copy button next to Save', 
   await children.find(node => node.props['aria-label'] === 'Copy public link').props.onClick();
   expect(s.copied).toEqual(['http://localhost:3000/p/project']);
 });
+
+
+test('closing the map waits for its trigger to be rendered before restoring focus', () => {
+  const frames = [], focused = [];
+  let closed = false;
+  const graph = load('components/editor/graph-view.tsx', {
+    'next/dynamic': { default: () => 'KnowledgeGraph' },
+  }, '', {
+    requestAnimationFrame: callback => frames.push(callback),
+    document: { querySelector: selector => closed && selector === '[data-map-trigger]' ? { focus: () => focused.push('map-trigger') } : null },
+  });
+  const region = flatten(graph.render('GraphView', { onClose: () => { closed = true; } })).find(node => node.props.role === 'region');
+  region.props.onKeyDown({ key: 'Escape', preventDefault() {}, stopPropagation() {} });
+  expect(closed).toBe(true);
+  expect(focused).toEqual([]);
+  frames.shift()();
+  expect(focused).toEqual(['map-trigger']);
+});
+
+test.each([true, false])('the skip link focuses the editor when available, otherwise the main landmark (%s)', editor => {
+  const focused = [];
+  const content = { hasAttribute: () => false, focus: () => focused.push('editor'), scrollIntoView() {} };
+  const main = { querySelector: () => editor ? content : null, hasAttribute: () => false, focus: () => focused.push('main'), scrollIntoView() {} };
+  const skip = load('components/layout/skip-link.tsx', {}, '', { document: { querySelector: () => main } });
+  let prevented = false;
+  skip.render('SkipLink').props.onClick({ preventDefault: () => { prevented = true; } });
+  expect(prevented).toBe(true);
+  expect(focused).toEqual([editor ? 'editor' : 'main']);
+});

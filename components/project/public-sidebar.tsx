@@ -56,7 +56,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
 
   return (
     <Sidebar variant="sidebar" collapsible="icon" className="border-r">
-      <SidebarContent className="project-sidebar gap-0.5 overflow-x-hidden">
+      <SidebarContent role="navigation" aria-label="Project notes" className="project-sidebar gap-0.5 overflow-x-hidden">
         {state !== "collapsed" && <>
           <div className="flex items-center gap-2 px-2.5 pt-4">
             <Link href={homeHref} title="Back to projects" className="shrink-0"><Mark size={26} /></Link>
@@ -69,20 +69,20 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
             <div className="flex h-8 shrink-0 items-center px-2 text-xs font-medium text-muted-foreground">Results</div>
             <SidebarGroupContent className="pl-2">
               <SidebarMenu>
-                {resultTrails.length > 0 && <p className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Trails</p>}
+                {resultTrails.length > 0 && <SidebarMenuItem className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Trails</SidebarMenuItem>}
                 {resultTrails.map(trail => <SidebarMenuItem key={`result-trail-${trail.id}`} className="-ml-4 -mr-2">
                   <SidebarMenuButton className="rounded-none pl-6" onClick={() => selectTrail(trail.id)}>
                     <ChevronRight className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{trail.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
-                {resultItems.length > 0 && <p className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Notes</p>}
+                {resultItems.length > 0 && <SidebarMenuItem className="px-2 pt-1 text-[0.6875rem] uppercase tracking-wide text-muted-foreground">Notes</SidebarMenuItem>}
                 {resultItems.map(item => <SidebarMenuItem key={`result-item-${item.id}`} className="-ml-4 -mr-2">
                   <SidebarMenuButton className="rounded-none pl-6" isActive={selectedItemId === item.id} onClick={() => selectItem(item)}>
                     <span className={selectedItemId === item.id ? "h-[7px] w-[7px] shrink-0 rounded-full bg-primary" : "h-[7px] w-[7px] shrink-0 rounded-full border-[1.5px] border-muted-foreground box-border"} />
                     <span className="truncate">{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
-                {resultTrails.length === 0 && resultItems.length === 0 && <p className="px-2 py-1 text-xs italic text-muted-foreground">No matches</p>}
+                {resultTrails.length === 0 && resultItems.length === 0 && <SidebarMenuItem className="px-2 py-1 text-xs italic text-muted-foreground">No matches</SidebarMenuItem>}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>}
@@ -96,8 +96,8 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                 <CollapsibleContent className="pl-2">
                   <SidebarGroupContent>
                     <SidebarMenu>
-                      {trails.map(trail => <Collapsible key={trail.id} defaultOpen className="group/collapsible">
-                        <SidebarMenuItem>
+                      {trails.map(trail => <Collapsible key={trail.id} defaultOpen asChild>
+                        <SidebarMenuItem className="group/collapsible">
                           <div data-active={activeTrailId === trail.id} className="-ml-4 -mr-2 flex items-center hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent">
                             <CollapsibleTrigger asChild>
                               <button type="button" aria-label={`Toggle ${trail.title}`} className="shrink-0 py-2 pl-6 hover:bg-primary/10">
@@ -127,7 +127,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                           </CollapsibleContent>
                         </SidebarMenuItem>
                       </Collapsible>)}
-                      {trails.length === 0 && <p className="px-2 py-1 text-xs italic text-muted-foreground">No trails yet</p>}
+                      {trails.length === 0 && <SidebarMenuItem className="px-2 py-1 text-xs italic text-muted-foreground">No trails yet</SidebarMenuItem>}
                     </SidebarMenu>
                   </SidebarGroupContent>
                 </CollapsibleContent>
@@ -151,7 +151,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
                           </SidebarMenuButton>
                         </SidebarMenuItem>;
                       })}
-                      {looseItems.length === 0 && <p className="px-2 py-1 text-xs italic text-muted-foreground">No notes without a trail</p>}
+                      {looseItems.length === 0 && <SidebarMenuItem className="px-2 py-1 text-xs italic text-muted-foreground">No notes without a trail</SidebarMenuItem>}
                     </SidebarMenu>
                   </SidebarGroupContent>
                 </CollapsibleContent>

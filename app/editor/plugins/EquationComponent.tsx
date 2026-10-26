@@ -386,6 +386,7 @@ export default function EquationComponent({
   }
 
   return (
+    <>
     <Tooltip>
       <TooltipTrigger asChild>
         <span
@@ -402,5 +403,7 @@ export default function EquationComponent({
       </TooltipTrigger>
       {error && <TooltipContent className="max-w-xs">{error}</TooltipContent>}
     </Tooltip>
+    {isEditable && isSelected && <button type="button" className="inline-flex min-h-6 items-center rounded px-2 text-xs text-primary hover:bg-muted" onKeyDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); startEditing(); }}>Edit equation</button>}
+    </>
   );
 }

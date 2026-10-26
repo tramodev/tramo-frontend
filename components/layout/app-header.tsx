@@ -8,6 +8,7 @@ import { getNavItems } from "@/lib/nav-items"
 import { UserMenu } from "@/components/layout/user-menu"
 import { NotificationButton } from "@/components/layout/notification-button"
 import { Button } from "@/components/ui/button"
+import { NavMobileMenu } from "@/components/layout/nav-mobile-menu"
 
 export function AppHeader({
   homeHref,
@@ -36,7 +37,7 @@ export function AppHeader({
         <NotificationButton loggedIn={loggedIn} userId={userId} />
         <UserMenu loggedIn={loggedIn} username={username} imageUrl={imageUrl} navItems={getNavItems(loggedIn, isAdmin)} />
         {!loggedIn && (
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 lg:flex">
             <Link
               href="/login"
               className="text-sm font-medium text-primary px-4 py-2.5 rounded-full transition-colors hover:bg-muted"
@@ -48,6 +49,7 @@ export function AppHeader({
             </Button>
           </div>
         )}
+        {!loggedIn && <NavMobileMenu isLoggedIn={false} />}
       </div>
     </header>
   )

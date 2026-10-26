@@ -149,9 +149,9 @@ export const BrowserMockup: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between px-2">
-            <h3 className="text-[0.6875rem] font-medium text-muted-foreground">
+            <p className="text-[0.6875rem] font-medium text-muted-foreground">
               Trails
-            </h3>
+            </p>
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="flex flex-col gap-2">
@@ -186,9 +186,9 @@ export const BrowserMockup: React.FC = () => {
           </div>
 
           <div className="mt-1 flex items-center justify-between px-2 border-t border-border pt-2.5">
-            <h3 className="text-[0.6875rem] font-medium text-muted-foreground">
+            <p className="text-[0.6875rem] font-medium text-muted-foreground">
               Notes
-            </h3>
+            </p>
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <ul className="-mx-2.5 flex flex-col gap-0.5">
@@ -320,7 +320,7 @@ export const BrowserMockup: React.FC = () => {
 
         <div className="w-[204px] hidden lg:flex flex-col shrink-0 p-4 gap-3 overflow-hidden rounded-2xl border border-border bg-popover">
           <div className="flex items-center justify-between gap-1">
-            <h3 className="text-[0.75rem] font-medium">Connections (2)</h3>
+            <p className="text-[0.75rem] font-medium">Connections (2)</p>
             <X className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="flex-1 min-h-0 overflow-hidden space-y-2">

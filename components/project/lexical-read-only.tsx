@@ -32,7 +32,7 @@ export function LexicalReadOnly({
       }}
     >
       <RichTextPlugin
-        contentEditable={<ContentEditable className="editor-input" />}
+        contentEditable={<ContentEditable className="editor-input" aria-label="Note content" />}
         placeholder={null}
         ErrorBoundary={LexicalErrorBoundary}
       />

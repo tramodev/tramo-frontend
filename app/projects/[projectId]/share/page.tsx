@@ -195,7 +195,7 @@ export default function PublishPage() {
   };
 
   return (
-    <div className="flex h-svh w-full flex-col bg-background lg:grid lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:grid-rows-[60px_minmax(0,1fr)]">
+    <main id="main-content" tabIndex={-1} className="flex h-dvh w-full flex-col bg-background lg:grid lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:grid-rows-[60px_minmax(0,1fr)]">
       <div className="flex h-[60px] shrink-0 items-center gap-4 border-b border-border pl-2.5 pr-6 lg:col-start-1 lg:row-start-1 lg:border-b-0">
         <Link href="/projects" title="Back to projects">
           <Mark />
@@ -209,7 +209,7 @@ export default function PublishPage() {
           <ChevronLeft className="h-4 w-4" />
           <span className="leading-none">Editor</span>
         </button>
-        <span className="text-[1.0625rem] font-semibold leading-none">Share</span>
+        <h1 className="text-[1.0625rem] font-semibold leading-none">Share</h1>
       </div>
 
       <div className="min-w-0 flex-1 overflow-y-auto bg-muted lg:col-start-1 lg:row-start-2 lg:min-h-0">
@@ -280,17 +280,17 @@ export default function PublishPage() {
           onError={setError}
         />
 
-        <div className="sticky bottom-0 -mx-6 flex flex-col gap-2 bg-background px-6 pb-6 pt-3">
+        <div className="sticky bottom-0 -mx-6 flex flex-wrap items-center gap-2 bg-background px-6 pb-3 pt-3">
           {shareUrl && (
-            <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
-              <a href={shareUrl} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate text-[0.8125rem] text-primary underline">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border px-3 py-1">
+              <a href={shareUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 min-w-0 flex-1 items-center truncate text-[0.8125rem] text-primary underline">
                 Open public link
               </a>
               <button
                 type="button"
                 onClick={copyShareUrl}
                 aria-label="Copy public link"
-                className="flex shrink-0 items-center gap-1.5 text-[0.8125rem] font-medium hover:text-foreground"
+                className="flex min-h-8 shrink-0 items-center gap-1.5 text-[0.8125rem] font-medium hover:text-foreground"
               >
                 {linkCopied ? (
                   <>
@@ -306,12 +306,12 @@ export default function PublishPage() {
               </button>
             </div>
           )}
-          {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+          {error && <p role="alert" className="order-last w-full text-xs text-destructive">{error}</p>}
           <button
             type="button"
             onClick={handleConfirm}
             disabled={isPublishing || justPublished}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[0.875rem] font-medium text-background shadow-elevation-2 disabled:opacity-60"
+            className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.875rem] font-medium text-background shadow-elevation-2 disabled:opacity-60"
           >
             {isPublishing ? (
               <>
@@ -329,6 +329,6 @@ export default function PublishPage() {
           </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

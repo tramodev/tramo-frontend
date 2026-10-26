@@ -80,7 +80,7 @@ export function LoginForm({
       </div>
       <FieldGroup className="mt-2 gap-[22px]">
         {(captchaError || state?.error) && (
-          <div className="flex flex-col items-center gap-2 text-sm text-center text-destructive">
+          <div id="login-error" role="alert" className="flex flex-col items-center gap-2 text-sm text-center text-destructive">
             {captchaError || state?.error}
             {state?.needsVerification && (
               <ResendVerificationButton username={username} />
@@ -92,6 +92,8 @@ export function LoginForm({
           <Input
             id="username"
             name="username"
+            aria-invalid={!!state?.error}
+            aria-describedby={state?.error ? 'login-error' : undefined}
             placeholder="pepito123"
             required
             value={username}
@@ -101,11 +103,11 @@ export function LoginForm({
         <div className="flex flex-col gap-2">
           <Field floatingLabel>
             <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input id="password" name="password" type="password" placeholder=" " required />
+            <Input id="password" name="password" type="password" placeholder=" " required aria-invalid={!!state?.error} aria-describedby={state?.error ? 'login-error' : undefined} />
           </Field>
           <a
             href="/forgot-password"
-            className="self-end text-[0.8125rem] font-medium text-primary"
+            className="inline-flex min-h-6 items-center self-end text-[0.8125rem] font-medium text-primary"
           >
             Forgot your password?
           </a>

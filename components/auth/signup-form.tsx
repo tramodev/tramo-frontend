@@ -118,7 +118,7 @@ export function SignupForm({
       </div>
       <FieldGroup className="mt-2 gap-[22px]">
         {(errors?.general || captchaError) && (
-          <div className="text-sm text-center text-destructive">
+          <div role="alert" className="text-sm text-center text-destructive">
             {errors?.general || captchaError}
           </div>
         )}
@@ -132,6 +132,7 @@ export function SignupForm({
           <div className="relative">
             <Input
               id="username"
+              aria-describedby={errors?.username || usernameAvailability === "taken" || usernameAvailability === "available" ? "username-help" : undefined}
               name="username"
               type="text"
               placeholder="JohnDoe123"
@@ -149,17 +150,18 @@ export function SignupForm({
             )}
           </div>
           {errors?.username ? (
-            <FieldError>{errors.username}</FieldError>
+            <FieldError id="username-help">{errors.username}</FieldError>
           ) : usernameAvailability === "taken" ? (
-            <FieldError>Username is already taken</FieldError>
+            <FieldError id="username-help">Username is already taken</FieldError>
           ) : usernameAvailability === "available" ? (
-            <FieldDescription className="text-success">Username is available</FieldDescription>
+            <FieldDescription id="username-help" className="text-success">Username is available</FieldDescription>
           ) : null}
         </Field>
         <Field floatingLabel>
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
             id="email"
+              aria-describedby="email-help"
             name="email"
             type="email"
             placeholder="m@example.com"
@@ -169,9 +171,9 @@ export function SignupForm({
             aria-invalid={!!errors?.email}
           />
           {errors?.email ? (
-            <FieldError>{errors.email}</FieldError>
+            <FieldError id="email-help">{errors.email}</FieldError>
           ) : (
-            <FieldDescription>
+            <FieldDescription id="email-help">
               We&apos;ll use this to contact you. We will not share your email
               with anyone else.
             </FieldDescription>
@@ -181,6 +183,7 @@ export function SignupForm({
           <FieldLabel htmlFor="birthDate">Date of birth</FieldLabel>
           <Input
             id="birthDate"
+              aria-describedby="birthDate-help"
             name="birthDate"
             type="date"
             required
@@ -188,15 +191,16 @@ export function SignupForm({
             aria-invalid={!!errors?.birthDate}
           />
           {errors?.birthDate ? (
-            <FieldError>{errors.birthDate}</FieldError>
+            <FieldError id="birthDate-help">{errors.birthDate}</FieldError>
           ) : (
-            <FieldDescription>You must be at least 13 years old to create an account.</FieldDescription>
+            <FieldDescription id="birthDate-help">You must be at least 13 years old to create an account.</FieldDescription>
           )}
         </Field>
         <Field floatingLabel>
           <FieldLabel htmlFor="password">Password</FieldLabel>
           <Input
             id="password"
+              aria-describedby="password-help"
             name="password"
             type="password"
             placeholder=" "
@@ -224,9 +228,9 @@ export function SignupForm({
             </div>
           )}
           {errors?.password ? (
-            <FieldError>{errors.password}</FieldError>
+            <FieldError id="password-help">{errors.password}</FieldError>
           ) : (
-            <FieldDescription>
+            <FieldDescription id="password-help">
               Must be at least 12 characters and include an uppercase letter, a number, and a symbol.
             </FieldDescription>
           )}
@@ -236,6 +240,7 @@ export function SignupForm({
           <div className="relative">
             <Input
               id="confirm-password"
+              aria-describedby="confirm-password-help"
               name="confirm-password"
               type="password"
               placeholder=" "
@@ -250,9 +255,9 @@ export function SignupForm({
             )}
           </div>
           {errors?.confirmPassword ? (
-            <FieldError>{errors.confirmPassword}</FieldError>
+            <FieldError id="confirm-password-help">{errors.confirmPassword}</FieldError>
           ) : (
-            <FieldDescription>Please confirm your password.</FieldDescription>
+            <FieldDescription id="confirm-password-help">Please confirm your password.</FieldDescription>
           )}
         </Field>
         <Field>

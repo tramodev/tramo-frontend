@@ -22,7 +22,7 @@ export default async function Home() {
     <LandingMotionConfig>
       <div className="min-h-screen">
         <Navbar />
-        <div className="container-app px-6 md:px-12">
+        <main id="main-content" tabIndex={-1} className="container-app px-6 md:px-12">
           <Hero />
           <FadeUp scaleIn className="pt-16 pb-[84px]">
             <BrowserMockup />
@@ -60,7 +60,7 @@ export default async function Home() {
               </ol>
             </div>
           </FadeUp>
-        </div>
+        </main>
         <Footer />
       </div>
     </LandingMotionConfig>

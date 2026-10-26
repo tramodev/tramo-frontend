@@ -37,7 +37,7 @@ export default async function ProjectVersionPage({ params }: { params: Promise<{
     looseItems: snapshot.items.filter(item => !linkedIds.has(item.id)).map(item => items.get(item.id)!),
   };
 
-  return <SidebarProvider style={{ '--sidebar-width': '288px', '--sidebar-width-icon': '272px' } as React.CSSProperties} className="h-screen min-h-0">
+  return <SidebarProvider style={{ '--sidebar-width': '288px', '--sidebar-width-icon': '272px' } as React.CSSProperties} className="h-dvh min-h-0">
     <PublicProjectView project={project} historyVersion={{ ...version, restoreEpoch }} homeHref="/projects" isLoggedIn isOwnProject username={profile.username} imageUrl={profile.imageUrl ?? null} />
   </SidebarProvider>;
 }
