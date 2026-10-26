@@ -51,15 +51,19 @@ export function ForksPanel({
               <div className="mb-1 font-display text-xl font-medium">{item.title}</div>
               <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
                 <GitFork className="h-[11px] w-[11px]" />
-                {item.forkedFromOwnerUsername ? (
+                {item.forkedFromProjectId && item.forkedFromOwnerUsername ? (
                   <span>
                     forked from{" "}
                     <a
-                      href={`/u/${encodeURIComponent(item.forkedFromOwnerUsername)}`}
+                      href={`/p/${encodeURIComponent(item.forkedFromProjectId)}`}
                       className="relative z-10 font-medium text-muted-foreground hover:text-primary"
                     >
-                      {item.forkedFromOwnerUsername}
+                      {item.forkedFromTitle ?? "Original project"}
                     </a>
+                    {" by "}
+                    <Link href={`/u/${encodeURIComponent(item.forkedFromOwnerUsername)}`} className="relative z-10 hover:text-primary">
+                      @{item.forkedFromOwnerUsername}
+                    </Link>
                   </span>
                 ) : (
                   <span>source no longer available</span>

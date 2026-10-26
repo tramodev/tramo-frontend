@@ -200,6 +200,24 @@ export function PublicProjectView({
                 >
                   {publicProject.forkedFromTitle ?? "Original project"}
                 </Link>
+                {publicProject.forkedFromOwnerUsername && (
+                  <>
+                    {" by "}
+                    <ProfileHoverCard
+                      username={publicProject.forkedFromOwnerUsername}
+                      avatar={null}
+                      isLoggedIn={isLoggedIn}
+                      viewerUsername={username}
+                    >
+                      <Link
+                        href={`/u/${encodeURIComponent(publicProject.forkedFromOwnerUsername)}`}
+                        className="font-medium hover:text-primary"
+                      >
+                        @{publicProject.forkedFromOwnerUsername}
+                      </Link>
+                    </ProfileHoverCard>
+                  </>
+                )}
               </>
             )}
           </span>

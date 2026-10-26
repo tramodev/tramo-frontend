@@ -563,5 +563,33 @@ test('fork attribution links to the original project and disappears without a pu
     .find(node => node.type === 'ProjectShell').props.titleSlot);
   const link = title(project).find(node => node.props.href === '/p/original');
   expect(link.props.children).toBe('Original title');
+  expect(title(project).find(node => node.props.href === '/u/alice').props.children).toEqual(['@', 'alice']);
   expect(title({ ...project, forkedFromProjectId: null }).some(node => node.props.href === '/p/original')).toBe(false);
+});
+
+
+test('fork badges link the project separately from its author in both variants', () => {
+  const render = load('components/project/fork-badge.tsx', {
+    'next/link': { default: 'Link' },
+  });
+  const props = { forkedFromProjectId: 'original', forkedFromTitle: 'Original title', forkedFromOwnerUsername: 'alice' };
+  const nodes = render('ForkBadge', props);
+  expect(nodes.find(node => node.props.href === '/p/original').props.children).toBe('Original title');
+  expect(nodes.find(node => node.props.href === '/u/alice').props.children).toEqual(['@', 'alice']);
+  const icon = render('ForkBadge', { ...props, iconOnly: true }).find(node => node.type === 'Link');
+  expect(icon.props.href).toBe('/p/original');
+  expect(icon.props.title).toBe('Forked from Original title by @alice');
+  expect(render('ForkBadge', { ...props, forkedFromProjectId: null })).toEqual([]);
+});
+
+test('explore cards pass the original project to the fork badge', () => {
+  const render = load('components/feed/explore-card.tsx', {
+    '@/components/project/fork-badge': { ForkBadge: 'ForkBadge' },
+  });
+  const project = { id: 'fork', title: 'Fork', ownerUsername: 'bob', tags: [], viewCount: 0, forkCount: 0, commentCount: 0,
+    forkedFromProjectId: 'original', forkedFromTitle: 'Original title', forkedFromOwnerUsername: 'alice' };
+  const badge = render('ExploreCard', { project, loggedIn: true, username: 'bob' }).find(node => node.type === 'ForkBadge');
+  expect(badge.props.forkedFromProjectId).toBe('original');
+  expect(badge.props.forkedFromTitle).toBe('Original title');
+  expect(badge.props.forkedFromOwnerUsername).toBe('alice');
 });

@@ -315,7 +315,7 @@ export default function ProjectsPage() {
                           </CardTitle>
                           {project.forkedFromOwnerUsername && (
                             <span className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                              <ForkBadge forkedFromOwnerUsername={project.forkedFromOwnerUsername} iconOnly />
+                              <ForkBadge forkedFromProjectId={project.forkedFromProjectId} forkedFromTitle={project.forkedFromTitle} forkedFromOwnerUsername={project.forkedFromOwnerUsername} iconOnly />
                             </span>
                           )}
                         </span>
@@ -415,7 +415,7 @@ export default function ProjectsPage() {
                         </p>
                         {project.forkedFromOwnerUsername && (
                           <span onClick={(e) => e.stopPropagation()}>
-                            <ForkBadge forkedFromOwnerUsername={project.forkedFromOwnerUsername} iconOnly />
+                            <ForkBadge forkedFromProjectId={project.forkedFromProjectId} forkedFromTitle={project.forkedFromTitle} forkedFromOwnerUsername={project.forkedFromOwnerUsername} iconOnly />
                           </span>
                         )}
                       </span>

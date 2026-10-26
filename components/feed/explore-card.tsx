@@ -70,6 +70,8 @@ export function ExploreCard({
         {project.forkedFromOwnerUsername && (
           <div className="mb-2">
             <ForkBadge
+              forkedFromProjectId={project.forkedFromProjectId}
+              forkedFromTitle={project.forkedFromTitle}
               forkedFromOwnerUsername={project.forkedFromOwnerUsername}
               isLoggedIn={loggedIn}
               viewerUsername={username}
