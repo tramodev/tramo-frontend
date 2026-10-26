@@ -549,3 +549,19 @@ test('failed restoration displays the error and permits retry without navigation
   expect(nodes.find(node => node.props.role === 'alert').props.children).toBe('Project changed. Reload before restoring.');
   expect(nodes.find(node => node.type === 'Button').props.disabled).toBe(false);
 });
+
+
+test('fork attribution links to the original project and disappears without a public source', () => {
+  const render = load('components/project/public-project-view.tsx', {
+    '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
+    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    'next/link': { default: 'Link' },
+  });
+  const project = { id: 'fork', title: 'Fork', trails: [], looseItems: [],
+    forkedFromProjectId: 'original', forkedFromTitle: 'Original title', forkedFromOwnerUsername: 'alice' };
+  const title = value => flatten(render('PublicProjectView', { project: value })
+    .find(node => node.type === 'ProjectShell').props.titleSlot);
+  const link = title(project).find(node => node.props.href === '/p/original');
+  expect(link.props.children).toBe('Original title');
+  expect(title({ ...project, forkedFromProjectId: null }).some(node => node.props.href === '/p/original')).toBe(false);
+});
