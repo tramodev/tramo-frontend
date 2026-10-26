@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { MoreHorizontal, Flag, Repeat2, UserPlus, UserCheck, Ban, GitFork } from "lucide-react"
 
@@ -43,6 +43,9 @@ export function PostOptionsMenu({
   className?: string
 }) {
   const router = useRouter()
+  const forkInFlight = useRef(false)
+  const [forkPending, setForkPending] = useState(false)
+  const [forkError, setForkError] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [reason, setReason] = useState("")
   const [submitted, setSubmitted] = useState(false)
@@ -85,9 +88,19 @@ export function PostOptionsMenu({
   }
 
   async function handleFork() {
-    if (!requireLogin()) return
-    const forked = await forkProject(projectId)
-    router.push(`/editor/${forked.id}`)
+    if (!requireLogin() || forkInFlight.current) return
+    forkInFlight.current = true
+    setForkPending(true)
+    setForkError(false)
+    try {
+      const forked = await forkProject(projectId)
+      router.push(`/editor/${forked.id}`)
+    } catch {
+      setForkError(true)
+    } finally {
+      forkInFlight.current = false
+      setForkPending(false)
+    }
   }
 
   function handleReportSelect() {
@@ -154,9 +167,9 @@ export function PostOptionsMenu({
                 )}
               </DropdownMenuItem>
               {canFork && (
-                <DropdownMenuItem onSelect={handleFork}>
+                <DropdownMenuItem onSelect={handleFork} disabled={forkPending}>
                   <GitFork className="h-3.5 w-3.5" />
-                  Fork this project
+                  {forkPending ? "Forking..." : "Fork this project"}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onSelect={handleReportSelect}>
@@ -171,6 +184,8 @@ export function PostOptionsMenu({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {forkError && <p role="alert" className="max-w-xs text-xs text-destructive">Fork failed. Please try again.</p>}
 
       <Dialog open={reportOpen} onOpenChange={handleReportDialogChange}>
         <DialogContent>
