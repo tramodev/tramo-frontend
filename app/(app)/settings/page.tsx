@@ -48,7 +48,7 @@ export default async function SettingsPage({
   const notificationPrefs = tab === "notifications" ? await getNotificationPreferences() : null
 
   return (
-    <main className="container-app flex-1">
+    <main id="main-content" tabIndex={-1} className="container-app flex-1">
       <div className="pt-9 px-6 md:px-12 pb-16">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[13.5rem_minmax(0,1fr)] md:gap-14 items-start">
           <nav aria-label="Settings" className="flex flex-col gap-1 md:sticky md:top-6">

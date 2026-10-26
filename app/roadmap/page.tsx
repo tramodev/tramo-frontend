@@ -17,7 +17,7 @@ export default async function RoadmapPage() {
   const items = await getRoadmap();
   return <div className="min-h-screen">
     <Navbar />
-    <main className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
       <p className="mb-4 text-sm font-medium text-primary">Roadmap</p>
       <h1 className="mb-8 font-display text-[clamp(40px,5.6vw,56px)] font-medium leading-[1.1]">Where Tramo goes next.</h1>
       <p className="mb-12 text-[1.0625rem] leading-7 text-muted-foreground">These are the things we want to build next. They’re a direction, not a release schedule: priorities may change as we learn from the people using Tramo.</p>

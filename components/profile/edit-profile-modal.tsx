@@ -309,7 +309,7 @@ export function EditProfileModal({
               )}
               <div className="flex items-center justify-between pt-1">
                 <span className="text-[0.8125rem] text-muted-foreground">Show my age on my public profile</span>
-                <Switch checked={showAge} onCheckedChange={setShowAge} />
+                <Switch aria-label="Show my age on my public profile" checked={showAge} onCheckedChange={setShowAge} />
               </div>
             </div>
 

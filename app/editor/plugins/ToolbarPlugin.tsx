@@ -4,6 +4,7 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import type { HistoryState } from '@lexical/react/LexicalHistoryPlugin';
 import { mergeRegister, $getNearestNodeOfType } from '@lexical/utils';
+import { MOVE_BLOCK_COMMAND } from '@/app/editor/plugins/DraggableBlockPlugin';
 import {
   $getSelection,
   $isElementNode,
@@ -311,7 +312,7 @@ export default function ToolbarPlugin({
   const colorSelection = useRef<RangeSelection | null>(null);
   const [elementFormat, setElementFormat] = useState<ElementFormat>('left');
   const [insertMenuOpen, setInsertMenuOpen] = useState(false);
-  const insertEmbedRef = useRef<(() => void) | null>(null);
+  const afterMenuCloseRef = useRef<(() => void) | null>(null);
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -519,6 +520,22 @@ export default function ToolbarPlugin({
   };
 
 
+  const handleMenuClose = (event: Event) => {
+    const action = afterMenuCloseRef.current;
+    if (!action) return;
+    event.preventDefault();
+    afterMenuCloseRef.current = null;
+    requestAnimationFrame(action);
+  };
+
+  const moveBlock = (direction: 'up' | 'down') => {
+    afterMenuCloseRef.current = () => {
+      editor.dispatchCommand(MOVE_BLOCK_COMMAND, direction);
+      editor.getRootElement()?.focus({ preventScroll: true });
+      editor.focus();
+    };
+  };
+
   const activeAlign = titleFocused ? titleAlign ?? 'left' : elementFormat;
   const activeBlock = BLOCK_OPTIONS.find((option) => option.value === blockType) ?? BLOCK_OPTIONS[0];
   const ActiveBlockIcon = activeBlock.Icon;
@@ -554,7 +571,7 @@ export default function ToolbarPlugin({
       />
       <Divider />
       <DropdownMenu>
-        <ToolbarMenuButton label="Text Styles" tooltip="Text Styles" className="toolbar-item align-dropdown-trigger spaced">
+        <ToolbarMenuButton label={`${activeBlock.label}: Text Styles`} tooltip="Text Styles" className="toolbar-item align-dropdown-trigger spaced">
           <ActiveBlockIcon size={18} />
           <span className="grid text-left">
             <span className="col-start-1 row-start-1">{activeBlock.label}</span>
@@ -562,13 +579,19 @@ export default function ToolbarPlugin({
           </span>
           <ChevronDown size={12} />
         </ToolbarMenuButton>
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" onCloseAutoFocus={handleMenuClose}>
           {BLOCK_OPTIONS.map(({ value, label, Icon }) => (
             <DropdownMenuItem key={value} onSelect={() => selectBlock(value)}>
               <Icon className="h-4 w-4" />
               {label}
             </DropdownMenuItem>
           ))}
+          <DropdownMenuItem disabled={titleFocused} onSelect={() => moveBlock('up')}>
+            <ChevronUp className="h-4 w-4" />Move block up
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={titleFocused} onSelect={() => moveBlock('down')}>
+            <ChevronDown className="h-4 w-4" />Move block down
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -698,13 +721,7 @@ export default function ToolbarPlugin({
           <Plus size={18} />
           <ChevronDown size={12} />
         </ToolbarMenuButton>
-        <DropdownMenuContent align="start" onCloseAutoFocus={(event) => {
-          const insert = insertEmbedRef.current;
-          if (!insert) return;
-          event.preventDefault();
-          insertEmbedRef.current = null;
-          requestAnimationFrame(insert);
-        }}>
+        <DropdownMenuContent align="start" onCloseAutoFocus={handleMenuClose}>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <TableIcon className="h-4 w-4" />
@@ -732,7 +749,7 @@ export default function ToolbarPlugin({
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code'}
-            onSelect={() => { insertEmbedRef.current = () => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: true }); }}
+            onSelect={() => { afterMenuCloseRef.current = () => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: true }); }}
           >
             <Radical className="h-4 w-4" />
             Inline equation
@@ -740,7 +757,7 @@ export default function ToolbarPlugin({
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code'}
-            onSelect={() => { insertEmbedRef.current = () => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: false }); }}
+            onSelect={() => { afterMenuCloseRef.current = () => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: false }); }}
           >
             <Sigma className="h-4 w-4" />
             Equation
@@ -748,7 +765,7 @@ export default function ToolbarPlugin({
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code'}
-            onSelect={() => { insertEmbedRef.current = () => editor.dispatchCommand(INSERT_MUSIC_COMMAND, undefined); }}
+            onSelect={() => { afterMenuCloseRef.current = () => editor.dispatchCommand(INSERT_MUSIC_COMMAND, undefined); }}
           >
             <Music className="h-4 w-4" />
             Music score

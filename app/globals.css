@@ -326,3 +326,44 @@
     font-size: max(1rem, 16px);
   }
 }
+
+@media (pointer: coarse), (max-width: 767px) {
+  button:not([role="switch"]),
+  [data-slot="button"],
+  [role="menuitem"],
+  [role="menuitemcheckbox"],
+  [role="menuitemradio"],
+  [role="option"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  textarea,
+  select {
+    min-height: 44px;
+  }
+
+  button[role="switch"] {
+    position: relative;
+  }
+
+  button[role="switch"]::before {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto;
+    min-height: 44px;
+    transform: translateY(-50%);
+  }
+
+  a.touch-target {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .project-sidebar-heading {
+    height: auto;
+    min-height: 44px;
+  }
+}

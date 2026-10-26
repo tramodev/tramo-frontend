@@ -185,7 +185,7 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="Notifications"
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount > 9 ? '9+' : unreadCount} unread` : 'Notifications'}
           className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
         >
           <Bell className="h-5 w-5" />

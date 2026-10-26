@@ -44,7 +44,7 @@ export function ExploreCard({
               <span className="relative z-10 flex items-center gap-2.5">
                 <AuthorAvatar username={project.ownerUsername} avatar={project.ownerAvatar} />
                 <span className="flex items-center gap-1">
-                  <Link href={`/u/${encodeURIComponent(project.ownerUsername)}`} className="inline-flex min-h-6 items-center font-medium text-foreground hover:underline">
+                  <Link href={`/u/${encodeURIComponent(project.ownerUsername)}`} className="touch-target inline-flex min-h-6 items-center font-medium text-foreground hover:underline">
                     {project.ownerUsername}
                   </Link>
                   <NameBadge code={project.ownerBadge} />

@@ -9,7 +9,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
       <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:border-r lg:border-border lg:pr-6">
         <WikiNav />
       </aside>
-      <main id="wiki-content" className="container-read min-w-0">{children}</main>
+      <main id="main-content" tabIndex={-1} className="container-read min-w-0"><span id="wiki-content" />{children}</main>
     </div>
     <Footer />
   </div>;

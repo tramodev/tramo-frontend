@@ -439,7 +439,7 @@ export function SidebarCustom({
           <div className={q ? "hidden" : "contents"}>
             <Collapsible defaultOpen className="group/trails">
               <SidebarGroup className="py-1">
-                <div className="flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
+                <div className="project-sidebar-heading flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
                   <CollapsibleTrigger asChild>
                     <button className="flex flex-1 items-center gap-1.5">
                       <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/trails:rotate-90" />
@@ -815,7 +815,7 @@ export function SidebarCustom({
 
             <Collapsible defaultOpen className="group/items">
               <SidebarGroup className="py-1">
-                <div className="flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
+                <div className="project-sidebar-heading flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
                   <CollapsibleTrigger asChild>
                     <button className="flex flex-1 items-center gap-1.5">
                       <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/items:rotate-90" />

@@ -274,7 +274,7 @@ export function SignupForm({
           <GoogleAuthButton text="signup_with" />
           <FieldDescription className="text-left">
             Already have an account?{" "}
-            <a href="login" className="font-medium text-primary">
+            <a href="login" className="touch-target font-medium text-primary">
               Sign in
             </a>
           </FieldDescription>

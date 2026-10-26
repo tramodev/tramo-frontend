@@ -6,6 +6,22 @@ import { DraggableBlockPlugin_EXPERIMENTAL } from '@lexical/react/LexicalDraggab
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { GripVertical } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { $addUpdateTag, $getSelection, $isRangeSelection, COMMAND_PRIORITY_LOW, HISTORY_PUSH_TAG, KEY_DOWN_COMMAND, createCommand } from 'lexical';
+import { mergeRegister } from '@lexical/utils';
+
+export const MOVE_BLOCK_COMMAND = createCommand<'up' | 'down'>('MOVE_BLOCK_COMMAND');
+
+function $moveBlock(direction: 'up' | 'down'): boolean {
+  const selection = $getSelection();
+  const node = $isRangeSelection(selection) ? selection.anchor.getNode() : selection?.getNodes()[0];
+  const block = node?.getTopLevelElement();
+  const sibling = direction === 'up' ? block?.getPreviousSibling() : block?.getNextSibling();
+  if (!block || !sibling) return false;
+  $addUpdateTag(HISTORY_PUSH_TAG);
+  if (direction === 'up') sibling.insertBefore(block);
+  else sibling.insertAfter(block);
+  return true;
+}
 
 const MENU_CLASSNAME = 'draggable-block-menu';
 
@@ -17,6 +33,16 @@ export default function DraggableBlockPlugin({ anchorElem }: { anchorElem: HTMLE
   const [editor] = useLexicalComposerContext();
   const menuRef = useRef<HTMLDivElement>(null);
   const targetLineRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => mergeRegister(
+    editor.registerCommand(MOVE_BLOCK_COMMAND, $moveBlock, COMMAND_PRIORITY_LOW),
+    editor.registerCommand(KEY_DOWN_COMMAND, event => {
+      if (!event.altKey || !event.shiftKey || event.metaKey || event.ctrlKey || !['ArrowUp', 'ArrowDown'].includes(event.key)) return false;
+      event.preventDefault();
+      editor.dispatchCommand(MOVE_BLOCK_COMMAND, event.key === 'ArrowUp' ? 'up' : 'down');
+      return true;
+    }, COMMAND_PRIORITY_LOW),
+  ), [editor]);
 
   useEffect(() => {
     let frame = 0;

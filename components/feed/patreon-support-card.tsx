@@ -11,9 +11,9 @@ export function PatreonSupportCard() {
 
   return (
     <div className="rounded-2xl bg-accent p-5 text-accent-foreground">
-      <h3 className="mb-1 text-lg font-medium">
+      <h2 className="mb-1 text-lg font-medium">
         Support Tramo
-      </h3>
+      </h2>
       <p className="mb-4 text-sm opacity-[85%]">
         Tramo is built and run independently. If it&apos;s useful to you, becoming a
         Patreon supporter helps us keep building and grow the platform.

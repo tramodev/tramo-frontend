@@ -89,7 +89,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
           <div className={q ? "hidden" : "contents"}>
             <Collapsible defaultOpen className="group/trails">
               <SidebarGroup className="py-1">
-                <div className="flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
+                <div className="project-sidebar-heading flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
                   <CollapsibleTrigger asChild><button type="button" className="flex flex-1 items-center gap-1.5"><ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/trails:rotate-90" />Trails</button></CollapsibleTrigger>
                   <span className="text-[0.6875rem] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
                 </div>
@@ -135,7 +135,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
             </Collapsible>
             <Collapsible defaultOpen className="group/items">
               <SidebarGroup className="py-1">
-                <div className="flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
+                <div className="project-sidebar-heading flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
                   <CollapsibleTrigger asChild><button type="button" className="flex flex-1 items-center gap-1.5"><ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/items:rotate-90" />Notes without a trail</button></CollapsibleTrigger>
                   <span className="text-[0.6875rem] font-normal group-data-[state=open]/items:hidden">{looseItems.length}</span>
                 </div>

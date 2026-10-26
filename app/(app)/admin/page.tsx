@@ -18,7 +18,7 @@ export default async function AdminPage() {
   }
 
   return (
-    <main className="mx-auto w-full flex-1 px-8 py-8 max-w-[1000px]">
+    <main id="main-content" tabIndex={-1} className="mx-auto w-full flex-1 px-8 py-8 max-w-[1000px]">
       <div className="mb-8"><Button asChild variant="secondary"><Link href="/admin/content">Manage site content</Link></Button></div>
       <AdminDashboard />
     </main>

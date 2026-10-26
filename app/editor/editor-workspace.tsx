@@ -166,8 +166,8 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             <h1 className="sr-only">{project.projectTitle || 'Untitled project'}</h1>
             {project.draftError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.draftError}<button type="button" className="underline" onClick={project.retryDraft}>Retry</button></div>}
             {project.titleSaveError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.titleSaveError}<button type="button" className="underline" onClick={project.retryItemTitles}>Retry</button></div>}
-            {project.loaded && project.profile && project.selectedItem && <TaskHint id={`${project.profile?.username ?? projectId}:${project.trails.length > 1 ? 'reuse' : Object.keys(project.items).length > 1 ? 'connect' : 'write'}`}>
-              {project.trails.length > 1 ? 'Reuse a note with “Add existing note” in another trail. Edits appear everywhere that note is used.' : Object.keys(project.items).length > 1 ? 'Mention another note with @, or connect notes in the map.' : 'Start writing in the note. Your changes save automatically; you can add a title later.'}
+            {project.loaded && project.profile && project.selectedItem && <TaskHint id={`${project.profile.username}:write`}>
+              Start writing in the note. Your changes save automatically; you can add a title later.
             </TaskHint>}
             <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
             {!project.loaded ? <div className="editor-container flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</div> : <>

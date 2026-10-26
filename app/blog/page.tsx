@@ -16,7 +16,7 @@ export default async function BlogPage() {
   const posts = await getBlogPosts();
   return <div className="min-h-screen">
     <Navbar />
-    <main className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
       <p className="mb-4 text-sm font-medium text-primary">Blog</p>
       <h1 className="mb-6 font-display text-[clamp(40px,5.6vw,56px)] font-medium leading-[1.1]">Notes along the way.</h1>
       <p className="mb-10 text-[1.0625rem] leading-7 text-muted-foreground">Ideas on connected thinking, notes on building Tramo, and what comes next.</p>

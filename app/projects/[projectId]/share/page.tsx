@@ -86,7 +86,7 @@ export default function PublishPage() {
     return () => { cancelled = true; };
   }, [projectId]);
 
-  if (!project) return <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-6">
+  if (!project) return <main id="main-content" tabIndex={-1} className="flex min-h-svh flex-col items-center justify-center gap-4 p-6">
     {loading ? <p role="status">Loading project…</p> : <>
       <p role="alert">{error || "Project not found or unavailable."}</p>
       <Link href="/projects" className="text-primary underline">Back to projects</Link>
@@ -212,12 +212,12 @@ export default function PublishPage() {
         <h1 className="text-[1.0625rem] font-semibold leading-none">Share</h1>
       </div>
 
-      <div className="min-w-0 flex-1 overflow-y-auto bg-muted lg:col-start-1 lg:row-start-2 lg:min-h-0">
+      <div tabIndex={0} role="region" aria-label="Explore preview" className="min-w-0 flex-1 overflow-y-auto bg-muted focus-visible:outline-2 focus-visible:outline-ring lg:col-start-1 lg:row-start-2 lg:min-h-0">
         <SharePreview card={yourCard} visibility={visibility} />
       </div>
 
       <div className="flex min-w-0 flex-col gap-6 overflow-y-auto border-l border-border p-6 pb-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:min-h-0 [&>*]:shrink-0">
-        <TaskHint id={`publish:${projectId}`}>Before publishing, check the description and read each trail from the editor. Readers see the published snapshot; later edits stay private until you publish an update.</TaskHint>
+        {profile && <TaskHint id={`${profile.username}:publish`}>Before publishing, check the description and read each trail from the editor. Readers see the published snapshot; later edits stay private until you publish an update.</TaskHint>}
         <div className="flex flex-col gap-1.5">
           <Label>Visibility</Label>
           <p className="text-xs text-muted-foreground">Sharing or publishing also makes note images available to readers. Returning to private stops new access links; existing links expire within five minutes.</p>

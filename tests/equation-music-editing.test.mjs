@@ -204,3 +204,28 @@ test.each(['Equation', 'Music'])('%s exposes a single-tap edit action when selec
   s.edit();
   expect(s.input()).toBeDefined();
 });
+
+test('moving a block waits for the menu to close and returns focus to the editor', () => {
+  const frames = [], actions = [];
+  const Toolbar = load('app/editor/plugins/ToolbarPlugin.tsx', {
+    react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useRef: value => ({ current: value }), useCallback: fn => fn, useEffect() {} },
+    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [{
+      dispatchCommand: (...args) => actions.push(args),
+      getRootElement: () => ({ focus: () => actions.push('root-focus') }),
+      focus: () => actions.push('editor-focus'),
+    }] },
+    '@/app/editor/plugins/DraggableBlockPlugin': { MOVE_BLOCK_COMMAND: 'move-block' },
+    './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {},
+    './EquationsPlugin': {}, './MusicPlugin': {},
+    '@/components/ui/dropdown-menu': { DropdownMenuItem: 'DropdownMenuItem', DropdownMenuContent: 'DropdownMenuContent' },
+  }, '', { requestAnimationFrame: fn => frames.push(fn) }).default;
+  const nodes = [];
+  const visit = node => { if (node && typeof node === 'object') { nodes.push(node); [node.props?.children].flat().forEach(visit); } };
+  visit(Toolbar({}));
+  nodes.find(node => node.type === 'DropdownMenuItem' && [node.props.children].flat().includes('Move block up')).props.onSelect();
+  expect(actions).toEqual([]);
+  nodes.find(node => node.props?.onCloseAutoFocus).props.onCloseAutoFocus({ preventDefault() {} });
+  expect(actions).toEqual([]);
+  frames.shift()();
+  expect(actions).toEqual([['move-block', 'up'], 'root-focus', 'editor-focus']);
+});

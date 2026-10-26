@@ -88,7 +88,7 @@ export function PrivacySettings({
   return (
     <>
       {saveError && (
-        <div className="text-sm text-destructive">Couldn&apos;t save that change, try again.</div>
+        <div role="alert" className="text-sm text-destructive">Couldn&apos;t save that change, try again.</div>
       )}
 
       <section>
@@ -134,7 +134,7 @@ export function PrivacySettings({
               <div className="text-sm font-medium">Show upvotes on my profile</div>
               <div className="mt-0.5 text-[0.8125rem] text-muted-foreground">Show an Upvoted section on your public profile.</div>
             </div>
-            <Switch checked={showUpvotes} onCheckedChange={handleShowUpvotesChange} />
+            <Switch aria-label="Show upvotes on my profile" checked={showUpvotes} onCheckedChange={handleShowUpvotesChange} />
           </div>
           <div className="flex items-center gap-4 border-t border-border py-3.5">
             <div className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ export function PrivacySettings({
                 Let others fork your published projects as a starting point.
               </div>
             </div>
-            <Switch checked={allowForks} onCheckedChange={handleAllowForksChange} />
+            <Switch aria-label="Allow forks" checked={allowForks} onCheckedChange={handleAllowForksChange} />
           </div>
         </div>
       </section>

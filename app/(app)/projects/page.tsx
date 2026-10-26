@@ -164,7 +164,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main className="w-full flex-1 pb-[84px]">
+    <main id="main-content" tabIndex={-1} className="w-full flex-1 pb-[84px]">
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
       <section className="bg-surface-container-high pb-16">
         <div className="container-app px-5 py-11 sm:px-10 lg:px-12">

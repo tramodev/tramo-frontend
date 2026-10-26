@@ -61,7 +61,7 @@ export function NotificationSettings({
   return (
     <>
       {saveError && (
-        <div className="text-sm text-destructive">Couldn&apos;t save that change, try again.</div>
+        <div role="alert" className="text-sm text-destructive">Couldn&apos;t save that change, try again.</div>
       )}
 
       <section>
@@ -76,7 +76,7 @@ export function NotificationSettings({
               Turn this off to stop receiving all notifications.
             </div>
           </div>
-          <Switch checked={enabled} onCheckedChange={handleEnabledChange} />
+          <Switch aria-label="Enable notifications" checked={enabled} onCheckedChange={handleEnabledChange} />
         </div>
       </section>
 
@@ -95,6 +95,7 @@ export function NotificationSettings({
                 <div className="mt-0.5 text-[0.8125rem] text-muted-foreground">{desc}</div>
               </div>
               <Switch
+                aria-label={label}
                 checked={!muted.includes(value)}
                 disabled={!enabled}
                 onCheckedChange={(checked) => handleTypeChange(value, checked)}

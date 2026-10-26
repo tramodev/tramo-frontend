@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function TermsOfServicePage() {
   return <div className="min-h-screen">
     <Navbar />
-    <main className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
       <h1 className="mb-6 font-display text-[clamp(36px,5vw,48px)] font-medium leading-tight">Terms of Service</h1>
       <div className="mb-10 text-sm leading-6 text-muted-foreground">
         <p>Last updated: <time dateTime="2026-10-15">October 15, 2026</time></p>

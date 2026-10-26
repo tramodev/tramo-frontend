@@ -134,6 +134,7 @@ function ChangePasswordSection() {
             <FieldLabel htmlFor="new-password">New password</FieldLabel>
             <Input
               id="new-password"
+              aria-describedby="new-password-help"
               type="password"
               placeholder=" "
               required
@@ -156,7 +157,7 @@ function ChangePasswordSection() {
                 <span className={cn("text-xs font-medium", strength.textColor)}>{strength.label}</span>
               </div>
             )}
-            <FieldDescription>
+            <FieldDescription id="new-password-help">
               Must be at least 12 characters and include an uppercase letter, a number, and a symbol.
             </FieldDescription>
           </Field>
@@ -165,6 +166,8 @@ function ChangePasswordSection() {
             <div className="relative">
               <Input
                 id="confirm-new-password"
+                aria-invalid={!passwordsMatch && confirmPassword.length > 0}
+                aria-describedby={!passwordsMatch && confirmPassword.length > 0 ? "confirm-new-password-error" : undefined}
                 type="password"
                 placeholder=" "
                 required
@@ -176,7 +179,7 @@ function ChangePasswordSection() {
                 <CheckCircle2 className="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-success" />
               )}
             </div>
-            {!passwordsMatch && confirmPassword.length > 0 && <FieldError>Passwords do not match</FieldError>}
+            {!passwordsMatch && confirmPassword.length > 0 && <FieldError id="confirm-new-password-error">Passwords do not match</FieldError>}
           </Field>
           <Field>
             <Button type="submit" disabled={isPending} className="w-fit">

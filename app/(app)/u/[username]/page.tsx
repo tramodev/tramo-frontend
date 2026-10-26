@@ -75,7 +75,7 @@ export default async function PublicProfilePage({
   )
 
   return (
-    <main className="container-app flex-1">
+    <main id="main-content" tabIndex={-1} className="container-app flex-1">
         <div className="pt-9 px-6 md:px-12 pb-14">
           {bannerUrl && (
             <div className="relative mb-3">
@@ -89,9 +89,9 @@ export default async function PublicProfilePage({
           )}
           <div className={`flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-7 rounded-[28px] bg-card p-5 sm:p-8 ${bannerUrl ? "pt-16 sm:pt-20" : ""}`}>
             {!bannerUrl && avatar}
-            <div className={`min-w-0 flex-1 text-center sm:text-left ${bannerUrl ? "sm:pl-[200px]" : ""}`}>
+            <div className={`w-full min-w-0 flex-1 text-center [overflow-wrap:anywhere] sm:text-left ${bannerUrl ? "sm:pl-[200px]" : ""}`}>
               <div className="mb-2 flex flex-wrap items-center justify-center sm:justify-start gap-4">
-                <h1 className="font-display text-[1.75rem] sm:text-[2.25rem] font-normal leading-[1.1]">
+                <h1 className="max-w-full break-words font-display text-[1.75rem] sm:text-[2.25rem] font-normal leading-[1.1]">
                   {profile.username}
                 </h1>
                 <FollowButton username={profile.username} initialFollowing={profile.following} isLoggedIn={loggedIn} />

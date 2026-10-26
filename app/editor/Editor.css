@@ -1189,13 +1189,13 @@ pre::-webkit-scrollbar-thumb {
     gap: 2px;
   }
 
-  .project-shell-actions a[aria-label="Publish and share project"] > span,
-  .project-shell-actions button[aria-label="Publish and share project"] > span,
+  .project-shell-actions a[aria-label="Publish & Share project"] > span,
+  .project-shell-actions button[aria-label="Publish & Share project"] > span,
   .editor-word-count {
     display: none;
   }
 
-  .project-shell-actions [aria-label="Publish and share project"] {
+  .project-shell-actions [aria-label="Publish & Share project"] {
     padding-inline: 10px;
   }
 
@@ -1239,7 +1239,7 @@ pre::-webkit-scrollbar-thumb {
   }
 
   .toolbar .font-size-input {
-    width: 40px;
+    width: 44px;
   }
 
   .editor-input,

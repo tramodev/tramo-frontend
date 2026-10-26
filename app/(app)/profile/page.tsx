@@ -71,7 +71,7 @@ export default async function ProfilePage({
   const bannerUrl = badges.some((badge) => badge.code === "supporter" && badge.earned) ? profile.bannerUrl : null
 
   return (
-    <main className="container-app flex-1">
+    <main id="main-content" tabIndex={-1} className="container-app flex-1">
         <div className="pt-9 px-6 md:px-12 pb-0">
           {bannerUrl && (
             <div className="mb-3">
@@ -95,7 +95,7 @@ export default async function ProfilePage({
                 initialSelectedBadge={profile.selectedBadge}
               />
             </div>
-            <div className="flex items-start gap-7">
+            <div className="flex min-w-0 flex-col items-start gap-5 sm:flex-row sm:gap-7">
               <div className="relative flex h-[104px] w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-[2.375rem] font-medium font-display text-primary-foreground">
                 {profile.imageUrl ? (
                   <Image src={profile.imageUrl} alt="" fill sizes="104px" className="object-cover" />
@@ -103,8 +103,8 @@ export default async function ProfilePage({
                   initial(profile.username)
                 )}
               </div>
-              <div className="flex min-w-0 flex-col items-start pt-1">
-                <h1 className="font-display text-[2.25rem] font-normal leading-[1.1] mb-2">
+              <div className="flex w-full min-w-0 flex-col items-start pt-1 [overflow-wrap:anywhere] sm:flex-1">
+                <h1 className="max-w-full break-words font-display text-[2.25rem] font-normal leading-[1.1] mb-2">
                   {profile.username}
                 </h1>
 
@@ -161,7 +161,7 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-3 pt-3 text-center">
+          <div className="grid grid-cols-2 gap-3 pt-3 text-center sm:grid-cols-4">
             <Link href="/projects" className="group rounded-2xl bg-card py-[18px] transition-colors hover:bg-muted">
               <div className="font-display text-[1.75rem] font-medium text-primary">{stats?.trailsPublished ?? 0}</div>
               <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-0.5">
@@ -189,7 +189,7 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          <div className="flex gap-1 border-b border-border mt-8">
+          <div className="mt-8 flex flex-wrap gap-1 border-b border-border">
             {TAB_KEYS.map((key) => (
               <Link
                 key={key}

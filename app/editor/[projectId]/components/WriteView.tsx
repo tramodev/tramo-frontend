@@ -326,7 +326,7 @@ function ItemTitle({ item, onCommitTitle, onFocus, move, onDraftTitleChange }: {
         focusEditor(editor);
       }} placeholder="Untitled note" style={{ textAlign: item.titleAlign }}
       title={item.title}
-      className="w-full min-w-0 truncate border-0 bg-transparent font-display text-[1.75rem] font-medium leading-normal text-foreground outline-none placeholder:text-muted-foreground/40" />
+      className="w-full min-w-0 truncate border-0 bg-transparent font-display text-[1.75rem] font-medium leading-normal text-foreground outline-none placeholder:text-muted-foreground" />
   </div>;
 }
 

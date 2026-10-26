@@ -107,7 +107,7 @@ export function LoginForm({
           </Field>
           <a
             href="/forgot-password"
-            className="inline-flex min-h-6 items-center self-end text-[0.8125rem] font-medium text-primary"
+            className="touch-target inline-flex min-h-6 items-center self-end text-[0.8125rem] font-medium text-primary"
           >
             Forgot your password?
           </a>
@@ -124,7 +124,7 @@ export function LoginForm({
           <GoogleAuthButton text="signin_with" />
           <FieldDescription className="text-left">
             Don&apos;t have an account?{" "}
-            <a href="signup" className="font-medium text-primary">
+            <a href="signup" className="touch-target font-medium text-primary">
               Sign up
             </a>
           </FieldDescription>

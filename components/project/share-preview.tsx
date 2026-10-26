@@ -76,7 +76,7 @@ export function SharePreview({ card, visibility }: { card: ProjectFeedItem; visi
           {visibility === "unlisted" && <Link2 className="h-3 w-3" aria-hidden="true" />}
           {isPublished ? 'Your project' : visibility === "private" ? 'Private · Only you' : 'Unlisted · Link only'}
         </span>
-        <div className={cn("transition-[filter,opacity]", !isPublished && "grayscale opacity-75")}>
+        <div className={cn("transition-[filter,opacity]", !isPublished && "grayscale")}>
           <ExploreCard project={card} loggedIn={false} username={null} interactive={false} />
         </div>
       </div>

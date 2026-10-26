@@ -45,7 +45,7 @@ export default async function ExplorePage({
   const hasSidebar = hotTopics.length > 0 || activeAuthors.length > 0 || trendingProjects.length > 0 || showSupportCard
 
   return (
-    <main className="container-app flex-1">
+    <main id="main-content" tabIndex={-1} className="container-app flex-1">
       <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 md:gap-8 pt-9 px-6 md:px-12 pb-0">
         <div>
           <span className="block text-sm font-medium text-primary mb-2">
@@ -64,6 +64,7 @@ export default async function ExplorePage({
               name="q"
               defaultValue={q ?? ""}
               placeholder="Search published projects"
+              aria-label="Search published projects"
               className="h-12 w-full rounded-full border-0 bg-surface-container-high pl-[46px] pr-5 text-[0.9375rem] outline-none transition-colors placeholder:text-muted-foreground focus:bg-surface-container-highest"
             />
           </div>

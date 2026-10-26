@@ -87,7 +87,7 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
       <button
         type="button"
         data-tour="editor-title"
-        className={`min-h-6 min-w-0 truncate text-left text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline ${draft && (!projectTitle || projectTitle === 'Untitled project') ? 'text-muted-foreground/40' : ''}`}
+        className={`min-h-6 min-w-0 truncate text-left text-[0.9375rem] font-medium decoration-dotted underline-offset-4 hover:underline ${draft && (!projectTitle || projectTitle === 'Untitled project') ? 'text-muted-foreground' : ''}`}
         onClick={startEditTitle}
         onDoubleClick={startEditTitle}
         aria-label={`Rename project: ${projectTitle || 'Untitled project'}`}
@@ -158,8 +158,8 @@ export function EditorActions({
       ) : <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
       {!disabled && <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />}
       {!disabled && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
-      {disabled ? <Button variant="secondary" size="lg" disabled aria-label="Publish and share project"><Share2 className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish &amp; Share</span></Button> : <Button data-tour="share" variant="secondary" size="lg" asChild>
-        <Link href={`/projects/${projectId}/share`} aria-label="Publish and share project">
+      {disabled ? <Button variant="secondary" size="lg" disabled aria-label="Publish & Share project"><Share2 className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish &amp; Share</span></Button> : <Button data-tour="share" variant="secondary" size="lg" asChild>
+        <Link href={`/projects/${projectId}/share`} aria-label="Publish & Share project">
           <Share2 className="h-[15px] w-[15px]" />
           <span className="hidden sm:inline">Publish &amp; Share</span>
         </Link>

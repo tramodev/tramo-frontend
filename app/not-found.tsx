@@ -8,7 +8,7 @@ export default function NotFound() {
     <header className="container-app px-6 py-5 md:px-12">
       <Link href="/" aria-label="Tramo home"><Wordmark /></Link>
     </header>
-    <main className="container-app flex flex-1 flex-col items-center justify-center gap-5 px-6 py-20 text-center">
+    <main id="main-content" tabIndex={-1} className="container-app flex flex-1 flex-col items-center justify-center gap-5 px-6 py-20 text-center">
       <p className="text-sm font-medium text-muted-foreground">404</p>
       <h1 className="font-display text-4xl">Page not found</h1>
       <p className="max-w-prose text-muted-foreground">This page is unavailable. Explore published projects or return to your workspace.</p>

@@ -43,6 +43,7 @@ const GROUPS: { title: string; shortcuts: [string, string][] }[] = [
     title: "Write",
     shortcuts: [
       ["⌘B / ⌘I / ⌘U", "Bold / italic / underline"],
+      ["Alt+Shift+↑ / Alt+Shift+↓", "Move the current block up / down"],
       ["Tab / ⇧Tab", "Indent / outdent lists"],
       ["⌘Z / ⌘⇧Z", "Undo / redo"],
       ["# ## ###", "Headings (followed by a space)"],

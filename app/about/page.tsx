@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return <div className="min-h-screen">
     <Navbar />
-    <main className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
       <p className="mb-4 text-sm font-medium text-primary">About Tramo</p>
       <h1 className="mb-8 font-display text-[clamp(40px,5.6vw,56px)] font-medium leading-[1.1]">Free to use.<br />Your ideas, your space.</h1>
       <p className="mb-12 text-[1.0625rem] leading-7 text-muted-foreground">Tramo is a place to write, connect ideas and build trails through what you know. Inspired by the Memex, it lets a note belong to more than one path, so your thinking can grow without being boxed into a single outline.</p>

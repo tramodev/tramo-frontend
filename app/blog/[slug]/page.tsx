@@ -18,7 +18,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   if (!post) notFound();
   return <div className="min-h-screen">
     <Navbar />
-    <main className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-[800px] px-6 pb-[84px] pt-16 md:px-[72px]">
       <Link href="/blog" className="mb-6 inline-block text-sm text-primary hover:underline">Back to blog</Link>
       <article>
         <div className="mb-4 flex gap-3 text-xs text-muted-foreground"><span>{post.category}</span><time dateTime={post.publishedDate}>{post.publishedDate}</time></div>

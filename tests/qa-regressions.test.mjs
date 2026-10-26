@@ -271,3 +271,17 @@ test.each([true, false])('the skip link focuses the editor when available, other
   expect(prevented).toBe(true);
   expect(focused).toEqual([editor ? 'editor' : 'main']);
 });
+
+test('dismissing the editor hint persists for the same user across mounts', () => {
+  const storage = new Map();
+  const hint = load('components/editor/task-hint.tsx', {}, '', {
+    localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
+    Event: class { constructor(type) { this.type = type; } },
+    window: { dispatchEvent() {} },
+  });
+  const props = { id: 'alice:write', children: 'Write a note' };
+  const first = flatten(hint.render('TaskHint', props));
+  first.find(node => node.props['aria-label'] === 'Dismiss tip').props.onClick();
+  expect(hint.render('TaskHint', props)).toBeNull();
+  expect(hint.render('TaskHint', { ...props, id: 'bob:write' })).not.toBeNull();
+});

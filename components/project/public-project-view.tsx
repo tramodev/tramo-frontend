@@ -235,7 +235,7 @@ export function PublicProjectView({
                 <a
                   href="#comments"
                   onClick={scrollToComments}
-                  aria-label="Jump to project comments"
+                  aria-label={`${commentCount} comments: jump to project comments`}
                   className="relative z-10 flex h-9 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
                 >
                   <MessageCircle className="h-4 w-4" />

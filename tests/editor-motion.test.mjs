@@ -16,7 +16,7 @@ function setup(reduced = false) {
     },
   }));
   root.children = [...blocks];
-  const editor = { getRootElement: () => root };
+  const editor = { getRootElement: () => root, registerCommand: () => () => {} };
   const anchor = { addEventListener: (_type, fn, capture) => { expect(capture).toBe(true); handler = fn; }, removeEventListener: () => {} };
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/DraggableBlockPlugin.tsx', 'utf8'), {
@@ -27,6 +27,8 @@ function setup(reduced = false) {
     requestAnimationFrame: fn => { frames.set(++frameId, fn); return frameId; },
     cancelAnimationFrame: id => frames.delete(id),
     require: name => ({
+      lexical: { createCommand: () => ({}) },
+      '@lexical/utils': { mergeRegister: (...callbacks) => () => callbacks.forEach(fn => fn()) },
       react: { useRef: value => ({ current: value }), useEffect: fn => { cleanup = fn(); } },
       'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
       '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
