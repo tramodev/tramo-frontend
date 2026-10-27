@@ -268,9 +268,9 @@ export default function ProjectsPage() {
             </div>
           </div>
           {loading ? (
-            <p className="text-sm text-muted-foreground">
-              Loading...
-            </p>
+            <div role="status" aria-label="Loading projects" className="flex items-center justify-center py-8 text-muted-foreground">
+              <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />
+            </div>
           ) : loadError ? (
             <div role="alert" className="flex items-center gap-3 text-sm text-destructive">
               {loadError}

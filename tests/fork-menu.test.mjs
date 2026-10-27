@@ -65,3 +65,10 @@ test('menu forks reject duplicate clicks, show failures, and allow retry', async
   expect(routes).toEqual(['/editor/fork']);
   expect(render('PostOptionsMenu', props).some(node => node.props.role === 'alert')).toBe(false);
 });
+
+test('own posts do not show an empty menu after moving sharing beside upvote', () => {
+  const render = load('components/project/post-options-menu.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+  });
+  expect(render('PostOptionsMenu', { projectId: 'own', ownerUsername: 'alice', isLoggedIn: true, isOwnPost: true })).toEqual([]);
+});

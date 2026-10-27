@@ -61,7 +61,8 @@ test('example creation uses a reserved inline status and clears it when the requ
   expect(nodes.find(node => node.type === 'button').props.disabled).toBe(true);
   s.starts[0].reject(new Error('Creation unavailable'));
   await opening;
-  expect(s.render().some(node => node.type === 'Spinner')).toBe(false);
+  const clearedStatus = s.render().find(node => node.props.role === 'status');
+  expect(flatten(clearedStatus).some(node => node.type === 'Spinner')).toBe(false);
   expect(s.render().some(node => node.props.role === 'alert')).toBe(true);
   expect(s.render().find(node => node.type === 'button').props.disabled).toBe(false);
 });
@@ -81,7 +82,8 @@ test('a failed projects request exits loading and can be retried', async () => {
   expect(error).toBeDefined();
   expect(flatten(error).find(node => node.type === 'Button').props.children).toBe('Retry');
   flatten(error).find(node => node.type === 'Button').props.onClick();
-  expect(s.render().some(node => node.props.children === 'Loading...')).toBe(true);
+  const loading = s.render().find(node => node.props.role === 'status' && node.props['aria-label'] === 'Loading projects');
+  expect(flatten(loading).some(node => node.type === 'Spinner')).toBe(true);
   expect(s.requests).toHaveLength(2);
   s.requests[1].resolve([]); await settle();
   const nodes = s.render();

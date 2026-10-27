@@ -62,7 +62,7 @@ export function VoteButton({
           onClick={handleClick}
           disabled={isPending}
           aria-pressed={voted}
-          className={`relative z-10 flex h-8 shrink-0 px-2 cursor-pointer items-center rounded-full text-sm font-medium transition-colors ${
+          className={`relative z-10 flex h-9 shrink-0 gap-1.5 px-2 cursor-pointer items-center rounded-full text-sm font-medium transition-colors ${
             voted
               ? "bg-secondary text-[var(--ed-blue)]"
               : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
@@ -70,7 +70,7 @@ export function VoteButton({
         >
           <span key={burstId} className="relative inline-flex">
             <ArrowBigUp
-              className={burstId > 0 ? "h-[15px] w-[15px] burst-pop" : "h-[15px] w-[15px]"}
+              className={burstId > 0 ? "h-4 w-4 burst-pop" : "h-4 w-4"}
               fill={voted ? "currentColor" : "none"}
             />
             {burstId > 0 && <BurstParticles />}

@@ -4,7 +4,7 @@
 
 import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { MoreHorizontal, Flag, Repeat2, UserPlus, UserCheck, Ban, GitFork } from "lucide-react"
+import { MoreHorizontal, Flag, UserPlus, UserCheck, Ban, GitFork } from "lucide-react"
 
 import {
   DropdownMenu,
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { reportProject } from "@/lib/moderation"
 import { toggleFollow, getPublicProfile } from "@/lib/public-profile"
-import { shareProjectToFollowers, forkProject } from "@/lib/projects-store"
+import { forkProject } from "@/lib/projects-store"
 import { toggleBlock } from "@/lib/blocked-users"
 
 export function PostOptionsMenu({
@@ -82,11 +82,6 @@ export function PostOptionsMenu({
     setBlocked(profile?.blocked ?? false)
   }
 
-  async function handleShare() {
-    if (!requireLogin()) return
-    await shareProjectToFollowers(projectId)
-  }
-
   async function handleFork() {
     if (!requireLogin() || forkInFlight.current) return
     forkInFlight.current = true
@@ -129,6 +124,8 @@ export function PostOptionsMenu({
     }
   }
 
+  if (isOwnPost) return null
+
   return (
     <>
       <DropdownMenu onOpenChange={handleMenuOpenChange}>
@@ -148,10 +145,6 @@ export function PostOptionsMenu({
           <TooltipContent>More options</TooltipContent>
         </Tooltip>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={handleShare}>
-            <Repeat2 className="h-3.5 w-3.5" />
-            Share to followers
-          </DropdownMenuItem>
           {!isOwnPost && (
             <>
               <DropdownMenuItem onSelect={handleFollow}>

@@ -5,6 +5,7 @@
 import Link from "next/link"
 import { Eye, MessageCircle } from "lucide-react"
 import { VoteButton } from "@/components/social/vote-button"
+import { ShareToFollowersButton } from "@/components/social/share-to-followers-button"
 import { BookmarkButton } from "@/components/social/bookmark-button"
 import { PostOptionsMenu } from "@/components/project/post-options-menu"
 import { AuthorAvatar } from "@/components/shared/author-avatar"
@@ -101,19 +102,20 @@ export function ExploreCard({
           </div>
         )}
         {interactive && <div className="flex justify-between mt-3.5">
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center">
             <VoteButton
               projectId={project.id}
               initialVoted={project.votedByRequester}
               initialCount={project.voteCount}
               isLoggedIn={loggedIn}
             />
-            <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground">
-              <Eye className="h-[17px] w-[17px]" />
+            <ShareToFollowersButton projectId={project.id} isLoggedIn={loggedIn} />
+            <span className="inline-flex h-9 items-center gap-1.5 px-2 text-[0.8125rem] text-muted-foreground">
+              <Eye className="h-4 w-4" />
               {project.viewCount.toLocaleString('en-US')}
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground">
-              <MessageCircle className="h-[15px] w-[15px]" />
+            <span className="inline-flex h-9 items-center gap-1.5 px-2 text-[0.8125rem] text-muted-foreground">
+              <MessageCircle className="h-4 w-4" />
               {project.commentCount.toLocaleString('en-US')}
             </span>
           </div>

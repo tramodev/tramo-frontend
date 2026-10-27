@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Check, Eye, MessageCircle, Search } from "lucide-react"
 import { VoteButton } from "@/components/social/vote-button"
+import { ShareToFollowersButton } from "@/components/social/share-to-followers-button"
 import { BookmarkButton } from "@/components/social/bookmark-button"
 import { PostOptionsMenu } from "@/components/project/post-options-menu"
 import { AuthorAvatar, initial } from "@/components/shared/author-avatar"
@@ -151,19 +152,20 @@ export default async function ExplorePage({
             )}
 
             <div className="flex items-center mt-3.5">
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center">
                 <VoteButton
                   projectId={featured.id}
                   initialVoted={featured.votedByRequester}
                   initialCount={featured.voteCount}
                   isLoggedIn={loggedIn}
                 />
-                <span className="inline-flex items-center px-2 text-[0.8125rem] text-muted-foreground">
-                  <Eye className="h-[17px] w-[17px]" />
+                <ShareToFollowersButton projectId={featured.id} isLoggedIn={loggedIn} />
+                <span className="inline-flex h-9 items-center gap-1.5 px-2 text-[0.8125rem] text-muted-foreground">
+                  <Eye className="h-4 w-4" />
                   {featured.viewCount.toLocaleString('en-US')}
                 </span>
-                <span className="inline-flex items-center px-2 text-[0.8125rem] text-muted-foreground">
-                  <MessageCircle className="h-[15px] w-[15px]" />
+                <span className="inline-flex h-9 items-center gap-1.5 px-2 text-[0.8125rem] text-muted-foreground">
+                  <MessageCircle className="h-4 w-4" />
                   {featured.commentCount.toLocaleString('en-US')}
                 </span>
               </div>

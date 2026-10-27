@@ -14,6 +14,7 @@ runInNewContext(ts.transpileModule(readFileSync('components/feed/explore-card.ts
   '@/components/project/project-thumbnail': { ProjectThumbnail: 'Thumbnail' },
   'lucide-react': { Eye: 'Eye', MessageCircle: 'MessageCircle' },
   '@/components/social/vote-button': { VoteButton: 'VoteButton' },
+  '@/components/social/share-to-followers-button': { ShareToFollowersButton: 'ShareToFollowersButton' },
 })[name] ?? {} });
 
 test.each([true, false])('thumbnail does not intercept card clicks; interactive=%s', interactive => {
@@ -21,9 +22,8 @@ test.each([true, false])('thumbnail does not intercept card clicks; interactive=
   const nodes = flatten(exports.ExploreCard({ project, loggedIn: false, username: null, interactive }));
   expect(nodes.find(node => node.type === 'Thumbnail').props.className).toContain('pointer-events-none');
   expect(nodes.some(node => node.type === 'Link' && node.props.href === '/p/project')).toBe(interactive);
-  expect(nodes.some(node => node.type === 'Eye')).toBe(interactive);
-  expect(nodes.some(node => node.type === 'MessageCircle')).toBe(interactive);
-  expect(nodes.some(node => node.type === 'VoteButton')).toBe(interactive);
+  expect(nodes.filter(node => ['VoteButton', 'ShareToFollowersButton', 'Eye', 'MessageCircle'].includes(node.type)).map(node => node.type))
+    .toEqual(interactive ? ['VoteButton', 'ShareToFollowersButton', 'Eye', 'MessageCircle'] : []);
 });
 
 test('featured thumbnail also lets clicks reach its card link', () => {
