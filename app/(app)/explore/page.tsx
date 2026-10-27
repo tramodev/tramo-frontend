@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Check, Eye, MessageCircle, Search } from "lucide-react"
+import { Eye, MessageCircle, Search } from "lucide-react"
 import { VoteButton } from "@/components/social/vote-button"
 import { ShareToFollowersButton } from "@/components/social/share-to-followers-button"
 import { BookmarkButton } from "@/components/social/bookmark-button"
@@ -69,7 +69,7 @@ export default async function ExplorePage({
               className="h-12 w-full rounded-full border-0 bg-surface-container-high pl-[46px] pr-5 text-[0.9375rem] outline-none transition-colors placeholder:text-muted-foreground focus:bg-surface-container-highest"
             />
           </div>
-          <div className="flex h-10 items-center overflow-hidden rounded-full border border-input">
+          <nav aria-label="Explore feeds" className="grid h-10 auto-cols-fr grid-flow-col overflow-hidden rounded-full border border-input lg:shrink-0">
             {(
               loggedIn
                 ? ([
@@ -81,23 +81,21 @@ export default async function ExplorePage({
                     ["recent", "Recent"],
                     ["hot", "Hot"],
                   ] as const)
-            ).map(([value, label], i) => (
-              <span key={value} className="flex h-full items-center">
-                {i > 0 && <span className="h-full w-px bg-input" />}
-                <Link
-                  href={`/explore?${new URLSearchParams({ ...(q ? { q } : {}), sort: value }).toString()}`}
-                  className={`flex h-full items-center gap-1.5 px-[18px] text-[0.8125rem] font-medium transition-colors ${
-                    sort === value
-                      ? "bg-secondary text-secondary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  {sort === value && <Check className="h-3 w-3" strokeWidth={2.5} />}
-                  {label}
-                </Link>
-              </span>
+            ).map(([value, label]) => (
+              <Link
+                key={value}
+                href={`/explore?${new URLSearchParams({ ...(q ? { q } : {}), sort: value }).toString()}`}
+                aria-current={sort === value ? "page" : undefined}
+                className={`flex h-full min-w-0 items-center justify-center border-l border-input px-4 text-[0.8125rem] font-medium transition-colors first:border-l-0 ${
+                  sort === value
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {label}
+              </Link>
             ))}
-          </div>
+          </nav>
         </form>
       </div>
 
