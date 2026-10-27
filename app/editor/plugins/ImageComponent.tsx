@@ -265,6 +265,7 @@ export default function ImageComponent({
       <input
         key={`${nodeKey}-${caption}`}
         defaultValue={caption}
+        aria-label="Image caption"
         placeholder="Add a caption..."
         className="editor-image-caption editor-image-caption-input"
         onBlur={(event) => commitCaption(event.target.value)}

@@ -760,6 +760,11 @@ div.editor-equation {
   outline: none;
 }
 
+.editor-image-caption-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .editor-image-alt-badge {
   position: absolute;
   top: 6px;
