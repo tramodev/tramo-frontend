@@ -94,7 +94,7 @@ export function LoginForm({
             name="username"
             aria-invalid={!!state?.error}
             aria-describedby={state?.error ? 'login-error' : undefined}
-            placeholder="pepito123"
+            placeholder=" "
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
