@@ -20,7 +20,7 @@ export default async function Home() {
 
   return (
     <LandingMotionConfig>
-      <div className="min-h-screen [&>footer]:rounded-t-[64px] [&>footer]:bg-muted">
+      <div className="min-h-screen">
         <Navbar />
         <main id="main-content" tabIndex={-1} className="container-app px-6 md:px-12">
           <Hero />
