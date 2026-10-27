@@ -212,6 +212,7 @@ export default async function ExplorePage({
             key={`${sort}-${q ?? ""}`}
             initialItems={bundle.feed}
             initialHasMore={bundle.hasMore}
+            initialCursor={bundle.nextCursor}
             featuredId={featured?.id}
             query={q}
             sort={sort}

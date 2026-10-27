@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 import { backendFetch } from '@/lib/backend-fetch';
+import { expectOk } from '@/lib/http';
 
 import { cookies } from "next/headers";
 import { API_BASE_URL, EXPLORE_PAGE_SIZE } from "./config";
@@ -105,6 +106,7 @@ export interface AuthorCount {
 export interface ExploreBundle {
   feed: ProjectFeedItem[];
   hasMore: boolean;
+  nextCursor: string | null;
   featured: ProjectFeedItem | null;
   hotTopics: TagCount[];
   activeAuthors: AuthorCount[];
@@ -114,6 +116,7 @@ export interface ExploreBundle {
 interface ExploreBundleDTO {
   feed: ProjectFeedItemDTO[];
   hasMore: boolean;
+  nextCursor: string | null;
   featured: ProjectFeedItemDTO | null;
   hotTopics: TagCount[];
   activeAuthors: AuthorCount[];
@@ -124,22 +127,25 @@ export async function getExploreBundle(
   query?: string,
   sort: FeedSort = "recent",
   page: number = 0,
-  size: number = EXPLORE_PAGE_SIZE
+  size: number = EXPLORE_PAGE_SIZE,
+  cursor?: string
 ): Promise<ExploreBundle> {
   const url = new URL(`${API_BASE_URL}/api/public/explore`);
   if (query) url.searchParams.set("q", query);
   url.searchParams.set("sort", sort);
   url.searchParams.set("page", String(page));
   url.searchParams.set("size", String(size));
+  if (cursor) url.searchParams.set("cursor", cursor);
 
   const response = await backendFetch(url, { cache: "no-store", headers: await authHeaders() });
 
-  if (!response.ok) return { feed: [], hasMore: false, featured: null, hotTopics: [], activeAuthors: [], trendingProjects: [] };
+  await expectOk(response);
 
   const data: ExploreBundleDTO = await response.json();
   return {
     feed: data.feed.map(toFeedItem),
     hasMore: data.hasMore,
+    nextCursor: data.nextCursor ?? null,
     featured: data.featured ? toFeedItem(data.featured) : null,
     hotTopics: data.hotTopics,
     activeAuthors: data.activeAuthors,
