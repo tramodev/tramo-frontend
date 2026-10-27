@@ -53,7 +53,7 @@ function previewText(content: string | null) {
 }
 
 const Card = memo(function Card({ data }: NodeProps<CardNode>) {
-  return <div className={`relative min-h-[132px] w-[480px] rounded-md border bg-card p-4 ${data.selected ? "border-primary" : "border-border"}`} style={data.color ? { background: `color-mix(in srgb, var(--ed-${data.color}) 16%, var(--card))` } : undefined}>
+  return <div className={`relative min-h-[132px] w-[min(480px,calc(100vw-6rem))] rounded-md border bg-card p-4 ${data.selected ? "border-primary" : "border-border"}`} style={data.color ? { background: `color-mix(in srgb, var(--ed-${data.color}) 16%, var(--card))` } : undefined}>
     <Handle id="target-top" type="target" position={Position.Top} className="!h-5 !w-5 !opacity-0" />
     <Handle id="source-bottom" type="source" position={Position.Bottom} className="!h-5 !w-5 !opacity-0" />
     <Handle id="target-left" type="target" position={Position.Left} className="!h-5 !w-5 !opacity-0" />
@@ -188,10 +188,10 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
         const item = items[itemId]
         const appearance = { id: `card:${column.trailId || "loose"}:${itemId}`, itemId, trailId: column.trailId || undefined, column: columnIndex, row }
         appearances.set(itemId, [...(appearances.get(itemId) ?? []), appearance])
-        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: item.content != null ? previewText(item.content) : mapPreviews?.[itemId]?.text ?? "", number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]) }, draggable: false, zIndex: 1 })
+        nodes.push({ id: appearance.id, type: "card", position: { x: x + inset, y }, data: { itemId, trailId: appearance.trailId, title: item.title, preview: item.content != null ? previewText(item.content) : mapPreviews?.[itemId]?.text ?? "", number: row + 1, selected: preview ? itemId === selectedItemId && (!activeTrailId || activeTrailId === column.trailId) : selectedCardId === appearance.id, shared: (counts.get(itemId) ?? 0) > 1, color: GRAPH_COLORS.find(color => color === colors.items[itemId]) }, ariaLabel: `Open note: ${item.title || "Untitled note"}`, ariaRole: "button", draggable: false, zIndex: 1 })
         y += (heights[appearance.id] ?? 132) + 40
       })
-      nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: cardWidth + inset * 2, height: Math.max(104, y - inset) }, draggable: false, selectable: false, connectable: false, zIndex: -1 })
+      nodes.push({ id: `lane:${column.trailId || "loose"}`, type: "lane", position: { x, y: 0 }, data: { title: column.title, color: GRAPH_COLORS.find(color => color === colors.trails[column.trailId]) }, style: { width: cardWidth + inset * 2, height: Math.max(104, y - inset) }, draggable: false, selectable: false, focusable: false, connectable: false, zIndex: -1 })
     })
     const sharedEdges: Edge[] = []
     for (const [itemId, copies] of appearances) for (let index = 1; index < copies.length; index++) {
@@ -279,7 +279,12 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
       setError("Could not save map colors. Please try again.")
     } finally { setSavingColors(false) }
   }
-  return <div ref={graphRef} tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") { setMenu(null); setSelectedCardId(null); setSelectedConnection(undefined) } }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
+  return <div ref={graphRef} tabIndex={-1} onKeyDown={event => {
+    if (event.key === "Enter" || event.key === " ") {
+      const card = nodes.find((node): node is CardNode => node.type === "card" && node.id === (event.target as HTMLElement).closest(".react-flow__node")?.getAttribute("data-id"))
+      if (card) { event.preventDefault(); event.stopPropagation(); onSelectItem(items[card.data.itemId], card.data.trailId) }
+    }
+    if (event.key === "Escape") { setMenu(null); setSelectedCardId(null); setSelectedConnection(undefined) } }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
     <div className="min-h-0 flex-1">
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 1 }} minZoom={preview ? 0.01 : 0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={false} onEdgeClick={(_, edge) => { if (!graphReferences.some(reference => reference.id === edge.id)) return; setMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
         setMenu(null)
@@ -298,11 +303,15 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
         if (node.type === "card") {
           setMenu({ kind: "item", sourceId: node.data.itemId, x, y })
         } else if (node.type === "lane") setMenu({ kind: "trail", trailId: node.id.slice(5), x, y })
-      }} onPaneClick={() => { setMenu(null); setSelectedCardId(null); setSelectedConnection(undefined) }} panOnDrag={!preview} zoomOnScroll={!preview} zoomOnPinch={!preview} zoomOnDoubleClick={!preview} elementsSelectable={!preview} nodesFocusable={!preview} edgesFocusable={!preview} proOptions={preview ? { hideAttribution: true } : undefined}>
+      }} onPaneClick={() => { setMenu(null); setSelectedCardId(null); setSelectedConnection(undefined) }} panOnDrag={!preview} zoomOnScroll={!preview} zoomOnPinch={!preview} zoomOnDoubleClick={false} elementsSelectable={!preview} nodesFocusable={!preview} edgesFocusable={false} proOptions={preview ? { hideAttribution: true } : undefined}>
         {!preview && <Background color="var(--border)" gap={22} size={1} />}
         {!preview && <Controls position="bottom-right" showInteractive={false} />}
       </ReactFlow>
     </div>
+    {!preview && graphReferences.length > 0 && <details className="max-h-40 shrink-0 overflow-auto border-t border-border px-5 py-2 text-xs">
+      <summary className="cursor-pointer">Connections ({graphReferences.length})</summary>
+      {graphReferences.map(reference => <button key={reference.id} type="button" aria-pressed={selectedConnection === reference.id} className="block py-2 text-left text-muted-foreground hover:text-foreground" onClick={() => { setSelectedCardId(null); setSelectedConnection(reference.id) }}>{items[reference.sourceId].title} — {items[reference.targetId].title}</button>)}
+    </details>}
     {menu && <div className="absolute z-20 w-64 rounded-md border border-border bg-card p-2 text-sm" style={{ left: menu.x, top: menu.y }} onKeyDown={event => { if (event.key === "Escape") setMenu(null) }}>
       {onSaveColors && <div className="px-2 pt-2">
         <p className="mb-2 text-xs text-muted-foreground">Background color</p>

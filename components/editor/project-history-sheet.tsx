@@ -23,6 +23,7 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
+  const paginationFocus = useRef<number | null>(null);
   const createButton = useRef<HTMLButtonElement>(null);
   const action = useRef(false);
 
@@ -35,6 +36,7 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
     setLoading(true); setError('');
     try {
       const result = await getProjectHistory(projectId, beforeId);
+      paginationFocus.current = beforeId != null ? history?.versions.length ?? 0 : null;
       setHistory(previous => beforeId && previous ? { ...result, versions: [...previous.versions, ...result.versions] } : result);
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not load history.'); }
     finally { setLoading(false); }
@@ -80,8 +82,8 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
             {loading && <p role="status" className="text-sm text-muted-foreground">Loading history…</p>}
             {!loading && history?.versions.length === 0 && <p className="text-sm text-muted-foreground">No versions yet. Create a snapshot or start editing.</p>}
             <div className="flex flex-col gap-1 [&>div]:rounded-none" role="group" aria-label="Versions">
-              {history?.versions.map(version => <Row key={version.id}>
-                <Link href={`/projects/${projectId}/history/${version.id}`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary" aria-label={`Preview ${version.name || version.type.toLowerCase() + ' version'} in a new tab`}>
+              {history?.versions.map((version, index) => <Row key={version.id}>
+                <Link ref={element => { if (element && !loading && paginationFocus.current === index) { paginationFocus.current = null; element.focus(); } }} href={`/projects/${projectId}/history/${version.id}`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary" aria-label={`Preview ${version.name || version.type.toLowerCase() + ' version'} from ${new Date(version.createdAt).toLocaleString()} in a new tab`}>
                   <div className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{version.name || (version.type === 'RESTORE' ? 'Before restoration' : version.type === 'MANUAL' ? 'Manual version' : 'Automatic version')}</span>
                     <span className="block text-xs text-muted-foreground">{version.type} · {new Date(version.createdAt).toLocaleString()}</span>
@@ -89,7 +91,7 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
                   <ExternalLink className="h-3 w-3 shrink-0" />
                 </Link>
               </Row>)}
-              {history?.nextCursor && <Button variant="ghost" disabled={loading || busy} onClick={() => void load(history.nextCursor!)}>Load older versions</Button>}
+              {history?.nextCursor && <Button variant="ghost" aria-disabled={loading || busy} onClick={() => { if (!loading && !busy) void load(history.nextCursor!); }}>Load older versions</Button>}
             </div>
           </Tabs.Content>
           <Tabs.Content value="publish" className="flex flex-col gap-1 [&>div]:rounded-none" aria-busy={publicationsLoading}>
