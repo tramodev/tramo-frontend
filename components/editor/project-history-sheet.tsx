@@ -23,6 +23,7 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [compareIds, setCompareIds] = useState<number[]>([]);
   const paginationFocus = useRef<number | null>(null);
   const createButton = useRef<HTMLButtonElement>(null);
   const action = useRef(false);
@@ -59,7 +60,7 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
   };
 
   return <>
-    <Sheet open={open} onOpenChange={next => { if (action.current) return; setOpen(next); if (next) { setCreating(false); setName(''); setTab('project'); setHistory(null); void load(); } }}>
+    <Sheet open={open} onOpenChange={next => { if (action.current) return; setOpen(next); if (next) { setCreating(false); setName(''); setTab('project'); setHistory(null); setCompareIds([]); void load(); } }}>
       <SheetTrigger asChild><Button variant="ghost" size="icon" title="Version history" aria-label="Version history"><History className="h-[15px] w-[15px]" /></Button></SheetTrigger>
       <SheetContent className="top-28 h-[calc(100%-7rem)] md:top-16 md:h-[calc(100%-4rem)] overflow-y-auto sm:max-w-lg 2xl:max-w-[37.5rem]">
         <SheetHeader className="pr-12"><SheetTitle>Version history</SheetTitle><SheetDescription>Browse project drafts and published versions.</SheetDescription></SheetHeader>
@@ -81,12 +82,15 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
             {error && <div role="alert" className="text-sm text-destructive">{error}<Button variant="ghost" disabled={busy || loading} onClick={() => void load()}>Reload history</Button></div>}
             {loading && <p role="status" className="text-sm text-muted-foreground">Loading history…</p>}
             {!loading && history?.versions.length === 0 && <p className="text-sm text-muted-foreground">No versions yet. Create a snapshot or start editing.</p>}
+            {compareIds.length === 2 && <Button asChild variant="outline"><Link href={`/projects/${projectId}/history/${Math.min(...compareIds)}?compare=${Math.max(...compareIds)}`} target="_blank" rel="noopener noreferrer">Compare selected versions (new tab)</Link></Button>}
+            <p className="text-xs text-muted-foreground">Select two versions to compare their changes.</p>
             <div className="flex flex-col gap-1 [&>div]:rounded-none" role="group" aria-label="Versions">
               {history?.versions.map((version, index) => <Row key={version.id}>
-                <Link ref={element => { if (element && !loading && paginationFocus.current === index) { paginationFocus.current = null; element.focus(); } }} href={`/projects/${projectId}/history/${version.id}`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary" aria-label={`Preview ${version.name || version.type.toLowerCase() + ' version'} from ${new Date(version.createdAt).toLocaleString()} in a new tab`}>
+                <input type="checkbox" className="accent-primary" aria-label={`Compare ${version.name || version.type.toLowerCase() + ' version'} from ${new Date(version.createdAt).toLocaleString()}`} checked={compareIds.includes(version.id)} disabled={compareIds.length === 2 && !compareIds.includes(version.id)} onChange={event => setCompareIds(ids => event.target.checked ? [...ids, version.id] : ids.filter(id => id !== version.id))} />
+                <Link ref={element => { if (element && !loading && paginationFocus.current === index) { paginationFocus.current = null; element.focus(); } }} href={`/projects/${projectId}/history/${version.id}`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary" aria-label={`Preview ${version.name || version.type.toLowerCase() + ' version'} from ${new Date(version.createdAt).toLocaleString()} by ${version.authorUsername} in a new tab`}>
                   <div className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{version.name || (version.type === 'RESTORE' ? 'Before restoration' : version.type === 'MANUAL' ? 'Manual version' : 'Automatic version')}</span>
-                    <span className="block text-xs text-muted-foreground">{version.type} · {new Date(version.createdAt).toLocaleString()}</span>
+                    <span className="block text-xs text-muted-foreground">{version.type} · {new Date(version.createdAt).toLocaleString()} · @{version.authorUsername}</span>
                   </div>
                   <ExternalLink className="h-3 w-3 shrink-0" />
                 </Link>

@@ -79,7 +79,7 @@ test('private version page maps saved order, transclusions and loose notes with 
     '@/components/ui/sidebar': { SidebarProvider: 'Sidebar' },
     'next/navigation': { notFound: () => { throw new Error('Not found'); } },
   });
-  const props = { params: Promise.resolve({ projectId: 'project', versionId: '42' }) };
+  const props = { params: Promise.resolve({ projectId: 'project', versionId: '42' }), searchParams: Promise.resolve({}) };
   const view = (await page.default(props)).props.children;
   expect(view.type).toBe('View');
   expect(view.props.project.title).toBe('Saved title');
@@ -102,5 +102,30 @@ test('private version page maps saved order, transclusions and loose notes with 
   status = 200;
   detail = null;
   await expect(page.default(props)).rejects.toThrow('Not found');
-  await expect(page.default({ params: Promise.resolve({ projectId: 'project', versionId: 'invalid' }) })).rejects.toThrow('Not found');
+  await expect(page.default({ params: Promise.resolve({ projectId: 'project', versionId: 'invalid' }), searchParams: Promise.resolve({}) })).rejects.toThrow('Not found');
+});
+
+test('comparison loads two private versions and rejects inaccessible or invalid targets', async () => {
+  const requests = [];
+  let allowed = true;
+  const page = load('app/projects/[projectId]/history/[versionId]/page.tsx', {
+    '@/lib/project-history': { getProjectVersion: async (projectId, id) => { requests.push([projectId, id]); return id === 43 && !allowed ? null : { version: { id }, snapshot: {} }; } },
+    '@/lib/api': { authenticatedFetch: async () => Response.json({ restoreEpoch: 1 }) },
+    '@/lib/config': { API_BASE_URL: 'http://backend' },
+    '@/lib/http': { parseResponse: async response => response.json() },
+    '@/lib/profile': { getMyProfile: async () => ({ username: 'owner' }) },
+    '@/components/project/version-comparison': { VersionComparison: 'Comparison' },
+    'next/navigation': { notFound: () => { throw new Error('Not found'); } },
+  });
+  const props = { params: Promise.resolve({ projectId: 'private', versionId: '42' }), searchParams: Promise.resolve({ compare: '43' }) };
+  const view = await page.default(props);
+  expect(view.type).toBe('Comparison');
+  expect(view.props.before.version.id).toBe(42);
+  expect(view.props.after.version.id).toBe(43);
+  expect(requests).toEqual([['private', 42], ['private', 43]]);
+  allowed = false;
+  await expect(page.default(props)).rejects.toThrow('Not found');
+  for (const compare of ['invalid', '-1', '42']) {
+    await expect(page.default({ ...props, searchParams: Promise.resolve({ compare }) })).rejects.toThrow('Not found');
+  }
 });

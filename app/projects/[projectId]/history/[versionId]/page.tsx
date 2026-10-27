@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { VersionComparison } from '@/components/project/version-comparison';
 import { PublicProjectView } from '@/components/project/public-project-view';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { authenticatedFetch } from '@/lib/api';
@@ -11,17 +12,25 @@ import type { PublicItem } from '@/lib/public-project';
 
 export const metadata: Metadata = { title: 'Project version preview', robots: { index: false, follow: false } };
 
-export default async function ProjectVersionPage({ params }: { params: Promise<{ projectId: string; versionId: string }> }) {
+export default async function ProjectVersionPage({ params, searchParams }: { params: Promise<{ projectId: string; versionId: string }>; searchParams: Promise<{ compare?: string }> }) {
   const { projectId, versionId } = await params;
+  const { compare } = await searchParams;
+  const comparisonId = compare === undefined ? null : Number(compare);
+  if (comparisonId !== null && (!Number.isSafeInteger(comparisonId) || comparisonId <= 0)) notFound();
   const id = Number(versionId);
   if (!Number.isSafeInteger(id) || id <= 0) notFound();
-  const [detail, response, profile] = await Promise.all([
+  const [detail, response, profile, comparison] = await Promise.all([
     getProjectVersion(projectId, id),
     authenticatedFetch(`${API_BASE_URL}/api/project/${encodeURIComponent(projectId)}`, { cache: 'no-store' }),
     getMyProfile(),
+    comparisonId === null ? null : getProjectVersion(projectId, comparisonId),
   ]);
   if (!detail || !profile || response.status === 403 || response.status === 404) notFound();
   const { restoreEpoch } = await parseResponse<{ restoreEpoch: number }>(response);
+  if (comparisonId !== null) {
+    if (!comparison || comparisonId === id) notFound();
+    return <VersionComparison projectId={projectId} before={detail} after={comparison} />;
+  }
   const { snapshot, version } = detail;
   const items = new Map(snapshot.items.map(item => [item.id, {
     id: String(item.id), title: item.title, type: item.type ?? null, content: item.content ?? '', titleAlign: item.titleAlign ?? 'center',

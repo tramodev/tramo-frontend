@@ -5,7 +5,7 @@ import { authenticatedFetch } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/config';
 import { parseResponse } from '@/lib/http';
 
-export interface HistoryVersion { id: number; createdAt: string; type: 'AUTO' | 'MANUAL' | 'RESTORE'; name: string | null }
+export interface HistoryVersion { id: number; createdAt: string; type: 'AUTO' | 'MANUAL' | 'RESTORE'; name: string | null; authorUsername: string }
 export interface ProjectHistory { versions: HistoryVersion[]; nextCursor: number | null; unavailable: boolean }
 export interface VersionDetail {
   version: HistoryVersion;
