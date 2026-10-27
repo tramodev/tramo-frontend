@@ -61,6 +61,7 @@ export function ReportButton({ projectId, isLoggedIn }: { projectId: string; isL
           <DialogTrigger asChild>
             <button
               type="button"
+              aria-label="Report this project"
               onClick={handleTriggerClick}
               className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-muted text-muted-foreground"
             >

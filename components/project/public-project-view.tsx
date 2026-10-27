@@ -186,7 +186,7 @@ export function PublicProjectView({
               isLoggedIn={isLoggedIn}
               viewerUsername={username}
             >
-              <Link href={`/u/${encodeURIComponent(project.ownerUsername)}`} className="font-medium hover:text-primary">
+              <Link href={`/u/${encodeURIComponent(project.ownerUsername)}`} className="touch-target inline-flex min-h-6 items-center font-medium hover:text-primary">
                 {project.ownerUsername}
               </Link>
             </ProfileHoverCard>
@@ -196,7 +196,7 @@ export function PublicProjectView({
                 forked from{" "}
                 <Link
                   href={`/p/${encodeURIComponent(publicProject.forkedFromProjectId)}`}
-                  className="font-medium hover:text-primary"
+                  className="touch-target inline-flex min-h-6 items-center font-medium hover:text-primary"
                 >
                   {publicProject.forkedFromTitle ?? "Original project"}
                 </Link>
@@ -211,7 +211,7 @@ export function PublicProjectView({
                     >
                       <Link
                         href={`/u/${encodeURIComponent(publicProject.forkedFromOwnerUsername)}`}
-                        className="font-medium hover:text-primary"
+                        className="touch-target inline-flex min-h-6 items-center font-medium hover:text-primary"
                       >
                         @{publicProject.forkedFromOwnerUsername}
                       </Link>

@@ -184,6 +184,7 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
         className="hidden"
       />
       <LexicalTypeaheadMenuPlugin<SlashOption>
+        anchorClassName="editor-typeahead-anchor"
         onQueryChange={setQueryString}
         onClose={onClose}
         onSelectOption={onSelectOption}

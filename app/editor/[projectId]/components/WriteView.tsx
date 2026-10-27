@@ -207,6 +207,7 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
   const matchSlash = useBasicTypeaheadTriggerMatch('/', { minLength: 0 });
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
   const [history] = useState(() => restoreItemHistory(session, editor));
+  const lastContentRef = useRef(JSON.stringify(editor.getEditorState().toJSON()));
   useEffect(() => {
     const unregister = editor.registerUpdateListener(({ editorState }) => {
       session.state = editorState;
@@ -261,6 +262,9 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
         <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         <ItemNavigationPlugin itemId={item.id} register={register} move={move} />
         <OnChangePlugin onChange={(state, editor, tags) => {
+          const json = JSON.stringify(state.toJSON());
+          if (json === lastContentRef.current) return;
+          lastContentRef.current = json;
           if (tags.has('extraction')) return;
           const pendingCommand = !!props.draft && state.read(() => {
             const selection = $getSelection();
@@ -341,6 +345,7 @@ export function WriteView(props: WriteViewProps) {
   const [focusedItemId, setFocusedItemId] = useState(item.id);
   const [positionedContext, setPositionedContext] = useState<string | null>(null);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
+  const [toolbarOpen, setToolbarOpen] = useState(false);
   const editorInnerRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef(new Map<string, HTMLElement>());
   const editors = useRef(new Map<string, LexicalEditor>());
@@ -472,7 +477,10 @@ export function WriteView(props: WriteViewProps) {
         {!revealed && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background text-sm text-muted-foreground" role="status">
           {props.contentLoadError ? <><p>Could not load the editor.</p><button type="button" className="text-foreground underline" onClick={props.onRetryContent}>Retry</button></> : <><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</>}
         </div>}
-        <div ref={setToolbar} data-editor-toolbar className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
+        <button type="button" className="editor-toolbar-toggle min-h-11 shrink-0 items-center gap-2 px-3 text-sm text-muted-foreground hover:bg-muted" aria-expanded={toolbarOpen} aria-controls="editor-formatting-toolbar" onClick={() => setToolbarOpen(open => !open)}>
+          {toolbarOpen ? 'Close formatting' : 'Formatting'}
+        </button>
+        <div ref={setToolbar} id="editor-formatting-toolbar" data-editor-toolbar data-open={toolbarOpen} className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
         {props.reorderNotice && props.reorderNotice.error && <div
           role={props.reorderNotice.error ? 'alert' : 'status'} className="mx-4 my-2 max-h-36 shrink-0 overflow-y-auto rounded-lg border border-border bg-muted p-3 text-sm">
           {props.reorderNotice.error && <p className="text-destructive">{props.reorderNotice.error}</p>}

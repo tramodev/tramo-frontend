@@ -27,7 +27,10 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
     if (!viewport) return;
     const resize = () => {
       workspaceRef.current?.style.setProperty('--editor-viewport-height', `${viewport.height}px`);
-      if (workspaceRef.current) workspaceRef.current.dataset.keyboardOpen = String(viewport.height < window.innerHeight * 0.75);
+      if (workspaceRef.current) {
+        workspaceRef.current.dataset.keyboardOpen = String(viewport.height < window.innerHeight * 0.75);
+        workspaceRef.current.dataset.shortViewport = String(viewport.width <= 1023 && viewport.height <= 400);
+      }
     };
     resize();
     viewport.addEventListener('resize', resize);

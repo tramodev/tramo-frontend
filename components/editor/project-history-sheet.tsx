@@ -79,7 +79,7 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
             {error && <div role="alert" className="text-sm text-destructive">{error}<Button variant="ghost" disabled={busy || loading} onClick={() => void load()}>Reload history</Button></div>}
             {loading && <p role="status" className="text-sm text-muted-foreground">Loading history…</p>}
             {!loading && history?.versions.length === 0 && <p className="text-sm text-muted-foreground">No versions yet. Create a snapshot or start editing.</p>}
-            <div className="flex flex-col gap-1 [&>div]:rounded-none" aria-label="Versions">
+            <div className="flex flex-col gap-1 [&>div]:rounded-none" role="group" aria-label="Versions">
               {history?.versions.map(version => <Row key={version.id}>
                 <Link href={`/projects/${projectId}/history/${version.id}`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary" aria-label={`Preview ${version.name || version.type.toLowerCase() + ' version'} in a new tab`}>
                   <div className="min-w-0 flex-1">

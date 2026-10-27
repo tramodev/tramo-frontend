@@ -76,6 +76,7 @@ export default function WikiLinkPlugin({
 
   return (
     <LexicalTypeaheadMenuPlugin<WikiLinkOption>
+      anchorClassName="editor-typeahead-anchor"
       onQueryChange={setQueryString}
       onSelectOption={onSelectOption}
       triggerFn={checkForWikiLinkTriggerMatch}

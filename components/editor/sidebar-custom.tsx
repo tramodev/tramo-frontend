@@ -439,7 +439,7 @@ export function SidebarCustom({
           <div className={q ? "hidden" : "contents"}>
             <Collapsible defaultOpen className="group/trails">
               <SidebarGroup className="py-1">
-                <div className="project-sidebar-heading flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
+                <div className="project-sidebar-heading flex min-h-11 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
                   <CollapsibleTrigger asChild>
                     <button className="flex flex-1 items-center gap-1.5">
                       <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/trails:rotate-90" />
@@ -448,7 +448,7 @@ export function SidebarCustom({
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[0.6875rem] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" title="New trail" disabled={draft} onClick={() => setIsCreating(true)}>
+                    <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="New trail" title="New trail" disabled={draft} onClick={() => setIsCreating(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </span>
@@ -555,8 +555,8 @@ export function SidebarCustom({
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-auto w-6 shrink-0 self-stretch rounded-none hover:bg-primary/10"
-                                      title="New note"
+                                      className="min-h-11 w-11 shrink-0 self-stretch rounded-none hover:bg-primary/10"
+                                      aria-label="New note" title="New note"
                                       disabled={draft}
                                       onClick={() => setCreatingItemTrailId(trail.id)}
                                     >
@@ -815,7 +815,7 @@ export function SidebarCustom({
 
             <Collapsible defaultOpen className="group/items">
               <SidebarGroup className="py-1">
-                <div className="project-sidebar-heading flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
+                <div className="project-sidebar-heading flex min-h-11 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium text-muted-foreground">
                   <CollapsibleTrigger asChild>
                     <button className="flex flex-1 items-center gap-1.5">
                       <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/items:rotate-90" />
@@ -824,7 +824,7 @@ export function SidebarCustom({
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[0.6875rem] font-normal group-data-[state=open]/items:hidden">{allItems.length}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" title="New note" disabled={draft} onClick={() => setIsCreatingLoose(true)}>
+                    <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="New note" title="New note" disabled={draft} onClick={() => setIsCreatingLoose(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </span>

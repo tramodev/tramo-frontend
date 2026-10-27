@@ -65,6 +65,7 @@ export default function ItemMentionPlugin({
 
   return (
     <LexicalTypeaheadMenuPlugin<ItemMentionOption>
+      anchorClassName="editor-typeahead-anchor"
       onQueryChange={setQueryString}
       onSelectOption={onSelectOption}
       triggerFn={checkForTriggerMatch}

@@ -122,11 +122,11 @@ export default async function PublicProfilePage({
                   <Calendar className="h-[14px] w-[14px]" />
                   Joined {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </span>
-                <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=followers`} className="touch-target inline-flex min-h-6 items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
                   {stats.followersCount.toLocaleString('en-US')} followers
                 </Link>
-                <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=following`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                <Link href={`/u/${encodeURIComponent(profile.username)}/followers?tab=following`} className="touch-target inline-flex min-h-6 items-center gap-1.5 hover:text-foreground">
                   <Users className="h-[14px] w-[14px]" />
                   {stats.followingCount.toLocaleString('en-US')} following
                 </Link>

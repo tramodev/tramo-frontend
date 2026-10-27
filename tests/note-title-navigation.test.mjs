@@ -49,6 +49,7 @@ function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, c
       if (name === '../../plugins/SlashMenuPlugin') return { default: 'SlashMenu' };
       if (name === '@lexical/react/LexicalComposerContext') return { useLexicalComposerContext: () => [editor] };
       if (name === '@/app/editor/item-editor-session') return { restoreItemHistory: () => ({ current: null, undoStack: [], redoStack: [] }) };
+      if (name === '@/app/editor/nodes/ImageNode') return { ImageNode: class { static getType() { return 'image'; } } };
       if (name === 'lexical' || name === '@lexical/utils') return require(name);
       return {};
     },
@@ -199,18 +200,47 @@ test('Enter focuses the body before the next keystroke or animation frame', () =
 
 test('draft changes defer creation while typing slash queries and flush after the menu closes', () => {
   const s = setup(), changes = [];
-  s.editor.update(() => {
-    const text = lexical.$getRoot().getFirstDescendant();
-    text.setTextContent('/e'); text.selectEnd();
-  }, { discrete: true });
   const tree = s.exports.ItemEditorContent({
     item: { id: 'draft', title: '' }, props: { trails: [], draft: true, onChange: (...args) => changes.push(args) },
     session: { previewUrls: new Set() }, onFocus() {}, onPendingImages() {}, focused: false,
   });
+  s.editor.update(() => {
+    const text = lexical.$getRoot().getFirstDescendant();
+    text.setTextContent('/e'); text.selectEnd();
+  }, { discrete: true });
   const children = tree.props.children.flat();
   children.find(node => node?.type === 'OnChange').props.onChange(s.editor.getEditorState(), s.editor, new Set());
   expect(changes[0][2]).toBe(true);
   children.find(node => node?.type === 'SlashMenu').props.onClose();
   s.flush();
   expect(changes[1][2]).toBe(false);
+});
+
+
+test('opening and dirtying unchanged notes never save, while edits and undo do', () => {
+  const s = setup(), saves = [];
+  const node = s.exports.ItemEditorContent({
+    item: { id: 'note', title: 'Note' }, props: { trails: [], onChange: (...args) => saves.push(args) },
+    session: { previewUrls: new Set() }, onPendingImages() {}, focused: false,
+  });
+  const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
+  const change = flatten(node).find(node => node.type === 'OnChange').props.onChange;
+  change(s.editor.getEditorState(), s.editor, new Set());
+  s.editor.update(() => lexical.$getRoot().getFirstDescendant().getWritable(), { discrete: true });
+  change(s.editor.getEditorState(), s.editor, new Set());
+  expect(saves).toHaveLength(0);
+  const original = s.editor.getEditorState();
+  s.editor.update(() => lexical.$getRoot().getFirstDescendant().setTextContent('edited'), { discrete: true });
+  change(s.editor.getEditorState(), s.editor, new Set(['history-merge']));
+  expect(saves).toHaveLength(1);
+  change(s.editor.getEditorState(), s.editor, new Set());
+  expect(saves).toHaveLength(1);
+  change(original, s.editor, new Set());
+  expect(saves).toHaveLength(2);
+  change(s.editor.getEditorState(), s.editor, new Set(['extraction']));
+  change(s.editor.getEditorState(), s.editor, new Set());
+  expect(saves).toHaveLength(2);
+  s.editor.update(() => lexical.$getRoot().getFirstDescendant().toggleFormat('bold'), { discrete: true });
+  change(s.editor.getEditorState(), s.editor, new Set());
+  expect(saves).toHaveLength(3);
 });
