@@ -118,6 +118,10 @@ test('moderation requests preserve encoded project IDs, pagination and backend f
   await exports.upholdCommentReport('1', 'Own reason');
   expect(requests[1][0]).toBe('http://backend/api/admin/comment-reports/1/uphold');
   expect(JSON.parse(requests[1][1].body)).toEqual({ reason: 'Own reason' });
+  for (const type of ['PROJECT', 'COMMENT']) {
+    await exports.dismissReport('1', type);
+    expect(requests.at(-1)[0]).toBe(`http://backend/api/admin/reports/1/dismiss?type=${type}`);
+  }
   status = 403;
   await expect(exports.getModerationLog()).rejects.toThrow('403');
   await expect(exports.listReports()).rejects.toThrow('403');

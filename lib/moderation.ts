@@ -103,7 +103,7 @@ export async function allowProjectPublishing(id: string): Promise<void> {
   await expectOk(await authenticatedFetch(`${API_BASE_URL}/api/admin/projects/${id}/allow-publishing`, { method: "POST" }));
 }
 
-export async function dismissReport(id: string, type: "PROJECT" | "COMMENT" = "PROJECT"): Promise<void> {
+export async function dismissReport(id: string, type: "PROJECT" | "COMMENT"): Promise<void> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/reports/${id}/dismiss?type=${type}`, { method: "POST" });
   await expectOk(response);
 }
