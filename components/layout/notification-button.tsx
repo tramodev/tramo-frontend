@@ -30,6 +30,7 @@ const ICONS: Record<AppNotification["type"], React.ComponentType<{ className?: s
   PUBLISH: Rocket,
   SHARE: Share2,
   COMMENT: MessageCircle,
+  MODERATION: Bell,
 }
 
 function others(count: number) {
@@ -39,6 +40,8 @@ function others(count: number) {
 
 function notificationText(n: AppNotification) {
   switch (n.type) {
+    case "MODERATION":
+      return <>{n.message || "A moderator took an action on your account."}</>
     case "UPVOTE":
       return <>{n.latestActorUsername}{others(n.count)} upvoted <strong>{n.projectTitle}</strong></>
     case "FORK":
@@ -239,7 +242,7 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
                   >
                     <Icon className="h-3.5 w-3.5" />
                   </span>
-                  <span className={`min-w-0 text-sm ${n.read ? "font-normal" : "font-bold"}`}>
+                  <span className={`min-w-0 [overflow-wrap:anywhere] text-sm ${n.read ? "font-normal" : "font-bold"}`}>
                     {notificationText(n)}
                     <time dateTime={n.updatedDate} className="mt-1 block text-xs font-normal text-muted-foreground">
                       {new Date(n.updatedDate).toLocaleString()}

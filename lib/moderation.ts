@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 
-import { API_BASE_URL } from "./config";
-import { authenticatedFetch } from "./api";
-import { expectOk } from "./http";
+import { API_BASE_URL } from "@/lib/config";
+import { authenticatedFetch } from "@/lib/api";
+import { expectOk } from "@/lib/http";
 
 export interface Report {
   id: string;
@@ -22,7 +22,7 @@ export interface Report {
 interface ReportDTO {
   id: number;
   type: "PROJECT" | "COMMENT";
-  projectId: number | null;
+  projectId: string | null;
   projectTitle: string | null;
   commentId: number | null;
   commentContent: string | null;
@@ -66,16 +66,19 @@ export async function reportComment(commentId: string, reason: string): Promise<
   await expectOk(response);
 }
 
-export async function listReports(): Promise<Report[]> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/reports`);
-  if (!response.ok) return [];
-  const data: ReportDTO[] = await response.json();
-  return data.map((r) => ({
-    ...r,
-    id: String(r.id),
-    projectId: r.projectId != null ? String(r.projectId) : null,
-    commentId: r.commentId != null ? String(r.commentId) : null,
-  }));
+export interface ReportPage { items: Report[]; hasMore: boolean }
+export async function listReports(page = 0, type = "ALL", status = "OPEN"): Promise<ReportPage> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/reports?page=${page}&size=20&type=${encodeURIComponent(type)}&status=${encodeURIComponent(status)}`, { cache: "no-store" });
+  await expectOk(response);
+  const data: { content: ReportDTO[]; hasMore: boolean } = await response.json();
+  return { items: data.content.map(r => ({ ...r, id: String(r.id), commentId: r.commentId != null ? String(r.commentId) : null })), hasMore: data.hasMore };
+}
+
+export async function upholdCommentReport(id: string, reason?: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/comment-reports/${id}/uphold`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }),
+  });
+  await expectOk(response);
 }
 
 export async function dismissReport(id: string, type: "PROJECT" | "COMMENT" = "PROJECT"): Promise<void> {
@@ -85,7 +88,7 @@ export async function dismissReport(id: string, type: "PROJECT" | "COMMENT" = "P
 
 export async function searchAdminUsers(q: string): Promise<AdminUser[]> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/users?q=${encodeURIComponent(q)}`);
-  if (!response.ok) return [];
+  await expectOk(response);
   const data: AdminUserDTO[] = await response.json();
   return data.map((u) => ({ ...u, id: String(u.id) }));
 }

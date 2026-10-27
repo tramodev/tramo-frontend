@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Flag, MessageCircle, Reply, Trash2 } from "lucide-react"
@@ -68,12 +68,14 @@ export function CommentsSection({
   const [deleteError, setDeleteError] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
+  const focusedHash = useRef("")
 
   function refresh() {
-    getComments(projectId, 0, PAGE_SIZE).then((page) => {
+    const focusId = window.location.hash.match(/^#comment-(\d+)$/)?.[1]
+    getComments(projectId, 0, PAGE_SIZE, focusId).then((page) => {
       setComments(page.items)
       setHasMore(page.hasMore)
-      setLoadedPages(1)
+      setLoadedPages(page.nextPage ?? 1)
     })
   }
 
@@ -82,7 +84,7 @@ export function CommentsSection({
     getComments(projectId, loadedPages, PAGE_SIZE).then((page) => {
       setComments((current) => [...(current ?? []), ...page.items])
       setHasMore(page.hasMore)
-      setLoadedPages((n) => n + 1)
+      setLoadedPages(page.nextPage ?? loadedPages + 1)
       setIsLoadingMore(false)
     })
   }
@@ -91,6 +93,16 @@ export function CommentsSection({
     refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
+
+  useEffect(() => {
+    if (!comments || focusedHash.current === window.location.hash || !/^#comment-\d+$/.test(window.location.hash)) return
+    const comment = document.getElementById(window.location.hash.slice(1))
+    if (comment) {
+      focusedHash.current = window.location.hash
+      comment.scrollIntoView({ block: "center" })
+      comment.focus({ preventScroll: true })
+    }
+  }, [comments])
 
   function requireLogin(): boolean {
     if (!isLoggedIn) {
@@ -302,6 +314,7 @@ export function CommentsSection({
               <Textarea
                 placeholder="Describe the issue..."
                 value={reportReason}
+                maxLength={255}
                 onChange={(e) => setReportReason(e.target.value)}
                 rows={4}
                 className="resize-none"
@@ -336,7 +349,7 @@ function CommentItem({
 }) {
   if (comment.deleted) {
     return (
-      <div className="flex items-start gap-2 text-sm text-muted-foreground italic">
+      <div id={`comment-${comment.id}`} tabIndex={-1} className="flex scroll-mt-24 items-start gap-2 text-sm text-muted-foreground italic">
         <div className="h-[22px] w-[22px] shrink-0 rounded-full bg-muted" />
         Comment deleted
       </div>
@@ -344,7 +357,7 @@ function CommentItem({
   }
 
   return (
-    <div className="group flex items-start gap-2">
+    <div id={`comment-${comment.id}`} tabIndex={-1} className="group flex scroll-mt-24 items-start gap-2">
       <AuthorAvatar username={comment.authorUsername ?? "?"} avatar={comment.authorAvatar} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm">

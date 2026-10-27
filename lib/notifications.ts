@@ -6,7 +6,7 @@ import { API_BASE_URL } from "@/lib/config";
 import { authenticatedFetch } from "@/lib/api";
 import { expectOk } from "@/lib/http";
 
-export type NotificationType = "UPVOTE" | "FORK" | "FOLLOW" | "BADGE" | "FEATURED" | "PUBLISH" | "SHARE" | "COMMENT";
+export type NotificationType = "UPVOTE" | "FORK" | "FOLLOW" | "BADGE" | "FEATURED" | "PUBLISH" | "SHARE" | "COMMENT" | "MODERATION";
 
 interface NotificationDTO {
   id: number;
@@ -19,6 +19,7 @@ interface NotificationDTO {
   count: number;
   read: boolean;
   updatedDate: string;
+  message?: string | null;
 }
 
 export interface AppNotification {
@@ -32,6 +33,7 @@ export interface AppNotification {
   count: number;
   read: boolean;
   updatedDate: string;
+  message?: string | null;
 }
 
 export async function getUnreadCount(): Promise<number> {

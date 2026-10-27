@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use server';
 
-import { API_BASE_URL } from "./config";
-import { authenticatedFetch } from "./api";
-import { expectOk } from "./http";
+import { API_BASE_URL } from "@/lib/config";
+import { authenticatedFetch } from "@/lib/api";
+import { expectOk } from "@/lib/http";
 
 export interface Comment {
   id: string;
@@ -33,14 +33,15 @@ interface CommentDTO {
 export interface CommentPage {
   items: Comment[];
   hasMore: boolean;
+  nextPage: number;
 }
 
-export async function getComments(projectId: string, page = 0, size = 20): Promise<CommentPage> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/public/project/${projectId}/comments?page=${page}&size=${size}`, {
+export async function getComments(projectId: string, page = 0, size = 20, focusId?: string): Promise<CommentPage> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/public/project/${projectId}/comments?page=${page}&size=${size}${focusId ? `&focusId=${encodeURIComponent(focusId)}` : ""}`, {
     cache: "no-store",
   });
-  if (!response.ok) return { items: [], hasMore: false };
-  const data: { content: CommentDTO[]; hasMore: boolean } = await response.json();
+  if (!response.ok) return { items: [], hasMore: false, nextPage: page + 1 };
+  const data: { content: CommentDTO[]; hasMore: boolean; page?: number } = await response.json();
   return {
     items: data.content.map((c) => ({
       ...c,
@@ -48,6 +49,7 @@ export async function getComments(projectId: string, page = 0, size = 20): Promi
       parentId: c.parentId != null ? String(c.parentId) : null,
     })),
     hasMore: data.hasMore,
+    nextPage: (data.page ?? page) + 1,
   };
 }
 

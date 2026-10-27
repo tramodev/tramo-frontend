@@ -87,6 +87,7 @@ export function ReportButton({ projectId, isLoggedIn }: { projectId: string; isL
             <Textarea
               placeholder="Describe the issue..."
               value={reason}
+                maxLength={255}
               onChange={(e) => setReason(e.target.value)}
               rows={4}
             />

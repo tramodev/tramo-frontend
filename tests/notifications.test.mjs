@@ -123,3 +123,10 @@ test('stream updates retain loaded pages and keep the existing list mounted whil
   expect(p.render().filter(n => n.type === 'time')).toHaveLength(46);
   expect(p.render().some(n => n.props.role === 'alert')).toBe(true);
 });
+
+test('moderation notices display the server message', async () => {
+  const p = panel();
+  p.items([{ id: '99', type: 'MODERATION', message: 'Your account has been unbanned.', count: 1, read: false, updatedDate: '2026-10-27T12:00:00Z' }]);
+  await p.open();
+  expect(p.render().some(node => node.props.children === 'Your account has been unbanned.')).toBe(true);
+});

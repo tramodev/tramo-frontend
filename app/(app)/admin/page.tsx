@@ -19,6 +19,7 @@ export default async function AdminPage() {
 
   return (
     <main id="main-content" tabIndex={-1} className="mx-auto w-full flex-1 px-8 py-8 max-w-[1000px]">
+      <h1 className="mb-6 font-display text-3xl font-medium">Administration</h1>
       <div className="mb-8"><Button asChild variant="secondary"><Link href="/admin/content">Manage site content</Link></Button></div>
       <AdminDashboard />
     </main>
