@@ -16,6 +16,7 @@ function load(path, modules = {}, extra = '', globals = {}) {
     exports, Error, URLSearchParams, setTimeout: () => {}, ...globals,
     require: name => ({
       '@/components/auth/current-user': { useCurrentUserId: () => '1' },
+      '@/hooks/use-mounted': { useMounted: () => true },
       react: {
         useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
         useState: initial => {
@@ -284,4 +285,44 @@ test('dismissing the editor hint persists for the same user across mounts', () =
   first.find(node => node.props['aria-label'] === 'Dismiss tip').props.onClick();
   expect(hint.render('TaskHint', props)).toBeNull();
   expect(hint.render('TaskHint', { ...props, id: 'bob:write' })).not.toBeNull();
+});
+
+
+test('My Projects keeps view and sorting choices across mounts', () => {
+  const storage = new Map();
+  const localStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) };
+  const createPage = () => load('app/(app)/projects/page.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/components/ui/dropdown-menu': { DropdownMenuItem: 'MenuItem' },
+    '@/lib/projects-store': { listProjects: async () => [] },
+  }, '', { localStorage });
+  let page = createPage();
+  const render = () => flatten(page.render('default'));
+  render().find(node => node.props['aria-label'] === 'List view').props.onClick();
+  render().find(node => node.type === 'MenuItem' && node.props.children === 'Title').props.onSelect();
+  render();
+  page = createPage();
+  expect(render().find(node => node.props['aria-label'] === 'List view').props['aria-pressed']).toBe(true);
+  expect(render().some(node => node.props.children === 'Title' && node.type !== 'MenuItem')).toBe(true);
+  render().find(node => node.props['aria-label'] === 'Grid view').props.onClick();
+  render().find(node => node.type === 'MenuItem' && node.props.children === 'Last modified').props.onSelect();
+  render();
+  page = createPage();
+  expect(render().find(node => node.props['aria-label'] === 'Grid view').props['aria-pressed']).toBe(true);
+  expect(render().some(node => node.props.children === 'Last modified' && node.type !== 'MenuItem')).toBe(true);
+});
+
+test.each([false, true])('My Projects falls back safely when storage is invalid or unavailable (%s)', blocked => {
+  const page = load('app/(app)/projects/page.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/lib/projects-store': { listProjects: async () => [] },
+  }, '', { localStorage: {
+    getItem() { if (blocked) throw new Error('Blocked'); return 'invalid'; },
+    setItem() { if (blocked) throw new Error('Blocked'); },
+  } });
+  let nodes = flatten(page.render('default'));
+  expect(nodes.find(node => node.props['aria-label'] === 'Grid view').props['aria-pressed']).toBe(true);
+  nodes.find(node => node.props['aria-label'] === 'List view').props.onClick();
+  nodes = flatten(page.render('default'));
+  expect(nodes.find(node => node.props['aria-label'] === 'List view').props['aria-pressed']).toBe(true);
 });

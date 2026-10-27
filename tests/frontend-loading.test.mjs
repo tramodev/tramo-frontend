@@ -17,16 +17,18 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
 
 function projectsSetup() {
   const states = [], requests = [], starts = [], navigations = [];
-  let index = 0, lastDeps, effect, cleanup;
+  let index = 0, effectIndex = 0;
+  const dependencies = [], pendingEffects = [], cleanups = [];
   const page = load('app/(app)/projects/page.tsx', name => ({
     react: {
-      useState: initial => { const i = index++; if (!(i in states)) states[i] = initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; },
+      useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; },
       useRef: value => ({ current: value }), useMemo: fn => fn(),
-      useEffect: (fn, deps) => { if (!lastDeps || deps.some((dep, i) => dep !== lastDeps[i])) { effect = fn; lastDeps = deps; } },
+      useEffect: (fn, deps) => { const i = effectIndex++; if (!dependencies[i] || deps.some((dep, j) => dep !== dependencies[i][j])) pendingEffects.push([i, fn]); dependencies[i] = deps; },
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'next/navigation': { useRouter: () => ({ push: url => navigations.push(url) }) },
     '@/components/auth/current-user': { useCurrentUserId: () => '1' },
+    '@/hooks/use-mounted': { useMounted: () => true },
     '@/lib/editor-draft': { beginDraft() {} },
     '@/components/ui/button': { Button: 'Button' },
     'lucide-react': { Loader2: 'Spinner' },
@@ -36,12 +38,12 @@ function projectsSetup() {
     },
   })[name] ?? {}, { sessionStorage: { getItem: () => 'request', setItem() {}, removeItem() {} } });
   function render() {
-    index = 0;
+    index = effectIndex = 0;
     const nodes = flatten(page.default());
-    if (effect) { cleanup?.(); cleanup = effect(); effect = null; }
+    for (const [i, effect] of pendingEffects.splice(0)) { cleanups[i]?.(); cleanups[i] = effect(); }
     return nodes;
   }
-  return { render, requests, starts, navigations, cleanup: () => cleanup?.() };
+  return { render, requests, starts, navigations, cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
 
 test('example creation uses a reserved inline status and clears it when the request fails', async () => {

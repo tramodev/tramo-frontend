@@ -34,6 +34,7 @@ import { ForkBadge } from "@/components/project/fork-badge"
 import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
 import { ProjectUsageDialog } from "@/components/project/project-usage-dialog"
 import { LocalDraftRecovery } from "@/components/editor/local-draft-recovery"
+import { useMounted } from "@/hooks/use-mounted"
 import { useCurrentUserId } from "@/components/auth/current-user"
 import { beginDraft } from "@/lib/editor-draft"
 import { formatBytes } from "@/lib/format-bytes"
@@ -75,8 +76,23 @@ export default function ProjectsPage() {
   const renameAfterClose = useRef<Project | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
   const [usageTarget, setUsageTarget] = useState<Project | null>(null)
-  const [sortBy, setSortBy] = useState<SortBy>("modified")
-  const [viewMode, setViewMode] = useState<ViewMode>("grid")
+  const mounted = useMounted()
+  const [savedSortBy, setSortBy] = useState<SortBy>(() => {
+    try { return localStorage.getItem("tramo:projects:sort") === "title" ? "title" : "modified" } catch { return "modified" }
+  })
+  const [savedViewMode, setViewMode] = useState<ViewMode>(() => {
+    try { return localStorage.getItem("tramo:projects:view") === "list" ? "list" : "grid" } catch { return "grid" }
+  })
+  const sortBy = mounted ? savedSortBy : "modified"
+  const viewMode = mounted ? savedViewMode : "grid"
+
+  useEffect(() => {
+    try { localStorage.setItem("tramo:projects:sort", savedSortBy) } catch {}
+  }, [savedSortBy])
+
+  useEffect(() => {
+    try { localStorage.setItem("tramo:projects:view", savedViewMode) } catch {}
+  }, [savedViewMode])
 
   useEffect(() => {
     let cancelled = false
