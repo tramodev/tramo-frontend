@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSelectedLayoutSegments } from 'next/navigation';
 import type { UserProfile } from '@/lib/profile';
-import { FolderPlus, Loader2 } from 'lucide-react';
+import { FolderPlus, Loader2, Type } from 'lucide-react';
 import { ProjectShell } from '@/components/editor/project-shell';
 import { SidebarCustom } from '@/components/editor/sidebar-custom';
 import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sidebar';
@@ -22,6 +22,7 @@ export function EditorWorkspace({ user }: { user: Pick<UserProfile, 'userId' | '
 
 export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string; user: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'> }) {
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const [toolbarOpen, setToolbarOpen] = useState(false);
   useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return;
@@ -123,7 +124,11 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={
-          project.loaded && <EditorActions
+          project.loaded && <>
+          {project.view === 'write' && project.selectedItem && <button type="button" className="editor-toolbar-toggle size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={toolbarOpen ? 'Close formatting' : 'Formatting'} title="Formatting" aria-expanded={toolbarOpen} aria-controls="editor-formatting-toolbar" onClick={() => setToolbarOpen(open => !open)}>
+            <Type className="size-4" />
+          </button>}
+          <EditorActions
             disabled={project.isDraft}
             restoreEpoch={project.restoreEpoch}
             textStats={textStats}
@@ -136,6 +141,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             }}
             profile={project.profile}
           />
+          </>
         }
         sidebar={
           project.loaded ? <SidebarCustom
@@ -169,9 +175,6 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             <h1 className="sr-only">{project.projectTitle || 'Untitled project'}</h1>
             {project.draftError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.draftError}<button type="button" className="underline" onClick={project.retryDraft}>Retry</button></div>}
             {project.titleSaveError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.titleSaveError}<button type="button" className="underline" onClick={project.retryItemTitles}>Retry</button></div>}
-            {project.loaded && project.profile && project.selectedItem && <TaskHint id={`${project.profile.username}:write`}>
-              Start writing in the note. Your changes save automatically; you can add a title later.
-            </TaskHint>}
             <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
             {!project.loaded ? <div className="editor-container flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</div> : <>
             {project.view === 'graph' && (
@@ -192,6 +195,10 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             <div className={project.view === 'graph' ? 'hidden' : 'editor-write-layout flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden'} inert={project.view === 'graph'}>
             {project.selectedItem ? (
               <WriteView
+                toolbarOpen={toolbarOpen}
+                hint={project.profile && <TaskHint id={`${project.profile.username}:write`}>
+                  Start writing in the note. Your changes save automatically; you can add a title later.
+                </TaskHint>}
                 draft={project.isDraft}
                 onDraftTitleChange={project.onDraftItemTitle}
                 resolveProjectId={project.resolveProjectId}

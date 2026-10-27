@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import type { EditorState } from 'lexical';
 import { createPortal } from 'react-dom';
@@ -57,6 +57,8 @@ import { Trail, Item, TitleAlign } from '../../types';
 import type { MapPreviews } from '@/lib/projects-store';
 
 interface WriteViewProps {
+  hint?: ReactNode;
+  toolbarOpen?: boolean;
   draft?: boolean;
   onDraftTitleChange?: (id: string, title: string) => void;
   resolveProjectId?: () => Promise<string | undefined>;
@@ -345,7 +347,6 @@ export function WriteView(props: WriteViewProps) {
   const [focusedItemId, setFocusedItemId] = useState(item.id);
   const [positionedContext, setPositionedContext] = useState<string | null>(null);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
-  const [toolbarOpen, setToolbarOpen] = useState(false);
   const editorInnerRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef(new Map<string, HTMLElement>());
   const editors = useRef(new Map<string, LexicalEditor>());
@@ -477,10 +478,7 @@ export function WriteView(props: WriteViewProps) {
         {!revealed && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background text-sm text-muted-foreground" role="status">
           {props.contentLoadError ? <><p>Could not load the editor.</p><button type="button" className="text-foreground underline" onClick={props.onRetryContent}>Retry</button></> : <><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</>}
         </div>}
-        <button type="button" className="editor-toolbar-toggle min-h-11 shrink-0 items-center gap-2 px-3 text-sm text-muted-foreground hover:bg-muted" aria-expanded={toolbarOpen} aria-controls="editor-formatting-toolbar" onClick={() => setToolbarOpen(open => !open)}>
-          {toolbarOpen ? 'Close formatting' : 'Formatting'}
-        </button>
-        <div ref={setToolbar} id="editor-formatting-toolbar" data-editor-toolbar data-open={toolbarOpen} className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
+        <div ref={setToolbar} id="editor-formatting-toolbar" data-editor-toolbar data-open={props.toolbarOpen ?? false} className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
         {props.reorderNotice && props.reorderNotice.error && <div
           role={props.reorderNotice.error ? 'alert' : 'status'} className="mx-4 my-2 max-h-36 shrink-0 overflow-y-auto rounded-lg border border-border bg-muted p-3 text-sm">
           {props.reorderNotice.error && <p className="text-destructive">{props.reorderNotice.error}</p>}
@@ -488,6 +486,7 @@ export function WriteView(props: WriteViewProps) {
         </div>}
         <div className="editor-inner" ref={editorInnerRef} style={{ visibility: revealed ? undefined : 'hidden' }} inert={!revealed}>
           <div className="editor-content-column">
+            {props.hint}
             {steps.map((step, index) => {
               const stepItem = items[step.itemId];
               if (!stepItem) return null;

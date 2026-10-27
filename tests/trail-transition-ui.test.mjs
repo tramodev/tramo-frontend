@@ -59,3 +59,13 @@ test('failed reorder has an accessible dismissible alert', () => {
   flatten(notice).find(node => node.type === 'button' && node.props.children === 'Dismiss').props.onClick();
   expect(p.dismissals()).toBe(1);
 });
+
+
+test('the writing hint scrolls with notes and compact formatting uses no content row', () => {
+  const hint = jsx('aside', { children: 'Start writing' });
+  const nodes = flatten(exports.WriteView({ ...props(), hint, toolbarOpen: true }));
+  const scroll = nodes.find(node => node.props.className === 'editor-inner');
+  expect(flatten(scroll)).toContain(hint);
+  expect(nodes.some(node => node.props.className?.includes('editor-toolbar-toggle'))).toBe(false);
+  expect(nodes.find(node => 'data-editor-toolbar' in node.props).props['data-open']).toBe(true);
+});

@@ -1130,13 +1130,6 @@ pre::-webkit-scrollbar-thumb {
   margin-right: 4px;
 }
 
-.toolbar .font-size-control button.toolbar-item {
-  width: 22px;
-  height: 28px;
-  padding: 0;
-  border-radius: 8px;
-}
-
 .toolbar .font-size-input {
   width: 32px;
   border: 0;
@@ -1330,7 +1323,7 @@ pre::-webkit-scrollbar-thumb {
 .editor-workspace[data-short-viewport="true"] [data-editor-toolbar] {
   display: none;
   position: absolute;
-  top: 44px;
+  top: 0;
   left: 0;
   right: 0;
   z-index: 20;
@@ -1368,4 +1361,9 @@ pre::-webkit-scrollbar-thumb {
 
 .editor-workspace[data-short-viewport="true"] .connections-tools button {
   flex-shrink: 0;
+}
+
+.editor-content-column > .editor-task-hint {
+  flex-shrink: 0;
+  margin-bottom: 12px;
 }
