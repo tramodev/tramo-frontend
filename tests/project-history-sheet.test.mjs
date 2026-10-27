@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-test('history names include dates and authors and pagination focuses the first appended version', async () => {
+test.each([undefined, null, '', 'author'])('history handles author %s and pagination focuses the first appended version', async authorUsername => {
   const exports = {}, hooks = [];
   let cursor = 0, page = 0;
-  const versions = [1, 2].map(id => ({ id, type: 'AUTO', name: null, authorUsername: 'author', createdAt: `2026-10-${10 + id}T12:00:00Z` }));
+  const versions = [1, 2].map(id => ({ id, type: 'AUTO', name: null, authorUsername, createdAt: `2026-10-${10 + id}T12:00:00Z` }));
   const jsx = (type, props) => ({ type, props });
   const hook = init => { const index = cursor++; if (!(index in hooks)) hooks[index] = init(); return index; };
   runInNewContext(ts.transpileModule(readFileSync('components/editor/project-history-sheet.tsx', 'utf8'), {
@@ -35,7 +35,12 @@ test('history names include dates and authors and pagination focuses the first a
   let rows = elements();
   const first = rows.find(node => node.type === 'Link');
   expect(first.props['aria-label']).toContain(new Date(versions[0].createdAt).toLocaleString());
-  expect(first.props['aria-label']).toContain('author');
+  expect(first.props['aria-label'].includes(' by ')).toBe(Boolean(authorUsername));
+  expect(first.props['aria-label']).not.toContain('undefined');
+  expect(first.props['aria-label']).not.toContain('null');
+  if (authorUsername) expect(first.props['aria-label']).toContain(`by ${authorUsername}`);
+  const visibleText = rows.flatMap(node => [node.props?.children].flat(Infinity)).filter(child => typeof child === 'string').join('');
+  expect(visibleText.includes('@')).toBe(Boolean(authorUsername));
   rows.find(node => node.props?.children === 'Load older versions').props.onClick();
   rows = elements();
   const loadingButton = rows.find(node => node.props?.children === 'Load older versions');

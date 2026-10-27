@@ -16,7 +16,7 @@ export function VersionComparison({ projectId, before, after }: { projectId: str
       {([before, after] as const).map((detail, side) => <section key={detail.version.id} aria-label={side === 0 ? 'Earlier version' : 'Later version'} className="min-w-0 space-y-4">
         <header className="space-y-1 border-b border-border pb-4">
           <h2 className="text-lg font-medium">{side === 0 ? 'Earlier' : 'Later'}: {detail.version.name || detail.version.type}</h2>
-          <p className="text-sm text-muted-foreground"><time dateTime={detail.version.createdAt}>{new Date(detail.version.createdAt).toLocaleString()}</time> · @{detail.version.authorUsername}</p>
+          <p className="text-sm text-muted-foreground"><time dateTime={detail.version.createdAt}>{new Date(detail.version.createdAt).toLocaleString()}</time>{detail.version.authorUsername && ` · @${detail.version.authorUsername}`}</p>
           <Link className="text-sm text-primary underline" href={`/projects/${projectId}/history/${detail.version.id}`}>Open full preview</Link>
         </header>
         {metadataChanged && <div className="rounded-md border border-border p-4"><h3 className="font-medium">{detail.snapshot.title}</h3><p className="whitespace-pre-wrap text-sm">{detail.snapshot.description}</p></div>}

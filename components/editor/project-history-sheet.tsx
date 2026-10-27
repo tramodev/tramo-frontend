@@ -87,10 +87,10 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
             <div className="flex flex-col gap-1 [&>div]:rounded-none" role="group" aria-label="Versions">
               {history?.versions.map((version, index) => <Row key={version.id}>
                 <input type="checkbox" className="accent-primary" aria-label={`Compare ${version.name || version.type.toLowerCase() + ' version'} from ${new Date(version.createdAt).toLocaleString()}`} checked={compareIds.includes(version.id)} disabled={compareIds.length === 2 && !compareIds.includes(version.id)} onChange={event => setCompareIds(ids => event.target.checked ? [...ids, version.id] : ids.filter(id => id !== version.id))} />
-                <Link ref={element => { if (element && !loading && paginationFocus.current === index) { paginationFocus.current = null; element.focus(); } }} href={`/projects/${projectId}/history/${version.id}`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary" aria-label={`Preview ${version.name || version.type.toLowerCase() + ' version'} from ${new Date(version.createdAt).toLocaleString()} by ${version.authorUsername} in a new tab`}>
+                <Link ref={element => { if (element && !loading && paginationFocus.current === index) { paginationFocus.current = null; element.focus(); } }} href={`/projects/${projectId}/history/${version.id}`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 hover:text-primary" aria-label={`Preview ${version.name || version.type.toLowerCase() + ' version'} from ${new Date(version.createdAt).toLocaleString()}${version.authorUsername ? ` by ${version.authorUsername}` : ''} in a new tab`}>
                   <div className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{version.name || (version.type === 'RESTORE' ? 'Before restoration' : version.type === 'MANUAL' ? 'Manual version' : 'Automatic version')}</span>
-                    <span className="block text-xs text-muted-foreground">{version.type} · {new Date(version.createdAt).toLocaleString()} · @{version.authorUsername}</span>
+                    <span className="block text-xs text-muted-foreground">{version.type} · {new Date(version.createdAt).toLocaleString()}{version.authorUsername && ` · @${version.authorUsername}`}</span>
                   </div>
                   <ExternalLink className="h-3 w-3 shrink-0" />
                 </Link>
