@@ -9,7 +9,7 @@ const transpile = path => ts.transpileModule(readFileSync(path, 'utf8'), {
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 const flush = () => new Promise(setImmediate);
 
-function dashboard(reportType = 'PROJECT') {
+function dashboard(reportType = 'PROJECT', logOnly = false) {
   const exports = {}, slots = [], effects = [], calls = [], focus = [];
   let index = 0, fail = false;
   const report = { id: '1', type: reportType, projectId: 'encoded-project', commentId: '42', projectTitle: 'Project', reason: 'Reporter reason', status: 'OPEN', createdDate: '2026-10-27T12:00:00Z' };
@@ -31,13 +31,22 @@ function dashboard(reportType = 'PROJECT') {
       '@/lib/moderation': {
         listReports: async (...args) => { calls.push(['reports', ...args]); return { items: [report], hasMore: true }; },
         searchAdminUsers: async () => [{ id: 'admin', username: 'Admin', role: 'ADMIN' }, { id: 'other', username: 'Other admin', role: 'ADMIN' }, { id: 'user', username: 'User', role: 'USER' }],
+        getModerationLog: async page => { calls.push(['log', page]); return { content: [{ id: 1, targetType: 'PROJECT', targetId: 'encoded-project', action: 'UNPUBLISH_PROJECT', publishingBlocked: true, createdDate: '2026-10-27T12:00:00Z' }], hasMore: true }; },
+        allowProjectPublishing: write('allow'),
         dismissReport: write('dismiss'), unpublishProject: write('unpublish'), upholdCommentReport: write('uphold'), banUser: write('ban'), unbanUser: write('unban'),
       },
     })[name] ?? {},
   });
+  let View = exports.AdminDashboard;
+  let props = {};
+  if (logOnly) {
+    View = flatten(exports.AdminDashboard()).find(node => node.type?.name === 'ModerationLogPanel').type;
+    props = { epoch: 0, onChanged: () => calls.push(['changed']) };
+    slots.length = 0; effects.length = 0;
+  }
   function render() {
     index = 0;
-    const nodes = flatten(exports.AdminDashboard());
+    const nodes = flatten(View(props));
     for (const node of nodes) if (node.type === 'h2' && node.props.ref) node.props.ref.current = { focus: () => focus.push('reports') };
     return nodes;
   }
@@ -110,5 +119,20 @@ test('moderation requests preserve encoded project IDs, pagination and backend f
   expect(requests[1][0]).toBe('http://backend/api/admin/comment-reports/1/uphold');
   expect(JSON.parse(requests[1][1].body)).toEqual({ reason: 'Own reason' });
   status = 403;
+  await expect(exports.getModerationLog()).rejects.toThrow('403');
   await expect(exports.listReports()).rejects.toThrow('403');
+  await expect(exports.allowProjectPublishing('encoded')).rejects.toThrow('403');
+});
+
+test('the moderation log paginates and allows publishing with the encoded project ID', async () => {
+  const p = dashboard('PROJECT', true); await p.settle();
+  expect(p.calls).toContainEqual(['log', 0]);
+  expect(p.render().some(node => node.type === 'Link' && node.props.href === '/p/encoded-project')).toBe(true);
+  p.render().find(node => node.props.children === 'Allow publishing').props.onClick();
+  await flush();
+  expect(p.calls).toContainEqual(['allow', 'encoded-project']);
+  expect(p.calls).toContainEqual(['changed']);
+  p.render().find(node => node.props.children === 'Next actions').props.onClick();
+  await p.settle();
+  expect(p.calls).toContainEqual(['log', 1]);
 });

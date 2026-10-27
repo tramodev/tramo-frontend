@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   listReports, dismissReport, searchAdminUsers, banUser, unbanUser, unpublishProject,
-  upholdCommentReport,
-  type Report, type AdminUser,
+  upholdCommentReport, getModerationLog, allowProjectPublishing,
+  type Report, type AdminUser, type ModerationPage,
 } from "@/lib/moderation"
 
 type ActionTarget = { kind: "ban"; user: AdminUser } | { kind: "unpublish" | "delete"; report: Report }
@@ -162,6 +162,7 @@ export function AdminDashboard() {
         </div>)}
       </div>}
     </section>
+    <ModerationLogPanel epoch={epoch} onChanged={refresh} />
     <Dialog open={target !== null} onOpenChange={open => { if (!open && !action.current) setTarget(null) }}>
       <DialogContent onCloseAutoFocus={event => { event.preventDefault(); if (returnFocus.current?.isConnected) returnFocus.current.focus(); else reportsHeading.current?.focus() }}>
         <form onSubmit={event => void handleConfirm(event)} className="min-w-0 space-y-4">
@@ -176,4 +177,45 @@ export function AdminDashboard() {
       </DialogContent>
     </Dialog>
   </div>
+}
+
+function ModerationLogPanel({ epoch, onChanged }: { epoch: number; onChanged: () => void }) {
+  const [page, setPage] = useState(0)
+  const [data, setData] = useState<ModerationPage | null>(null)
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const action = useRef(false)
+  useEffect(() => {
+    let cancelled = false
+    getModerationLog(page).then(result => { if (!cancelled) { setData(result); setError("") } }).catch(() => {
+      if (!cancelled) setError("Could not load the moderation log.")
+    }).finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [page, epoch])
+  async function allow(id: string) {
+    if (action.current) return
+    action.current = true; setBusy(true); setError("")
+    try { await allowProjectPublishing(id); onChanged() }
+    catch { setError("Could not allow publishing. Please try again.") }
+    finally { action.current = false; setBusy(false) }
+  }
+  return <section className="min-w-0">
+    <h2 className="mb-4 font-display text-xl font-medium">Moderation log</h2>
+    {error && <p role="alert" className="text-sm text-destructive">{error} <Button variant="ghost" onClick={onChanged}>Retry</Button></p>}
+    {loading ? <p role="status" className="text-sm text-muted-foreground">Loading moderation log…</p> : <div className="space-y-3">
+      {data?.content.length === 0 && <p className="text-sm text-muted-foreground">No moderation actions on this page.</p>}
+      {data?.content.map(entry => <div key={entry.id} className="min-w-0 space-y-2 rounded-lg border border-border p-4 [overflow-wrap:anywhere]">
+        <p className="text-sm">{entry.action.replaceAll("_", " ").toLowerCase()} · {entry.adminUsername || "Deleted administrator"}</p>
+        <p className="text-xs text-muted-foreground">{entry.targetType.toLowerCase()} {entry.targetId} · <time dateTime={entry.createdDate}>{new Date(entry.createdDate).toLocaleString()}</time></p>
+        {entry.reason && <p className="text-sm text-muted-foreground">{entry.reason}</p>}
+        {entry.targetType === "PROJECT" && <div className="flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><Link href={`/p/${entry.targetId}`} target="_blank" rel="noopener noreferrer">Open project</Link></Button>{entry.publishingBlocked && <Button variant="outline" size="sm" disabled={busy} onClick={() => void allow(entry.targetId)}>Allow publishing</Button>}</div>}
+      </div>)}
+    </div>}
+    <div className="mt-4 flex items-center gap-3">
+      <Button variant="outline" aria-disabled={page === 0 || loading || busy} onClick={() => { if (page > 0 && !loading && !busy) { setPage(value => value - 1); setLoading(true) } }}>Previous actions</Button>
+      <span className="text-xs text-muted-foreground">Page {page + 1}</span>
+      <Button variant="outline" aria-disabled={!data?.hasMore || loading || busy} onClick={() => { if (data?.hasMore && !loading && !busy) { setPage(value => value + 1); setLoading(true) } }}>Next actions</Button>
+    </div>
+  </section>
 }

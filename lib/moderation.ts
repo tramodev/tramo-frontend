@@ -67,6 +67,18 @@ export async function reportComment(commentId: string, reason: string): Promise<
 }
 
 export interface ReportPage { items: Report[]; hasMore: boolean }
+export interface ModerationEntry {
+  id: number;
+  adminUsername: string | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  reason: string | null;
+  createdDate: string;
+  publishingBlocked: boolean;
+}
+export interface ModerationPage { content: ModerationEntry[]; hasMore: boolean }
+
 export async function listReports(page = 0, type = "ALL", status = "OPEN"): Promise<ReportPage> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/reports?page=${page}&size=20&type=${encodeURIComponent(type)}&status=${encodeURIComponent(status)}`, { cache: "no-store" });
   await expectOk(response);
@@ -74,11 +86,21 @@ export async function listReports(page = 0, type = "ALL", status = "OPEN"): Prom
   return { items: data.content.map(r => ({ ...r, id: String(r.id), commentId: r.commentId != null ? String(r.commentId) : null })), hasMore: data.hasMore };
 }
 
+export async function getModerationLog(page = 0): Promise<ModerationPage> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/moderation-log?page=${page}&size=20`, { cache: "no-store" });
+  await expectOk(response);
+  return response.json();
+}
+
 export async function upholdCommentReport(id: string, reason?: string): Promise<void> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/comment-reports/${id}/uphold`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }),
   });
   await expectOk(response);
+}
+
+export async function allowProjectPublishing(id: string): Promise<void> {
+  await expectOk(await authenticatedFetch(`${API_BASE_URL}/api/admin/projects/${id}/allow-publishing`, { method: "POST" }));
 }
 
 export async function dismissReport(id: string, type: "PROJECT" | "COMMENT" = "PROJECT"): Promise<void> {
