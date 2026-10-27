@@ -23,6 +23,7 @@ export function EditorWorkspace({ user }: { user: Pick<UserProfile, 'userId' | '
 export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string; user: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'> }) {
   const workspaceRef = useRef<HTMLDivElement>(null);
   const [toolbarOpen, setToolbarOpen] = useState(false);
+  const formattingTriggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return;
@@ -103,6 +104,14 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   return (
     <SidebarProvider
       ref={workspaceRef}
+      onKeyDown={event => {
+        if (event.key !== 'Escape' || !toolbarOpen || workspaceRef.current?.dataset.shortViewport !== 'true') return;
+        if ((event.target as HTMLElement).closest('[role="menu"], [role="dialog"], [role="listbox"]')) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setToolbarOpen(false);
+        requestAnimationFrame(() => formattingTriggerRef.current?.focus());
+      }}
       open={leftSidebarOpen}
       onOpenChange={setLeftSidebarOpen}
       style={{ "--sidebar-width": "288px", "--sidebar-width-icon": "272px" } as React.CSSProperties}
@@ -125,7 +134,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
         }
         actions={
           project.loaded && <>
-          {project.view === 'write' && project.selectedItem && <button type="button" className="editor-toolbar-toggle size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={toolbarOpen ? 'Close formatting' : 'Formatting'} title="Formatting" aria-expanded={toolbarOpen} aria-controls="editor-formatting-toolbar" onClick={() => setToolbarOpen(open => !open)}>
+          {project.view === 'write' && project.selectedItem && <button ref={formattingTriggerRef} type="button" className="editor-toolbar-toggle size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={toolbarOpen ? 'Close formatting' : 'Formatting'} title="Formatting" aria-expanded={toolbarOpen} aria-controls="editor-formatting-toolbar" onClick={() => setToolbarOpen(open => !open)}>
             <Type className="size-4" />
           </button>}
           <EditorActions

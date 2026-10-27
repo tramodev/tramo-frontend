@@ -326,3 +326,40 @@ test.each([false, true])('My Projects falls back safely when storage is invalid 
   nodes = flatten(page.render('default'));
   expect(nodes.find(node => node.props['aria-label'] === 'List view').props['aria-pressed']).toBe(true);
 });
+
+
+test('Escape closes compact formatting and restores its trigger without closing nested menus', () => {
+  const frames = [], focused = [];
+  const workspace = load('app/editor/editor-workspace.tsx', {
+    '@/app/editor/editor-utils': { countProjectTextStats: () => null },
+    '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => ({
+      loaded: true, view: 'write', items: {}, selectedItem: { id: 'note' }, projectTitle: 'Test',
+    }) },
+  }, '', {
+    window: { addEventListener() {}, removeEventListener() {} }, document: {},
+    requestAnimationFrame: callback => frames.push(callback),
+  });
+  const render = () => workspace.render('ProjectEditor', { routeProjectId: 'project', user: { userId: '1' } });
+  let root = render();
+  root.props.ref.current = { dataset: { shortViewport: 'true' } };
+  const trigger = () => flatten(root.props.children.props.actions).find(node => node.props['aria-controls'] === 'editor-formatting-toolbar');
+  trigger().props.ref.current = { focus: () => focused.push('formatting') };
+  trigger().props.onClick();
+  root = render();
+  expect(trigger().props['aria-expanded']).toBe(true);
+  const event = { key: 'Escape', target: { closest: () => ({}) }, preventDefault() {}, stopPropagation() {} };
+  root.props.onKeyDown(event);
+  root = render();
+  expect(trigger().props['aria-expanded']).toBe(true);
+  root.props.ref.current.dataset.shortViewport = 'false';
+  root.props.onKeyDown({ ...event, target: { closest: () => null } });
+  root = render();
+  expect(trigger().props['aria-expanded']).toBe(true);
+  root.props.ref.current.dataset.shortViewport = 'true';
+  root.props.onKeyDown({ ...event, target: { closest: () => null } });
+  root = render();
+  expect(trigger().props['aria-expanded']).toBe(false);
+  expect(focused).toEqual([]);
+  frames.forEach(callback => callback());
+  expect(focused).toEqual(['formatting']);
+});
