@@ -34,6 +34,8 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
   };
   const events = new Map();
   const actions = [];
+  editor.getRootElement = () => ({ focus: () => actions.push('root-focus') });
+  editor.focus = () => actions.push('editor-focus');
   class Element {
     closest(selector) { return selector === '[role="alertdialog"]' ? null : this; }
     focus() { actions.push('focus'); }
@@ -41,6 +43,7 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
   }
   const { useEmbedDraftExit } = load('app/editor/plugins/useEmbedDraftExit.tsx', {
     react: { ...react, useLayoutEffect: react.useEffect },
+    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
     '@/components/shared/confirm-dialog': { ConfirmDialog: 'ConfirmDialog' },
   }, '', { document: { addEventListener: (type, fn) => events.set(type, fn), removeEventListener: type => events.delete(type) }, Element, requestAnimationFrame: fn => fn() });
   const component = load(`app/editor/plugins/${kind}Component.tsx`, {
@@ -95,6 +98,7 @@ test.each(['Equation', 'Music'])('%s asks before Escape can discard a new block 
   expect(s.removed).toBe(true);
   expect(s.content).toBe('');
   expect(s.input()).toBeUndefined();
+  expect(s.actions).toEqual(['root-focus', 'editor-focus']);
 });
 
 test.each(['Equation', 'Music'])('%s restores confirmed content only after discarding its changed draft', async kind => {
@@ -106,6 +110,7 @@ test.each(['Equation', 'Music'])('%s restores confirmed content only after disca
   await s.discard();
   expect(s.content).toBe('original');
   expect(s.removed).toBe(false);
+  expect(s.actions).toEqual(['root-focus', 'editor-focus']);
 });
 
 test.each(['Equation', 'Music'])('%s removes an explicitly finished empty embed', kind => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import type { Edge } from '@/app/editor/plugins/decoratorCaret';
 
@@ -10,6 +11,7 @@ export function useEmbedDraftExit({ enabled, dirty, commit, label }: {
   commit: (edge: Edge | null, save?: boolean) => boolean | null | Promise<boolean | null>;
   label: string;
 }, editing: RefObject<boolean>, textarea: RefObject<HTMLTextAreaElement | null>) {
+  const [editor] = useLexicalComposerContext();
   const root = useRef<HTMLElement | null>(null);
   const pending = useRef<HTMLElement | null>(null);
   const saving = useRef<Promise<boolean | null> | null>(null);
@@ -78,7 +80,15 @@ export function useEmbedDraftExit({ enabled, dirty, commit, label }: {
       const action = pending.current;
       pending.current = null;
       void Promise.resolve(commit(action ? null : 'after', false)).then(() => {
-        requestAnimationFrame(() => { action?.focus(); action?.click(); });
+        requestAnimationFrame(() => {
+          if (action) {
+            action.focus();
+            action.click();
+          } else {
+            editor.getRootElement()?.focus({ preventScroll: true });
+            editor.focus();
+          }
+        });
       });
     }} />;
 
