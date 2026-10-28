@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { ArrowDown, ArrowUp, ChevronRight, GitBranch, Link2, ListPlus, MoreVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react"
+import { ArrowDown, ArrowUp, ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Mark } from "@/components/layout/logo"
@@ -28,6 +28,7 @@ import { MIN_SEARCH_LENGTH } from "@/app/editor/editor-utils"
 import { searchProjectItems } from "@/lib/projects-store"
 
 const EMPTY_MATCHES: Set<string> = new Set()
+const ICON_ACTION_CLASS = "relative isolate shrink-0 rounded-full hover:bg-transparent before:pointer-events-none before:absolute before:left-1/2 before:top-1/2 before:size-6 before:-translate-x-1/2 before:-translate-y-1/2 before:-z-10 before:rounded-full hover:before:bg-primary/10"
 
 interface SidebarCustomProps {
   draft?: boolean;
@@ -448,7 +449,7 @@ export function SidebarCustom({
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[0.6875rem] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
-                    <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="New trail" title="New trail" disabled={draft} onClick={() => setIsCreating(true)}>
+                    <Button variant="ghost" size="icon" className={`h-11 w-11 ${ICON_ACTION_CLASS}`} aria-label="New trail" title="New trail" disabled={draft} onClick={() => setIsCreating(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </span>
@@ -555,7 +556,7 @@ export function SidebarCustom({
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="min-h-11 w-11 shrink-0 self-stretch rounded-none hover:bg-primary/10"
+                                      className={`h-11 w-11 ${ICON_ACTION_CLASS}`}
                                       aria-label="New note" title="New note"
                                       disabled={draft}
                                       onClick={() => setCreatingItemTrailId(trail.id)}
@@ -567,10 +568,10 @@ export function SidebarCustom({
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/trail:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
+                                          className={`${ICON_ACTION_CLASS} h-auto w-6 -translate-x-1 self-stretch text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/trail:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100`}
                                           title="Trail actions" aria-label="Trail actions"
                                         >
-                                          <MoreVertical className="h-3 w-3" />
+                                          <MoreHorizontal className="h-3 w-3" />
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="start">
@@ -716,10 +717,10 @@ export function SidebarCustom({
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"
-                                                  className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/item:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
+                                                  className={`${ICON_ACTION_CLASS} h-auto w-6 -translate-x-1 self-stretch text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/item:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100`}
                                                   title="Note actions" aria-label="Note actions"
                                                 >
-                                                  <MoreVertical className="h-3 w-3" />
+                                                  <MoreHorizontal className="h-3 w-3" />
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent align="start">
@@ -824,7 +825,7 @@ export function SidebarCustom({
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[0.6875rem] font-normal group-data-[state=open]/items:hidden">{allItems.length}</span>
-                    <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="New note" title="New note" disabled={draft} onClick={() => setIsCreatingLoose(true)}>
+                    <Button variant="ghost" size="icon" className={`h-11 w-11 ${ICON_ACTION_CLASS}`} aria-label="New note" title="New note" disabled={draft} onClick={() => setIsCreatingLoose(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </span>
@@ -886,10 +887,10 @@ export function SidebarCustom({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-auto w-6 shrink-0 -translate-x-1 self-stretch rounded-none text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:bg-primary/10 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/loose:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100"
+                                    className={`${ICON_ACTION_CLASS} h-auto w-6 -translate-x-1 self-stretch text-muted-foreground opacity-0 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 hover:text-foreground focus-visible:ring-1 focus-visible:ring-inset group-hover/loose:opacity-100 data-[state=open]:text-foreground data-[state=open]:opacity-100`}
                                     title="Note actions" aria-label="Note actions"
                                   >
-                                    <MoreVertical className="h-3 w-3" />
+                                    <MoreHorizontal className="h-3 w-3" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start">
