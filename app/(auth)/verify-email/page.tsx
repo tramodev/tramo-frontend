@@ -17,6 +17,7 @@ export default function VerifyEmailPage() {
       <div className="flex flex-col px-8 py-8 lg:px-24">
         <Wordmark />
         <div className="flex flex-1 flex-col justify-center">
+          <h1 className="mx-auto mb-6 w-full max-w-[25rem] font-display text-[2.25rem] font-normal 2xl:max-w-[28.75rem]">Verify your email</h1>
           <Suspense fallback={null}>
             <VerifyEmailClient />
           </Suspense>

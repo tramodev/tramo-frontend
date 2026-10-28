@@ -36,6 +36,13 @@ test('development retains eval for Next debugging without allowing arbitrary inl
   expect(scripts).not.toContain("'unsafe-inline'");
 });
 
+test('Google sign-in styles and reCAPTCHA connections and frames are allowed', () => {
+  const rules = csp.contentSecurityPolicy('nonce').split('; ');
+  expect(rules.find(rule => rule.startsWith('style-src '))).toContain('https://accounts.google.com/gsi/style');
+  expect(rules.find(rule => rule.startsWith('connect-src '))).toContain('https://www.google.com/recaptcha/');
+  expect(rules.find(rule => rule.startsWith('frame-src '))).toContain('https://recaptcha.google.com/recaptcha/');
+});
+
 test('every HTML request gets a fresh nonce, overwrites spoofed headers and cannot be cached as shared HTML', async () => {
   const values = [];
   for (const path of ['/about', '/login', '/p/project', '/wiki/notes', '/editor/project']) {
