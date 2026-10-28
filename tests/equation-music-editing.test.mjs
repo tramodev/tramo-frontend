@@ -19,16 +19,33 @@ function find(element, type) {
 }
 function setup(kind, initial = '', fresh = initial === '', selected = false, scoreLoad) {
   const field = kind === 'Equation' ? 'equation' : 'abc';
-  const states = [], effects = [], listeners = [], refs = [], updates = [];
-  let index = 0, refIndex = 0, content = initial, removed = false;
+  const states = [], effects = [], listeners = [], refs = [], updates = [], callbacks = [], effectStates = [];
+  let index = 0, refIndex = 0, callbackIndex = 0, effectIndex = 0, content = initial, removed = false;
+  const changed = (previous, next) => !previous || !next || previous.length !== next.length || previous.some((value, i) => value !== next[i]);
   const node = { setEquation: value => { content = value; }, setAbc: value => { content = value; }, getEquation: () => content, getAbc: () => content, remove: () => { removed = true; } };
   const editor = { isEditable: () => true, update: (fn, options) => { updates.push(options); fn(); }, registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
   const editingDecorators = new WeakMap([[editor, new Set(fresh ? ['embed'] : [])]]);
+  const react = {
+    useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; },
+    useRef: value => refs[refIndex++] ??= { current: value },
+    useCallback: (fn, deps) => { const i = callbackIndex++; if (changed(callbacks[i]?.deps, deps)) callbacks[i] = { fn, deps }; return callbacks[i].fn; },
+    useEffect: (fn, deps) => { const i = effectIndex++; if (changed(effectStates[i]?.deps, deps)) effects.push(() => { effectStates[i]?.cleanup?.(); effectStates[i] = { deps, cleanup: fn() }; }); },
+    useLayoutEffect() {},
+  };
+  const events = new Map();
+  const actions = [];
+  class Element {
+    closest(selector) { return selector === '[role="alertdialog"]' ? null : this; }
+    focus() { actions.push('focus'); }
+    click() { actions.push('click'); }
+  }
+  const { useEmbedDraftExit } = load('app/editor/plugins/useEmbedDraftExit.tsx', {
+    react: { ...react, useLayoutEffect: react.useEffect },
+    '@/components/shared/confirm-dialog': { ConfirmDialog: 'ConfirmDialog' },
+  }, '', { document: { addEventListener: (type, fn) => events.set(type, fn), removeEventListener: type => events.delete(type) }, Element, requestAnimationFrame: fn => fn() });
   const component = load(`app/editor/plugins/${kind}Component.tsx`, {
-    react: {
-      useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; },
-      useRef: value => refs[refIndex++] ??= { current: value }, useCallback: fn => fn, useEffect: fn => effects.push(fn), useLayoutEffect() {},
-    },
+    react,
+    '@/app/editor/plugins/useEmbedDraftExit': { useEmbedDraftExit },
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
     '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [selected, () => {}, () => {}] },
     katex: { default: require('katex') },
@@ -38,10 +55,22 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
     '@/app/editor/plugins/music-audio': { loadAbcjs: () => scoreLoad ?? Promise.resolve(require('abcjs')) },
     '@/app/editor/plugins/MusicPlugin': { DEFAULT_ABC: 'X:1\nK:C\n' },
   }, '', { window: { addEventListener() {}, removeEventListener() {} } }).default;
-  const render = () => { index = refIndex = 0; const tree = component({ [field]: content, inline: false, nodeKey: 'embed' }); effects.splice(0).forEach(fn => fn()); return tree; };
+  const render = () => { index = refIndex = callbackIndex = effectIndex = 0; const tree = component({ [field]: content, inline: false, nodeKey: 'embed' }); effects.splice(0).forEach(fn => fn()); return tree; };
   const input = () => find(render(), 'textarea');
   return {
-    input, render, updates, get warnings() { return states[2]; },
+    input, render, updates, actions, get warnings() { return states[2]; },
+    dialog: () => find(render(), 'ConfirmDialog'),
+    continueEditing: () => find(render(), 'ConfirmDialog').props.onOpenChange(false),
+    discard: async () => { const dialog = find(render(), 'ConfirmDialog'); dialog.props.onConfirm(); dialog.props.onOpenChange(false); await new Promise(resolve => setImmediate(resolve)); },
+    clickOutside: async (pointer = true) => {
+      render();
+      let prevented = false;
+      const event = { target: new Element(), preventDefault() { prevented = true; }, stopImmediatePropagation() {} };
+      if (pointer) events.get('pointerdown')?.(event);
+      events.get('click')?.(event);
+      await new Promise(resolve => setImmediate(resolve));
+      return prevented;
+    },
     blur: async () => { find(render(), kind === 'Equation' ? 'span' : 'div').props.onBlur({ currentTarget: { contains: () => false }, relatedTarget: null }); await new Promise(resolve => setImmediate(resolve)); },
     restore: value => { content = value; listeners.forEach(fn => fn({ editorState: { read: fn => fn() }, tags: new Set(['historic']) })); },
     edit: () => find(render(), 'button').props.onClick({ stopPropagation() {} }),
@@ -52,21 +81,29 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
   };
 }
 
-test.each(['Equation', 'Music'])('%s keeps unfinished text local and Escape discards a new block', kind => {
+test.each(['Equation', 'Music'])('%s asks before Escape can discard a new block with content', async kind => {
   const s = setup(kind);
   s.type('written before finishing');
   expect(s.content).toBe('');
   s.escape();
+  expect(s.removed).toBe(false);
+  expect(s.dialog().props.open).toBe(true);
+  s.continueEditing();
+  expect(s.input().props.value).toBe('written before finishing');
+  s.escape();
+  await s.discard();
   expect(s.removed).toBe(true);
   expect(s.content).toBe('');
   expect(s.input()).toBeUndefined();
 });
 
-test.each(['Equation', 'Music'])('%s restores the confirmed content on Escape', kind => {
+test.each(['Equation', 'Music'])('%s restores confirmed content only after discarding its changed draft', async kind => {
   const s = setup(kind, 'original');
   s.enter();
   s.type('original + changes');
   s.escape();
+  expect(s.dialog().props.open).toBe(true);
+  await s.discard();
   expect(s.content).toBe('original');
   expect(s.removed).toBe(false);
 });
@@ -76,6 +113,48 @@ test.each(['Equation', 'Music'])('%s removes an explicitly finished empty embed'
   s.type('');
   s.escape();
   expect(s.removed).toBe(true);
+});
+
+test.each([['Equation', true], ['Equation', false], ['Music', true], ['Music', false]])('%s blocks Share for an invalid draft until the user continues or discards (pointer: %s)', async (kind, pointer) => {
+  const original = kind === 'Equation' ? 'x + y' : 'X:1\nK:C\nCDEF|';
+  const invalid = kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [';
+  const s = setup(kind, original);
+  s.enter();
+  s.type(invalid);
+  expect(await s.clickOutside(pointer)).toBe(true);
+  expect(s.actions).toEqual([]);
+  expect(s.dialog().props.open).toBe(true);
+  s.continueEditing();
+  expect(s.input().props.value).toBe(invalid);
+  expect(s.actions).toEqual([]);
+  expect(await s.clickOutside(pointer)).toBe(true);
+  await s.discard();
+  expect(s.content).toBe(original);
+  expect(s.removed).toBe(false);
+  expect(s.input()).toBeUndefined();
+  expect(s.actions).toEqual(['focus', 'click']);
+});
+
+test.each(['Equation', 'Music'])('%s asks before navigating away from a new invalid draft', async kind => {
+  const s = setup(kind);
+  s.type(kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [');
+  await s.clickOutside();
+  expect(s.dialog().props.open).toBe(true);
+  expect(s.removed).toBe(false);
+  expect(s.actions).toEqual([]);
+  await s.discard();
+  expect(s.removed).toBe(true);
+  expect(s.actions).toEqual(['focus', 'click']);
+});
+
+test.each(['Equation', 'Music'])('%s automatically confirms a valid draft before resuming the outside action', async kind => {
+  const s = setup(kind);
+  const value = kind === 'Equation' ? 'x + y' : 'X:1\nK:C\nCDEF|';
+  s.type(value);
+  await s.clickOutside();
+  expect(s.content).toBe(value);
+  expect(s.input()).toBeUndefined();
+  expect(s.actions).toEqual(['focus', 'click']);
 });
 
 const { INLINE_EQUATION, BLOCK_EQUATION } = load('app/editor/plugins/markdownTransformers.ts', {
@@ -315,6 +394,7 @@ test('an incomplete equation cannot replace the confirmed equation on blur', asy
   await s.blur();
   expect(s.content).toBe('x');
   expect(s.input()).toBeDefined();
+  expect(s.dialog().props.open).toBe(true);
 });
 
 test.each(['Equation', 'Music'])('%s exits upward from the first line without requiring the first character', async kind => {
@@ -416,6 +496,7 @@ test('an incomplete score cannot replace the confirmed score on blur', async () 
   await s.blur();
   expect(s.content).toBe(original);
   expect(s.input()).toBeDefined();
+  expect(s.dialog().props.open).toBe(true);
 });
 
 test('leaving a new untouched score removes the empty block automatically', async () => {
@@ -433,7 +514,23 @@ test('late score validation cannot commit a draft that changed after blur', asyn
   await s.blur();
   s.type('X:1\nK:C\nCDE [');
   resolve(require('abcjs'));
-  await Promise.resolve();
+  await new Promise(resolve => setImmediate(resolve));
   expect(s.content).toBe('');
   expect(s.updates).toHaveLength(0);
+  expect(s.dialog().props.open).toBe(false);
+});
+
+test('two outside clicks during score validation resume navigation only once', async () => {
+  let resolve;
+  const loading = new Promise(done => { resolve = done; });
+  const s = setup('Music', '', true, false, loading);
+  const value = 'X:1\nK:C\nCDEF|';
+  s.type(value);
+  await s.clickOutside();
+  await s.clickOutside();
+  expect(s.actions).toEqual([]);
+  resolve(require('abcjs'));
+  await new Promise(resolve => setImmediate(resolve));
+  expect(s.content).toBe(value);
+  expect(s.actions).toEqual(['focus', 'click']);
 });

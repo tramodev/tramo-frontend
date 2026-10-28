@@ -33,6 +33,7 @@ import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@
 import MusicPlayback from '@/app/editor/plugins/MusicPlayback';
 import { loadAbcjs } from '@/app/editor/plugins/music-audio';
 import { DEFAULT_ABC } from '@/app/editor/plugins/MusicPlugin';
+import { useEmbedDraftExit } from '@/app/editor/plugins/useEmbedDraftExit';
 
 interface MusicComponentProps {
   abc: string;
@@ -195,22 +196,23 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
 
   const commit = useCallback(
     async (exitTo: Edge | null = 'after', save = true) => {
-      if (!editingRef.current) return;
+      if (!editingRef.current) return true;
       const revision = ++draftRevisionRef.current;
       if (save && draft.trim() && draft.trim() !== DEFAULT_ABC.trim()) {
         try {
           const abcjs = abcjsRef.current ?? await loadAbcjs();
-          if (revision !== draftRevisionRef.current || !editingRef.current) return;
+          if (revision !== draftRevisionRef.current || !editingRef.current) return null;
           abcjsRef.current = abcjs;
           const [tune] = abcjs.parseOnly(draft);
           const errors = (tune?.warnings ?? []).map(plainMusicWarning);
           if (!tune?.lines?.length || errors.length) {
             setWarnings(errors.length ? errors : ['Add music notes to the score.']);
-            return;
+            return false;
           }
         } catch {
-          if (revision === draftRevisionRef.current) setWarnings(['Could not validate this score. Check the notation and try again.']);
-          return;
+          if (revision !== draftRevisionRef.current || !editingRef.current) return null;
+          setWarnings(['Could not validate this score. Check the notation and try again.']);
+          return false;
         }
       }
       editingRef.current = false;
@@ -226,9 +228,14 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
         if (next !== node.getAbc()) node.setAbc(next);
       }, { discrete: true, tag: HISTORY_PUSH_TAG });
       setIsEditing(false);
+      return true;
     },
     [draft, editor, abc, nodeKey],
   );
+
+  const draftContent = draft.trim() === DEFAULT_ABC.trim() ? '' : draft.trim();
+  const confirmedContent = abc.trim() === DEFAULT_ABC.trim() ? '' : abc.trim();
+  const { attachRoot, onBlur, dialog, leave, requestDiscard } = useEmbedDraftExit({ enabled: isEditing, dirty: draftContent !== confirmedContent, commit, label: 'music score' }, editingRef, textareaRef);
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
@@ -318,9 +325,8 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
 
   if (isEditing && isEditable) {
     return (
-      <div key="editing" className="editor-music-editor" onKeyDown={event => event.stopPropagation()} onBlur={event => {
-        if (!event.currentTarget.contains(event.relatedTarget)) void commit(null);
-      }}>
+      <div key="editing" ref={attachRoot} className="editor-music-editor" onKeyDown={event => event.stopPropagation()} onBlur={onBlur}>
+        {dialog}
         <textarea
           ref={textareaRef}
           className="editor-music-input"
@@ -336,22 +342,22 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
             const onLastLine = value.indexOf('\n', to) === -1;
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
               event.preventDefault();
-              commit();
+              void leave();
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              commit('after', false);
+              requestDiscard();
             } else if (event.key === 'ArrowLeft' && collapsed && from === 0) {
               event.preventDefault();
-              commit('before');
+              void leave('before');
             } else if (event.key === 'ArrowRight' && collapsed && to === value.length) {
               event.preventDefault();
-              commit('after');
+              void leave('after');
             } else if (event.key === 'ArrowUp' && collapsed && onFirstLine) {
               event.preventDefault();
-              commit('before');
+              void leave('before');
             } else if (event.key === 'ArrowDown' && collapsed && onLastLine) {
               event.preventDefault();
-              commit('after');
+              void leave('after');
             }
           }}
           placeholder={DEFAULT_ABC}

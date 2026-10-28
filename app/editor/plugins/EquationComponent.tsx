@@ -34,6 +34,7 @@ import katex from 'katex';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { $isEquationNode } from '@/app/editor/nodes/EquationNode';
 import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@/app/editor/plugins/decoratorCaret';
+import { useEmbedDraftExit } from '@/app/editor/plugins/useEmbedDraftExit';
 
 interface EquationComponentProps {
   equation: string;
@@ -211,14 +212,14 @@ export default function EquationComponent({
 
   const commit = useCallback(
     (exitTo: Edge | null = 'after', save = true) => {
-      if (!editingRef.current) return;
+      if (!editingRef.current) return true;
       if (save && draft.trim()) {
         try {
           if (draft.length > 10000) throw new Error('Equations must not exceed 10,000 characters.');
           katex.renderToString(draft, { throwOnError: true, trust: false, maxExpand: 1000 });
         } catch (error) {
           setError(error instanceof Error ? error.message : 'Invalid equation');
-          return;
+          return false;
         }
       }
       editingRef.current = false;
@@ -234,9 +235,12 @@ export default function EquationComponent({
         if (next !== node.getEquation()) node.setEquation(next);
       }, { discrete: true, tag: HISTORY_PUSH_TAG });
       setIsEditing(false);
+      return true;
     },
     [draft, editor, equation, nodeKey],
   );
+
+  const { attachRoot, onBlur, dialog, leave, requestDiscard } = useEmbedDraftExit({ enabled: isEditing, dirty: draft.trim() !== equation.trim(), commit, label: 'equation' }, editingRef, textareaRef);
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
@@ -328,12 +332,12 @@ export default function EquationComponent({
     return (
       <span
         key="editing"
-        onBlur={event => {
-          if (!event.currentTarget.contains(event.relatedTarget)) commit(null);
-        }}
+        ref={attachRoot}
+        onBlur={onBlur}
         onKeyDown={event => event.stopPropagation()}
         className={inline ? 'editor-equation-editor inline' : 'editor-equation-editor'}
       >
+        {dialog}
         <textarea
           ref={textareaRef}
           className="editor-equation-input"
@@ -349,30 +353,30 @@ export default function EquationComponent({
             const onLastLine = !textarea.value.slice(textarea.selectionEnd).includes('\n');
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
-              commit();
+              void leave();
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              commit('after', false);
+              requestDiscard();
             } else if (event.key === 'ArrowLeft' && collapsed && textarea.selectionStart === 0) {
               event.preventDefault();
-              commit('before');
+              void leave('before');
             } else if (
               event.key === 'ArrowRight' &&
               collapsed &&
               textarea.selectionEnd === textarea.value.length
             ) {
               event.preventDefault();
-              commit('after');
+              void leave('after');
             } else if (event.key === 'ArrowUp' && collapsed && onFirstLine) {
               event.preventDefault();
-              commit('before');
+              void leave('before');
             } else if (
               event.key === 'ArrowDown' &&
               collapsed &&
               onLastLine
             ) {
               event.preventDefault();
-              commit('after');
+              void leave('after');
             }
           }}
           placeholder={inline ? 'a + b' : '\\frac{a}{b}'}
