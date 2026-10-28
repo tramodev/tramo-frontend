@@ -332,7 +332,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
             event.stopPropagation();
             const { selectionStart: from, selectionEnd: to, value } = event.currentTarget;
             const collapsed = from === to;
-            const onFirstLine = value.lastIndexOf('\n', from - 1) === -1;
+            const onFirstLine = !value.slice(0, from).includes('\n');
             const onLastLine = value.indexOf('\n', to) === -1;
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
               event.preventDefault();

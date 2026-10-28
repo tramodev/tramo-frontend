@@ -121,6 +121,7 @@ export default function EquationComponent({
   const [isEditing, setIsEditing] = useState(() => editingDecorators.get(editor)?.has(nodeKey) === true);
   const [draft, setDraft] = useState(equation);
   const [error, setError] = useState<string | null>(null);
+  const [templateIndex, setTemplateIndex] = useState(0);
   const katexRef = useRef<HTMLSpanElement | null>(null);
   const previewRef = useRef<HTMLSpanElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -178,6 +179,7 @@ export default function EquationComponent({
     if (textarea === null || pendingSelection.current === null) return;
     const [from, to] = pendingSelection.current;
     pendingSelection.current = null;
+    textarea.focus();
     textarea.setSelectionRange(from, to);
   }, [draft]);
 
@@ -336,7 +338,6 @@ export default function EquationComponent({
           ref={textareaRef}
           className="editor-equation-input"
           value={draft}
-          maxLength={10000}
           rows={1}
           spellCheck={false}
           onChange={(event) => setDraft(event.target.value)}
@@ -344,6 +345,8 @@ export default function EquationComponent({
             event.stopPropagation();
             const textarea = event.currentTarget;
             const collapsed = textarea.selectionStart === textarea.selectionEnd;
+            const onFirstLine = !textarea.value.slice(0, textarea.selectionStart).includes('\n');
+            const onLastLine = !textarea.value.slice(textarea.selectionEnd).includes('\n');
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
               commit();
@@ -360,13 +363,13 @@ export default function EquationComponent({
             ) {
               event.preventDefault();
               commit('after');
-            } else if (event.key === 'ArrowUp' && collapsed && textarea.selectionStart === 0) {
+            } else if (event.key === 'ArrowUp' && collapsed && onFirstLine) {
               event.preventDefault();
               commit('before');
             } else if (
               event.key === 'ArrowDown' &&
               collapsed &&
-              textarea.selectionEnd === textarea.value.length
+              onLastLine
             ) {
               event.preventDefault();
               commit('after');
@@ -374,14 +377,27 @@ export default function EquationComponent({
           }}
           placeholder={inline ? 'a + b' : '\\frac{a}{b}'}
           aria-label="LaTeX equation"
+          aria-invalid={error !== null}
+          aria-describedby={error ? `equation-error-${nodeKey}` : undefined}
         />
-        <span className="editor-equation-palette">
-          {TEMPLATES.map(({ label, title, latex, at, len }) => (
+        <span className="editor-equation-palette" role="toolbar" aria-label="Equation templates" onKeyDown={event => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          const buttons = Array.from(event.currentTarget.querySelectorAll('button'));
+          const index = buttons.indexOf(event.target as HTMLButtonElement);
+          if (index < 0) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+            : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+          setTemplateIndex(next);
+          buttons[next]?.focus();
+        }}>
+          {TEMPLATES.map(({ label, title, latex, at, len }, index) => (
             <button
               key={title}
               type="button"
               title={title}
               aria-label={title}
+              tabIndex={index === templateIndex ? 0 : -1}
               className="editor-equation-template"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => insertTemplate(latex, at, len)}
@@ -391,7 +407,7 @@ export default function EquationComponent({
           ))}
         </span>
         <span className="editor-equation-preview" ref={previewRef} aria-hidden />
-        {error !== null && <span className="editor-equation-error">{error}</span>}
+        {error !== null && <span id={`equation-error-${nodeKey}`} role="alert" className="editor-equation-error">{error}</span>}
       </span>
     );
   }

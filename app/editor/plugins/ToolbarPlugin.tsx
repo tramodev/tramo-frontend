@@ -19,6 +19,7 @@ import {
   KEY_MODIFIER_COMMAND,
   REDO_COMMAND,
   SELECTION_CHANGE_COMMAND,
+  SKIP_DOM_SELECTION_TAG,
   UNDO_COMMAND,
   $createParagraphNode,
   ElementNode,
@@ -50,6 +51,7 @@ import {
 } from '@lexical/selection';
 
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { Popover } from 'radix-ui';
 import {
   Baseline,
   Bold,
@@ -80,6 +82,7 @@ import {
   ChevronDown,
   Plus,
   Search,
+  Ellipsis,
   Sigma,
   Radical,
   Music,
@@ -203,7 +206,9 @@ function ToolbarButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          onMouseDown={(event) => event.preventDefault()}
+          onMouseDown={(event) => {
+            if (!document.activeElement?.closest('.editor-equation-editor, .editor-music-editor')) event.preventDefault();
+          }}
           onClick={onClick}
           disabled={disabled}
           className={`toolbar-item${spaced ? ' spaced' : ''}${active ? ' active' : ''}`}
@@ -299,6 +304,16 @@ export default function ToolbarPlugin({
 } = {}) {
   const [editor] = useLexicalComposerContext();
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const [compact, setCompact] = useState(false);
+  const [formattingOpen, setFormattingOpen] = useState(false);
+
+  useEffect(() => {
+    const container = toolbarRef.current?.parentElement;
+    if (!container) return;
+    const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < 960));
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [canUndo, setCanUndo] = useState(() => !!history?.undoStack.length);
   const [canRedo, setCanRedo] = useState(() => !!history?.redoStack.length);
@@ -373,7 +388,7 @@ export default function ToolbarPlugin({
         if ($isRangeSelection(selection)) {
           $patchStyleText(selection, styles);
         }
-      });
+      }, { tag: SKIP_DOM_SELECTION_TAG });
     },
     [editor],
   );
@@ -541,48 +556,27 @@ export default function ToolbarPlugin({
   const ActiveBlockIcon = activeBlock.Icon;
   const ActiveAlignIcon = ALIGN_OPTIONS.find((option) => option.value === activeAlign)?.Icon ?? AlignLeft;
 
-  return (
-    <div
-      role="toolbar"
-      aria-label="Text formatting"
-      className="toolbar"
-      ref={toolbarRef}
-      onKeyDown={(event) => {
-        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
-          && !(event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)) {
-          const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled]), input:not([disabled])'));
-          const index = controls.indexOf(event.target as HTMLElement);
-          if (index < 0) return;
-          event.preventDefault();
-          const next = event.key === 'Home' ? 0 : event.key === 'End' ? controls.length - 1
-            : (index + (event.key === 'ArrowRight' ? 1 : -1) + controls.length) % controls.length;
-          controls[next]?.focus();
-          return;
-        }
-        if (event.key !== 'Escape') return;
-        event.preventDefault();
-        requestAnimationFrame(() => {
-          editor.getRootElement()?.focus({ preventScroll: true });
-          editor.focus();
-        });
-      }}
-    >
-      <ToolbarButton
-        label="Undo"
-        tooltip="Undo (⌘Z / Ctrl+Z)"
-        Icon={Undo}
-        disabled={!canUndo}
-        onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
-      />
-      <ToolbarButton
-        label="Redo"
-        tooltip="Redo (⌘⇧Z / Ctrl+Shift+Z)"
-        Icon={Redo}
-        spaced={false}
-        disabled={!canRedo}
-        onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
-      />
-      <Divider />
+  const handleToolbarKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled]), input:not([disabled])'));
+      const index = controls.indexOf(event.target as HTMLElement);
+      if (index < 0) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? controls.length - 1
+        : (index + (event.key === 'ArrowRight' ? 1 : -1) + controls.length) % controls.length;
+      controls[next]?.focus();
+      return;
+    }
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    setFormattingOpen(false);
+    requestAnimationFrame(() => {
+      editor.getRootElement()?.focus({ preventScroll: true });
+      editor.focus();
+    });
+  };
+
+  const formattingControls = <>
       <DropdownMenu>
         <ToolbarMenuButton label={`${activeBlock.label}: Text Styles`} tooltip="Text Styles" className="toolbar-item align-dropdown-trigger spaced">
           <ActiveBlockIcon size={18} />
@@ -710,7 +704,7 @@ export default function ToolbarPlugin({
       </DropdownMenu>
 
       <Divider />
-      {[...TEXT_FORMATS, INLINE_CODE_FORMAT].map(({ format, label, tooltip, Icon }) => (
+      {[...TEXT_FORMATS, INLINE_CODE_FORMAT].filter(({ format }) => !compact || format !== 'bold').map(({ format, label, tooltip, Icon }) => (
         <ToolbarButton
           key={format}
           label={label}
@@ -720,6 +714,59 @@ export default function ToolbarPlugin({
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, format)}
         />
       ))}
+      <Divider />
+      <ToolbarButton
+        label="Find and replace"
+        tooltip="Find and replace (⌘F / Ctrl+F)"
+        Icon={Search}
+        onClick={() => {
+          setFormattingOpen(false);
+          requestAnimationFrame(() => editor.dispatchCommand(OPEN_FIND_REPLACE_COMMAND, undefined));
+        }}
+      />
+  </>;
+
+  return (
+    <div
+      role="toolbar"
+      aria-label="Text formatting"
+      className={compact ? 'toolbar toolbar-compact' : 'toolbar'}
+      ref={toolbarRef}
+      onKeyDown={handleToolbarKeyDown}
+    >
+      <ToolbarButton
+        label="Undo"
+        tooltip="Undo (⌘Z / Ctrl+Z)"
+        Icon={Undo}
+        disabled={!canUndo}
+        onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
+      />
+      <ToolbarButton
+        label="Redo"
+        tooltip="Redo (⌘⇧Z / Ctrl+Shift+Z)"
+        Icon={Redo}
+        spaced={false}
+        disabled={!canRedo}
+        onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
+      />
+      <Divider />
+      {compact ? <>
+        <ToolbarButton label="Format Bold" tooltip="Bold" Icon={Bold} active={formats.has('bold')}
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} />
+        <Popover.Root open={formattingOpen} onOpenChange={setFormattingOpen}>
+          <Popover.Trigger asChild>
+            <button type="button" className="toolbar-item" aria-label="More formatting" title="More formatting">
+              <Ellipsis size={18} />
+            </button>
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content className="toolbar-options" aria-label="Additional formatting" sideOffset={8} collisionPadding={12}
+              align="end" onKeyDown={event => event.stopPropagation()}>
+              <div role="toolbar" aria-label="Additional text formatting" className="toolbar toolbar-overflow" onKeyDown={handleToolbarKeyDown}>{formattingControls}</div>
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      </> : <div className="toolbar-formatting">{formattingControls}</div>}
       <Divider />
       <ToolbarButton
         label="Insert Link"
@@ -799,13 +846,6 @@ export default function ToolbarPlugin({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Divider />
-      <ToolbarButton
-        label="Find and replace"
-        tooltip="Find and replace (⌘F / Ctrl+F)"
-        Icon={Search}
-        onClick={() => editor.dispatchCommand(OPEN_FIND_REPLACE_COMMAND, undefined)}
-      />
       <input
         ref={fileInputRef}
         type="file"

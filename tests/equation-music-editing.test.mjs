@@ -41,7 +41,7 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
   const render = () => { index = refIndex = 0; const tree = component({ [field]: content, inline: false, nodeKey: 'embed' }); effects.splice(0).forEach(fn => fn()); return tree; };
   const input = () => find(render(), 'textarea');
   return {
-    input, updates, get warnings() { return states[2]; },
+    input, render, updates, get warnings() { return states[2]; },
     blur: async () => { find(render(), kind === 'Equation' ? 'span' : 'div').props.onBlur({ currentTarget: { contains: () => false }, relatedTarget: null }); await new Promise(resolve => setImmediate(resolve)); },
     restore: value => { content = value; listeners.forEach(fn => fn({ editorState: { read: fn => fn() }, tags: new Set(['historic']) })); },
     edit: () => find(render(), 'button').props.onClick({ stopPropagation() {} }),
@@ -133,6 +133,77 @@ test.each(['Inline equation', 'Equation', 'Music score'])('toolbar waits for men
   expect(commands).toEqual(label === 'Music score' ? [['music', undefined]] : [['equation', { equation: '', inline: label === 'Inline equation' }]]);
 });
 
+
+test('toolbar moves secondary formatting into a menu when its container narrows', () => {
+  const states = [], effects = [], refs = [];
+  let index = 0, refIndex = 0, resize, observed, disconnected = false;
+  const container = {};
+  const Toolbar = load('app/editor/plugins/ToolbarPlugin.tsx', {
+    react: {
+      useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; },
+      useRef: initial => refs[refIndex++] ??= { current: initial }, useCallback: fn => fn, useEffect: fn => effects.push(fn),
+    },
+    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [{}] },
+    'radix-ui': { Popover: { Root: 'PopoverRoot', Trigger: 'PopoverTrigger', Portal: 'PopoverPortal', Content: 'PopoverContent' } },
+    './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
+  }, '', {
+    ResizeObserver: class {
+      constructor(callback) { resize = callback; }
+      observe(target) { observed = target; }
+      disconnect() { disconnected = true; }
+    },
+  }).default;
+  const render = () => { index = refIndex = 0; effects.length = 0; return Toolbar({}); };
+  const elements = element => !element || typeof element !== 'object' ? [] : [element, ...[element.props?.children].flat().flatMap(elements)];
+  render().props.ref.current = { parentElement: container };
+  const cleanup = effects[0]();
+  expect(observed).toBe(container);
+  resize([{ contentRect: { width: 375 } }]);
+  let tree = render();
+  expect(tree.props.className).toContain('toolbar-compact');
+  const popup = find(tree, 'PopoverContent');
+  expect(elements(popup).find(node => node.props?.role === 'toolbar').props.onKeyDown).toBe(tree.props.onKeyDown);
+  expect(elements(popup).some(node => node.props?.['aria-label'] === 'Font Family')).toBe(true);
+  expect(elements(popup).some(node => node.props?.label === 'Format Bold')).toBe(false);
+  for (const label of ['Undo', 'Redo', 'Format Bold', 'Insert Link', 'Insert']) {
+    expect(elements(tree).some(node => node.props?.label === label && !elements(popup).includes(node))).toBe(true);
+  }
+  resize([{ contentRect: { width: 1200 } }]);
+  tree = render();
+  expect(tree.props.className).toBe('toolbar');
+  expect(find(tree, 'PopoverContent')).toBeUndefined();
+  expect(elements(tree).some(node => node.props?.['aria-label'] === 'Font Family')).toBe(true);
+  cleanup();
+  expect(disconnected).toBe(true);
+});
+
+test('toolbar arrows include font controls and font changes preserve DOM focus', () => {
+  const updates = [], styles = [];
+  const selection = {};
+  const Toolbar = load('app/editor/plugins/ToolbarPlugin.tsx', {
+    react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useRef: value => ({ current: value }), useCallback: fn => fn, useEffect() {} },
+    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [{ update: (fn, options) => { updates.push(options); fn(); } }] },
+    lexical: { $getSelection: () => selection, $isRangeSelection: value => value === selection, SKIP_DOM_SELECTION_TAG: 'skip-dom-selection' },
+    '@lexical/selection': { $patchStyleText: (...args) => styles.push(args) },
+    './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
+  }).default;
+  const tree = Toolbar({});
+  const font = find(tree, 'select');
+  const input = find(tree, 'input');
+  font.props.onChange({ target: { value: 'Georgia' } });
+  input.props.onBlur({ target: { value: '24' } });
+  expect(styles).toEqual([[selection, { 'font-family': 'Georgia' }], [selection, { 'font-size': '24px' }]]);
+  expect(updates).toEqual([{ tag: 'skip-dom-selection' }, { tag: 'skip-dom-selection' }]);
+  let focused, prevented;
+  const controls = ['button', 'select', 'input', 'button'].map((type, index) => ({ type, focus: () => { focused = index; } }));
+  for (const [index, key, expected] of [[1, 'ArrowRight', 2], [2, 'ArrowRight', 3], [2, 'ArrowLeft', 1], [1, 'Home', 0], [1, 'End', 3]]) {
+    prevented = false;
+    tree.props.onKeyDown({ key, target: controls[index], currentTarget: { querySelectorAll: () => controls }, preventDefault: () => { prevented = true; } });
+    expect(prevented).toBe(true);
+    expect(focused).toBe(expected);
+  }
+  tree.props.onKeyDown({ key: 'Tab', preventDefault: () => { throw new Error('Tab must keep native focus navigation'); } });
+});
 
 test.each(['Equation', 'Music'])('%s reflects undo while editing and never commits stale local text', kind => {
   const s = setup(kind, 'original');
@@ -244,6 +315,73 @@ test('an incomplete equation cannot replace the confirmed equation on blur', asy
   await s.blur();
   expect(s.content).toBe('x');
   expect(s.input()).toBeDefined();
+});
+
+test.each(['Equation', 'Music'])('%s exits upward from the first line without requiring the first character', async kind => {
+  const s = setup(kind);
+  const value = kind === 'Equation' ? 'x + y' : 'X:1\nK:C\nCDEF|';
+  s.type(value);
+  let prevented = false;
+  await s.input().props.onKeyDown({ key: 'ArrowUp', currentTarget: { value, selectionStart: 2, selectionEnd: 2 }, stopPropagation() {}, preventDefault() { prevented = true; } });
+  await new Promise(resolve => setImmediate(resolve));
+  expect(prevented).toBe(true);
+  expect(s.input()).toBeUndefined();
+  expect(s.content).toBe(value);
+});
+
+test('equation templates use one Tab stop and arrow navigation', () => {
+  const s = setup('Equation');
+  const palette = () => s.render().props.children.find(child => child?.props?.role === 'toolbar');
+  expect(palette().props.children.filter(button => button.props.tabIndex === 0)).toHaveLength(1);
+  let focused;
+  const buttons = Array.from({ length: 10 }, (_, index) => ({ focus() { focused = index; } }));
+  palette().props.onKeyDown({ key: 'ArrowRight', currentTarget: { querySelectorAll: () => buttons }, target: buttons[0], preventDefault() {} });
+  expect(focused).toBe(1);
+  expect(palette().props.children[1].props.tabIndex).toBe(0);
+  expect(palette().props.children[0].props.tabIndex).toBe(-1);
+});
+
+test.each(['Equation', 'Music'])('%s keeps vertical navigation inside middle lines and exits from the last line', async kind => {
+  const s = setup(kind);
+  const value = kind === 'Equation' ? 'x +\ny' : 'X:1\nK:C\nCDEF|';
+  s.type(value);
+  let prevented = false;
+  const event = key => ({ key, currentTarget: { value, selectionStart: value.length - 1, selectionEnd: value.length - 1 }, stopPropagation() {}, preventDefault() { prevented = true; } });
+  s.input().props.onKeyDown(event('ArrowUp'));
+  expect(prevented).toBe(false);
+  expect(s.input()).toBeDefined();
+  await s.input().props.onKeyDown(event('ArrowDown'));
+  await new Promise(resolve => setImmediate(resolve));
+  expect(prevented).toBe(true);
+  expect(s.input()).toBeUndefined();
+});
+
+test('oversized equation drafts remain intact and report the limit instead of silently truncating', async () => {
+  const s = setup('Equation', 'x');
+  s.enter();
+  const draft = 'x'.repeat(10001);
+  s.type(draft);
+  expect(s.input().props.maxLength).toBeUndefined();
+  expect(s.input().props.value).toBe(draft);
+  await s.blur();
+  expect(s.content).toBe('x');
+  expect(s.input().props.value).toBe(draft);
+  expect(s.input().props['aria-invalid']).toBe(true);
+  expect(s.render().props.children.find(child => child?.props?.role === 'alert').props.children).toContain('10,000');
+});
+
+test('toolbar formatting allows embed blur while preserving the editor selection otherwise', () => {
+  let activeEmbed = true;
+  const { ToolbarButton } = load('app/editor/plugins/ToolbarPlugin.tsx', {
+    './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
+  }, '\nexport { ToolbarButton };', { document: { activeElement: { closest: () => activeEmbed ? {} : null } } });
+  const button = find(ToolbarButton({ label: 'Bold', tooltip: 'Bold', Icon: 'icon', onClick() {} }), 'button');
+  let prevented = false;
+  button.props.onMouseDown({ preventDefault() { prevented = true; } });
+  expect(prevented).toBe(false);
+  activeEmbed = false;
+  button.props.onMouseDown({ preventDefault() { prevented = true; } });
+  expect(prevented).toBe(true);
 });
 
 
