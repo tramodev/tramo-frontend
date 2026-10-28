@@ -22,6 +22,9 @@ export function sanitizeNoteContent(content: string): string {
   if (!state?.root || state.root.type !== 'root' || !Array.isArray(state.root.children)) {
     throw new Error('Invalid note content');
   }
+  if (state.root.children.length === 0) {
+    state.root.children.push({ type: 'paragraph', version: 1, children: [], direction: null, format: '', indent: 0, textFormat: 0, textStyle: '' });
+  }
   const nodes: unknown[] = [state.root];
   while (nodes.length) {
     const value = nodes.pop();

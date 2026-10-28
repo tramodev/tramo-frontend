@@ -57,8 +57,19 @@ test.each(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])('preserves a real %s heading', t
   });
 });
 
-test.each(['not json', 'null', '{}', '{"root":null}', content([]), content([element('paragraph', [{ type: 'unregistered', version: 1 }])])])('fails closed for malformed notes without replacing the content: %s', value => {
+test.each(['not json', 'null', '{}', '{"root":null}', content([element('paragraph', [{ type: 'unregistered', version: 1 }])])])('fails closed for malformed notes without replacing the content: %s', value => {
   expect(() => parse(value)).toThrow();
+});
+
+test.each([content([]), '{"root":{"type":"root","children":[]}}'])('opens an empty root as an editable empty paragraph: %s', value => {
+  const state = parse(value);
+  state.read(() => {
+    expect(lexical.$getRoot().getChildrenSize()).toBe(1);
+    expect(lexical.$isParagraphNode(lexical.$getRoot().getFirstChild())).toBe(true);
+    expect(lexical.$getRoot().getTextContent()).toBe('');
+  });
+  expect(state.isEmpty()).toBe(false);
+  expect(JSON.parse(sanitizeNoteContent(JSON.stringify(state.toJSON())))).toEqual(state.toJSON());
 });
 
 test.each(['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>', 'vbscript:alert(1)', 'file:///etc/passwd'])('Lexical also blocks unsafe saved link %s', url => {
