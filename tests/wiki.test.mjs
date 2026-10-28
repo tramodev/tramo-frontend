@@ -12,8 +12,13 @@ function load(path, modules = {}) {
 }
 
 const content = load('app/wiki/content.ts');
+const screenshots = load('app/wiki/screenshots.ts');
+const jsx = (type, props) => ({ type, props });
 const page = load('app/wiki/[slug]/page.tsx', {
   '@/app/wiki/content': content,
+  '@/app/wiki/screenshots': screenshots,
+  'next/image': { default: 'img' },
+  'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/navigation': { notFound: () => { throw new Error('not found'); } },
 });
 
@@ -36,6 +41,23 @@ test('unknown wiki topics return not found', async () => {
   const props = { params: Promise.resolve({ slug: 'missing-topic' }) };
   await expect(page.generateMetadata(props)).rejects.toThrow('not found');
   await expect(page.default(props)).rejects.toThrow('not found');
+});
+
+test.each([['projects', 8], ['notes-and-trails', 13]])('%s illustrates every feature with accessible local screenshots without changing other topics', async (slug, count) => {
+  const nodes = node => Array.isArray(node) ? node.flatMap(nodes) : !node?.props ? [] : [node, ...nodes(node.props.children)];
+  const article = await page.default({ params: Promise.resolve({ slug }) });
+  const images = nodes(article).filter(node => node.type === 'img');
+  expect(images).toHaveLength(count);
+  const section = content.SECTIONS.find(section => section.id === slug);
+  expect(Object.keys(screenshots.WIKI_SCREENSHOTS[slug])).toEqual(section.features.map(([title]) => title));
+  for (const image of images) {
+    expect(image.props.alt.length).toBeGreaterThan(10);
+    expect(image.props.width).toBeGreaterThan(0);
+    expect(image.props.height).toBeGreaterThan(0);
+    expect(readFileSync(`public${image.props.src}`).subarray(0, 2).toString('hex')).toBe('ffd8');
+  }
+  const writing = await page.default({ params: Promise.resolve({ slug: 'writing' }) });
+  expect(nodes(writing).filter(node => node.type === 'img')).toHaveLength(0);
 });
 
 test('wiki navigation opens the current category and marks only the selected page', () => {
