@@ -37,6 +37,7 @@ export function ResetPasswordClient() {
   if (!token) {
     return (
       <div className="flex mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem] flex-col items-start gap-4">
+        <h1 className="font-display text-[2.25rem] font-normal">Reset password</h1>
         <XCircle className="h-8 w-8 text-destructive" />
         <p className="text-[0.9375rem] text-muted-foreground">
           Missing reset token.
@@ -51,6 +52,7 @@ export function ResetPasswordClient() {
   if (success) {
     return (
       <div className="flex mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem] flex-col items-start gap-4">
+        <h1 className="font-display text-[2.25rem] font-normal">Reset password</h1>
         <CheckCircle2 className="h-8 w-8 text-success" />
         <p className="text-[0.9375rem] text-muted-foreground">
           Password reset. Redirecting to log in...
