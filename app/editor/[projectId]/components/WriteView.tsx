@@ -357,6 +357,7 @@ export function WriteView(props: WriteViewProps) {
   const handledRequest = useRef<number | null>(null);
   const inTrail = !!trail?.itemIds.includes(item.id);
   const nextTrail = inTrail && trail ? props.trails[props.trails.findIndex(candidate => candidate.id === trail.id) + 1] : undefined;
+  const previousTrail = inTrail && trail ? props.trails[props.trails.findIndex(candidate => candidate.id === trail.id) - 1] : undefined;
   const steps = inTrail && trail ? trail.steps : [{ itemId: item.id }];
   const ids = useMemo(() => inTrail && trail ? trail.itemIds : [item.id], [inTrail, trail, item.id]);
   const focusedId = ids.includes(focusedItemId) ? focusedItemId : item.id;
@@ -450,7 +451,7 @@ export function WriteView(props: WriteViewProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest('[role="dialog"], [role="menu"], [role="listbox"], .find-replace-bar')) return;
-      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && inTrail && trail
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.altKey && inTrail && trail
           && target?.closest('.trail-item-editor')) {
         event.preventDefault();
         props.onCreateItem(trail.id, 'Untitled');
@@ -458,14 +459,15 @@ export function WriteView(props: WriteViewProps) {
       if (!event.altKey || (!event.metaKey && !event.ctrlKey) || event.shiftKey) return;
       if (target?.closest('input, textarea, [contenteditable="true"]') && !target.closest('.trail-item-editor')) return;
       const origin = target?.closest<HTMLElement>('[data-item-id]')?.dataset.itemId ?? item.id;
-      if (event.key === 'ArrowRight' && nextTrail && origin === ids[ids.length - 1] && !event.isComposing) {
-        event.preventDefault();
-        props.onSelectTrail(nextTrail.id);
-        return;
-      }
-      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+      if ((event.key !== 'ArrowUp' && event.key !== 'ArrowDown') || event.isComposing) return;
       event.preventDefault();
-      move(origin, event.key === 'ArrowUp' ? -1 : 1);
+      if (event.key === 'ArrowDown' && nextTrail && origin === ids[ids.length - 1]) {
+        props.onSelectTrail(nextTrail.id);
+      } else if (event.key === 'ArrowUp' && previousTrail && origin === ids[0]) {
+        const previousItem = items[previousTrail.itemIds[previousTrail.itemIds.length - 1]];
+        if (previousItem) props.onSelectItem(previousItem, previousTrail.id);
+        else props.onSelectTrail(previousTrail.id);
+      } else move(origin, event.key === 'ArrowUp' ? -1 : 1);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -513,7 +515,7 @@ export function WriteView(props: WriteViewProps) {
                   {stepItem.title}
                 </button>)}
                 {index === steps.length - 1 && nextTrail && <NextTrailButton trail={nextTrail} onSelectTrail={props.onSelectTrail}>
-                  <kbd className="text-xs text-muted-foreground">⌘⌥→</kbd>
+                  <kbd className="text-xs text-muted-foreground">⌘⌥↓</kbd>
                 </NextTrailButton>}
               </section>;
             })}

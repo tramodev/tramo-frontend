@@ -310,7 +310,7 @@ test('trail headings in the sidebar jump to the section independently from colla
 test('the shared next-trail button keeps its label, click action and editor shortcut', () => {
   const render = load('components/editor/next-trail-button.tsx');
   const selected = [];
-  const shortcut = jsx('kbd', { children: '⌘⌥→' });
+  const shortcut = jsx('kbd', { children: '⌘⌥↓' });
   const nodes = render('NextTrailButton', { trail: { id: 'next', title: 'Next' }, onSelectTrail: id => selected.push(id), children: shortcut });
   const button = nodes.find(node => node.type === 'button');
   expect(nodes.some(node => node.type === 'span' && node.props.children.includes('Next'))).toBe(true);
