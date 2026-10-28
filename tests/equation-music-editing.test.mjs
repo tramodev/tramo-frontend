@@ -17,7 +17,7 @@ function find(element, type) {
   if (element.type === type) return element;
   return [element.props?.children].flat().map(child => find(child, type)).find(Boolean);
 }
-function setup(kind, initial = '', fresh = initial === '', selected = false) {
+function setup(kind, initial = '', fresh = initial === '', selected = false, scoreLoad) {
   const field = kind === 'Equation' ? 'equation' : 'abc';
   const states = [], effects = [], listeners = [], refs = [], updates = [];
   let index = 0, refIndex = 0, content = initial, removed = false;
@@ -31,15 +31,18 @@ function setup(kind, initial = '', fresh = initial === '', selected = false) {
     },
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
     '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [selected, () => {}, () => {}] },
+    katex: { default: require('katex') },
     lexical: { $getNodeByKey: () => node, HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
     [`@/app/editor/nodes/${kind}Node`]: { [`$is${kind}Node`]: value => value === node },
     '@/app/editor/plugins/decoratorCaret': { editingDecorators },
+    '@/app/editor/plugins/music-audio': { loadAbcjs: () => scoreLoad ?? Promise.resolve(require('abcjs')) },
     '@/app/editor/plugins/MusicPlugin': { DEFAULT_ABC: 'X:1\nK:C\n' },
-  }).default;
+  }, '', { window: { addEventListener() {}, removeEventListener() {} } }).default;
   const render = () => { index = refIndex = 0; const tree = component({ [field]: content, inline: false, nodeKey: 'embed' }); effects.splice(0).forEach(fn => fn()); return tree; };
   const input = () => find(render(), 'textarea');
   return {
-    input, updates,
+    input, updates, get warnings() { return states[2]; },
+    blur: async () => { find(render(), kind === 'Equation' ? 'span' : 'div').props.onBlur({ currentTarget: { contains: () => false }, relatedTarget: null }); await new Promise(resolve => setImmediate(resolve)); },
     restore: value => { content = value; listeners.forEach(fn => fn({ editorState: { read: fn => fn() }, tags: new Set(['historic']) })); },
     edit: () => find(render(), 'button').props.onClick({ stopPropagation() {} }),
     enter: () => find(render(), kind === 'Equation' ? 'span' : 'div').props.onDoubleClick(),
@@ -49,22 +52,22 @@ function setup(kind, initial = '', fresh = initial === '', selected = false) {
   };
 }
 
-test.each(['Equation', 'Music'])('%s writes to its node before blur and Escape keeps new content', kind => {
+test.each(['Equation', 'Music'])('%s keeps unfinished text local and Escape discards a new block', kind => {
   const s = setup(kind);
   s.type('written before finishing');
-  expect(s.content).toBe('written before finishing');
+  expect(s.content).toBe('');
   s.escape();
-  expect(s.removed).toBe(false);
-  expect(s.content).toBe('written before finishing');
+  expect(s.removed).toBe(true);
+  expect(s.content).toBe('');
   expect(s.input()).toBeUndefined();
 });
 
-test.each(['Equation', 'Music'])('%s keeps edits to an existing embed on Escape', kind => {
+test.each(['Equation', 'Music'])('%s restores the confirmed content on Escape', kind => {
   const s = setup(kind, 'original');
   s.enter();
   s.type('original + changes');
   s.escape();
-  expect(s.content).toBe('original + changes');
+  expect(s.content).toBe('original');
   expect(s.removed).toBe(false);
 });
 
@@ -168,12 +171,15 @@ test('two undo and redo steps retain the equation and its serialized text', () =
 });
 
 
-test.each(['Equation', 'Music'])('%s groups typing into one undo step and starts a new step after history changes', kind => {
+test.each(['Equation', 'Music'])('%s automatically commits the whole draft on blur as one undo step', async kind => {
   const s = setup(kind);
-  s.type('k'); s.type('k='); s.type('k=1');
-  expect(s.updates.map(update => update.tag)).toEqual(['history-push', 'history-merge', 'history-merge']);
-  s.restore(''); s.enter(); s.type('new edit');
-  expect(s.updates.at(-1).tag).toBe('history-push');
+  const value = kind === 'Equation' ? 'k=1' : 'X:1\nK:C\nCDEF|';
+  s.type('k'); s.type('k='); s.type(value);
+  expect(s.updates).toEqual([]);
+  await s.blur();
+  if (kind === 'Music') expect(s.warnings).toEqual([]);
+  expect(s.content).toBe(value);
+  expect(s.updates.map(update => update.tag)).toEqual(['history-push']);
 });
 
 
@@ -187,12 +193,12 @@ test.each(['Equation', 'Music'])('%s restored empty by redo stays out of editing
   expect(s.input().props.value).toBe('restored content');
 });
 
-test.each(['Equation', 'Music'])('%s ignores an obsolete blur after history replaces its content', kind => {
+test.each(['Equation', 'Music'])('%s ignores an obsolete save after history replaces its content', kind => {
   const s = setup(kind);
   s.type('k=1');
-  const oldBlur = s.input().props.onBlur;
+  const oldSave = s.input().props.onKeyDown;
   s.restore('restored content');
-  oldBlur();
+  oldSave({ key: 'Enter', ctrlKey: true, currentTarget: { value: 'k=1', selectionStart: 0, selectionEnd: 0 }, stopPropagation() {}, preventDefault() {} });
   expect(s.content).toBe('restored content');
   expect(s.removed).toBe(false);
 });
@@ -228,4 +234,68 @@ test('moving a block waits for the menu to close and returns focus to the editor
   expect(actions).toEqual([]);
   frames.shift()();
   expect(actions).toEqual([['move-block', 'up'], 'root-focus', 'editor-focus']);
+});
+
+
+test('an incomplete equation cannot replace the confirmed equation on blur', async () => {
+  const s = setup('Equation', 'x');
+  s.enter();
+  s.type('\\frac{1}{');
+  await s.blur();
+  expect(s.content).toBe('x');
+  expect(s.input()).toBeDefined();
+});
+
+
+test('toolbar arrows traverse buttons and selectors while preserving native input keys', () => {
+  const ui = Object.fromEntries(['DropdownMenu', 'DropdownMenuContent', 'DropdownMenuItem', 'DropdownMenuShortcut', 'DropdownMenuSub', 'DropdownMenuSubContent', 'DropdownMenuSubTrigger', 'DropdownMenuTrigger'].map(name => [name, name]));
+  class Input {}
+  class Select {}
+  const toolbar = load('app/editor/plugins/ToolbarPlugin.tsx', {
+    react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useRef: value => ({ current: value }), useCallback: fn => fn, useEffect() {} },
+    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [{}] },
+    '@/components/ui/dropdown-menu': ui,
+    './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
+  }, '', { HTMLInputElement: Input, HTMLSelectElement: Select }).default({});
+  expect(toolbar.props.role).toBe('toolbar');
+  let focused, prevented = 0;
+  const controls = [0, 1, 2].map(id => ({ focus: () => { focused = id; } }));
+  const event = key => ({ key, target: controls[0], currentTarget: { querySelectorAll: () => controls }, preventDefault: () => { prevented++; } });
+  toolbar.props.onKeyDown(event('ArrowLeft')); expect(focused).toBe(2);
+  toolbar.props.onKeyDown(event('ArrowRight')); expect(focused).toBe(1);
+  toolbar.props.onKeyDown(event('End')); expect(focused).toBe(2);
+  toolbar.props.onKeyDown({ ...event('ArrowRight'), target: new Input() });
+  toolbar.props.onKeyDown({ ...event('ArrowLeft'), target: new Select() });
+  expect(prevented).toBe(3);
+});
+
+
+test('an incomplete score cannot replace the confirmed score on blur', async () => {
+  const original = 'X:1\nK:C\nCDEF|';
+  const s = setup('Music', original);
+  s.enter();
+  s.type('X:1\nK:C\nCDE [');
+  await s.blur();
+  expect(s.content).toBe(original);
+  expect(s.input()).toBeDefined();
+});
+
+test('leaving a new untouched score removes the empty block automatically', async () => {
+  const s = setup('Music');
+  await s.blur();
+  expect(s.removed).toBe(true);
+  expect(s.content).toBe('');
+});
+
+test('late score validation cannot commit a draft that changed after blur', async () => {
+  let resolve;
+  const loading = new Promise(done => { resolve = done; });
+  const s = setup('Music', '', true, false, loading);
+  s.type('X:1\nK:C\nCDEF|');
+  await s.blur();
+  s.type('X:1\nK:C\nCDE [');
+  resolve(require('abcjs'));
+  await Promise.resolve();
+  expect(s.content).toBe('');
+  expect(s.updates).toHaveLength(0);
 });

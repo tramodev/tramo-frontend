@@ -1,3 +1,4 @@
+import { serializeNoteContent } from '@/app/editor/note-content';
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -136,7 +137,7 @@ export function useAutoSave({
   const onChange = useCallback((itemId: string, editorState: EditorState) => {
     editorState.read(() => {
       if (deletedItemsRef.current.has(itemId)) return;
-      const json = JSON.stringify(editorState.toJSON());
+      const json = serializeNoteContent(editorState.toJSON());
       if (!conflictRef.current) setSaveStatus('saving');
       optimisticContentRef.current.set(itemId, json);
       if (!optimisticTimeoutRef.current) optimisticTimeoutRef.current = setTimeout(flushOptimisticContent, 150);
@@ -144,8 +145,7 @@ export function useAutoSave({
         if (userId && projectId) {
           const previous = readItemContentBackup(userId, projectId, itemId);
           writeItemContentBackup(userId, projectId, itemId, {
-            content: JSON.stringify(editorState.toJSON(), (key, value) => key === 'children' && Array.isArray(value)
-              ? value.filter(node => node.type !== 'image' || node.imageId) : value), expectedContent: previous?.expectedContent ?? getSavedItemContent(itemId),
+            content: serializeNoteContent(editorState.toJSON(), false), expectedContent: previous?.expectedContent ?? getSavedItemContent(itemId),
             extractionEpoch: previous?.extractionEpoch ?? getExtractionEpoch(itemId), restoreEpoch: previous?.restoreEpoch ?? restoreEpoch,
           });
         }

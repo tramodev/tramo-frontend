@@ -5,16 +5,21 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-function setup(restoreEpoch = 0, { userId, storage = {} } = {}) {
+function setup(restoreEpoch = 0, { userId, storage = {}, session = {} } = {}) {
+  const sessionStorage = { getItem: key => session[key] ?? null, setItem: (key, value) => { session[key] = value; }, removeItem: key => { delete session[key]; } };
   const localStorage = {
     getItem: key => storage[key] ?? null,
     setItem: (key, value) => { storage[key] = value; },
     removeItem: key => { delete storage[key]; },
   };
+  const noteContent = {};
+  runInNewContext(ts.transpileModule(readFileSync('app/editor/note-content.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, { exports: noteContent, require: () => ({}) });
   const backups = {};
   runInNewContext(ts.transpileModule(readFileSync('lib/item-content-backup.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText, { exports: backups, localStorage });
+  }).outputText, { exports: backups, localStorage, sessionStorage });
   const refs = [], stateValues = [], reloads = [];
   const timers = new Map();
   const requests = [], snapshotRequests = [], bases = new Map();
@@ -40,6 +45,7 @@ function setup(restoreEpoch = 0, { userId, storage = {} } = {}) {
         useEffect: (fn) => { cleanups.push(fn()); },
       },
       '@/lib/item-content-backup': backups,
+      '@/app/editor/note-content': noteContent,
       '@/lib/item-content-client': {
         getSavedItemContent: id => bases.get(id)?.content ?? '', getExtractionEpoch: id => bases.get(id)?.extractionEpoch ?? 0,
         acceptExtractionEpoch: (id, extractionEpoch, content) => bases.set(id, { extractionEpoch, content }),
@@ -483,4 +489,45 @@ test('a failed conflict resolution keeps the local backup and remains actionable
   expect(s.status).toBe('error'); expect(s.error).toContain('Offline');
   expect(s.backups.readItemContentBackup('alice', 'project-context', 'a')).not.toBeNull();
   expect(s.requests).toHaveLength(0);
+});
+
+
+test('new empty equations and scores are excluded from backups and saves, including nested nodes', async () => {
+  const s = setup(0, { userId: 'alice' }); s.select('a');
+  s.edit({ root: { type: 'root', children: [{ type: 'paragraph', children: [
+    { type: 'equation', equation: '' }, { type: 'text', text: 'keep' },
+  ] }, { type: 'music', abc: '' }] } });
+  const backup = s.backups.readItemContentBackup('alice', 'project-context', 'a');
+  expect(JSON.parse(backup.content).root.children).toEqual([{ type: 'paragraph', children: [{ type: 'text', text: 'keep' }] }]);
+  const pending = s.barrier();
+  expect(s.requests[0].content).toBe(backup.content);
+  s.requests[0].resolve(); await pending;
+});
+
+test('two tabs reload their own conflicting text and cannot delete the other tab backup', async () => {
+  const storage = {}, sessionA = {}, sessionB = {};
+  const a = setup(0, { userId: 'alice', storage, session: sessionA }); a.select('a'); a.edit(embedContent('tab A'));
+  const b = setup(0, { userId: 'alice', storage, session: sessionB }); b.select('a'); b.edit(embedContent('tab B'));
+  const reloadedA = setup(0, { userId: 'alice', storage, session: sessionA });
+  const reloadedB = setup(0, { userId: 'alice', storage, session: sessionB });
+  expect(reloadedA.backups.readItemContentBackup('alice', 'project-context', 'a').content).toBe(JSON.stringify(embedContent('tab A')));
+  expect(reloadedB.backups.readItemContentBackup('alice', 'project-context', 'a').content).toBe(JSON.stringify(embedContent('tab B')));
+  reloadedA.backups.removeItemContentBackup('alice', 'project-context', 'a');
+  expect(reloadedB.backups.readItemContentBackup('alice', 'project-context', 'a').content).toBe(JSON.stringify(embedContent('tab B')));
+});
+
+
+test('a tab that saved successfully does not recover the other tab conflict after reload', async () => {
+  const storage = {}, sessionA = {}, sessionB = {};
+  const a = setup(0, { userId: 'alice', storage, session: sessionA }); a.select('a'); a.edit(embedContent('saved by A'));
+  const savingA = a.barrier();
+  const b = setup(0, { userId: 'alice', storage, session: sessionB }); b.select('a'); b.edit(embedContent('conflicting B'));
+  a.requests[0].resolve(); await savingA;
+  const savingB = b.barrier();
+  const conflict = new Error('Changed in another session'); conflict.name = 'ContentConflict';
+  b.requests[0].reject(conflict); expect(await savingB).toBe(false);
+  const reloadedA = setup(0, { userId: 'alice', storage, session: sessionA });
+  const reloadedB = setup(0, { userId: 'alice', storage, session: sessionB });
+  expect(reloadedA.backups.readItemContentBackup('alice', 'project-context', 'a')).toBeNull();
+  expect(reloadedB.backups.readItemContentBackup('alice', 'project-context', 'a').content).toBe(JSON.stringify(embedContent('conflicting B')));
 });

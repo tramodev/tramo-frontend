@@ -30,6 +30,9 @@ export function sanitizeNoteContent(content: string): string {
     if (node.type === 'heading' && (typeof node.tag !== 'string' || !/^h[1-6]$/.test(node.tag))) {
       throw new Error('Invalid heading tag');
     }
+    if (node.type === 'equation' && (typeof node.equation !== 'string' || node.equation.length > 10000)) {
+      throw new Error('Equations must not exceed 10,000 characters.');
+    }
     if ('style' in node) node.style = sanitizeNoteStyle(node.style);
     if ('textStyle' in node) node.textStyle = sanitizeNoteStyle(node.textStyle);
     if (Array.isArray(node.children)) {
@@ -37,4 +40,11 @@ export function sanitizeNoteContent(content: string): string {
     }
   }
   return JSON.stringify(state);
+}
+
+export function serializeNoteContent(state: unknown, includePendingImages = true): string {
+  return JSON.stringify(state, (key, value) => key === 'children' && Array.isArray(value)
+    ? value.filter(node => (node.type !== 'equation' || node.equation?.trim())
+      && (node.type !== 'music' || node.abc?.trim())
+      && (includePendingImages || node.type !== 'image' || node.imageId)) : value);
 }

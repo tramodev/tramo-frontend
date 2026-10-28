@@ -543,9 +543,22 @@ export default function ToolbarPlugin({
 
   return (
     <div
+      role="toolbar"
+      aria-label="Text formatting"
       className="toolbar"
       ref={toolbarRef}
       onKeyDown={(event) => {
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
+          && !(event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)) {
+          const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled]), input:not([disabled])'));
+          const index = controls.indexOf(event.target as HTMLElement);
+          if (index < 0) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? controls.length - 1
+            : (index + (event.key === 'ArrowRight' ? 1 : -1) + controls.length) % controls.length;
+          controls[next]?.focus();
+          return;
+        }
         if (event.key !== 'Escape') return;
         event.preventDefault();
         requestAnimationFrame(() => {

@@ -1,3 +1,4 @@
+import { serializeNoteContent } from '@/app/editor/note-content';
 import { readItemContentBackup, removeItemContentBackup, type ItemContentBackup } from '@/lib/item-content-backup';
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
@@ -772,8 +773,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       const state = draft ? editorState.toJSON() : undefined;
       draft?.setPendingImages(JSON.stringify(state).includes('"imageId":""'));
       if (draft && draft.getSnapshot().status !== 'saved') {
-        const content = JSON.stringify(state, (key, value) => key === 'children' && Array.isArray(value)
-          ? value.filter(node => node.type !== 'image' || node.imageId) : value);
+        const content = serializeNoteContent(state, false);
         const id = draft.backup.result ? String(draft.backup.result.itemId) : itemId;
         updateItemContentLocally(id, content);
         draft.update({ item: { ...draft.backup.latest.item, content } }, false, pendingCommand);

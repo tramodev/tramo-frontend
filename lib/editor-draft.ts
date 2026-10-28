@@ -67,7 +67,7 @@ function hasVisibleText(value: string): boolean {
 export function clearLocalDrafts(userId?: string | null) {
   try {
     localStorage.setItem('tramo:draft-owner', userId ?? '');
-    for (const [storage, prefix] of [[localStorage, 'tramo:draft:'], [localStorage, 'tramo:item-title:'], [localStorage, 'tramo:item-content:'], [sessionStorage, 'tramo:active-draft:']] as const) {
+    for (const [storage, prefix] of [[localStorage, 'tramo:draft:'], [localStorage, 'tramo:item-title:'], [localStorage, 'tramo:item-content:'], [sessionStorage, 'tramo:item-content:'], [sessionStorage, 'tramo:active-draft:']] as const) {
       for (const key of Object.keys(storage)) {
         if (key.startsWith(prefix) && (!userId || !key.startsWith(`${prefix}${userId}:`) && key !== `${prefix}${userId}`)) storage.removeItem(key);
       }

@@ -3,6 +3,11 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
+const noteContent = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/note-content.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: noteContent, require: () => ({}) });
+
 test('the draft remaps every ID without bootstrapping or changing the editor keys', async () => {
   const exports = {}, states = [], refs = [], deps = [], pending = [], replacements = [], changes = [], pendingImages = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, bootstraps = 0, ordinarySaves = 0;
@@ -35,6 +40,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
     window: { location: { pathname: '/editor/new', search: '' }, addEventListener() {}, removeEventListener() {} },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     require: name => ({
+      '@/app/editor/note-content': noteContent,
       react: {
         useState: initial => { const i = stateIndex++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial;
           return [states[i], next => { states[i] = typeof next === 'function' ? next(states[i]) : next; }]; },

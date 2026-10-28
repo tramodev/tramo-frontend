@@ -38,7 +38,8 @@ export default function PastePlugin(): null {
             if (payload.namespace !== editor._config.namespace) return false;
             const sanitized = sanitizeNoteContent(JSON.stringify({ root: { type: 'root', children: payload.nodes } }));
             nodes = $generateNodesFromSerializedNodes(JSON.parse(sanitized).root.children);
-          } catch {
+          } catch (error) {
+            console.error('Could not paste editor content; using plain text.', error);
             event.preventDefault();
             if (clipboardData.getData('text/plain') || clipboardData.getData('text/uri-list')) {
               $insertDataTransferForPlainText(clipboardData, selection);

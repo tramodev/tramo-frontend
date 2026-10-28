@@ -3,6 +3,11 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
+const noteContent = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/note-content.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: noteContent, require: () => ({}) });
+
 const transpile = path => ts.transpileModule(readFileSync(path, 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -37,6 +42,7 @@ async function setup(extraTrails = []) {
   runInNewContext(transpile('app/editor/[projectId]/hooks/useAutoSave.ts'), {
     exports: autoSaveExports,
     require: name => ({
+      '@/app/editor/note-content': noteContent,
       react: {
         useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
         useRef: (value) => autoSaveRefs[autoSaveRefIndex++] ?? (autoSaveRefs[autoSaveRefIndex - 1] = { current: value }),
@@ -77,6 +83,7 @@ async function setup(extraTrails = []) {
   runInNewContext(transpile('app/editor/[projectId]/hooks/useProjectEditorState.ts'), {
     exports,
     require: name => ({
+      '@/app/editor/note-content': noteContent,
       react: {
         useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
         useState: value => {

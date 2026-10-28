@@ -74,3 +74,9 @@ test('safe persisted styles keep their exact representation for extraction confl
   const original = content([element('paragraph', [text('original', style)])]);
   expect(sanitizeNoteContent(original)).toBe(original);
 });
+
+
+test('equations are bounded before parsing or rendering saved and pasted notes', () => {
+  expect(() => sanitizeNoteContent(content([{ type: 'equation', equation: 'x'.repeat(10000) }]))).not.toThrow();
+  expect(() => sanitizeNoteContent(content([{ type: 'equation', equation: 'x'.repeat(10001) }]))).toThrow('10,000');
+});

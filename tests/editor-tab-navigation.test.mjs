@@ -44,3 +44,34 @@ test.each([[false, 'indent'], [true, 'outdent']])('lists retain indentation (shi
 test('node selections also allow native focus navigation', () => {
   expect(tab('node').prevented).toBe(false);
 });
+
+
+function enterFence(text, { shiftKey = false, offset = text.length } = {}) {
+  const editor = lexical.createEditor({ namespace: 'code-enter', nodes: [code.CodeNode], onError: error => { throw error; } });
+  editor.update(() => {
+    const node = lexical.$createTextNode(text);
+    lexical.$getRoot().append(lexical.$createParagraphNode().append(node));
+    node.select(offset, offset);
+  }, { discrete: true });
+  const exports = {};
+  runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/CodeBlockGuardPlugin.tsx', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText, { exports, require: name => ({ react: { useEffect: fn => fn() },
+    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
+    './codeBlockGuard': { $isSelectionInCode: () => false },
+  })[name] ?? require(name) });
+  exports.CodeBlockGuardPlugin();
+  let handled;
+  editor.update(() => { handled = editor.dispatchCommand(lexical.KEY_ENTER_COMMAND, { shiftKey, preventDefault() {} }); }, { discrete: true });
+  return { handled, node: editor.getEditorState().toJSON().root.children[0] };
+}
+
+test.each(['```', '```javascript'])('Enter creates a code block for %s', text => {
+  expect(enterFence(text)).toMatchObject({ handled: true, node: { type: 'code', language: text === '```' ? 'plain' : 'javascript' } });
+});
+
+test('code fence conversion respects Shift+Enter, caret position and known languages', () => {
+  expect(enterFence('```', { shiftKey: true }).handled).toBe(false);
+  expect(enterFence('```', { offset: 1 }).handled).toBe(false);
+  expect(enterFence('```unknown-language').handled).toBe(false);
+});

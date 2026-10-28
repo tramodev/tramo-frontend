@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticatedFetch } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/config';
 import { readRequestBody } from '@/lib/request-body';
+import { sanitizeNoteContent } from '@/app/editor/note-content';
 
 
 export async function GET(
@@ -26,6 +27,15 @@ export async function PUT(
   const { id } = await params;
   const body = await readRequestBody(request);
   if (body instanceof Response) return body;
+  try {
+    const payload = JSON.parse(body);
+    if (typeof payload?.content !== 'string' || !payload.content.trim() || typeof payload.expectedContent !== 'string') {
+      throw new Error('Invalid content update');
+    }
+    sanitizeNoteContent(payload.content);
+  } catch {
+    return NextResponse.json({ code: 'EDITOR_CONTENT_INVALID', message: 'Provide editor content and expectedContent. Use an empty editor document to clear a note.' }, { status: 400 });
+  }
   const response = await authenticatedFetch(`${API_BASE_URL}/api/item/${id}/content`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'X-Project-Epoch': request.headers.get('X-Project-Epoch') ?? '0', ...(request.headers.get('X-Project-Id') ? { 'X-Project-Id': request.headers.get('X-Project-Id')! } : {}) },

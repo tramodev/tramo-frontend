@@ -26,7 +26,6 @@ import {
   KEY_ENTER_COMMAND,
   HISTORIC_TAG,
   HISTORY_PUSH_TAG,
-  HISTORY_MERGE_TAG,
   LexicalEditor,
   LexicalNode,
   NodeKey,
@@ -58,6 +57,7 @@ const TEMPLATES: { label: string; title: string; latex: string; at: number; len:
 function renderKatex(target: HTMLElement, equation: string, inline: boolean): string | null {
   target.removeAttribute('title');
   try {
+    if (equation.length > 10000) throw new Error('Equations must not exceed 10,000 characters.');
     katex.render(equation, target, {
       displayMode: !inline,
       throwOnError: true,
@@ -68,7 +68,7 @@ function renderKatex(target: HTMLElement, equation: string, inline: boolean): st
     return null;
   } catch (parseError) {
     const message = String((parseError as Error).message).replace(/^KaTeX parse error:\s*/, '');
-    target.textContent = equation;
+    target.textContent = equation.slice(0, 10000);
     target.title = message;
     return message;
   }
@@ -126,7 +126,6 @@ export default function EquationComponent({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
-  const firstChangeRef = useRef(true);
   const editingRef = useRef(isEditing);
 
   useLayoutEffect(() => {
@@ -154,7 +153,6 @@ export default function EquationComponent({
 
   useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
     if (!tags.has(HISTORIC_TAG)) return;
-    firstChangeRef.current = true;
     editingRef.current = false;
     exitEdgeRef.current = null;
     setIsEditing(false);
@@ -164,14 +162,15 @@ export default function EquationComponent({
     });
   }), [editor, nodeKey]);
 
-  const updateDraft = useCallback((value: string) => {
-    setDraft(value);
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isEquationNode(node)) node.setEquation(value);
-    }, { tag: firstChangeRef.current ? HISTORY_PUSH_TAG : HISTORY_MERGE_TAG });
-    firstChangeRef.current = false;
-  }, [editor, nodeKey]);
+  useEffect(() => {
+    if (!isEditing || draft === equation || !draft.trim()) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [draft, equation, isEditing]);
 
   const pendingSelection = useRef<[number, number] | null>(null);
   useLayoutEffect(() => {
@@ -188,10 +187,10 @@ export default function EquationComponent({
       if (textarea === null) return;
       const from = textarea.selectionStart;
       const to = textarea.selectionEnd;
-      updateDraft(draft.slice(0, from) + latex + draft.slice(to));
+      setDraft(draft.slice(0, from) + latex + draft.slice(to));
       pendingSelection.current = [from + at, from + at + len];
     },
-    [draft, updateDraft],
+    [draft],
   );
 
   useLayoutEffect(() => {
@@ -209,30 +208,38 @@ export default function EquationComponent({
   }, [editor, isEditing, nodeKey]);
 
   const commit = useCallback(
-    (exitTo: Edge | null = 'after') => {
+    (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return;
+      if (save && draft.trim()) {
+        try {
+          if (draft.length > 10000) throw new Error('Equations must not exceed 10,000 characters.');
+          katex.renderToString(draft, { throwOnError: true, trust: false, maxExpand: 1000 });
+        } catch (error) {
+          setError(error instanceof Error ? error.message : 'Invalid equation');
+          return;
+        }
+      }
       editingRef.current = false;
+      exitEdgeRef.current = exitTo;
       editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if (!$isEquationNode(node)) return;
-        const next = node.getEquation().trim();
+        const next = (save ? draft : equation).trim();
         if (next === '') {
           node.remove();
           return;
         }
         if (next !== node.getEquation()) node.setEquation(next);
-        exitEdgeRef.current = exitTo;
-      }, { discrete: true, tag: HISTORY_MERGE_TAG });
+      }, { discrete: true, tag: HISTORY_PUSH_TAG });
       setIsEditing(false);
     },
-    [editor, nodeKey],
+    [draft, editor, equation, nodeKey],
   );
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
       if (!isEditable) return;
       entryEdgeRef.current = from;
-      firstChangeRef.current = true;
       editingRef.current = true;
       setDraft(equation);
       setIsEditing(true);
@@ -319,16 +326,20 @@ export default function EquationComponent({
     return (
       <span
         key="editing"
+        onBlur={event => {
+          if (!event.currentTarget.contains(event.relatedTarget)) commit(null);
+        }}
+        onKeyDown={event => event.stopPropagation()}
         className={inline ? 'editor-equation-editor inline' : 'editor-equation-editor'}
       >
         <textarea
           ref={textareaRef}
           className="editor-equation-input"
           value={draft}
+          maxLength={10000}
           rows={1}
           spellCheck={false}
-          onChange={(event) => updateDraft(event.target.value)}
-          onBlur={() => commit(null)}
+          onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
             event.stopPropagation();
             const textarea = event.currentTarget;
@@ -338,7 +349,7 @@ export default function EquationComponent({
               commit();
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              commit();
+              commit('after', false);
             } else if (event.key === 'ArrowLeft' && collapsed && textarea.selectionStart === 0) {
               event.preventDefault();
               commit('before');

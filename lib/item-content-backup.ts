@@ -8,7 +8,8 @@ export interface ItemContentBackup {
 const keyFor = (userId: string, projectId: string, itemId: string) => `tramo:item-content:${userId}:${projectId}:${itemId}`;
 
 export function readItemContentBackup(userId: string, projectId: string, itemId: string): ItemContentBackup | null {
-  const raw = localStorage.getItem(keyFor(userId, projectId, itemId));
+  const key = keyFor(userId, projectId, itemId);
+  const raw = sessionStorage.getItem(key) ?? localStorage.getItem(key);
   if (!raw) return null;
   try {
     const value = JSON.parse(raw);
@@ -22,10 +23,17 @@ export function readItemContentBackup(userId: string, projectId: string, itemId:
 
 export function writeItemContentBackup(userId: string, projectId: string, itemId: string, value: ItemContentBackup) {
   const owner = localStorage.getItem('tramo:draft-owner');
-  if (owner === null || owner === userId) localStorage.setItem(keyFor(userId, projectId, itemId), JSON.stringify(value));
+  if (owner === null || owner === userId) {
+    const key = keyFor(userId, projectId, itemId);
+    sessionStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(key, JSON.stringify(value));
+  }
 }
 
 export function removeItemContentBackup(userId: string, projectId: string, itemId: string, content?: string) {
   const key = keyFor(userId, projectId, itemId);
-  if (content === undefined || readItemContentBackup(userId, projectId, itemId)?.content === content) localStorage.removeItem(key);
+  const backup = readItemContentBackup(userId, projectId, itemId);
+  if (content !== undefined && backup?.content !== content) return;
+  sessionStorage.setItem(key, '');
+  if (localStorage.getItem(key) === JSON.stringify(backup)) localStorage.removeItem(key);
 }

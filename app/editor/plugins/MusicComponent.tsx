@@ -24,7 +24,6 @@ import {
   KEY_ENTER_COMMAND,
   HISTORIC_TAG,
   HISTORY_PUSH_TAG,
-  HISTORY_MERGE_TAG,
   LexicalEditor,
   LexicalNode,
   NodeKey,
@@ -108,8 +107,11 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
-  const firstChangeRef = useRef(true);
   const editingRef = useRef(isEditing);
+  const abcjsRef = useRef<typeof import('abcjs') | null>(null);
+  const draftRevisionRef = useRef(0);
+
+  useEffect(() => () => { draftRevisionRef.current++; }, []);
 
   useLayoutEffect(() => {
     editingDecorators.get(editor)?.delete(nodeKey);
@@ -136,6 +138,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     let cancelled = false;
     const timer = setTimeout(() => {
       loadAbcjs().then((abcjs) => {
+        abcjsRef.current = abcjs;
         if (!cancelled) setWarnings(renderScore(abcjs, target, draft));
       });
     }, 250);
@@ -156,7 +159,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
 
   useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
     if (!tags.has(HISTORIC_TAG)) return;
-    firstChangeRef.current = true;
+    draftRevisionRef.current++;
     editingRef.current = false;
     exitEdgeRef.current = null;
     setIsEditing(false);
@@ -166,14 +169,15 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     });
   }), [editor, nodeKey]);
 
-  const updateDraft = useCallback((value: string) => {
-    setDraft(value);
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isMusicNode(node)) node.setAbc(value);
-    }, { tag: firstChangeRef.current ? HISTORY_PUSH_TAG : HISTORY_MERGE_TAG });
-    firstChangeRef.current = false;
-  }, [editor, nodeKey]);
+  useEffect(() => {
+    if (!isEditing || draft === abc || !draft.trim() || draft.trim() === DEFAULT_ABC.trim()) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [draft, abc, isEditing]);
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
@@ -190,30 +194,47 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   }, [editor, isEditing, nodeKey]);
 
   const commit = useCallback(
-    (exitTo: Edge | null = 'after') => {
+    async (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return;
+      const revision = ++draftRevisionRef.current;
+      if (save && draft.trim() && draft.trim() !== DEFAULT_ABC.trim()) {
+        try {
+          const abcjs = abcjsRef.current ?? await loadAbcjs();
+          if (revision !== draftRevisionRef.current || !editingRef.current) return;
+          abcjsRef.current = abcjs;
+          const [tune] = abcjs.parseOnly(draft);
+          const errors = (tune?.warnings ?? []).map(plainMusicWarning);
+          if (!tune?.lines?.length || errors.length) {
+            setWarnings(errors.length ? errors : ['Add music notes to the score.']);
+            return;
+          }
+        } catch {
+          if (revision === draftRevisionRef.current) setWarnings(['Could not validate this score. Check the notation and try again.']);
+          return;
+        }
+      }
       editingRef.current = false;
+      exitEdgeRef.current = exitTo;
       editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if (!$isMusicNode(node)) return;
-        const next = node.getAbc().trim();
+        const next = (save ? draft : abc).trim();
         if (next === '' || next === DEFAULT_ABC.trim()) {
           node.remove();
           return;
         }
         if (next !== node.getAbc()) node.setAbc(next);
-        exitEdgeRef.current = exitTo;
-      }, { discrete: true, tag: HISTORY_MERGE_TAG });
+      }, { discrete: true, tag: HISTORY_PUSH_TAG });
       setIsEditing(false);
     },
-    [editor, nodeKey],
+    [draft, editor, abc, nodeKey],
   );
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
       if (!isEditable) return;
       entryEdgeRef.current = from;
-      firstChangeRef.current = true;
+      draftRevisionRef.current++;
       editingRef.current = true;
       setDraft(abc === '' ? DEFAULT_ABC : abc);
       setIsEditing(true);
@@ -297,15 +318,16 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
 
   if (isEditing && isEditable) {
     return (
-      <div key="editing" className="editor-music-editor">
+      <div key="editing" className="editor-music-editor" onKeyDown={event => event.stopPropagation()} onBlur={event => {
+        if (!event.currentTarget.contains(event.relatedTarget)) void commit(null);
+      }}>
         <textarea
           ref={textareaRef}
           className="editor-music-input"
           value={draft}
           rows={1}
           spellCheck={false}
-          onChange={(event) => updateDraft(event.target.value)}
-          onBlur={() => commit(null)}
+          onChange={(event) => { draftRevisionRef.current++; setDraft(event.target.value); }}
           onKeyDown={(event) => {
             event.stopPropagation();
             const { selectionStart: from, selectionEnd: to, value } = event.currentTarget;
@@ -317,7 +339,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
               commit();
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              commit();
+              commit('after', false);
             } else if (event.key === 'ArrowLeft' && collapsed && from === 0) {
               event.preventDefault();
               commit('before');
