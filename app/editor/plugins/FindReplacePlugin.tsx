@@ -178,18 +178,40 @@ export default function FindReplacePlugin() {
     editor.getRootElement()?.focus({ preventScroll: true });
   }, [editor, highlightMatch]);
 
-  const openBar = useCallback(() => {
+  const updatePosition = useCallback(() => {
     const rootElement = editor.getRootElement();
     const referenceElement = rootElement?.closest<HTMLElement>('.editor-inner') ?? rootElement;
-    if (referenceElement) {
+    const columnElement = rootElement?.closest<HTMLElement>('.editor-content-column') ?? referenceElement;
+    if (referenceElement && columnElement) {
       const rect = referenceElement.getBoundingClientRect();
-      setPosition({ top: rect.top + 8, right: window.innerWidth - rect.right + 8 });
+      const columnRect = columnElement.getBoundingClientRect();
+      setPosition({ top: rect.top + 8, right: window.innerWidth - columnRect.right + 8 });
     }
+  }, [editor]);
+
+  const openBar = useCallback(() => {
+    updatePosition();
     setOpen(true);
     const input = searchInputRef.current;
     if (input) input.select();
     else requestAnimationFrame(() => searchInputRef.current?.select());
-  }, [editor]);
+  }, [updatePosition]);
+
+  useEffect(() => {
+    if (!open) return;
+    const rootElement = editor.getRootElement();
+    const referenceElement = rootElement?.closest<HTMLElement>('.editor-inner') ?? rootElement;
+    const columnElement = rootElement?.closest<HTMLElement>('.editor-content-column');
+    if (!referenceElement) return;
+    const observer = new ResizeObserver(updatePosition);
+    observer.observe(referenceElement);
+    if (columnElement) observer.observe(columnElement);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [editor, open, updatePosition]);
 
   useEffect(() => {
     return editor.registerCommand(
