@@ -7,7 +7,6 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import {
   $createParagraphNode,
   $getSelection,
-  $insertNodes,
   $isRangeSelection,
   $isRootOrShadowRoot,
   COMMAND_PRIORITY_EDITOR,
@@ -16,7 +15,7 @@ import {
 } from 'lexical';
 import { $createEquationNode, EquationNode } from '../nodes/EquationNode';
 import { $isSelectionInCode } from './codeBlockGuard';
-import { markDecoratorForEditing } from '@/app/editor/plugins/decoratorCaret';
+import { $insertDecoratorNode, markDecoratorForEditing } from '@/app/editor/plugins/decoratorCaret';
 
 export type InsertEquationPayload = Readonly<{
   equation: string;
@@ -39,7 +38,7 @@ export default function EquationsPlugin(): null {
       ({ equation, inline }) => {
         if ($isSelectionInCode()) return true;
         const node = $createEquationNode({ equation, inline });
-        $insertNodes([node]);
+        $insertDecoratorNode(node);
         markDecoratorForEditing(editor, node.getKey());
 
         if (!inline) {

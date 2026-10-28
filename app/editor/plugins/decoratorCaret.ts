@@ -1,12 +1,27 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import {
+  $getPreviousSelection,
   $getSelection,
+  $insertNodes,
+  $isNodeSelection,
+  $setSelection,
   $isElementNode,
   $isRangeSelection,
   LexicalEditor,
   LexicalNode,
 } from 'lexical';
+import { $insertNodeToNearestRoot } from '@lexical/utils';
+
+export function $insertDecoratorNode(node: LexicalNode) {
+  const selection = $getSelection() ?? $getPreviousSelection();
+  if ($isNodeSelection(selection)) {
+    $setSelection(selection.clone());
+    $insertNodeToNearestRoot(node);
+  } else {
+    $insertNodes([node]);
+  }
+}
 
 export const editingDecorators = new WeakMap<LexicalEditor, Set<string>>();
 
