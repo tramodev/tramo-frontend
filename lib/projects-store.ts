@@ -206,10 +206,6 @@ export async function startExampleProject(): Promise<{ projectId: string; trailI
   return apiJson('/api/project/example', { method: 'POST' });
 }
 
-export async function startProject(requestId: string): Promise<{ projectId: string; trailId: number | null; itemId: number }> {
-  return apiJson('/api/project/start', { method: 'POST', json: { requestId } });
-}
-
 export async function saveDraftMetadata(projectId: string, entity: 'project' | 'trail' | 'item', id: string,
   fields: { title?: string; titleAlign?: TitleAlign }, epoch: number): Promise<{ status: number; message?: string; retryAfter?: number; code?: string }> {
   if (!/^[a-zA-Z0-9]+$/.test(projectId) || !Number.isSafeInteger(epoch) || epoch < 0
@@ -362,10 +358,6 @@ export async function createLooseItem(projectId: string, title: string, epoch = 
 
 export async function deleteItem(itemId: string, epoch = 0, projectId?: string): Promise<void> {
   await apiVoid(`/api/item/${itemId}`, { epoch, projectId, method: "DELETE" });
-}
-
-export async function renameItem(itemId: string, title: string, epoch = 0, projectId?: string): Promise<void> {
-  await apiVoid(`/api/item/${itemId}`, { epoch, projectId, method: "PUT", json: { title } });
 }
 
 export async function setItemTitleAlign(itemId: string, titleAlign: TitleAlign, epoch = 0, projectId?: string): Promise<void> {

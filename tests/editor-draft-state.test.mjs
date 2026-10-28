@@ -55,7 +55,6 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
       '@/lib/pending-saves': { createPendingSaves: () => ({ track: (_key, action) => action(), flush: async () => {} }) },
       '@/lib/item-title-saves': titleSaves,
       '@/lib/project-validation': { assertProjectText() {} },
-      '@/lib/projects-store': { renameItem: async (...args) => { renames.push(args); } },
       '../../editor-utils': { countTextStats: () => ({ words: 0, characters: 0 }), lastItemStorageKey: id => id },
       '@/lib/editor-bootstrap-client': { getEditorBootstrap: () => { bootstraps++; throw new Error('Drafts must not bootstrap'); } },
       '@/app/editor/[projectId]/hooks/useAutoSave': { useAutoSave: () => ({ saveStatus: 'idle', saveError: '', onChange: () => { ordinarySaves++; } }) },

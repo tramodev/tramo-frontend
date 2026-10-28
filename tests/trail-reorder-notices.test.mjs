@@ -104,7 +104,6 @@ async function setup(extraTrails = []) {
         attachItemToTrail: (trailId, itemId) => new Promise((resolve, reject) => attaches.push({ trailId, itemId, resolve, reject })),
         detachItemFromTrail: (trailId, itemId) => new Promise((resolve, reject) => detaches.push({ trailId, itemId, resolve, reject })),
         renameTrail: (trailId, title) => new Promise((resolve, reject) => { renameRequests.push({ trailId, title, resolve, reject }); }),
-        renameItem: (itemId, title) => new Promise((resolve, reject) => { itemRenameRequests.push({ itemId, title, resolve, reject }); }),
         getMapPreviews: async () => { previews++; return {}; },
         reorderTrailItems: (trailId, itemIds) => { orders.push({ trailId, itemIds }); requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
         createItem: () => new Promise((resolve, reject) => { createResolve = resolve; createReject = reject; }),
