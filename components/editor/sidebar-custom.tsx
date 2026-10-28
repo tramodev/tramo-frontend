@@ -28,7 +28,7 @@ import { MIN_SEARCH_LENGTH } from "@/app/editor/editor-utils"
 import { searchProjectItems } from "@/lib/projects-store"
 
 const EMPTY_MATCHES: Set<string> = new Set()
-const ICON_ACTION_CLASS = "relative isolate shrink-0 rounded-full hover:bg-transparent before:pointer-events-none before:absolute before:left-1/2 before:top-1/2 before:size-6 before:-translate-x-1/2 before:-translate-y-1/2 before:-z-10 before:rounded-full hover:before:bg-primary/10"
+const ICON_ACTION_CLASS = "shrink-0 text-muted-foreground transition-colors hover:bg-transparent hover:text-foreground"
 
 interface SidebarCustomProps {
   draft?: boolean;
