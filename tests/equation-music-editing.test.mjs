@@ -157,6 +157,30 @@ test.each(['Equation', 'Music'])('%s automatically confirms a valid draft before
   expect(s.actions).toEqual(['focus', 'click']);
 });
 
+test('toolbar registers visible controls with Radix roving focus and excludes the upload input', () => {
+  const React = require('react');
+  const pass = ({ children }) => children;
+  const ui = Object.fromEntries(['DropdownMenu', 'DropdownMenuTrigger', 'DropdownMenuItem', 'DropdownMenuShortcut', 'DropdownMenuSub', 'DropdownMenuSubTrigger'].map(name => [name, pass]));
+  const Toolbar = load('app/editor/plugins/ToolbarPlugin.tsx', {
+    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [{}] },
+    '@/components/ui/dropdown-menu': { ...ui, DropdownMenuContent: () => null, DropdownMenuSubContent: () => null },
+    '@/components/ui/tooltip': { Tooltip: pass, TooltipTrigger: pass, TooltipContent: () => null },
+    './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
+  }).default;
+  const html = require('react-dom/server').renderToStaticMarkup(React.createElement(Toolbar));
+  const controls = html.match(/<(?:button|select|input)\b[^>]*>/g);
+  expect(controls.length).toBeGreaterThan(15);
+  for (const control of controls) {
+    if (control.includes('type="file"')) {
+      expect(control).not.toContain('data-radix-collection-item');
+      expect(control).toContain('tabindex="-1"');
+    } else {
+      expect(control).toContain('data-radix-collection-item');
+      expect(control).toContain('tabindex="-1"');
+    }
+  }
+});
+
 const { INLINE_EQUATION, BLOCK_EQUATION } = load('app/editor/plugins/markdownTransformers.ts', {
   '../nodes/EquationNode': { EquationNode: class {} },
 });
@@ -223,7 +247,7 @@ test('toolbar moves secondary formatting into a menu when its container narrows'
       useRef: initial => refs[refIndex++] ??= { current: initial }, useCallback: fn => fn, useEffect: fn => effects.push(fn),
     },
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [{}] },
-    'radix-ui': { Popover: { Root: 'PopoverRoot', Trigger: 'PopoverTrigger', Portal: 'PopoverPortal', Content: 'PopoverContent' } },
+    'radix-ui': { Toolbar: { Root: 'ToolbarRoot', Button: 'ToolbarButton' }, Popover: { Root: 'PopoverRoot', Trigger: 'PopoverTrigger', Portal: 'PopoverPortal', Content: 'PopoverContent' } },
     './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
   }, '', {
     ResizeObserver: class {
@@ -241,7 +265,7 @@ test('toolbar moves secondary formatting into a menu when its container narrows'
   let tree = render();
   expect(tree.props.className).toContain('toolbar-compact');
   const popup = find(tree, 'PopoverContent');
-  expect(elements(popup).find(node => node.props?.role === 'toolbar').props.onKeyDown).toBe(tree.props.onKeyDown);
+  expect(elements(popup).find(node => node.props?.['aria-label'] === 'Additional text formatting').props.loop).toBe(true);
   expect(elements(popup).some(node => node.props?.['aria-label'] === 'Font Family')).toBe(true);
   expect(elements(popup).some(node => node.props?.label === 'Format Bold')).toBe(false);
   for (const label of ['Undo', 'Redo', 'Format Bold', 'Insert Link', 'Insert']) {
@@ -256,7 +280,7 @@ test('toolbar moves secondary formatting into a menu when its container narrows'
   expect(disconnected).toBe(true);
 });
 
-test('toolbar arrows include font controls and font changes preserve DOM focus', () => {
+test('font changes preserve DOM focus inside a looping toolbar', () => {
   const updates = [], styles = [];
   const selection = {};
   const Toolbar = load('app/editor/plugins/ToolbarPlugin.tsx', {
@@ -273,15 +297,7 @@ test('toolbar arrows include font controls and font changes preserve DOM focus',
   input.props.onBlur({ target: { value: '24' } });
   expect(styles).toEqual([[selection, { 'font-family': 'Georgia' }], [selection, { 'font-size': '24px' }]]);
   expect(updates).toEqual([{ tag: 'skip-dom-selection' }, { tag: 'skip-dom-selection' }]);
-  let focused, prevented;
-  const controls = ['button', 'select', 'input', 'button'].map((type, index) => ({ type, focus: () => { focused = index; } }));
-  for (const [index, key, expected] of [[1, 'ArrowRight', 2], [2, 'ArrowRight', 3], [2, 'ArrowLeft', 1], [1, 'Home', 0], [1, 'End', 3]]) {
-    prevented = false;
-    tree.props.onKeyDown({ key, target: controls[index], currentTarget: { querySelectorAll: () => controls }, preventDefault: () => { prevented = true; } });
-    expect(prevented).toBe(true);
-    expect(focused).toBe(expected);
-  }
-  tree.props.onKeyDown({ key: 'Tab', preventDefault: () => { throw new Error('Tab must keep native focus navigation'); } });
+  expect(tree.props.loop).toBe(true);
 });
 
 test.each(['Equation', 'Music'])('%s reflects undo while editing and never commits stale local text', kind => {
@@ -462,29 +478,6 @@ test('toolbar formatting allows embed blur while preserving the editor selection
   activeEmbed = false;
   button.props.onMouseDown({ preventDefault() { prevented = true; } });
   expect(prevented).toBe(true);
-});
-
-
-test('toolbar arrows traverse buttons and selectors while preserving native input keys', () => {
-  const ui = Object.fromEntries(['DropdownMenu', 'DropdownMenuContent', 'DropdownMenuItem', 'DropdownMenuShortcut', 'DropdownMenuSub', 'DropdownMenuSubContent', 'DropdownMenuSubTrigger', 'DropdownMenuTrigger'].map(name => [name, name]));
-  class Input {}
-  class Select {}
-  const toolbar = load('app/editor/plugins/ToolbarPlugin.tsx', {
-    react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useRef: value => ({ current: value }), useCallback: fn => fn, useEffect() {} },
-    '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [{}] },
-    '@/components/ui/dropdown-menu': ui,
-    './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
-  }, '', { HTMLInputElement: Input, HTMLSelectElement: Select }).default({});
-  expect(toolbar.props.role).toBe('toolbar');
-  let focused, prevented = 0;
-  const controls = [0, 1, 2].map(id => ({ focus: () => { focused = id; } }));
-  const event = key => ({ key, target: controls[0], currentTarget: { querySelectorAll: () => controls }, preventDefault: () => { prevented++; } });
-  toolbar.props.onKeyDown(event('ArrowLeft')); expect(focused).toBe(2);
-  toolbar.props.onKeyDown(event('ArrowRight')); expect(focused).toBe(1);
-  toolbar.props.onKeyDown(event('End')); expect(focused).toBe(2);
-  toolbar.props.onKeyDown({ ...event('ArrowRight'), target: new Input() });
-  toolbar.props.onKeyDown({ ...event('ArrowLeft'), target: new Select() });
-  expect(prevented).toBe(3);
 });
 
 

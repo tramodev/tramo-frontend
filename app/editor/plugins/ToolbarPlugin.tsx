@@ -51,7 +51,7 @@ import {
 } from '@lexical/selection';
 
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { Popover } from 'radix-ui';
+import { Popover, Toolbar } from 'radix-ui';
 import {
   Baseline,
   Bold,
@@ -205,6 +205,7 @@ function ToolbarButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
+        <Toolbar.Button asChild disabled={disabled}>
         <button
           onMouseDown={(event) => {
             if (!document.activeElement?.closest('.editor-equation-editor, .editor-music-editor')) event.preventDefault();
@@ -216,6 +217,7 @@ function ToolbarButton({
           aria-label={label}>
           <Icon size={size} />
         </button>
+        </Toolbar.Button>
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>
@@ -237,9 +239,11 @@ function ToolbarMenuButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <DropdownMenuTrigger asChild>
+          <Toolbar.Button asChild>
           <button className={className} aria-label={label}>
             {children}
           </button>
+          </Toolbar.Button>
         </DropdownMenuTrigger>
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
@@ -557,16 +561,6 @@ export default function ToolbarPlugin({
   const ActiveAlignIcon = ALIGN_OPTIONS.find((option) => option.value === activeAlign)?.Icon ?? AlignLeft;
 
   const handleToolbarKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
-      const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled]), input:not([disabled])'));
-      const index = controls.indexOf(event.target as HTMLElement);
-      if (index < 0) return;
-      event.preventDefault();
-      const next = event.key === 'Home' ? 0 : event.key === 'End' ? controls.length - 1
-        : (index + (event.key === 'ArrowRight' ? 1 : -1) + controls.length) % controls.length;
-      controls[next]?.focus();
-      return;
-    }
     if (event.key !== 'Escape') return;
     event.preventDefault();
     setFormattingOpen(false);
@@ -603,6 +597,7 @@ export default function ToolbarPlugin({
       </DropdownMenu>
 
       <Divider />
+      <Toolbar.Button asChild>
       <select
         className="toolbar-item font-family-select"
         value={fontFamily}
@@ -616,6 +611,7 @@ export default function ToolbarPlugin({
           </option>
         ))}
       </select>
+      </Toolbar.Button>
       <Divider />
       <div className="font-size-control">
         <ToolbarButton
@@ -626,6 +622,7 @@ export default function ToolbarPlugin({
           spaced={false}
           onClick={() => updateFontSizeByStep(-1)}
         />
+        <Toolbar.Button asChild>
         <input
           type="number"
           className="font-size-input"
@@ -642,6 +639,7 @@ export default function ToolbarPlugin({
           }}
           aria-label="Font Size"
         />
+        </Toolbar.Button>
         <ToolbarButton
           label="Increase font size"
           tooltip="Increase font size"
@@ -727,7 +725,7 @@ export default function ToolbarPlugin({
   </>;
 
   return (
-    <div
+    <Toolbar.Root loop
       role="toolbar"
       aria-label="Text formatting"
       className={compact ? 'toolbar toolbar-compact' : 'toolbar'}
@@ -755,14 +753,16 @@ export default function ToolbarPlugin({
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} />
         <Popover.Root open={formattingOpen} onOpenChange={setFormattingOpen}>
           <Popover.Trigger asChild>
+            <Toolbar.Button asChild>
             <button type="button" className="toolbar-item" aria-label="More formatting" title="More formatting">
               <Ellipsis size={18} />
             </button>
+            </Toolbar.Button>
           </Popover.Trigger>
           <Popover.Portal>
             <Popover.Content className="toolbar-options" aria-label="Additional formatting" sideOffset={8} collisionPadding={12}
               align="end" onKeyDown={event => event.stopPropagation()}>
-              <div role="toolbar" aria-label="Additional text formatting" className="toolbar toolbar-overflow" onKeyDown={handleToolbarKeyDown}>{formattingControls}</div>
+              <Toolbar.Root loop aria-label="Additional text formatting" className="toolbar toolbar-overflow" onKeyDown={handleToolbarKeyDown}>{formattingControls}</Toolbar.Root>
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>
@@ -849,10 +849,11 @@ export default function ToolbarPlugin({
       <input
         ref={fileInputRef}
         type="file"
+        tabIndex={-1}
         accept="image/*"
         onChange={handleImageFileChange}
         className="hidden"
       />
-    </div>
+    </Toolbar.Root>
   );
 }
