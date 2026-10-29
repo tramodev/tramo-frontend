@@ -1,5 +1,46 @@
 import { parseAllowedColor, parseAllowedFontSize } from '@/app/editor/styleConfig';
 
+const supportedNodeTypes = new Set(['root', 'paragraph', 'text', 'linebreak', 'tab', 'heading', 'quote',
+  'list', 'listitem', 'code', 'code-highlight', 'link', 'autolink', 'image', 'equation', 'music',
+  'embed', 'table', 'tablerow', 'tablecell', 'horizontalrule']);
+
+export function isLegacyNoteContent(content: string): boolean {
+  if (!content) return false;
+  if (content.length > 1024 * 1024 || new TextEncoder().encode(content).length > 1024 * 1024) return true;
+  try {
+    const state = JSON.parse(content);
+    if (!state || typeof state !== 'object' || state.root?.type !== 'root' || !Array.isArray(state.root.children)) return true;
+    const nodes: { value: unknown; depth: number }[] = [{ value: state.root, depth: 0 }];
+    while (nodes.length) {
+      const { value, depth } = nodes.pop()!;
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return true;
+      const node = value as Record<string, unknown>;
+      if (depth > 100 || !supportedNodeTypes.has(String(node.type)) || (depth > 0 && node.type === 'root')) return true;
+      if (node.type === 'equation' || node.type === 'music') {
+        const source = node.type === 'equation' ? node.equation : node.abc;
+        if (typeof source !== 'string' || source.length > 10000) return true;
+      }
+      if (node.type === 'link' || node.type === 'autolink') {
+        if (typeof node.url !== 'string') return true;
+        const internal = node.type === 'link' && node.url === '#' && typeof node.rel === 'string'
+          && /^(?:(?:tramo-idea:|mypath-idea:)\d+|tramo-extraction:[0-9a-fA-F-]{36})$/.test(node.rel);
+        const placeholder = node.type === 'link' && node.url === 'https://';
+        if (!internal && !placeholder) {
+          const scheme = /^([a-z][a-z\d+.-]*):/i.exec(node.url.trim())?.[1]?.toLowerCase();
+          if (!scheme || !['http', 'https', 'mailto', 'sms', 'tel'].includes(scheme)) return true;
+        }
+      }
+      if ('children' in node) {
+        if (!Array.isArray(node.children)) return true;
+        nodes.push(...node.children.map(value => ({ value, depth: depth + 1 })));
+      }
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 export function sanitizeNoteStyle(input: unknown): string {
   if (typeof input !== 'string') return '';
   let removed = false;
@@ -32,12 +73,6 @@ export function sanitizeNoteContent(content: string): string {
     const node = value as Record<string, unknown>;
     if (node.type === 'heading' && (typeof node.tag !== 'string' || !/^h[1-6]$/.test(node.tag))) {
       throw new Error('Invalid heading tag');
-    }
-    if (node.type === 'equation' && (typeof node.equation !== 'string' || node.equation.length > 10000)) {
-      throw new Error('Equations must not exceed 10,000 characters.');
-    }
-    if (node.type === 'music' && (typeof node.abc !== 'string' || node.abc.length > 10000)) {
-      throw new Error('Music scores must not exceed 10,000 characters.');
     }
     if ('style' in node) node.style = sanitizeNoteStyle(node.style);
     if ('textStyle' in node) node.textStyle = sanitizeNoteStyle(node.textStyle);

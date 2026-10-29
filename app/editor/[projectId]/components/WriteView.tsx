@@ -47,6 +47,7 @@ import ExtractSelectionPlugin, { type ExtractionActions } from '../../plugins/Ex
 import WikiLinkPlugin from '../../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import { editorConfig, placeholder } from '../../lexical-config';
+import { isLegacyNoteContent } from '@/app/editor/note-content';
 import { ImageNode } from '@/app/editor/nodes/ImageNode';
 import { restoreItemHistory, saveItemSession, type ItemEditorSession } from '@/app/editor/item-editor-session';
 import { useVirtualNotes } from '@/app/editor/[projectId]/hooks/useVirtualNotes';
@@ -207,6 +208,7 @@ function ItemEditor(props: ItemEditorProps) {
 
 function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, register, move, session, onPendingImages }: ItemEditorProps) {
   const [editor] = useLexicalComposerContext();
+  const legacyContent = useMemo(() => !!item.content && isLegacyNoteContent(item.content), [item.content]);
   const [titleFocused, setTitleFocused] = useState(false);
   const matchSlash = useBasicTypeaheadTriggerMatch('/', { minLength: 0 });
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
@@ -227,6 +229,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           setTitleFocused(true);
           onFocus(item.id);
         }} />
+        {legacyContent && <p role="status" className="pl-7 py-2 text-sm text-destructive">This saved note uses content that no longer meets the current limits. You can read it here, but publishing or saving it requires fixing the content.</p>}
         {props.trails.filter(trail => trail.itemIds.includes(item.id)).length > 1 && <div className="pl-7 py-2 text-xs text-muted-foreground">
           <p>Used in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length} trails. Edits appear in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length === 2 ? 'both' : 'all of them'}.</p>
           <div className="mt-1 flex flex-wrap gap-3">{props.trails.filter(trail => trail.itemIds.includes(item.id)).map(trail => <button type="button" key={trail.id} onClick={() => props.onSelectItem(item, trail.id)} className="underline">{trail.title}</button>)}</div>
