@@ -130,7 +130,7 @@ test('the editor keeps a rejected project title editable and blocks duplicate su
   expect(render().find(node => node.type === 'Input').props.disabled).toBe(false);
 });
 
-function shareSetup(getProject, saveDescription = async () => {}) {
+function shareSetup(getProject, saveDescription = async () => {}, validateEmbeds = async () => []) {
   const published = [], savedTags = [], copied = [];
   const page = load('app/projects/[projectId]/share/page.tsx', {
     'next/navigation': { useParams: () => ({ projectId: 'project' }), useRouter: () => ({}) },
@@ -140,6 +140,7 @@ function shareSetup(getProject, saveDescription = async () => {}) {
       setProjectTags: async (...args) => { savedTags.push(args); },
       publishProject: async (...args) => { published.push(args); return { error: null }; },
     },
+    '@/lib/project-embed-errors': { projectEmbedErrors: validateEmbeds, embedReviewUrl: () => '/editor/project?note=1&embed=0' },
     '@/lib/profile': { getMyProfile: async () => null },
     '@/lib/project-validation': validation,
     '@/lib/pending-saves': pending,
@@ -158,7 +159,7 @@ test.each([null, new Error('Unavailable')])('share load failures render a visibl
   expect(nodes.some(node => node.props.href === '/projects')).toBe(true);
 });
 
-const project = { id: 'project', title: 'Project', description: '', tags: '', visibility: 'private', restoreEpoch: 0 };
+const project = { items: {}, id: 'project', title: 'Project', description: '', tags: '', visibility: 'private', restoreEpoch: 0 };
 const confirmButton = nodes => nodes.find(node => node.type === 'button' && node.props.children === 'Publish');
 
 test('a failed description save is reported and prevents publishing stale metadata', async () => {
@@ -362,4 +363,30 @@ test('Escape closes compact formatting and restores its trigger without closing 
   expect(focused).toEqual([]);
   frames.forEach(callback => callback());
   expect(focused).toEqual(['formatting']);
+});
+
+
+test('publishing waits for embed validation and only proceeds after confirming the warning', async () => {
+  let complete;
+  const s = shareSetup(async () => project, async () => {}, () => new Promise(resolve => { complete = resolve; }));
+  s.render(); await settle();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[2].props.onClick();
+  const publishing = confirmButton(s.render()).props.onClick();
+  await settle();
+  expect(s.published).toHaveLength(0);
+  complete([{ type: 'equation', itemId: '1', index: 0, message: 'invalid' }]);
+  await publishing;
+  expect(s.published).toHaveLength(0);
+  const confirm = s.render().find(node => node.props.children === 'Publish anyway');
+  await confirm.props.onClick();
+  expect(s.published).toEqual([['project', 0]]);
+});
+
+test('a validation loading failure is shown instead of treating the project as error-free', async () => {
+  const s = shareSetup(async () => project, async () => {}, async () => { throw new Error('Renderer unavailable'); });
+  s.render(); await settle();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[2].props.onClick();
+  await confirmButton(s.render()).props.onClick();
+  expect(s.published).toHaveLength(0);
+  expect(s.render().find(node => node.props.role === 'alert').props.children).toBe('Renderer unavailable');
 });

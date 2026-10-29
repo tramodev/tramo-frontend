@@ -15,6 +15,9 @@ import {
   Users,
 } from "lucide-react"
 
+import { projectEmbedErrors, embedReviewUrl, type ProjectEmbedError } from '@/lib/project-embed-errors'
+import { getItemContent } from '@/lib/item-content-client'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Mark } from "@/components/layout/logo"
@@ -66,6 +69,9 @@ export default function PublishPage() {
   const [justPublished, setJustPublished] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [embedErrors, setEmbedErrors] = useState<ProjectEmbedError[]>([]);
+  const [embedWarningOpen, setEmbedWarningOpen] = useState(false);
+  const confirming = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,14 +153,26 @@ export default function PublishPage() {
     setVisibility(next);
   };
 
-  const handleConfirm = async () => {
-    if (isPublishing) return;
+  const handleConfirm = async (allowErrors = false) => {
+    if (confirming.current) return;
+    confirming.current = true;
     setIsPublishing(true);
     setError(null);
     try {
       if (description.trim() !== project.description) await submitDescription();
       if (tags.trim() !== project.tags) await submitTags();
       await pendingSaves.current.flush();
+      if (visibility === "published" && project.visibility !== "published" && !allowErrors) {
+        const current = await getProject(projectId);
+        if (!current) throw new Error('Could not load project notes. Try again.');
+        for (const item of Object.values(current.items)) item.content = await getItemContent(item.id);
+        const errors = await projectEmbedErrors(current.items);
+        if (errors.length) {
+          setEmbedErrors(errors);
+          setEmbedWarningOpen(true);
+          return;
+        }
+      }
       if (visibility === "published") {
         const { error: err } = await publishProject(projectId, project.restoreEpoch);
         if (err) {
@@ -174,6 +192,7 @@ export default function PublishPage() {
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Something went wrong — try again.");
     } finally {
+      confirming.current = false;
       setIsPublishing(false);
     }
   };
@@ -309,7 +328,7 @@ export default function PublishPage() {
           {error && <p role="alert" className="order-last w-full text-xs text-destructive">{error}</p>}
           <button
             type="button"
-            onClick={handleConfirm}
+            onClick={() => handleConfirm()}
             disabled={isPublishing || justPublished}
             className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.875rem] font-medium text-background shadow-elevation-2 disabled:opacity-60"
           >
@@ -329,6 +348,16 @@ export default function PublishPage() {
           </button>
         </div>
       </div>
+      <AlertDialog open={embedWarningOpen} onOpenChange={setEmbedWarningOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>{embedErrors.length} {embedErrors.length === 1 ? 'equation or music score has errors' : 'equations or music scores have errors'}</AlertDialogTitle>
+            <AlertDialogDescription>Your content is preserved. Readers will see the original source when an equation or music score cannot be rendered.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { if (embedErrors[0]) router.push(embedReviewUrl(projectId, embedErrors[0])); }}>Review</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleConfirm(true)}>Publish anyway</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
