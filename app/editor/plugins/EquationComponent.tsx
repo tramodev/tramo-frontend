@@ -416,7 +416,8 @@ export default function EquationComponent({
   const renderedError = equationError(equation, inline);
   if (renderedError && !isEditable) {
     const Source = inline ? 'code' : 'pre';
-    return <span role="note" aria-label="Unrendered equation"><Source className="embed-raw">{equation}</Source><span className="embed-render-note">could not render</span></span>;
+    const Container = inline ? 'span' : 'div';
+    return <Container role="note" aria-label="Unrendered equation"><Source className="embed-raw">{equation}</Source><span className="embed-render-note">could not render</span></Container>;
   }
 
   return (

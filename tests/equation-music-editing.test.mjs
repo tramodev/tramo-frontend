@@ -600,6 +600,7 @@ test.each(['Equation', 'Music'])('%s marks invalid source for authors and shows 
   await new Promise(resolve => setImmediate(resolve));
   const raw = reader.render();
   expect(raw.props.role).toBe('note');
+  if (kind === 'Equation') expect(raw.type).toBe('div');
   expect(find(raw, 'pre').props.children).toBe(source);
   expect(raw.props['aria-invalid']).toBeUndefined();
   expect(raw.props.className ?? '').not.toContain('embed-invalid');
