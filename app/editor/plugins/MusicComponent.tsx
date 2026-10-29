@@ -35,6 +35,7 @@ import { loadAbcjs } from '@/app/editor/plugins/music-audio';
 import { DEFAULT_ABC } from '@/app/editor/plugins/MusicPlugin';
 import { musicError, plainMusicWarning } from '@/app/editor/embed-validity';
 import { useEmbedDraftExit } from '@/app/editor/plugins/useEmbedDraftExit';
+import { setPendingEmbedDraft } from '@/app/editor/embed-draft-status';
 
 interface MusicComponentProps {
   abc: string;
@@ -94,6 +95,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const [isEditing, setIsEditing] = useState(() => editingDecorators.get(editor)?.has(nodeKey) === true);
   const [draft, setDraft] = useState(() => (abc === '' ? DEFAULT_ABC : abc));
+  const lengthError = draft.length > 10000 ? 'Music scores must not exceed 10,000 characters. Shorten this score to save it.' : null;
   const [warnings, setWarnings] = useState<string[]>([]);
   const scoreRef = useRef<HTMLDivElement | null>(null);
   const scoreBoxRef = useRef<HTMLDivElement | null>(null);
@@ -102,6 +104,13 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
   const editingRef = useRef(isEditing);
+  const pendingToken = useRef({});
+
+  useEffect(() => {
+    const token = pendingToken.current;
+    setPendingEmbedDraft(token, isEditing && draft !== (abc === '' ? DEFAULT_ABC : abc));
+    return () => setPendingEmbedDraft(token, false);
+  }, [isEditing, draft, abc]);
   const [validation, setValidation] = useState<{ source: string; error: string | null; unavailable?: boolean } | null>(null);
 
   useLayoutEffect(() => {
@@ -189,10 +198,6 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const commit = useCallback(
     (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return true;
-      if (save && draft.trim() && draft.trim() !== DEFAULT_ABC.trim() && draft.length > 10000) {
-        setWarnings(['Music scores must not exceed 10,000 characters.']);
-        return false;
-      }
       editingRef.current = false;
       exitEdgeRef.current = exitTo;
       editor.update(() => {
@@ -340,8 +345,8 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
           }}
           placeholder={DEFAULT_ABC}
           aria-label="ABC notation"
-          aria-invalid={warnings.length ? true : undefined}
-          aria-describedby={warnings.length ? `music-error-${nodeKey}` : undefined}
+          aria-invalid={lengthError !== null || warnings.length > 0}
+          aria-describedby={lengthError || warnings.length ? `music-error-${nodeKey}` : undefined}
         />
         <div className="text-xs text-muted-foreground">
           Ctrl/⌘+Enter to finish · Example: CDEF GABc | cBAG FEDC | ·{' '}
@@ -351,8 +356,9 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
         <div className="editor-music-preview" aria-hidden>
           <div ref={previewRef} />
         </div>
-        {warnings.length > 0 && (
-          <div id={`music-error-${nodeKey}`} role="alert" className="editor-music-error">{warnings.join('\n')}</div>
+        <div role="status" className={lengthError ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>{draft.length.toLocaleString()}/10,000 characters</div>
+        {(lengthError || warnings.length > 0) && (
+          <div id={`music-error-${nodeKey}`} role="alert" className="editor-music-error">{lengthError || warnings.join('\n')}</div>
         )}
       </div>
     );

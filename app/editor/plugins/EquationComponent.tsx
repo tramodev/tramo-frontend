@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { $isEquationNode } from '@/app/editor/nodes/EquationNode';
 import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@/app/editor/plugins/decoratorCaret';
 import { useEmbedDraftExit } from '@/app/editor/plugins/useEmbedDraftExit';
+import { setPendingEmbedDraft } from '@/app/editor/embed-draft-status';
 
 interface EquationComponentProps {
   equation: string;
@@ -118,6 +119,7 @@ export default function EquationComponent({
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const [isEditing, setIsEditing] = useState(() => editingDecorators.get(editor)?.has(nodeKey) === true);
   const [draft, setDraft] = useState(equation);
+  const lengthError = draft.length > 10000 ? 'Equations must not exceed 10,000 characters. Shorten this equation to save it.' : null;
   const [error, setError] = useState<string | null>(() => equationError(equation, inline));
   const [templateIndex, setTemplateIndex] = useState(0);
   const katexRef = useRef<HTMLSpanElement | null>(null);
@@ -126,6 +128,13 @@ export default function EquationComponent({
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
   const editingRef = useRef(isEditing);
+  const pendingToken = useRef({});
+
+  useEffect(() => {
+    const token = pendingToken.current;
+    setPendingEmbedDraft(token, isEditing && draft !== equation);
+    return () => setPendingEmbedDraft(token, false);
+  }, [isEditing, draft, equation]);
 
   useLayoutEffect(() => {
     editingDecorators.get(editor)?.delete(nodeKey);
@@ -210,10 +219,6 @@ export default function EquationComponent({
   const commit = useCallback(
     (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return true;
-      if (save && draft.trim() && draft.length > 10000) {
-        setError('Equations must not exceed 10,000 characters.');
-        return false;
-      }
       editingRef.current = false;
       exitEdgeRef.current = exitTo;
       editor.update(() => {
@@ -372,8 +377,8 @@ export default function EquationComponent({
           }}
           placeholder={inline ? 'a + b' : '\\frac{a}{b}'}
           aria-label="LaTeX equation"
-          aria-invalid={error !== null}
-          aria-describedby={error ? `equation-error-${nodeKey}` : undefined}
+          aria-invalid={lengthError !== null || error !== null}
+          aria-describedby={lengthError || error ? `equation-error-${nodeKey}` : undefined}
         />
         <span className="editor-equation-palette" role="toolbar" aria-label="Equation templates" onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -402,7 +407,8 @@ export default function EquationComponent({
           ))}
         </span>
         <span className="editor-equation-preview" ref={previewRef} aria-hidden />
-        {error !== null && <span id={`equation-error-${nodeKey}`} role="alert" className="editor-equation-error">{error}</span>}
+        <span role="status" className={lengthError ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>{draft.length.toLocaleString()}/10,000 characters</span>
+        {(lengthError || error) && <span id={`equation-error-${nodeKey}`} role="alert" className="editor-equation-error">{lengthError || error}</span>}
       </span>
     );
   }

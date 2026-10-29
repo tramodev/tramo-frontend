@@ -7,7 +7,7 @@ import { acceptExtractionEpoch, getExtractionEpoch, getItemContentSnapshot, getS
 import { readItemContentBackup, writeItemContentBackup, removeItemContentBackup, type ItemContentBackup } from '@/lib/item-content-backup';
 import { isAuthError } from '../../editor-utils';
 
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'unsaved';
 
 interface UseAutoSaveParams {
   userId?: string;

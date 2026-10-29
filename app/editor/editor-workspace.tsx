@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useSelectedLayoutSegments } from 'next/navigation';
 import type { UserProfile } from '@/lib/profile';
 import { FolderPlus, Loader2, Type } from 'lucide-react';
@@ -13,6 +13,7 @@ import { WriteView } from '@/app/editor/[projectId]/components/WriteView';
 import { startExistingProject } from '@/lib/projects-store';
 import { TaskHint } from '@/components/editor/task-hint';
 import { GraphView } from '@/components/editor/graph-view';
+import { hasPendingEmbedDrafts, subscribeEmbedDrafts } from '@/app/editor/embed-draft-status';
 
 export function EditorWorkspace({ user }: { user: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'> }) {
   const segments = useSelectedLayoutSegments();
@@ -63,6 +64,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   }, []);
 
   const project = useProjectEditorState(routeProjectId, connectionsPanelOpen, user);
+  const hasPendingEmbedDraft = useSyncExternalStore(subscribeEmbedDrafts, hasPendingEmbedDrafts, () => false);
   const projectId = project.projectId;
   useEffect(() => {
     if (project.loaded) document.title = `${project.projectTitle} | Tramo`;
@@ -126,8 +128,8 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             draft={project.isDraft}
             onDraftTitleChange={project.onDraftProjectTitle}
             onRenameProject={project.handleRenameProject}
-            saveStatus={project.saveStatus}
-            saveError={project.isDraft ? '' : project.saveError}
+            saveStatus={project.saveStatus === 'error' ? 'error' : hasPendingEmbedDraft ? 'unsaved' : project.saveStatus}
+            saveError={project.saveError}
             onDiscardRecoveredChanges={project.onDiscardRecoveredChanges}
             onKeepRecoveredChanges={project.onKeepRecoveredChanges}
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />

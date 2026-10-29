@@ -52,6 +52,7 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
   const component = load(`app/editor/plugins/${kind}Component.tsx`, {
     react,
     '@/app/editor/plugins/useEmbedDraftExit': { useEmbedDraftExit },
+    '@/app/editor/embed-draft-status': { setPendingEmbedDraft() {} },
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
     '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [selected, () => {}, () => {}] },
     katex: { default: require('katex') },
@@ -106,6 +107,21 @@ test.each(['Equation', 'Music'])('%s saves changed invalid source on Escape', as
   expect(s.content).toBe('original + changes');
   expect(s.removed).toBe(false);
   expect(s.dialog()).toBeUndefined();
+});
+
+test.each(['Equation', 'Music'])('%s closes an oversized draft while showing its count and error', async kind => {
+  const s = setup(kind);
+  const oversized = 'x'.repeat(10001);
+  s.type(oversized);
+  const tree = s.render();
+  const elements = element => !element || typeof element !== 'object' ? [] : [element, ...[element.props?.children].flat().flatMap(elements)];
+  expect(find(tree, 'textarea').props['aria-invalid']).toBe(true);
+  expect(elements(tree).find(element => element.props?.role === 'status').props.children.join('')).toContain('10,001/10,000');
+  expect(elements(tree).find(element => element.props?.role === 'alert').props.children).toContain('Shorten');
+  s.escape();
+  await new Promise(resolve => setImmediate(resolve));
+  expect(s.input()).toBeUndefined();
+  expect(s.content).toBe(oversized);
 });
 
 test.each(['Equation', 'Music'])('%s removes an explicitly finished empty embed', kind => {
@@ -494,18 +510,18 @@ test.each(['Equation', 'Music'])('%s keeps vertical navigation inside middle lin
   expect(s.input()).toBeUndefined();
 });
 
-test('oversized equation drafts remain intact and report the limit instead of silently truncating', async () => {
+test('oversized equation drafts close without truncating and report the limit', async () => {
   const s = setup('Equation', 'x');
   s.enter();
   const draft = 'x'.repeat(10001);
   s.type(draft);
   expect(s.input().props.maxLength).toBeUndefined();
   expect(s.input().props.value).toBe(draft);
-  await s.blur();
-  expect(s.content).toBe('x');
-  expect(s.input().props.value).toBe(draft);
   expect(s.input().props['aria-invalid']).toBe(true);
   expect(s.render().props.children.find(child => child?.props?.role === 'alert').props.children).toContain('10,000');
+  await s.blur();
+  expect(s.content).toBe(draft);
+  expect(s.input()).toBeUndefined();
 });
 
 test('toolbar formatting allows embed blur while preserving the editor selection otherwise', () => {
@@ -557,15 +573,16 @@ test('outside score clicks resume navigation only once', async () => {
   expect(s.actions).toEqual(['focus', 'click']);
 });
 
-test.each(['Equation', 'Music'])('%s keeps oversized source in editing without a discard dialog', async kind => {
+test.each(['Equation', 'Music'])('%s closes oversized source without a discard dialog', async kind => {
   const s = setup(kind, 'original');
   s.enter();
   const draft = 'x'.repeat(10001);
   s.type(draft);
-  await s.blur();
-  expect(s.content).toBe('original');
   expect(s.input().props.value).toBe(draft);
   expect(s.input().props['aria-invalid']).toBe(true);
+  await s.blur();
+  expect(s.content).toBe(draft);
+  expect(s.input()).toBeUndefined();
   expect(s.dialog()).toBeUndefined();
 });
 
@@ -589,16 +606,16 @@ test.each(['Equation', 'Music'])('%s marks invalid source for authors and shows 
 });
 
 
-test.each(['Equation', 'Music'])('%s blocks navigation when excess whitespace makes its draft oversized', async kind => {
+test.each(['Equation', 'Music'])('%s permits navigation while retaining oversized whitespace', async kind => {
   const original = kind === 'Equation' ? 'x' : 'X:1\nK:C\nCDEF|';
   const s = setup(kind, original);
   s.enter();
   const source = original + ' '.repeat(10001);
   s.type(source);
   expect(await s.clickOutside()).toBe(true);
-  expect(s.content).toBe(original);
-  expect(s.input().props.value).toBe(source);
-  expect(s.actions).toEqual([]);
+  expect(s.content).toBe(source);
+  expect(s.input()).toBeUndefined();
+  expect(s.actions).toEqual(['focus', 'click']);
 });
 
 test.each(['Equation', 'Music'])('%s still removes an empty draft containing only whitespace', kind => {

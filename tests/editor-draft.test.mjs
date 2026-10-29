@@ -222,6 +222,18 @@ test('permanent API rejection does not retry in a loop', async () => {
   draft.dispose();
 });
 
+test('an oversized embed remains an unsaved local draft after rejection', async () => {
+  const s = setup({ commit: async () => { throw new s.DraftRequestError('Invalid editor content', 400); } });
+  const draft = s.api.newDraft('user');
+  const source = 'x'.repeat(10001);
+  draft.update({ item: { title: '', titleAlign: 'left', content: JSON.stringify({ root: { type: 'root', children: [{ type: 'equation', equation: source }] } }) } });
+  await draft.commit().catch(() => {});
+  expect(draft.getSnapshot()).toEqual({ status: 'error', error: 'Invalid editor content' });
+  expect(s.api.listDrafts('user')[0].latest.item.content).toContain(source);
+  expect(draft.needsUnloadWarning()).toBe(false);
+  draft.dispose();
+});
+
 test('Retry-After controls transient retry timing', async () => {
   jest.useFakeTimers();
   try {

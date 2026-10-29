@@ -130,6 +130,18 @@ test('the editor keeps a rejected project title editable and blocks duplicate su
   expect(render().find(node => node.type === 'Input').props.disabled).toBe(false);
 });
 
+test('the editor header marks pending embed text and rejected drafts as not saved', () => {
+  const header = load('app/editor/[projectId]/components/EditorHeader.tsx', {
+    '@/lib/project-validation': validation,
+  });
+  const props = { projectTitle: 'Draft', saveStatus: 'unsaved', saveError: '', onRenameProject: async () => {} };
+  const render = () => flatten(header.render('EditorTitleSlot', props));
+  expect(render().some(node => Array.isArray(node.props.children) && node.props.children.includes('Not saved'))).toBe(true);
+  props.saveStatus = 'error';
+  props.saveError = 'Invalid editor content';
+  expect(render().find(node => node.props.role === 'alert').props.children).toBe('Invalid editor content');
+});
+
 function shareSetup(getProject, saveDescription = async () => {}, validateEmbeds = async () => []) {
   const published = [], savedTags = [], copied = [];
   const page = load('app/projects/[projectId]/share/page.tsx', {
@@ -333,6 +345,7 @@ test('Escape closes compact formatting and restores its trigger without closing 
   const frames = [], focused = [];
   const workspace = load('app/editor/editor-workspace.tsx', {
     '@/app/editor/editor-utils': { countProjectTextStats: () => null },
+    '@/app/editor/embed-draft-status': { subscribeEmbedDrafts: () => () => {}, hasPendingEmbedDrafts: () => false },
     '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => ({
       loaded: true, view: 'write', items: {}, selectedItem: { id: 'note' }, projectTitle: 'Test',
     }) },

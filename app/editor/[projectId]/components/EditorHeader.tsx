@@ -111,10 +111,10 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
             Saved
           </>
         )}
-        {saveStatus === 'error' && (
+        {(saveStatus === 'error' || saveStatus === 'unsaved') && (
           <>
             <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-            Save failed
+            Not saved
           </>
         )}
       </span>
