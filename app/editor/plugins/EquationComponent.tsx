@@ -92,12 +92,11 @@ function $placeCaret(node: LexicalNode, edge: Edge) {
   }
   const block = node.getTopLevelElement() ?? node;
   let neighbour = edge === 'after' ? block.getNextSibling() : block.getPreviousSibling();
-  if (neighbour === null) {
+  if (!$isElementNode(neighbour)) {
     neighbour = $createParagraphNode();
     if (edge === 'after') block.insertAfter(neighbour);
     else block.insertBefore(neighbour);
   }
-  if (!$isElementNode(neighbour)) return;
   if (edge === 'after') neighbour.selectStart();
   else neighbour.selectEnd();
 }

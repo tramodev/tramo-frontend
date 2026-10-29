@@ -37,14 +37,14 @@ export function useEmbedDraftExit({ enabled, dirty, commit, label }: {
     };
     const remember = (event: MouseEvent) => {
       const target = outside(event);
-      if (target) pending.current = target.closest<HTMLElement>('a[href], button, [role="button"]');
+      if (target) pending.current = target.closest<HTMLElement>('a[href], button, [role="button"], input, textarea, select');
     };
     const intercept = (event: MouseEvent) => {
       const target = outside(event);
       if (!target) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      pending.current = target.closest<HTMLElement>('a[href], button, [role="button"]') ?? pending.current;
+      pending.current = target.closest<HTMLElement>('a[href], button, [role="button"], input, textarea, select') ?? pending.current;
       void leave(null).then(saved => {
         if (!saved) return;
         const action = pending.current;

@@ -37,7 +37,8 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
   editor.getRootElement = () => ({ focus: () => actions.push('root-focus') });
   editor.focus = () => actions.push('editor-focus');
   class Element {
-    closest(selector) { return selector === '[role="alertdialog"]' ? null : this; }
+    constructor(tag = 'button') { this.tag = tag; }
+    closest(selector) { return selector.split(', ').includes(this.tag) ? this : null; }
     focus() { actions.push('focus'); }
     click() { actions.push('click'); }
   }
@@ -65,10 +66,10 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
     dialog: () => find(render(), 'ConfirmDialog'),
     continueEditing: () => find(render(), 'ConfirmDialog').props.onOpenChange(false),
     discard: async () => { const dialog = find(render(), 'ConfirmDialog'); dialog.props.onConfirm(); dialog.props.onOpenChange(false); await new Promise(resolve => setImmediate(resolve)); },
-    clickOutside: async (pointer = true) => {
+    clickOutside: async (pointer = true, tag = 'button') => {
       render();
       let prevented = false;
-      const event = { target: new Element(), preventDefault() { prevented = true; }, stopImmediatePropagation() {} };
+      const event = { target: new Element(tag), preventDefault() { prevented = true; }, stopImmediatePropagation() {} };
       if (pointer) events.get('pointerdown')?.(event);
       events.get('click')?.(event);
       await new Promise(resolve => setImmediate(resolve));
@@ -138,6 +139,29 @@ test.each([['Equation', true], ['Equation', false], ['Music', true], ['Music', f
   expect(s.removed).toBe(false);
   expect(s.input()).toBeUndefined();
   expect(s.actions).toEqual(['focus', 'click']);
+});
+
+test.each(['Equation', 'Music'].flatMap(kind => ['input', 'textarea', 'select'].map(tag => [kind, tag])))('%s resumes focus on an outside %s after saving or discarding', async (kind, tag) => {
+  const value = kind === 'Equation' ? 'x + y' : 'X:1\nK:C\nCDEF|';
+  const invalid = kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [';
+  for (const pointer of [true, false]) {
+    for (const draft of [kind === 'Equation' ? 'z' : 'X:1\nK:C\nGABc|', invalid]) {
+      const s = setup(kind, value);
+      s.enter();
+      s.type(draft);
+      expect(await s.clickOutside(pointer, tag)).toBe(true);
+      if (draft === invalid) {
+        expect(s.actions).toEqual([]);
+        expect(s.dialog().props.open).toBe(true);
+        await s.discard();
+        expect(s.content).toBe(value);
+      } else {
+        expect(s.content).toBe(draft);
+      }
+      expect(s.input()).toBeUndefined();
+      expect(s.actions).toEqual(['focus', 'click']);
+    }
+  }
 });
 
 test.each(['Equation', 'Music'])('%s asks before navigating away from a new invalid draft', async kind => {
@@ -316,6 +340,37 @@ test.each(['Equation', 'Music'])('%s reflects undo while editing and never commi
   s.escape();
   expect(s.content).toBe('original');
   expect(s.removed).toBe(false);
+});
+
+test.each(['Equation', 'Music'].flatMap(kind => ['before', 'after'].map(edge => [kind, edge])))('%s places typed text between adjacent embeds when exiting %s', (kind, edge) => {
+  const lexical = require('lexical');
+  const equations = load('app/editor/nodes/EquationNode.tsx', { '../plugins/EquationComponent': {} });
+  const music = load('app/editor/nodes/MusicNode.tsx', { '../plugins/MusicComponent': {} });
+  const { $placeCaret } = load(`app/editor/plugins/${kind}Component.tsx`, {
+    '@/app/editor/nodes/EquationNode': equations,
+    '@/app/editor/nodes/MusicNode': music,
+  }, '\nexport { $placeCaret };');
+  const editor = lexical.createEditor({ nodes: [equations.EquationNode, music.MusicNode], onError: error => { throw error; } });
+  editor.update(() => {
+    const equation = equations.$createEquationNode({ equation: 'x', inline: false });
+    const score = music.$createMusicNode({ abc: 'X:1\nK:C\nCDEF|' });
+    const target = kind === 'Equation' ? equation : score;
+    const neighbour = kind === 'Equation' ? score : equation;
+    const first = lexical.$createParagraphNode().append(lexical.$createTextNode('original'));
+    lexical.$getRoot().append(first, ...(edge === 'after' ? [target, neighbour] : [neighbour, target]));
+    first.selectStart();
+    $placeCaret(target, edge);
+    const selection = lexical.$getSelection();
+    expect(lexical.$isRangeSelection(selection)).toBe(true);
+    expect(selection.anchor.getNode().getTopLevelElement()).toBe(lexical.$getRoot().getChildAtIndex(2));
+    selection.insertText('D');
+    selection.insertText('1');
+  }, { discrete: true });
+  const children = editor.getEditorState().toJSON().root.children;
+  expect(children[0].children[0].text).toBe('original');
+  expect(children[2]).toMatchObject({ type: 'paragraph', children: [{ text: 'D1' }] });
+  expect(children.filter(node => node.type === 'equation')).toEqual([expect.objectContaining({ equation: 'x' })]);
+  expect(children.filter(node => node.type === 'music')).toEqual([expect.objectContaining({ abc: 'X:1\nK:C\nCDEF|' })]);
 });
 
 test('two undo and redo steps retain the equation and its serialized text', () => {
