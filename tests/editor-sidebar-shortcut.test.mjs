@@ -19,7 +19,7 @@ function setup(project = { items: {}, loaded: false }) {
       removeEventListener: (...args) => removed.push(args),
     },
     require: name => ({
-      react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useEffect: effect => effects.push(effect), useMemo: fn => fn(), useRef: value => ({ current: value }) },
+      react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useEffect: effect => effects.push(effect), useMemo: fn => fn(), useSyncExternalStore: () => false, useRef: value => ({ current: value }) },
       'react/jsx-runtime': { jsx, jsxs: jsx },
       'next/navigation': { useParams: () => ({ projectId: 'project' }) },
       '@/app/editor/editor-utils': { countProjectTextStats: () => null },

@@ -40,9 +40,9 @@ test('an explicit empty editor document with its conflict baseline can clear a n
   expect(JSON.parse(s.requests[0][1].body)).toEqual(body);
 });
 
-test('an oversized equation is rejected before forwarding the content update', async () => {
+test('the backend validates oversized equations against the persisted baseline', async () => {
   const s = setup();
   const content = JSON.stringify({ root: { type: 'root', children: [{ type: 'equation', equation: 'x'.repeat(10001) }] } });
-  expect((await s.put({ content, expectedContent: '' })).status).toBe(400);
-  expect(s.requests).toHaveLength(0);
+  expect((await s.put({ content, expectedContent: '' })).status).toBe(204);
+  expect(JSON.parse(s.requests[0][1].body)).toEqual({ content, expectedContent: '' });
 });

@@ -42,7 +42,7 @@ function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, c
     window: { getSelection: () => ({ isCollapsed: true, rangeCount: 1, anchorNode: {}, getRangeAt: () => range }) },
     document: { querySelector: selector => menu || emptyListbox && selector.includes('[role="listbox"]') && !selector.includes('[role="listbox"]:not(:empty)') ? {} : null, createRange: () => ({ selectNodeContents() {}, getClientRects: () => lines.map(rect) }) },
     require: name => {
-      if (name === 'react') return { useEffect: fn => fn(), useRef: value => ({ current: value }), useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] };
+      if (name === 'react') return { useEffect: fn => fn(), useMemo: fn => fn(), useRef: value => ({ current: value }), useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === '@lexical/react/LexicalTypeaheadMenuPlugin') return { useBasicTypeaheadTriggerMatch: () => text => text.startsWith('/') ? { matchingString: text.slice(1) } : null };
       if (name === '@lexical/react/LexicalOnChangePlugin') return { OnChangePlugin: 'OnChange' };

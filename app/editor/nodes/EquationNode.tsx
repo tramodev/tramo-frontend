@@ -25,14 +25,14 @@ export interface EquationPayload {
 
 export type SerializedEquationNode = Spread<
   {
-    equation: string;
+    equation: unknown;
     inline: boolean;
   },
   SerializedLexicalNode
 >;
 
 export class EquationNode extends DecoratorNode<React.ReactElement> {
-  __equation: string;
+  __equation: unknown;
   __inline: boolean;
 
   static getType(): string {
@@ -45,13 +45,10 @@ export class EquationNode extends DecoratorNode<React.ReactElement> {
 
   static importJSON(serializedNode: SerializedEquationNode): EquationNode {
     const { equation, inline } = serializedNode;
-    return $createEquationNode({
-      equation: typeof equation === 'string' ? equation : '',
-      inline: inline === true,
-    });
+    return $applyNodeReplacement(new EquationNode(equation, inline === true));
   }
 
-  constructor(equation: string, inline?: boolean, key?: NodeKey) {
+  constructor(equation: unknown, inline?: boolean, key?: NodeKey) {
     super(key);
     this.__equation = equation;
     this.__inline = inline === true;
@@ -59,7 +56,7 @@ export class EquationNode extends DecoratorNode<React.ReactElement> {
 
   exportJSON(): SerializedEquationNode {
     return {
-      equation: this.getEquation(),
+      equation: this.__equation,
       inline: this.__inline,
       type: 'equation',
       version: 1,
@@ -69,9 +66,9 @@ export class EquationNode extends DecoratorNode<React.ReactElement> {
   exportDOM(): DOMExportOutput {
     const element = document.createElement(this.__inline ? 'span' : 'div');
     const delimiter = this.__inline ? '$' : '$$';
-    element.setAttribute('data-lexical-equation', this.__equation);
+    element.setAttribute('data-lexical-equation', this.getEquation());
     element.setAttribute('data-lexical-equation-inline', String(this.__inline));
-    element.textContent = `${delimiter}${this.__equation}${delimiter}`;
+    element.textContent = `${delimiter}${this.getEquation()}${delimiter}`;
     return { element };
   }
 
@@ -112,7 +109,7 @@ export class EquationNode extends DecoratorNode<React.ReactElement> {
   }
 
   getEquation(): string {
-    return this.__equation;
+    return typeof this.__equation === 'string' ? this.__equation : '';
   }
 
   setEquation(equation: string): void {
@@ -122,13 +119,14 @@ export class EquationNode extends DecoratorNode<React.ReactElement> {
 
   getTextContent(): string {
     const delimiter = this.__inline ? '$' : '$$';
-    return `${delimiter}${this.__equation}${delimiter}`;
+    return `${delimiter}${this.getEquation()}${delimiter}`;
   }
 
   decorate(): React.ReactElement {
     return (
       <EquationComponent
-        equation={this.__equation}
+        equation={typeof this.__equation === 'string' ? this.__equation : JSON.stringify(this.__equation) ?? ''}
+        invalidSource={typeof this.__equation !== 'string'}
         inline={this.__inline}
         nodeKey={this.getKey()}
       />

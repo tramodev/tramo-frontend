@@ -11,7 +11,7 @@ function load(path, modules = {}, suffix = '') {
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync(path, 'utf8') + suffix, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText, { exports, Error, require: name => modules[name] ?? require(name) });
+  }).outputText, { exports, Error, TextEncoder, require: name => modules[name] ?? require(name) });
   return exports;
 }
 function validity(renderer = katex, loader = () => Promise.resolve(abcjs)) {
@@ -118,4 +118,43 @@ test('project counting deduplicates shared notes, reuses unloaded content and pr
 test('inline and display equations validate in the same mode as rendering', () => {
   expect(errors.equationError('x\\tag{1}', false)).toBeNull();
   expect(errors.equationError('x\\tag{1}', true)).toBeTruthy();
+});
+
+test('shared persisted-content contract identifies legacy sources without losing them', () => {
+  const { isLegacyNoteContent, serializeNoteContent } = load('app/editor/note-content.ts', {
+    '@/app/editor/styleConfig': { parseAllowedColor: () => '', parseAllowedFontSize: () => '' },
+  });
+  const fixtures = JSON.parse(readFileSync('tests/fixtures/editor-content-contract.json', 'utf8'));
+  for (const fixture of fixtures) {
+    const node = { ...fixture.node };
+    const field = node.type === 'equation' ? 'equation' : 'abc';
+    if (fixture.repeat > 1) node[field] = node[field].repeat(fixture.repeat);
+    const state = { root: { type: 'root', children: [node] } };
+    expect(isLegacyNoteContent(JSON.stringify(state))).toBe(!fixture.strict);
+    expect(JSON.parse(serializeNoteContent(state))).toEqual(state);
+  }
+});
+
+test.each(['Equation', 'Music'])('%s preserves non-text legacy JSON while rendering a marked fallback', kind => {
+  const lexical = require('lexical');
+  const nodes = load(`app/editor/nodes/${kind}Node.tsx`, { [`../plugins/${kind}Component`]: { default: kind } });
+  const Node = nodes[`${kind}Node`];
+  const field = kind === 'Equation' ? 'equation' : 'abc';
+  const editor = lexical.createEditor({ nodes: [Node], onError: error => { throw error; } });
+  for (const value of [42, null, true, {}, []]) {
+    editor.update(() => {
+      const node = Node.importJSON({ type: kind.toLowerCase(), version: 1, [field]: value });
+      lexical.$getRoot().clear().append(node);
+      expect(node.exportJSON()[field]).toEqual(value);
+      expect(node.decorate().props.invalidSource).toBe(true);
+      expect(node.decorate().props[field]).toBe(JSON.stringify(value));
+      expect(Node.clone(node).exportJSON()[field]).toEqual(value);
+    }, { discrete: true });
+    expect(editor.getEditorState().toJSON().root.children[0][field]).toEqual(value);
+  }
+});
+
+test('non-text legacy embeds contribute to the global error count', async () => {
+  const content = JSON.stringify({ root: { children: [{ type: 'equation', equation: 42 }, { type: 'music', abc: null }] } });
+  expect((await errors.noteEmbedErrors(content)).map(({ type }) => type)).toEqual(['equation', 'music']);
 });

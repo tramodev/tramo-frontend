@@ -3,9 +3,10 @@
 import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react';
 import type { Edge } from '@/app/editor/plugins/decoratorCaret';
 
-export function useEmbedDraftExit({ enabled, dirty, commit }: {
+export function useEmbedDraftExit({ enabled, dirty, commit, localOnly = false }: {
   enabled: boolean;
   dirty: boolean;
+  localOnly?: boolean;
   commit: (edge: Edge | null, save?: boolean) => boolean | null | Promise<boolean | null>;
 }, editing: RefObject<boolean>, textarea: RefObject<HTMLTextAreaElement | null>) {
   const root = useRef<HTMLElement | null>(null);
@@ -23,7 +24,7 @@ export function useEmbedDraftExit({ enabled, dirty, commit }: {
   }, [commit, editing, textarea]);
 
   useLayoutEffect(() => {
-    if (!enabled || !dirty) return;
+    if (!enabled || !dirty || localOnly) return;
     pending.current = null;
     const outside = (event: MouseEvent) => {
       if (!editing.current || !(event.target instanceof Element) || root.current?.contains(event.target)
@@ -53,7 +54,7 @@ export function useEmbedDraftExit({ enabled, dirty, commit }: {
       document.removeEventListener('pointerdown', remember, true);
       document.removeEventListener('click', intercept, true);
     };
-  }, [dirty, editing, enabled, leave]);
+  }, [dirty, editing, enabled, leave, localOnly]);
 
   const attachRoot = useCallback((element: HTMLElement | null) => { root.current = element; }, []);
 

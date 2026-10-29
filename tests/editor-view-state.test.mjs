@@ -15,7 +15,7 @@ test('the map hides the write view without unmounting it and keeps an empty proj
   }).outputText, {
     exports,
     require: name => ({
-      react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useEffect() {} },
+      react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}], useSyncExternalStore: () => false, useRef: value => ({ current: value }), useMemo: fn => fn(), useEffect() {} },
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
       'next/navigation': { useParams: () => ({ projectId: 'audit' }) },
       '@/app/editor/editor-utils': { countProjectTextStats: () => ({ words: 0, characters: 0 }) },

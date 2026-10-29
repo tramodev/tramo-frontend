@@ -14,6 +14,7 @@ import {
   $getSelection,
   $isElementNode,
   $isNodeSelection,
+  $setSelection,
   $isTextNode,
   CLICK_COMMAND,
   COMMAND_PRIORITY_LOW,
@@ -26,6 +27,7 @@ import {
   KEY_ENTER_COMMAND,
   HISTORIC_TAG,
   HISTORY_PUSH_TAG,
+  SKIP_DOM_SELECTION_TAG,
   LexicalEditor,
   LexicalNode,
   NodeKey,
@@ -42,6 +44,7 @@ interface EquationComponentProps {
   equation: string;
   inline: boolean;
   nodeKey: NodeKey;
+  invalidSource?: boolean;
 }
 
 const TEMPLATES: { label: string; title: string; latex: string; at: number; len: number }[] = [
@@ -113,6 +116,7 @@ export default function EquationComponent({
   equation,
   inline,
   nodeKey,
+  invalidSource = false,
 }: EquationComponentProps) {
   const [editor] = useLexicalComposerContext();
   const isEditable = editor.isEditable();
@@ -219,12 +223,13 @@ export default function EquationComponent({
   const commit = useCallback(
     (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return true;
+      if (save && draft.length > 10000 && draft.trim() && draft !== equation) return null;
       editingRef.current = false;
       exitEdgeRef.current = exitTo;
-      editor.update(() => {
+      if (save) editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if (!$isEquationNode(node)) return;
-        const next = save ? draft : equation;
+        const next = draft;
         if (next.trim() === '') {
           node.remove();
           return;
@@ -237,17 +242,20 @@ export default function EquationComponent({
     [draft, editor, equation, nodeKey],
   );
 
-  const { attachRoot, onBlur, leave } = useEmbedDraftExit({ enabled: isEditing, dirty: draft !== equation, commit }, editingRef, textareaRef);
+  const { attachRoot, onBlur, leave } = useEmbedDraftExit({ enabled: isEditing, localOnly: !!lengthError && !!draft.trim(), dirty: draft !== equation, commit }, editingRef, textareaRef);
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
       if (!isEditable) return;
       entryEdgeRef.current = from;
+      editor.update(() => {
+        if ($isNodeSelection($getSelection())) $setSelection(null);
+      }, { tag: SKIP_DOM_SELECTION_TAG });
       editingRef.current = true;
       setDraft(equation);
       setIsEditing(true);
     },
-    [equation, isEditable],
+    [editor, equation, isEditable],
   );
 
   const onDelete = useCallback(
@@ -414,7 +422,7 @@ export default function EquationComponent({
     );
   }
 
-  const renderedError = equationError(equation, inline);
+  const renderedError = invalidSource ? 'Saved equation source is not text. Replace it to publish this note.' : equationError(equation, inline);
   if (renderedError && !isEditable) {
     const Source = inline ? 'code' : 'pre';
     const Container = inline ? 'span' : 'div';

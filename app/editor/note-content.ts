@@ -102,7 +102,7 @@ export function sanitizeNoteContent(content: string): string {
 
 export function serializeNoteContent(state: unknown, includePendingImages = true): string {
   return JSON.stringify(state, (key, value) => key === 'children' && Array.isArray(value)
-    ? value.filter(node => (node.type !== 'equation' || node.equation?.trim())
-      && (node.type !== 'music' || node.abc?.trim())
+    ? value.filter(node => (node.type !== 'equation' || typeof node.equation !== 'string' || node.equation.trim())
+      && (node.type !== 'music' || typeof node.abc !== 'string' || node.abc.trim())
       && (includePendingImages || node.type !== 'image' || node.imageId)) : value);
 }

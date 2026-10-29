@@ -70,7 +70,9 @@ export async function noteEmbedErrors(content: string): Promise<EmbedError[]> {
       const type = node.type;
       const position = index++;
       const source = type === 'equation' ? node.equation : node.abc;
-      if (typeof source === 'string' && source.trim()) {
+      if (typeof source !== 'string') {
+        pending.push(Promise.resolve({ index: position, type, message: 'Saved source is not text.' }));
+      } else if (source.trim()) {
         const error = type === 'equation' ? equationError(source, node.inline === true) : musicError(source);
         pending.push(Promise.resolve(error).then(message => message ? { index: position, type, message } : null));
       }

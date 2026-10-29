@@ -13,6 +13,7 @@ import {
   $getSelection,
   $isElementNode,
   $isNodeSelection,
+  $setSelection,
   CLICK_COMMAND,
   COMMAND_PRIORITY_LOW,
   KEY_ARROW_DOWN_COMMAND,
@@ -24,6 +25,7 @@ import {
   KEY_ENTER_COMMAND,
   HISTORIC_TAG,
   HISTORY_PUSH_TAG,
+  SKIP_DOM_SELECTION_TAG,
   LexicalEditor,
   LexicalNode,
   NodeKey,
@@ -40,6 +42,7 @@ import { setPendingEmbedDraft } from '@/app/editor/embed-draft-status';
 interface MusicComponentProps {
   abc: string;
   nodeKey: NodeKey;
+  invalidSource?: boolean;
 }
 
 const RENDER_PARAMS = {
@@ -89,7 +92,7 @@ function returnFocusTo(editor: LexicalEditor, nodeKey: NodeKey, edge: Edge) {
   editor.focus();
 }
 
-export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
+export default function MusicComponent({ abc, nodeKey, invalidSource = false }: MusicComponentProps) {
   const [editor] = useLexicalComposerContext();
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
@@ -198,12 +201,13 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const commit = useCallback(
     (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return true;
+      if (save && draft.length > 10000 && draft.trim() && draft !== abc) return null;
       editingRef.current = false;
       exitEdgeRef.current = exitTo;
-      editor.update(() => {
+      if (save) editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if (!$isMusicNode(node)) return;
-        const next = save ? draft : abc;
+        const next = draft;
         if (next.trim() === '' || next.trim() === DEFAULT_ABC.trim()) {
           node.remove();
           return;
@@ -216,17 +220,20 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     [draft, editor, abc, nodeKey],
   );
 
-  const { attachRoot, onBlur, leave } = useEmbedDraftExit({ enabled: isEditing, dirty: draft !== (abc === '' ? DEFAULT_ABC : abc), commit }, editingRef, textareaRef);
+  const { attachRoot, onBlur, leave } = useEmbedDraftExit({ enabled: isEditing, localOnly: !!lengthError && !!draft.trim(), dirty: draft !== (abc === '' ? DEFAULT_ABC : abc), commit }, editingRef, textareaRef);
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
       if (!isEditable) return;
       entryEdgeRef.current = from;
+      editor.update(() => {
+        if ($isNodeSelection($getSelection())) $setSelection(null);
+      }, { tag: SKIP_DOM_SELECTION_TAG });
       editingRef.current = true;
       setDraft(abc === '' ? DEFAULT_ABC : abc);
       setIsEditing(true);
     },
-    [abc, isEditable],
+    [abc, editor, isEditable],
   );
 
   const onDelete = useCallback(
@@ -304,7 +311,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   }, [clearSelected, editor, enterFrom, enterFromLine, isEditable, isEditing, isSelected, onDelete, setSelected, startEditing]);
 
   const source = isEditing ? draft : abc;
-  const renderError = validation?.source === source ? validation.error : null;
+  const renderError = invalidSource && !isEditing ? 'Saved score source is not text. Replace it to publish this note.' : validation?.source === source ? validation.error : null;
   const invalid = !!renderError && !validation?.unavailable;
 
   if (isEditing && isEditable) {

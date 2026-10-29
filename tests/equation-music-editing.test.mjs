@@ -25,7 +25,7 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
   let index = 0, refIndex = 0, callbackIndex = 0, effectIndex = 0, content = initial, removed = false;
   const changed = (previous, next) => !previous || !next || previous.length !== next.length || previous.some((value, i) => value !== next[i]);
   const node = { setEquation: value => { content = value; }, setAbc: value => { content = value; }, getEquation: () => content, getAbc: () => content, remove: () => { removed = true; } };
-  const editor = { isEditable: () => editable, update: (fn, options) => { updates.push(options); fn(); }, registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
+  const editor = { isEditable: () => editable, update: (fn, options) => { if (options?.tag !== 'skip-dom-selection') updates.push(options); fn(); }, registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
   const editingDecorators = new WeakMap([[editor, new Set(fresh ? ['embed'] : [])]]);
   const react = {
     useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; },
@@ -56,7 +56,7 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
     '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [selected, () => {}, () => {}] },
     katex: { default: require('katex') },
-    lexical: { $getNodeByKey: () => node, HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
+    lexical: { $getNodeByKey: () => node, $getSelection: () => null, $isNodeSelection: () => false, SKIP_DOM_SELECTION_TAG: 'skip-dom-selection', HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
     [`@/app/editor/nodes/${kind}Node`]: { [`$is${kind}Node`]: value => value === node },
     '@/app/editor/plugins/decoratorCaret': { editingDecorators },
     '@/app/editor/plugins/music-audio': { loadAbcjs: () => scoreLoad ?? Promise.resolve(require('abcjs')) },
@@ -109,7 +109,7 @@ test.each(['Equation', 'Music'])('%s saves changed invalid source on Escape', as
   expect(s.dialog()).toBeUndefined();
 });
 
-test.each(['Equation', 'Music'])('%s closes an oversized draft while showing its count and error', async kind => {
+test.each(['Equation', 'Music'])('%s retains an oversized draft locally while showing its count and error', async kind => {
   const s = setup(kind);
   const oversized = 'x'.repeat(10001);
   s.type(oversized);
@@ -120,8 +120,9 @@ test.each(['Equation', 'Music'])('%s closes an oversized draft while showing its
   expect(elements(tree).find(element => element.props?.role === 'alert').props.children).toContain('Shorten');
   s.escape();
   await new Promise(resolve => setImmediate(resolve));
-  expect(s.input()).toBeUndefined();
-  expect(s.content).toBe(oversized);
+  expect(s.input().props.value).toBe(oversized);
+  expect(s.content).toBe('');
+  expect(s.updates).toEqual([]);
 });
 
 test.each(['Equation', 'Music'])('%s discards an oversized edit only when explicitly requested', kind => {
@@ -521,7 +522,7 @@ test.each(['Equation', 'Music'])('%s keeps vertical navigation inside middle lin
   expect(s.input()).toBeUndefined();
 });
 
-test('oversized equation drafts close without truncating and report the limit', async () => {
+test('oversized equation drafts remain local without truncating and report the limit', async () => {
   const s = setup('Equation', 'x');
   s.enter();
   const draft = 'x'.repeat(10001);
@@ -531,8 +532,9 @@ test('oversized equation drafts close without truncating and report the limit', 
   expect(s.input().props['aria-invalid']).toBe(true);
   expect(s.render().props.children.find(child => child?.props?.role === 'alert').props.children).toContain('10,000');
   await s.blur();
-  expect(s.content).toBe(draft);
-  expect(s.input()).toBeUndefined();
+  expect(s.content).toBe('x');
+  expect(s.input().props.value).toBe(draft);
+  expect(s.updates).toEqual([]);
 });
 
 test('toolbar formatting allows embed blur while preserving the editor selection otherwise', () => {
@@ -584,7 +586,7 @@ test('outside score clicks resume navigation only once', async () => {
   expect(s.actions).toEqual(['focus', 'click']);
 });
 
-test.each(['Equation', 'Music'])('%s closes oversized source without a discard dialog', async kind => {
+test.each(['Equation', 'Music'])('%s keeps oversized source out of the saved node without a discard dialog', async kind => {
   const s = setup(kind, 'original');
   s.enter();
   const draft = 'x'.repeat(10001);
@@ -592,8 +594,9 @@ test.each(['Equation', 'Music'])('%s closes oversized source without a discard d
   expect(s.input().props.value).toBe(draft);
   expect(s.input().props['aria-invalid']).toBe(true);
   await s.blur();
-  expect(s.content).toBe(draft);
-  expect(s.input()).toBeUndefined();
+  expect(s.content).toBe('original');
+  expect(s.input().props.value).toBe(draft);
+  expect(s.updates).toEqual([]);
   expect(s.dialog()).toBeUndefined();
 });
 
@@ -624,10 +627,11 @@ test.each(['Equation', 'Music'])('%s permits navigation while retaining oversize
   s.enter();
   const source = original + ' '.repeat(10001);
   s.type(source);
-  expect(await s.clickOutside()).toBe(true);
-  expect(s.content).toBe(source);
-  expect(s.input()).toBeUndefined();
-  expect(s.actions).toEqual(['focus', 'click']);
+  expect(await s.clickOutside()).toBe(false);
+  expect(s.content).toBe(original);
+  expect(s.input().props.value).toBe(source);
+  expect(s.updates).toEqual([]);
+  expect(s.actions).toEqual([]);
 });
 
 test.each(['Equation', 'Music'])('%s still removes an empty draft containing only whitespace', kind => {
@@ -635,4 +639,13 @@ test.each(['Equation', 'Music'])('%s still removes an empty draft containing onl
   s.type(' '.repeat(10001));
   s.escape();
   expect(s.removed).toBe(true);
+});
+
+test.each(['Equation', 'Music'])('%s can close an unchanged oversized legacy source', kind => {
+  const original = 'x'.repeat(10001);
+  const s = setup(kind, original);
+  s.enter();
+  s.escape();
+  expect(s.input()).toBeUndefined();
+  expect(s.content).toBe(original);
 });

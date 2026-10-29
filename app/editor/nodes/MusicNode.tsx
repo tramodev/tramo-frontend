@@ -22,10 +22,10 @@ export interface MusicPayload {
   key?: NodeKey;
 }
 
-export type SerializedMusicNode = Spread<{ abc: string }, SerializedLexicalNode>;
+export type SerializedMusicNode = Spread<{ abc: unknown }, SerializedLexicalNode>;
 
 export class MusicNode extends DecoratorNode<React.ReactElement> {
-  __abc: string;
+  __abc: unknown;
 
   static getType(): string {
     return 'music';
@@ -37,17 +37,17 @@ export class MusicNode extends DecoratorNode<React.ReactElement> {
 
   static importJSON(serializedNode: SerializedMusicNode): MusicNode {
     const { abc } = serializedNode;
-    return $createMusicNode({ abc: typeof abc === 'string' ? abc : '' });
+    return $applyNodeReplacement(new MusicNode(abc));
   }
 
-  constructor(abc: string, key?: NodeKey) {
+  constructor(abc: unknown, key?: NodeKey) {
     super(key);
     this.__abc = abc;
   }
 
   exportJSON(): SerializedMusicNode {
     return {
-      abc: this.getAbc(),
+      abc: this.__abc,
       type: 'music',
       version: 1,
     };
@@ -55,8 +55,8 @@ export class MusicNode extends DecoratorNode<React.ReactElement> {
 
   exportDOM(): DOMExportOutput {
     const element = document.createElement('div');
-    element.setAttribute('data-lexical-music', this.__abc);
-    element.textContent = this.__abc;
+    element.setAttribute('data-lexical-music', this.getAbc());
+    element.textContent = this.getAbc();
     return { element };
   }
 
@@ -90,7 +90,7 @@ export class MusicNode extends DecoratorNode<React.ReactElement> {
   }
 
   getAbc(): string {
-    return this.__abc;
+    return typeof this.__abc === 'string' ? this.__abc : '';
   }
 
   setAbc(abc: string): void {
@@ -99,11 +99,11 @@ export class MusicNode extends DecoratorNode<React.ReactElement> {
   }
 
   getTextContent(): string {
-    return this.__abc;
+    return this.getAbc();
   }
 
   decorate(): React.ReactElement {
-    return <MusicComponent abc={this.__abc} nodeKey={this.getKey()} />;
+    return <MusicComponent abc={typeof this.__abc === 'string' ? this.__abc : JSON.stringify(this.__abc) ?? ''} invalidSource={typeof this.__abc !== 'string'} nodeKey={this.getKey()} />;
   }
 }
 

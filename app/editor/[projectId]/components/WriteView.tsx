@@ -229,7 +229,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           setTitleFocused(true);
           onFocus(item.id);
         }} />
-        {legacyContent && <p role="status" className="pl-7 py-2 text-sm text-destructive">This saved note uses content that no longer meets the current limits. You can read it here, but publishing or saving it requires fixing the content.</p>}
+        {legacyContent && <p role="status" className="pl-7 py-2 text-sm text-destructive">This saved note uses content that no longer meets the current limits. Unchanged legacy embeds are preserved while you edit the rest of the note. Fix them before publishing.</p>}
         {props.trails.filter(trail => trail.itemIds.includes(item.id)).length > 1 && <div className="pl-7 py-2 text-xs text-muted-foreground">
           <p>Used in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length} trails. Edits appear in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length === 2 ? 'both' : 'all of them'}.</p>
           <div className="mt-1 flex flex-wrap gap-3">{props.trails.filter(trail => trail.itemIds.includes(item.id)).map(trail => <button type="button" key={trail.id} onClick={() => props.onSelectItem(item, trail.id)} className="underline">{trail.title}</button>)}</div>

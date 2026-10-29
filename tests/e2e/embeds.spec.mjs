@@ -174,3 +174,43 @@ test('the counter focuses the first invalid score on a narrow screen', async ({ 
   await expect(page.locator('.editor-music-rendered.embed-invalid')).toBeFocused();
   await expect(page.locator('.embed-error-label')).toHaveText('music score with errors');
 });
+
+for (const width of [1280, 390]) {
+  for (const kind of ['equation', 'music']) {
+    test(`${kind} oversized draft stays local while surrounding text saves at ${width}px`, async ({ page, request }) => {
+      await page.setViewportSize({ width, height: 850 });
+      await seed(request, [kind === 'equation' ? equation('x') : music(validMusic), paragraph('Surrounding text')]);
+      await page.goto('/editor/embeds');
+      await page.locator(kind === 'equation' ? '.editor-equation-rendered' : '.editor-music-rendered').dblclick();
+      const field = page.getByRole('textbox', { name: kind === 'equation' ? 'LaTeX equation' : 'ABC notation' });
+      const draft = 'x'.repeat(10001);
+      await field.fill(draft);
+      await field.press(kind === 'equation' ? 'Enter' : 'ControlOrMeta+Enter');
+      await field.press('Escape');
+      await expect(field).toHaveValue(draft);
+      await page.locator('.trail-item-editor [contenteditable="true"] p').last().click();
+      await page.keyboard.type(' remainder saved');
+      await expect.poll(async () => (await saved(request)).content).toContain('remainder saved');
+      const nodes = JSON.parse((await saved(request)).content).root.children;
+      expect(nodes[0][kind === 'equation' ? 'equation' : 'abc']).toBe(kind === 'equation' ? 'x' : validMusic);
+      await expect(field).toHaveValue(draft);
+      await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+      await expect(field).toHaveCount(0);
+    });
+  }
+}
+
+test('editing surrounding text preserves marked numeric and oversized legacy sources', async ({ page, request }) => {
+  const oversized = 'x'.repeat(10001);
+  await seed(request, [equation(42), music(oversized), paragraph('Legacy note')]);
+  await page.goto('/editor/embeds');
+  await expect(page.locator('.embed-invalid')).toHaveCount(2);
+  await page.locator('.trail-item-editor [contenteditable="true"] p').last().click();
+  await page.keyboard.type(' legacy remainder saved');
+  await expect.poll(async () => (await saved(request)).content).toContain('legacy remainder saved');
+  const children = JSON.parse((await saved(request)).content).root.children;
+  expect(children[0].equation).toBe(42);
+  expect(children[1].abc).toBe(oversized);
+  await page.reload();
+  await expect(page.locator('.embed-invalid')).toHaveCount(2);
+});
