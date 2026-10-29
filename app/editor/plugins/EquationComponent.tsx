@@ -31,6 +31,7 @@ import {
   NodeKey,
 } from 'lexical';
 import katex from 'katex';
+import { equationError, KATEX_OPTS } from '@/app/editor/embed-validity';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { $isEquationNode } from '@/app/editor/nodes/EquationNode';
 import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@/app/editor/plugins/decoratorCaret';
@@ -61,10 +62,7 @@ function renderKatex(target: HTMLElement, equation: string, inline: boolean): st
     if (equation.length > 10000) throw new Error('Equations must not exceed 10,000 characters.');
     katex.render(equation, target, {
       displayMode: !inline,
-      throwOnError: true,
-      trust: false,
-      strict: 'warn',
-      output: 'html',
+      ...KATEX_OPTS,
     });
     return null;
   } catch (parseError) {
@@ -120,7 +118,7 @@ export default function EquationComponent({
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const [isEditing, setIsEditing] = useState(() => editingDecorators.get(editor)?.has(nodeKey) === true);
   const [draft, setDraft] = useState(equation);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => equationError(equation, inline));
   const [templateIndex, setTemplateIndex] = useState(0);
   const katexRef = useRef<HTMLSpanElement | null>(null);
   const previewRef = useRef<HTMLSpanElement | null>(null);
@@ -212,22 +210,17 @@ export default function EquationComponent({
   const commit = useCallback(
     (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return true;
-      if (save && draft.trim()) {
-        try {
-          if (draft.length > 10000) throw new Error('Equations must not exceed 10,000 characters.');
-          katex.renderToString(draft, { throwOnError: true, trust: false, maxExpand: 1000 });
-        } catch (error) {
-          setError(error instanceof Error ? error.message : 'Invalid equation');
-          return false;
-        }
+      if (save && draft.trim() && draft.length > 10000) {
+        setError('Equations must not exceed 10,000 characters.');
+        return false;
       }
       editingRef.current = false;
       exitEdgeRef.current = exitTo;
       editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if (!$isEquationNode(node)) return;
-        const next = (save ? draft : equation).trim();
-        if (next === '') {
+        const next = save ? draft : equation;
+        if (next.trim() === '') {
           node.remove();
           return;
         }
@@ -239,7 +232,7 @@ export default function EquationComponent({
     [draft, editor, equation, nodeKey],
   );
 
-  const { attachRoot, onBlur, dialog, leave, requestDiscard } = useEmbedDraftExit({ enabled: isEditing, dirty: draft.trim() !== equation.trim(), commit, label: 'equation' }, editingRef, textareaRef);
+  const { attachRoot, onBlur, leave } = useEmbedDraftExit({ enabled: isEditing, dirty: draft !== equation, commit }, editingRef, textareaRef);
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
@@ -336,7 +329,6 @@ export default function EquationComponent({
         onKeyDown={event => event.stopPropagation()}
         className={inline ? 'editor-equation-editor inline' : 'editor-equation-editor'}
       >
-        {dialog}
         <textarea
           ref={textareaRef}
           className="editor-equation-input"
@@ -355,7 +347,7 @@ export default function EquationComponent({
               void leave();
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              requestDiscard();
+              void leave('after');
             } else if (event.key === 'ArrowLeft' && collapsed && textarea.selectionStart === 0) {
               event.preventDefault();
               void leave('before');
@@ -415,6 +407,12 @@ export default function EquationComponent({
     );
   }
 
+  const renderedError = equationError(equation, inline);
+  if (renderedError && !isEditable) {
+    const Source = inline ? 'code' : 'pre';
+    return <span role="note" aria-label="Unrendered equation"><Source className="embed-raw">{equation}</Source><span className="embed-render-note">could not render</span></span>;
+  }
+
   return (
     <>
     <Tooltip>
@@ -422,8 +420,11 @@ export default function EquationComponent({
         <span
           key="rendered"
           ref={katexRef}
-          tabIndex={error ? 0 : undefined}
-          className={isSelected ? 'editor-equation-rendered selected' : 'editor-equation-rendered'}
+          data-embed-key={nodeKey}
+          aria-invalid={renderedError ? true : undefined}
+          aria-describedby={renderedError ? `equation-error-${nodeKey}` : undefined}
+          tabIndex={renderedError ? 0 : undefined}
+          className={`editor-equation-rendered${isSelected ? ' selected' : ''}${renderedError ? ' embed-invalid' : ''}`}
           onDoubleClick={() => startEditing()}
           onKeyDown={event => {
             event.stopPropagation();
@@ -431,8 +432,9 @@ export default function EquationComponent({
           }}
         />
       </TooltipTrigger>
-      {error && <TooltipContent className="max-w-xs">{error}</TooltipContent>}
+      {renderedError && <TooltipContent className="max-w-xs">{renderedError}</TooltipContent>}
     </Tooltip>
+    {renderedError && <span id={`equation-error-${nodeKey}`} className="embed-error-label">equation with errors</span>}
     {isEditable && isSelected && <button type="button" className="inline-flex min-h-6 items-center rounded px-2 text-xs text-primary hover:bg-muted" onKeyDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); startEditing(); }}>Edit equation</button>}
     </>
   );

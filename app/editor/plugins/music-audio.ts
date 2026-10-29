@@ -3,7 +3,7 @@ import type { TuneObject } from 'abcjs';
 let abcjsModule: Promise<typeof import('abcjs')> | null = null;
 
 export function loadAbcjs() {
-  abcjsModule ??= import('abcjs');
+  abcjsModule ??= import('abcjs').catch(error => { abcjsModule = null; throw error; });
   return abcjsModule;
 }
 

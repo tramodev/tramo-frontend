@@ -36,6 +36,9 @@ export function sanitizeNoteContent(content: string): string {
     if (node.type === 'equation' && (typeof node.equation !== 'string' || node.equation.length > 10000)) {
       throw new Error('Equations must not exceed 10,000 characters.');
     }
+    if (node.type === 'music' && (typeof node.abc !== 'string' || node.abc.length > 10000)) {
+      throw new Error('Music scores must not exceed 10,000 characters.');
+    }
     if ('style' in node) node.style = sanitizeNoteStyle(node.style);
     if ('textStyle' in node) node.textStyle = sanitizeNoteStyle(node.textStyle);
     if (Array.isArray(node.children)) {

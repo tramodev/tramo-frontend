@@ -30,6 +30,7 @@ import ImagesPlugin from '../../plugins/ImagesPlugin';
 import EquationsPlugin from '../../plugins/EquationsPlugin';
 import MusicPlugin from '../../plugins/MusicPlugin';
 import EmbedsPlugin from '@/app/editor/plugins/EmbedsPlugin';
+import EmbedErrorsPlugin from '@/app/editor/plugins/EmbedErrorsPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { CodeBlockGuardPlugin } from '../../plugins/CodeBlockGuardPlugin';
 import ListTabPlugin from '../../plugins/ListTabPlugin';
@@ -76,7 +77,7 @@ interface WriteViewProps {
   onDismissReorderNotice: () => void;
   contentLoadError: boolean;
   onRetryContent: () => void;
-  navigationRequest?: { itemId: string; sequence: number; focus: boolean };
+  navigationRequest?: { itemId: string; sequence: number; focus: boolean; embedIndex?: number };
   onVisibleItem: (itemId: string) => void;
   onSelectTrail: (trailId: string) => void;
   onCommitTitle: (itemId: string, currentTitle: string, nextValue: string) => void;
@@ -179,6 +180,7 @@ function ItemNavigationPlugin({ itemId, register, move }: {
 }
 
 interface ItemEditorProps {
+  revealed: boolean;
   item: Item;
   props: WriteViewProps;
   focused: boolean;
@@ -203,7 +205,7 @@ function ItemEditor(props: ItemEditorProps) {
   </SafeNoteComposer>;
 }
 
-function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, move, session, onPendingImages }: ItemEditorProps) {
+function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, register, move, session, onPendingImages }: ItemEditorProps) {
   const [editor] = useLexicalComposerContext();
   const [titleFocused, setTitleFocused] = useState(false);
   const matchSlash = useBasicTypeaheadTriggerMatch('/', { minLength: 0 });
@@ -246,6 +248,8 @@ function ItemEditorContent({ item, props, focused, toolbar, onFocus, register, m
         <EquationsPlugin />
         <MusicPlugin />
         <EmbedsPlugin />
+        <EmbedErrorsPlugin enabled={revealed && props.active !== false} index={props.navigationRequest?.itemId === item.id ? props.navigationRequest.embedIndex : undefined}
+          sequence={props.navigationRequest?.sequence} />
         <TablePlugin hasHorizontalScroll />
         <CodeBlockGuardPlugin />
         <PastePlugin />
@@ -441,7 +445,7 @@ export function WriteView(props: WriteViewProps) {
       setFocusedItemId(targetId);
       onVisibleItem(targetId);
       setPositionedContext(context);
-      if (request?.focus && editor) requestAnimationFrame(() => focusEditor(editor));
+      if (request?.focus && request.embedIndex === undefined && editor) requestAnimationFrame(() => focusEditor(editor));
     });
     return () => cancelAnimationFrame(frame);
   }, [active, navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id, visibleIds, invalidItems]);
@@ -508,7 +512,7 @@ export function WriteView(props: WriteViewProps) {
                 <div className={`pl-7 pt-6 text-[0.6875rem] font-medium uppercase tracking-[0.1em] ${item.id === stepItem.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                   Step {index + 1}
                 </div>
-                {stepItem.content != null && (mounted ? <ItemEditor item={stepItem} props={props} focused={focusedId === stepItem.id}
+                {stepItem.content != null && (mounted ? <ItemEditor item={stepItem} revealed={revealed} props={props} focused={focusedId === stepItem.id}
                   toolbar={toolbar} onFocus={onFocus} register={register} move={move} session={session} onPendingImages={onPendingImages} onContentError={onContentError} /> : <button type="button"
                   aria-label={`Open note: ${stepItem.title}`} onClick={() => props.onSelectItem(stepItem, props.activeTrailId)}
                   className="w-full pl-7 pt-2 text-left font-display text-[1.75rem] font-medium" style={{ textAlign: stepItem.titleAlign }}>

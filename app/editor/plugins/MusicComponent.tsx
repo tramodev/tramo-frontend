@@ -33,6 +33,7 @@ import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@
 import MusicPlayback from '@/app/editor/plugins/MusicPlayback';
 import { loadAbcjs } from '@/app/editor/plugins/music-audio';
 import { DEFAULT_ABC } from '@/app/editor/plugins/MusicPlugin';
+import { musicError, plainMusicWarning } from '@/app/editor/embed-validity';
 import { useEmbedDraftExit } from '@/app/editor/plugins/useEmbedDraftExit';
 
 interface MusicComponentProps {
@@ -49,13 +50,6 @@ const RENDER_PARAMS = {
   paddingleft: 0,
   paddingright: 0,
 } as const;
-
-function plainMusicWarning(warning: string): string {
-  const ignored = /^(Music Line:\d+:\d+: Unknown character ignored:)\s+.*?<span\b[^>]*>(.*?)<\/span>/.exec(warning);
-  if (ignored) warning = `${ignored[1]} ${ignored[2]}`;
-  const entities: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&amp;': '&' };
-  return warning.replace(/<\/?span\b[^>]*>|&(?:lt|gt|amp);/g, token => entities[token] ?? '');
-}
 
 function renderScore(
   abcjs: typeof import('abcjs'),
@@ -108,45 +102,45 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   const entryEdgeRef = useRef<Edge | null>(null);
   const exitEdgeRef = useRef<Edge | null>(null);
   const editingRef = useRef(isEditing);
-  const abcjsRef = useRef<typeof import('abcjs') | null>(null);
-  const draftRevisionRef = useRef(0);
-
-  useEffect(() => () => { draftRevisionRef.current++; }, []);
+  const [validation, setValidation] = useState<{ source: string; error: string | null; unavailable?: boolean } | null>(null);
 
   useLayoutEffect(() => {
     editingDecorators.get(editor)?.delete(nodeKey);
   }, [editor, nodeKey]);
 
   useEffect(() => {
-    const target = scoreRef.current;
-    if (isEditing || target === null || abc === '') return;
     let cancelled = false;
-    const observer = new ResizeObserver(() => {
-      void loadAbcjs().then(abcjs => { if (!cancelled) renderScore(abcjs, target, abc); });
-    });
-    if (target.parentElement) observer.observe(target.parentElement);
-    void loadAbcjs().then(abcjs => { if (!cancelled) renderScore(abcjs, target, abc); });
-    return () => {
-      cancelled = true;
-      observer.disconnect();
-    };
-  }, [abc, isEditing]);
+    const source = isEditing ? draft : abc;
+    const timer = setTimeout(() => {
+      void musicError(source).then(error => {
+        if (!cancelled) { setValidation({ source, error }); setWarnings(error ? [error] : []); }
+      }).catch(() => {
+        if (!cancelled) setValidation({ source, error: 'Could not load the score renderer. Try again.', unavailable: true });
+      });
+    }, isEditing ? 250 : 0);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [abc, draft, isEditing]);
 
   useEffect(() => {
-    const target = previewRef.current;
-    if (!isEditing || target === null) return;
+    const source = isEditing ? draft : abc;
+    const target = isEditing ? previewRef.current : scoreRef.current;
+    if (!target || validation?.source !== source || validation.error) return;
     let cancelled = false;
-    const timer = setTimeout(() => {
-      loadAbcjs().then((abcjs) => {
-        abcjsRef.current = abcjs;
-        if (!cancelled) setWarnings(renderScore(abcjs, target, draft));
+    const render = () => {
+      void loadAbcjs().then(abcjs => {
+        if (!cancelled) {
+          try { renderScore(abcjs, target, source); }
+          catch { setValidation({ source, error: 'Could not render this score.' }); }
+        }
+      }).catch(() => {
+        if (!cancelled) setValidation({ source, error: 'Could not load the score renderer. Try again.', unavailable: true });
       });
-    }, 250);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
     };
-  }, [draft, isEditing]);
+    render();
+    const observer = new ResizeObserver(render);
+    if (target.parentElement) observer.observe(target.parentElement);
+    return () => { cancelled = true; observer.disconnect(); };
+  }, [abc, draft, isEditing, validation]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -159,7 +153,6 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
 
   useEffect(() => editor.registerUpdateListener(({ editorState, tags }) => {
     if (!tags.has(HISTORIC_TAG)) return;
-    draftRevisionRef.current++;
     editingRef.current = false;
     exitEdgeRef.current = null;
     setIsEditing(false);
@@ -194,33 +187,19 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
   }, [editor, isEditing, nodeKey]);
 
   const commit = useCallback(
-    async (exitTo: Edge | null = 'after', save = true) => {
+    (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return true;
-      const revision = ++draftRevisionRef.current;
-      if (save && draft.trim() && draft.trim() !== DEFAULT_ABC.trim()) {
-        try {
-          const abcjs = abcjsRef.current ?? await loadAbcjs();
-          if (revision !== draftRevisionRef.current || !editingRef.current) return null;
-          abcjsRef.current = abcjs;
-          const [tune] = abcjs.parseOnly(draft);
-          const errors = (tune?.warnings ?? []).map(plainMusicWarning);
-          if (!tune?.lines?.length || errors.length) {
-            setWarnings(errors.length ? errors : ['Add music notes to the score.']);
-            return false;
-          }
-        } catch {
-          if (revision !== draftRevisionRef.current || !editingRef.current) return null;
-          setWarnings(['Could not validate this score. Check the notation and try again.']);
-          return false;
-        }
+      if (save && draft.trim() && draft.trim() !== DEFAULT_ABC.trim() && draft.length > 10000) {
+        setWarnings(['Music scores must not exceed 10,000 characters.']);
+        return false;
       }
       editingRef.current = false;
       exitEdgeRef.current = exitTo;
       editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if (!$isMusicNode(node)) return;
-        const next = (save ? draft : abc).trim();
-        if (next === '' || next === DEFAULT_ABC.trim()) {
+        const next = save ? draft : abc;
+        if (next.trim() === '' || next.trim() === DEFAULT_ABC.trim()) {
           node.remove();
           return;
         }
@@ -232,15 +211,12 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     [draft, editor, abc, nodeKey],
   );
 
-  const draftContent = draft.trim() === DEFAULT_ABC.trim() ? '' : draft.trim();
-  const confirmedContent = abc.trim() === DEFAULT_ABC.trim() ? '' : abc.trim();
-  const { attachRoot, onBlur, dialog, leave, requestDiscard } = useEmbedDraftExit({ enabled: isEditing, dirty: draftContent !== confirmedContent, commit, label: 'music score' }, editingRef, textareaRef);
+  const { attachRoot, onBlur, leave } = useEmbedDraftExit({ enabled: isEditing, dirty: draft !== (abc === '' ? DEFAULT_ABC : abc), commit }, editingRef, textareaRef);
 
   const startEditing = useCallback(
     (from: Edge | null = null) => {
       if (!isEditable) return;
       entryEdgeRef.current = from;
-      draftRevisionRef.current++;
       editingRef.current = true;
       setDraft(abc === '' ? DEFAULT_ABC : abc);
       setIsEditing(true);
@@ -322,17 +298,20 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
     );
   }, [clearSelected, editor, enterFrom, enterFromLine, isEditable, isEditing, isSelected, onDelete, setSelected, startEditing]);
 
+  const source = isEditing ? draft : abc;
+  const renderError = validation?.source === source ? validation.error : null;
+  const invalid = !!renderError && !validation?.unavailable;
+
   if (isEditing && isEditable) {
     return (
       <div key="editing" ref={attachRoot} className="editor-music-editor" onKeyDown={event => event.stopPropagation()} onBlur={onBlur}>
-        {dialog}
         <textarea
           ref={textareaRef}
           className="editor-music-input"
           value={draft}
           rows={1}
           spellCheck={false}
-          onChange={(event) => { draftRevisionRef.current++; setDraft(event.target.value); }}
+          onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
             event.stopPropagation();
             const { selectionStart: from, selectionEnd: to, value } = event.currentTarget;
@@ -344,7 +323,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
               void leave();
             } else if (event.key === 'Escape') {
               event.preventDefault();
-              requestDiscard();
+              void leave('after');
             } else if (event.key === 'ArrowLeft' && collapsed && from === 0) {
               event.preventDefault();
               void leave('before');
@@ -361,32 +340,44 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
           }}
           placeholder={DEFAULT_ABC}
           aria-label="ABC notation"
+          aria-invalid={warnings.length ? true : undefined}
+          aria-describedby={warnings.length ? `music-error-${nodeKey}` : undefined}
         />
         <div className="text-xs text-muted-foreground">
           Ctrl/⌘+Enter to finish · Example: CDEF GABc | cBAG FEDC | ·{' '}
           <a className="underline" href="https://abcnotation.com/learn" target="_blank" rel="noopener noreferrer">ABC notation guide</a>
         </div>
-        <MusicPlayback key={draft} abc={draft} />
+        {validation?.source === draft && !renderError && <MusicPlayback key={draft} abc={draft} />}
         <div className="editor-music-preview" aria-hidden>
           <div ref={previewRef} />
         </div>
         {warnings.length > 0 && (
-          <div className="editor-music-error">{warnings.join('\n')}</div>
+          <div id={`music-error-${nodeKey}`} role="alert" className="editor-music-error">{warnings.join('\n')}</div>
         )}
       </div>
     );
+  }
+
+  if (renderError && !isEditable) {
+    const raw = <pre className="embed-raw">{abc}</pre>;
+    return <div role="note" aria-label="Unrendered music score">{abc.split('\n').length > 6 ? <details><summary>View ABC source</summary>{raw}</details> : raw}<span className="embed-render-note">could not render</span></div>;
   }
 
   return (
     <div
       key="rendered"
       ref={scoreBoxRef}
-      className={isSelected ? 'editor-music-rendered selected' : 'editor-music-rendered'}
+      data-embed-key={nodeKey}
+      className={`editor-music-rendered${isSelected ? ' selected' : ''}${invalid ? ' embed-invalid' : ''}`}
+      tabIndex={isEditable ? 0 : undefined}
+      aria-invalid={invalid ? true : undefined}
+      aria-describedby={renderError ? `music-error-${nodeKey}` : undefined}
+      onKeyDown={event => { event.stopPropagation(); if (event.key === 'Enter') { event.preventDefault(); startEditing(); } }}
       onDoubleClick={() => startEditing()}
     >
-      <div ref={scoreRef} role="img" aria-label="Music score" />
+      {renderError ? <><pre className="embed-raw">{abc}</pre><span id={`music-error-${nodeKey}`} title={renderError} className="embed-error-label">{invalid ? 'music score with errors' : renderError}</span></> : <div ref={scoreRef} role="img" aria-label="Music score" />}
       {isEditable && isSelected && <button type="button" className="inline-flex min-h-6 items-center rounded px-2 text-xs text-primary hover:bg-muted" onKeyDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); startEditing(); }}>Edit score</button>}
-      <MusicPlayback key={abc} abc={abc} />
+      {validation?.source === abc && !renderError && <MusicPlayback key={abc} abc={abc} />}
     </div>
   );
 }

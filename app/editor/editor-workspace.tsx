@@ -138,6 +138,11 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             <Type className="size-4" />
           </button>}
           <EditorActions
+            items={project.items}
+            onReviewEmbed={error => {
+              const item = project.items[error.itemId];
+              if (item) project.handleSelectItem(item, undefined, error.index);
+            }}
             disabled={project.isDraft}
             restoreEpoch={project.restoreEpoch}
             textStats={textStats}

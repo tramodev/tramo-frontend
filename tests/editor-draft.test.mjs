@@ -68,9 +68,11 @@ test.each(['project', 'trail', 'item'])('a real %s title commits without waiting
 
 test.each([
   { type: 'equation', equation: 'x^2' },
+  { type: 'equation', equation: '\\frac{1}{' },
+  { type: 'music', abc: 'X:1\nK:C\nCDE [' },
   { type: 'music', abc: 'X:1\nK:C\nC' },
   { type: 'embed', provider: 'youtube', id: 'dQw4w9WgXcQ' },
-])('valid non-text content commits: $type', async node => {
+])('nonempty non-text content commits even with invalid syntax: $type', async node => {
   const s = setup(), draft = s.api.newDraft('user');
   draft.update({ item: { title: '', titleAlign: 'left', content: JSON.stringify({ root: { children: [node] } }) } });
   await draft.commit();

@@ -101,7 +101,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const [navigation, setNavigation] = useState<{
     itemId?: string;
     trailId?: string;
-    request?: { itemId: string; sequence: number; focus: boolean };
+    request?: { itemId: string; sequence: number; focus: boolean; embedIndex?: number };
   }>({});
   const navigationSequence = useRef(0);
   const selectedItemId = navigation.itemId;
@@ -243,7 +243,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       setLoaded(true);
       const itemId = result.selectedItemId;
       setNavigation({ trailId: result.selectedTrailId, itemId,
-        request: itemId ? { itemId, sequence: ++navigationSequence.current, focus: entry.get('write') === '1' } : undefined });
+        request: itemId ? { itemId, sequence: ++navigationSequence.current, focus: entry.get('write') === '1', embedIndex: /^\d+$/.test(entry.get('embed') ?? '') ? Number(entry.get('embed')) : undefined } : undefined });
 
       if (entry.has('note')) window.history.replaceState(window.history.state, '', window.location.pathname);
     }).catch(() => {
@@ -349,11 +349,11 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     setNavigation((prev) => prev.itemId === itemId ? prev : { ...prev, itemId });
   }, []);
 
-  const handleSelectItem = (item: Item, trailId?: string) => {
+  const handleSelectItem = (item: Item, trailId?: string, embedIndex?: number) => {
     void titleSaves.flush().catch(() => {});
     setView('write');
     setContentLoadError(false);
-    const request = { itemId: item.id, sequence: ++navigationSequence.current, focus: true };
+    const request = { itemId: item.id, sequence: ++navigationSequence.current, focus: true, embedIndex };
     setNavigation((prev) => ({
       itemId: item.id,
       trailId: resolveItemTrail(trails, item.id, prev.trailId, trailId),

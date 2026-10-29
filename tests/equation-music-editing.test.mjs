@@ -5,25 +5,27 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
+const modules = {};
 function load(path, overrides, suffix = '', globals = {}) {
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync(path, 'utf8') + suffix, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText, { exports, require: name => overrides[name] ?? (name.startsWith('@/') ? {} : require(name)), ...globals });
+  }).outputText, { exports, require: name => overrides[name] ?? modules[name] ?? (name.startsWith('@/') ? {} : require(name)), ...globals });
   return exports;
 }
+modules['@/app/editor/embed-validity'] = load('app/editor/embed-validity.ts', { '@/app/editor/plugins/music-audio': { loadAbcjs: () => Promise.resolve(require('abcjs')) } });
 function find(element, type) {
   if (!element || typeof element !== 'object') return;
   if (element.type === type) return element;
   return [element.props?.children].flat().map(child => find(child, type)).find(Boolean);
 }
-function setup(kind, initial = '', fresh = initial === '', selected = false, scoreLoad) {
+function setup(kind, initial = '', fresh = initial === '', selected = false, scoreLoad, editable = true) {
   const field = kind === 'Equation' ? 'equation' : 'abc';
   const states = [], effects = [], listeners = [], refs = [], updates = [], callbacks = [], effectStates = [];
   let index = 0, refIndex = 0, callbackIndex = 0, effectIndex = 0, content = initial, removed = false;
   const changed = (previous, next) => !previous || !next || previous.length !== next.length || previous.some((value, i) => value !== next[i]);
   const node = { setEquation: value => { content = value; }, setAbc: value => { content = value; }, getEquation: () => content, getAbc: () => content, remove: () => { removed = true; } };
-  const editor = { isEditable: () => true, update: (fn, options) => { updates.push(options); fn(); }, registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
+  const editor = { isEditable: () => editable, update: (fn, options) => { updates.push(options); fn(); }, registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
   const editingDecorators = new WeakMap([[editor, new Set(fresh ? ['embed'] : [])]]);
   const react = {
     useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; },
@@ -58,14 +60,12 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
     '@/app/editor/plugins/decoratorCaret': { editingDecorators },
     '@/app/editor/plugins/music-audio': { loadAbcjs: () => scoreLoad ?? Promise.resolve(require('abcjs')) },
     '@/app/editor/plugins/MusicPlugin': { DEFAULT_ABC: 'X:1\nK:C\n' },
-  }, '', { window: { addEventListener() {}, removeEventListener() {} } }).default;
+  }, '', { setTimeout: fn => { fn(); return 0; }, clearTimeout() {}, window: { addEventListener() {}, removeEventListener() {} } }).default;
   const render = () => { index = refIndex = callbackIndex = effectIndex = 0; const tree = component({ [field]: content, inline: false, nodeKey: 'embed' }); effects.splice(0).forEach(fn => fn()); return tree; };
   const input = () => find(render(), 'textarea');
   return {
     input, render, updates, actions, get warnings() { return states[2]; },
     dialog: () => find(render(), 'ConfirmDialog'),
-    continueEditing: () => find(render(), 'ConfirmDialog').props.onOpenChange(false),
-    discard: async () => { const dialog = find(render(), 'ConfirmDialog'); dialog.props.onConfirm(); dialog.props.onOpenChange(false); await new Promise(resolve => setImmediate(resolve)); },
     clickOutside: async (pointer = true, tag = 'button') => {
       render();
       let prevented = false;
@@ -85,33 +85,27 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
   };
 }
 
-test.each(['Equation', 'Music'])('%s asks before Escape can discard a new block with content', async kind => {
+test.each(['Equation', 'Music'])('%s preserves a new unfinished source on Escape without a dialog', async kind => {
   const s = setup(kind);
-  s.type('written before finishing');
-  expect(s.content).toBe('');
+  const source = kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [';
+  s.type(source);
   s.escape();
+  await new Promise(resolve => setImmediate(resolve));
   expect(s.removed).toBe(false);
-  expect(s.dialog().props.open).toBe(true);
-  s.continueEditing();
-  expect(s.input().props.value).toBe('written before finishing');
-  s.escape();
-  await s.discard();
-  expect(s.removed).toBe(true);
-  expect(s.content).toBe('');
+  expect(s.content).toBe(source);
+  expect(s.dialog()).toBeUndefined();
   expect(s.input()).toBeUndefined();
-  expect(s.actions).toEqual(['root-focus', 'editor-focus']);
 });
 
-test.each(['Equation', 'Music'])('%s restores confirmed content only after discarding its changed draft', async kind => {
+test.each(['Equation', 'Music'])('%s saves changed invalid source on Escape', async kind => {
   const s = setup(kind, 'original');
   s.enter();
   s.type('original + changes');
   s.escape();
-  expect(s.dialog().props.open).toBe(true);
-  await s.discard();
-  expect(s.content).toBe('original');
+  await new Promise(resolve => setImmediate(resolve));
+  expect(s.content).toBe('original + changes');
   expect(s.removed).toBe(false);
-  expect(s.actions).toEqual(['root-focus', 'editor-focus']);
+  expect(s.dialog()).toBeUndefined();
 });
 
 test.each(['Equation', 'Music'])('%s removes an explicitly finished empty embed', kind => {
@@ -121,27 +115,21 @@ test.each(['Equation', 'Music'])('%s removes an explicitly finished empty embed'
   expect(s.removed).toBe(true);
 });
 
-test.each([['Equation', true], ['Equation', false], ['Music', true], ['Music', false]])('%s blocks Share for an invalid draft until the user continues or discards (pointer: %s)', async (kind, pointer) => {
+test.each([['Equation', true], ['Equation', false], ['Music', true], ['Music', false]])('%s preserves invalid source and resumes Share (pointer: %s)', async (kind, pointer) => {
   const original = kind === 'Equation' ? 'x + y' : 'X:1\nK:C\nCDEF|';
   const invalid = kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [';
   const s = setup(kind, original);
   s.enter();
   s.type(invalid);
   expect(await s.clickOutside(pointer)).toBe(true);
-  expect(s.actions).toEqual([]);
-  expect(s.dialog().props.open).toBe(true);
-  s.continueEditing();
-  expect(s.input().props.value).toBe(invalid);
-  expect(s.actions).toEqual([]);
-  expect(await s.clickOutside(pointer)).toBe(true);
-  await s.discard();
-  expect(s.content).toBe(original);
+  expect(s.content).toBe(invalid);
   expect(s.removed).toBe(false);
+  expect(s.dialog()).toBeUndefined();
   expect(s.input()).toBeUndefined();
   expect(s.actions).toEqual(['focus', 'click']);
 });
 
-test.each(['Equation', 'Music'].flatMap(kind => ['input', 'textarea', 'select'].map(tag => [kind, tag])))('%s resumes focus on an outside %s after saving or discarding', async (kind, tag) => {
+test.each(['Equation', 'Music'].flatMap(kind => ['input', 'textarea', 'select'].map(tag => [kind, tag])))('%s resumes focus on an outside %s after saving valid or invalid source', async (kind, tag) => {
   const value = kind === 'Equation' ? 'x + y' : 'X:1\nK:C\nCDEF|';
   const invalid = kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [';
   for (const pointer of [true, false]) {
@@ -150,29 +138,22 @@ test.each(['Equation', 'Music'].flatMap(kind => ['input', 'textarea', 'select'].
       s.enter();
       s.type(draft);
       expect(await s.clickOutside(pointer, tag)).toBe(true);
-      if (draft === invalid) {
-        expect(s.actions).toEqual([]);
-        expect(s.dialog().props.open).toBe(true);
-        await s.discard();
-        expect(s.content).toBe(value);
-      } else {
-        expect(s.content).toBe(draft);
-      }
+      expect(s.content).toBe(draft);
+      expect(s.dialog()).toBeUndefined();
       expect(s.input()).toBeUndefined();
       expect(s.actions).toEqual(['focus', 'click']);
     }
   }
 });
 
-test.each(['Equation', 'Music'])('%s asks before navigating away from a new invalid draft', async kind => {
+test.each(['Equation', 'Music'])('%s keeps a new invalid embed when navigating away', async kind => {
   const s = setup(kind);
-  s.type(kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [');
+  const source = kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [';
+  s.type(source);
   await s.clickOutside();
-  expect(s.dialog().props.open).toBe(true);
+  expect(s.dialog()).toBeUndefined();
   expect(s.removed).toBe(false);
-  expect(s.actions).toEqual([]);
-  await s.discard();
-  expect(s.removed).toBe(true);
+  expect(s.content).toBe(source);
   expect(s.actions).toEqual(['focus', 'click']);
 });
 
@@ -463,14 +444,15 @@ test('moving a block waits for the menu to close and returns focus to the editor
 });
 
 
-test('an incomplete equation cannot replace the confirmed equation on blur', async () => {
-  const s = setup('Equation', 'x');
+test.each(['Equation', 'Music'])('%s preserves incomplete source on blur', async kind => {
+  const s = setup(kind, 'original');
+  const source = kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [';
   s.enter();
-  s.type('\\frac{1}{');
+  s.type(source);
   await s.blur();
-  expect(s.content).toBe('x');
-  expect(s.input()).toBeDefined();
-  expect(s.dialog().props.open).toBe(true);
+  expect(s.content).toBe(source);
+  expect(s.input()).toBeUndefined();
+  expect(s.dialog()).toBeUndefined();
 });
 
 test.each(['Equation', 'Music'])('%s exits upward from the first line without requiring the first character', async kind => {
@@ -541,15 +523,11 @@ test('toolbar formatting allows embed blur while preserving the editor selection
 });
 
 
-test('an incomplete score cannot replace the confirmed score on blur', async () => {
-  const original = 'X:1\nK:C\nCDEF|';
-  const s = setup('Music', original);
-  s.enter();
-  s.type('X:1\nK:C\nCDE [');
+test.each(['Equation', 'Music'])('%s preserves the exact source including surrounding whitespace', async kind => {
+  const s = setup(kind);
+  s.type('  unfinished source\n');
   await s.blur();
-  expect(s.content).toBe(original);
-  expect(s.input()).toBeDefined();
-  expect(s.dialog().props.open).toBe(true);
+  expect(s.content).toBe('  unfinished source\n');
 });
 
 test('leaving a new untouched score removes the empty block automatically', async () => {
@@ -559,31 +537,73 @@ test('leaving a new untouched score removes the empty block automatically', asyn
   expect(s.content).toBe('');
 });
 
-test('late score validation cannot commit a draft that changed after blur', async () => {
-  let resolve;
-  const loading = new Promise(done => { resolve = done; });
-  const s = setup('Music', '', true, false, loading);
-  s.type('X:1\nK:C\nCDEF|');
+test('a score saves without waiting for its renderer to load', async () => {
+  const s = setup('Music', '', true, false, new Promise(() => {}));
+  const source = 'X:1\nK:C\nCDE [';
+  s.type(source);
   await s.blur();
-  s.type('X:1\nK:C\nCDE [');
-  resolve(require('abcjs'));
-  await new Promise(resolve => setImmediate(resolve));
-  expect(s.content).toBe('');
-  expect(s.updates).toHaveLength(0);
-  expect(s.dialog().props.open).toBe(false);
+  expect(s.content).toBe(source);
+  expect(s.updates).toHaveLength(1);
+  expect(s.input()).toBeUndefined();
 });
 
-test('two outside clicks during score validation resume navigation only once', async () => {
-  let resolve;
-  const loading = new Promise(done => { resolve = done; });
-  const s = setup('Music', '', true, false, loading);
+test('outside score clicks resume navigation only once', async () => {
+  const s = setup('Music');
   const value = 'X:1\nK:C\nCDEF|';
   s.type(value);
   await s.clickOutside();
   await s.clickOutside();
-  expect(s.actions).toEqual([]);
-  resolve(require('abcjs'));
-  await new Promise(resolve => setImmediate(resolve));
   expect(s.content).toBe(value);
   expect(s.actions).toEqual(['focus', 'click']);
+});
+
+test.each(['Equation', 'Music'])('%s keeps oversized source in editing without a discard dialog', async kind => {
+  const s = setup(kind, 'original');
+  s.enter();
+  const draft = 'x'.repeat(10001);
+  s.type(draft);
+  await s.blur();
+  expect(s.content).toBe('original');
+  expect(s.input().props.value).toBe(draft);
+  expect(s.input().props['aria-invalid']).toBe(true);
+  expect(s.dialog()).toBeUndefined();
+});
+
+test.each(['Equation', 'Music'])('%s marks invalid source for authors and shows a quiet raw fallback for readers', async kind => {
+  const source = kind === 'Equation' ? '\\frac{1}{' : 'X:1\nK:C\nCDE [';
+  const author = setup(kind, source, false);
+  author.render();
+  await new Promise(resolve => setImmediate(resolve));
+  const tree = author.render();
+  const rendered = kind === 'Equation' ? find(tree, 'span') : tree;
+  expect(rendered.props.className).toContain('embed-invalid');
+  expect(rendered.props['aria-invalid']).toBe(true);
+  const reader = setup(kind, source, false, false, undefined, false);
+  reader.render();
+  await new Promise(resolve => setImmediate(resolve));
+  const raw = reader.render();
+  expect(raw.props.role).toBe('note');
+  expect(find(raw, 'pre').props.children).toBe(source);
+  expect(raw.props['aria-invalid']).toBeUndefined();
+  expect(raw.props.className ?? '').not.toContain('embed-invalid');
+});
+
+
+test.each(['Equation', 'Music'])('%s blocks navigation when excess whitespace makes its draft oversized', async kind => {
+  const original = kind === 'Equation' ? 'x' : 'X:1\nK:C\nCDEF|';
+  const s = setup(kind, original);
+  s.enter();
+  const source = original + ' '.repeat(10001);
+  s.type(source);
+  expect(await s.clickOutside()).toBe(true);
+  expect(s.content).toBe(original);
+  expect(s.input().props.value).toBe(source);
+  expect(s.actions).toEqual([]);
+});
+
+test.each(['Equation', 'Music'])('%s still removes an empty draft containing only whitespace', kind => {
+  const s = setup(kind);
+  s.type(' '.repeat(10001));
+  s.escape();
+  expect(s.removed).toBe(true);
 });

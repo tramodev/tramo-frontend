@@ -64,7 +64,7 @@ export class MusicNode extends DecoratorNode<React.ReactElement> {
     const convert = (domNode: HTMLElement): DOMConversionOutput | null => {
       const abc = domNode.getAttribute('data-lexical-music');
       if (abc === null) return null;
-      return { node: $createMusicNode({ abc }) };
+      return { node: $createMusicNode({ abc: abc.slice(0, 10000) }) };
     };
     return {
       div: (domNode: HTMLElement) =>

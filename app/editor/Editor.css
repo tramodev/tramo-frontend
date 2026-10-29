@@ -1411,3 +1411,34 @@ pre::-webkit-scrollbar-thumb {
   flex-shrink: 0;
   margin-bottom: 12px;
 }
+
+.embed-invalid {
+  border: 1px solid var(--destructive);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.embed-error-label {
+  display: block;
+  color: var(--destructive);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.embed-raw {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-roboto-mono), monospace;
+  text-align: left;
+  background: var(--muted);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.embed-render-note {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}

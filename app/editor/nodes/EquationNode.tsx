@@ -81,7 +81,7 @@ export class EquationNode extends DecoratorNode<React.ReactElement> {
       if (equation === null) return null;
       return {
         node: $createEquationNode({
-          equation,
+          equation: equation.slice(0, 10000),
           inline: domNode.getAttribute('data-lexical-equation-inline') === 'true',
         }),
       };

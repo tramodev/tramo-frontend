@@ -6,10 +6,14 @@ import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
 const { parseOnly } = require('abcjs');
+const validity = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/embed-validity.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: validity, require: () => ({}) });
 const exports = {};
 runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/MusicComponent.tsx', 'utf8') + '\nexport { plainMusicWarning, renderScore };', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-}).outputText, { exports, require: () => ({}) });
+}).outputText, { exports, require: name => name === '@/app/editor/embed-validity' ? validity : {} });
 const { plainMusicWarning, renderScore } = exports;
 
 test('actual ABC parser warnings display their position and character without span markup', () => {

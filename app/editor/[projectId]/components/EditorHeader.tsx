@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { UserMenu } from '@/components/layout/user-menu';
+import { EmbedErrorsStatus } from '@/components/editor/embed-errors-status';
+import type { ProjectEmbedError } from '@/lib/project-embed-errors';
+import type { Item } from '@/app/editor/types';
 import { ExportProjectButton } from '@/components/editor/export-project-button';
 import { ProjectHistorySheet } from '@/components/editor/project-history-sheet';
 import { PROJECT_TEXT_MAX_LENGTH } from '@/lib/project-validation';
@@ -133,6 +136,8 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
 }
 
 interface EditorActionsProps {
+  items: Record<string, Item>;
+  onReviewEmbed: (error: ProjectEmbedError) => void;
   disabled?: boolean;
   textStats: { words: number; characters: number } | null;
   projectId: string;
@@ -142,6 +147,8 @@ interface EditorActionsProps {
 }
 
 export function EditorActions({
+  items,
+  onReviewEmbed,
   textStats,
   projectId,
   profile,
@@ -151,6 +158,7 @@ export function EditorActions({
 }: EditorActionsProps) {
   return (
     <>
+      <EmbedErrorsStatus key={`${projectId}:${restoreEpoch}`} items={items} onReview={onReviewEmbed} />
       {textStats ? (
         <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" title="Total for the project">
           {textStats.words} words · {textStats.characters} characters

@@ -91,3 +91,14 @@ test('equations are bounded before parsing or rendering saved and pasted notes',
   expect(() => sanitizeNoteContent(content([{ type: 'equation', equation: 'x'.repeat(10000) }]))).not.toThrow();
   expect(() => sanitizeNoteContent(content([{ type: 'equation', equation: 'x'.repeat(10001) }]))).toThrow('10,000');
 });
+
+
+test.each(['equation', 'music'])('%s source requires a string and at most 10k UTF-16 units', type => {
+  const field = type === 'equation' ? 'equation' : 'abc';
+  for (const source of [null, 42, {}, [], 'x'.repeat(10001), '😀'.repeat(5001)]) {
+    expect(() => sanitizeNoteContent(content([{ type, [field]: source }]))).toThrow('10,000');
+  }
+  for (const source of ['x'.repeat(10000), '😀'.repeat(5000)]) {
+    expect(() => sanitizeNoteContent(content([{ type, [field]: source }]))).not.toThrow();
+  }
+});
