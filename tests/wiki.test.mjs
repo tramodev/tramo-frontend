@@ -43,7 +43,7 @@ test('unknown wiki topics return not found', async () => {
   await expect(page.default(props)).rejects.toThrow('not found');
 });
 
-test.each([['projects', 8], ['notes-and-trails', 13]])('%s illustrates every feature with accessible local screenshots without changing other topics', async (slug, count) => {
+test.each([['projects', 8], ['notes-and-trails', 13], ['writing', 16]])('%s illustrates every feature with accessible local screenshots without changing other topics', async (slug, count) => {
   const nodes = node => Array.isArray(node) ? node.flatMap(nodes) : !node?.props ? [] : [node, ...nodes(node.props.children)];
   const article = await page.default({ params: Promise.resolve({ slug }) });
   const images = nodes(article).filter(node => node.type === 'img');
@@ -56,8 +56,8 @@ test.each([['projects', 8], ['notes-and-trails', 13]])('%s illustrates every fea
     expect(image.props.height).toBeGreaterThan(0);
     expect(readFileSync(`public${image.props.src}`).subarray(0, 2).toString('hex')).toBe('ffd8');
   }
-  const writing = await page.default({ params: Promise.resolve({ slug: 'writing' }) });
-  expect(nodes(writing).filter(node => node.type === 'img')).toHaveLength(0);
+  const other = await page.default({ params: Promise.resolve({ slug: 'images-and-blocks' }) });
+  expect(nodes(other).filter(node => node.type === 'img')).toHaveLength(0);
 });
 
 test('wiki navigation opens the current category and marks only the selected page', () => {
