@@ -2,6 +2,7 @@ import { expect, test } from '@jest/globals';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import { TextEncoder } from 'node:util';
 import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
@@ -13,11 +14,11 @@ function load(path) {
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText, { exports, require: name => modules[name] ?? require(name) });
+  }).outputText, { exports, TextEncoder, require: name => modules[name] ?? require(name) });
   return exports;
 }
 modules['@/app/editor/styleConfig'] = load('app/editor/styleConfig.ts');
-const { sanitizeNoteStyle, sanitizeNoteContent } = load('app/editor/note-content.ts');
+const { sanitizeNoteStyle, sanitizeNoteContent, isLegacyNoteContent } = load('app/editor/note-content.ts');
 const text = (value, style = '') => ({ type: 'text', version: 1, text: value, detail: 0, format: 0, mode: 'normal', style });
 const element = (type, children, extra = {}) => ({ type, version: 1, children, direction: null, format: '', indent: 0, ...extra });
 const content = children => JSON.stringify({ root: element('root', children) });
@@ -87,18 +88,27 @@ test('safe persisted styles keep their exact representation for extraction confl
 });
 
 
-test('equations are bounded before parsing or rendering saved and pasted notes', () => {
-  expect(() => sanitizeNoteContent(content([{ type: 'equation', equation: 'x'.repeat(10000) }]))).not.toThrow();
-  expect(() => sanitizeNoteContent(content([{ type: 'equation', equation: 'x'.repeat(10001) }]))).toThrow('10,000');
+test('stored oversized equations remain readable and are marked as legacy', () => {
+  const accepted = content([{ type: 'equation', equation: 'x'.repeat(10000) }]);
+  const legacy = content([{ type: 'equation', equation: 'x'.repeat(10001) }]);
+  expect(isLegacyNoteContent(accepted)).toBe(false);
+  expect(isLegacyNoteContent(legacy)).toBe(true);
+  expect(() => sanitizeNoteContent(legacy)).not.toThrow();
 });
 
 
-test.each(['equation', 'music'])('%s source requires a string and at most 10k UTF-16 units', type => {
+test.each(['equation', 'music'])('%s source outside current limits is marked as legacy', type => {
   const field = type === 'equation' ? 'equation' : 'abc';
   for (const source of [null, 42, {}, [], 'x'.repeat(10001), '😀'.repeat(5001)]) {
-    expect(() => sanitizeNoteContent(content([{ type, [field]: source }]))).toThrow('10,000');
+    expect(isLegacyNoteContent(content([{ type, [field]: source }]))).toBe(true);
   }
   for (const source of ['x'.repeat(10000), '😀'.repeat(5000)]) {
-    expect(() => sanitizeNoteContent(content([{ type, [field]: source }]))).not.toThrow();
+    expect(isLegacyNoteContent(content([{ type, [field]: source }]))).toBe(false);
   }
+});
+
+test('stored unsafe styles and embeds are marked as legacy', () => {
+  expect(isLegacyNoteContent(content([text('unsafe', 'color: url(javascript:alert(1))')]))).toBe(true);
+  expect(isLegacyNoteContent(content([{ type: 'embed', provider: 'youtube', id: 'dQw4w9WgXcQ', src: 'https://evil.test' }]))).toBe(true);
+  expect(isLegacyNoteContent(content([{ type: 'embed', provider: 'youtube', id: 'dQw4w9WgXcQ' }]))).toBe(false);
 });

@@ -16,6 +16,15 @@ export function isLegacyNoteContent(content: string): boolean {
       if (!value || typeof value !== 'object' || Array.isArray(value)) return true;
       const node = value as Record<string, unknown>;
       if (depth > 100 || !supportedNodeTypes.has(String(node.type)) || (depth > 0 && node.type === 'root')) return true;
+      for (const field of ['style', 'textStyle']) {
+        if (field in node && (typeof node[field] !== 'string' || sanitizeNoteStyle(node[field]) !== node[field]
+          || [...node[field].matchAll(/rgb\((\d+), (\d+), (\d+)\)/g)].some(match => match.slice(1).some(channel => Number(channel) > 255)))) return true;
+      }
+      if (node.type === 'embed') {
+        if (Object.keys(node).some(key => !['type', 'version', 'format', 'provider', 'id'].includes(key))) return true;
+        if (!(node.provider === 'youtube' && typeof node.id === 'string' && /^[A-Za-z0-9_-]{11}$/.test(node.id)
+          || node.provider === 'tweet' && typeof node.id === 'string' && /^[1-9]\d{0,19}$/.test(node.id))) return true;
+      }
       if (node.type === 'equation' || node.type === 'music') {
         const source = node.type === 'equation' ? node.equation : node.abc;
         if (typeof source !== 'string' || source.length > 10000) return true;
