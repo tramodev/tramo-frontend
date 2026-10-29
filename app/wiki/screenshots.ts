@@ -228,4 +228,64 @@ export const WIKI_SCREENSHOTS: Record<string, Record<string, Screenshot[]>> = {
       width: 410, height: 48,
     }],
   },
+  'images-and-blocks': {
+    'Image uploads': [{
+      src: '/wiki/images-and-blocks/insert-image.jpg',
+      alt: 'The Insert menu offering Image alongside tables, equations, music, embeds and dividers.',
+      caption: 'Choose Image from the Insert menu, then select an image file from your computer.',
+      width: 225, height: 295,
+    }],
+    'Resize images': [{
+      src: '/wiki/images-and-blocks/resize-image.jpg',
+      alt: 'A selected image of a project map surrounded by resize handles on its corners and edges.',
+      caption: 'Select an image to reveal its handles. Drag a handle to adjust the displayed size.',
+      width: 570, height: 430,
+    }],
+    'Captions and alt text': [{
+      src: '/wiki/images-and-blocks/caption-alt.jpg',
+      alt: 'An image with its alternative description being edited at the top and a visible caption beneath it.',
+      caption: 'Use Alt text to describe the image for readers who cannot see it. The caption below the image is visible to everyone.',
+      width: 570, height: 430,
+    }],
+    'Tables': [{
+      src: '/wiki/images-and-blocks/table-picker.jpg',
+      alt: 'The Table submenu showing a grid for choosing the initial number of rows and columns.',
+      caption: 'Open Insert, then Table. Choose a cell in the grid to set the initial rows and columns.',
+      width: 380, height: 285,
+    }, {
+      src: '/wiki/images-and-blocks/table.jpg',
+      alt: 'A two-column table listing Image and Equation with their uses, beneath a header row.',
+      caption: 'A table keeps related information aligned. Click a cell to enter or edit its content.',
+      width: 270, height: 132,
+    }],
+    'Dividers': [{
+      src: '/wiki/images-and-blocks/divider.jpg',
+      alt: 'A horizontal line separating the sentences One section ends here and A new section starts below the divider.',
+      caption: 'Choose Divider from the Insert menu to separate two parts of a note.',
+      width: 670, height: 100,
+    }],
+    'Equations': [{
+      src: '/wiki/images-and-blocks/equation-editor.jpg',
+      alt: 'A LaTeX integral in the equation editor, with template buttons, a live rendered preview and a character counter.',
+      caption: 'Write LaTeX in the source field and check the preview below. Template buttons insert common structures such as fractions and integrals.',
+      width: 670, height: 214,
+    }, {
+      src: '/wiki/images-and-blocks/equation-rendered.jpg',
+      alt: 'A rendered block equation showing the integral of x squared from zero to one equals one third.',
+      caption: 'The finished equation appears as a block. Choose Inline equation instead to place a formula inside a line of text.',
+      width: 670, height: 64,
+    }],
+    'Music notation': [{
+      src: '/wiki/images-and-blocks/music-editor.jpg',
+      alt: 'The ABC source for Morning walk above its rendered staff, with a Play score control and character counter.',
+      caption: 'Enter ABC notation to preview a score. Play score lets you listen; Ctrl/⌘+Enter finishes editing the block.',
+      width: 670, height: 342,
+    }],
+    'Embeds': [{
+      src: '/wiki/images-and-blocks/embed-dialog.jpg',
+      alt: 'The Embed a tweet or video dialog containing a YouTube URL and Cancel and Embed buttons.',
+      caption: 'Paste a public YouTube or X / Twitter URL, then choose Embed. The video or post loads from its provider.',
+      width: 542, height: 263,
+    }],
+  },
 };
