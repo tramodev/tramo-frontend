@@ -5,6 +5,7 @@ import { publicImageOrigins } from "./lib/csp";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  distDir: process.env.PLAYWRIGHT_TEST === '1' ? '.next/e2e' : '.next',
   experimental: {
     agentUpgrade: "security",
   },
