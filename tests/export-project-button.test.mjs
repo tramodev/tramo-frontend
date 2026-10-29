@@ -20,8 +20,6 @@ function setup() {
       },
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
       'lucide-react': { Download: 'Download', Loader2: 'Loader2' },
-      '@/lib/projects-store': { getProject: async () => ({ items: {} }) },
-      '@/lib/project-embed-errors': { projectEmbedErrors: async () => [] },
       '@/components/ui/button': { Button: 'Button' },
       '@/components/ui/dialog': Object.fromEntries(['Dialog', 'DialogContent', 'DialogDescription', 'DialogHeader', 'DialogTitle'].map(name => [name, name])),
     })[name],
@@ -51,7 +49,7 @@ test('export waits for pending saves, prevents duplicate requests and downloads 
   expect(s.render().find(node => node.type === 'Button').props.disabled).toBe(true);
   saved(); await settle();
   expect(s.requests).toHaveLength(1);
-  expect(s.requests[0][0]).toBe('/api/projects/opaque/export?embedErrors=0');
+  expect(s.requests[0][0]).toBe('/api/projects/opaque/export');
   expect(s.downloads).toEqual(['tramo-project-opaque.zip']);
 });
 
@@ -87,17 +85,10 @@ function exportRoute() {
   return { ...exports, requests };
 }
 
-test.each(['-1', '200001', '1.5', 'Infinity', 'invalid'])('export rejects invalid embed count %s before contacting the API', async count => {
-  const route = exportRoute();
-  const response = await route.POST(new Request(`http://localhost/api/projects/project/export?embedErrors=${count}`, { method: 'POST' }), { params: Promise.resolve({ projectId: 'project' }) });
-  expect(response.status).toBe(400);
-  expect(route.requests).toHaveLength(0);
-});
-
-test('export forwards only the advisory count and keeps the access token in its header', async () => {
+test('export ignores the client count and keeps the access token in its header', async () => {
   const route = exportRoute();
   const response = await route.POST(new Request('http://localhost/api/projects/project/export?embedErrors=2', { method: 'POST' }), { params: Promise.resolve({ projectId: 'project' }) });
   expect(response.status).toBe(200);
-  expect(route.requests[0].url).toBe('http://backend/api/project/project/export?embedErrors=2');
+  expect(route.requests[0].url).toBe('http://backend/api/project/project/export');
   expect(route.requests[0].options.headers.Authorization).toBe('Bearer private-token');
 });
