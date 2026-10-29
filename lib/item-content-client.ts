@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import { parseResponse, expectOk } from "./http";
+import { sanitizeNoteContent } from '@/app/editor/note-content';
 
 const extractionEpochs = new Map<string, number>();
 const savedContents = new Map<string, string>();
@@ -49,10 +50,12 @@ export async function getTrailContents(trailId: string): Promise<Record<string, 
 
 export async function saveItemContent(itemId: string, content: string, restoreEpoch = 0, projectId?: string): Promise<void> {
   const session = contentSessions.get(itemId);
+  let sanitizedContent = content;
+  try { sanitizedContent = sanitizeNoteContent(content); } catch {}
   const response = await fetch(`/api/item/${itemId}/content`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", "X-Project-Epoch": String(restoreEpoch), ...(projectId ? { "X-Project-Id": projectId } : {}) },
-    body: JSON.stringify({ content, extractionEpoch: getExtractionEpoch(itemId), expectedContent: savedContents.get(itemId) ?? '' }),
+    body: JSON.stringify({ content: sanitizedContent, extractionEpoch: getExtractionEpoch(itemId), expectedContent: savedContents.get(itemId) ?? '' }),
   });
   if (response.status === 409) {
     const data = await response.json().catch(() => null);
@@ -65,5 +68,5 @@ export async function saveItemContent(itemId: string, content: string, restoreEp
     throw new Error(typeof error?.message === 'string' ? error.message : `Request failed with status ${response.status}`);
   }
   await expectOk(response);
-  if (session === contentSessions.get(itemId)) savedContents.set(itemId, content);
+  if (session === contentSessions.get(itemId)) savedContents.set(itemId, sanitizedContent);
 }

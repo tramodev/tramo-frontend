@@ -4,6 +4,19 @@ const supportedNodeTypes = new Set(['root', 'paragraph', 'text', 'linebreak', 't
   'list', 'listitem', 'code', 'code-highlight', 'link', 'autolink', 'image', 'equation', 'music',
   'embed', 'table', 'tablerow', 'tablecell', 'horizontalrule']);
 
+function isSafeLink(node: Record<string, unknown>): boolean {
+  if (typeof node.url !== 'string') return false;
+  if (node.type === 'link' && node.url === '#'
+    && typeof node.rel === 'string'
+    && /^(?:(?:tramo-idea:|mypath-idea:)\d+|tramo-extraction:[0-9a-fA-F-]{36})$/.test(node.rel)) return true;
+  if (node.type === 'link' && node.url === 'https://') return true;
+  try {
+    const url = new URL(node.url.trim().replace(/ /g, '%20').replace(/\{/g, '%7B').replace(/\}/g, '%7D'));
+    return ['http:', 'https:'].includes(url.protocol) ? !!url.hostname
+      : ['mailto:', 'sms:', 'tel:'].includes(url.protocol);
+  } catch { return false; }
+}
+
 export function isLegacyNoteContent(content: string): boolean {
   if (!content) return false;
   if (content.length > 1024 * 1024 || new TextEncoder().encode(content).length > 1024 * 1024) return true;
@@ -28,16 +41,6 @@ export function isLegacyNoteContent(content: string): boolean {
       if (node.type === 'equation' || node.type === 'music') {
         const source = node.type === 'equation' ? node.equation : node.abc;
         if (typeof source !== 'string' || source.length > 10000) return true;
-      }
-      if (node.type === 'link' || node.type === 'autolink') {
-        if (typeof node.url !== 'string') return true;
-        const internal = node.type === 'link' && node.url === '#' && typeof node.rel === 'string'
-          && /^(?:(?:tramo-idea:|mypath-idea:)\d+|tramo-extraction:[0-9a-fA-F-]{36})$/.test(node.rel);
-        const placeholder = node.type === 'link' && node.url === 'https://';
-        if (!internal && !placeholder) {
-          const scheme = /^([a-z][a-z\d+.-]*):/i.exec(node.url.trim())?.[1]?.toLowerCase();
-          if (!scheme || !['http', 'https', 'mailto', 'sms', 'tel'].includes(scheme)) return true;
-        }
       }
       if ('children' in node) {
         if (!Array.isArray(node.children)) return true;
@@ -86,7 +89,12 @@ export function sanitizeNoteContent(content: string): string {
     if ('style' in node) node.style = sanitizeNoteStyle(node.style);
     if ('textStyle' in node) node.textStyle = sanitizeNoteStyle(node.textStyle);
     if (Array.isArray(node.children)) {
-      for (const child of node.children) nodes.push(child);
+      const children = node.children;
+      const sanitizedChildren = children.flatMap(child => child && typeof child === 'object' && !Array.isArray(child)
+        && (child.type === 'link' || child.type === 'autolink') && !isSafeLink(child)
+        ? Array.isArray(child.children) ? child.children : [] : [child]);
+      node.children = sanitizedChildren;
+      for (const child of sanitizedChildren) nodes.push(child);
     }
   }
   return JSON.stringify(state);

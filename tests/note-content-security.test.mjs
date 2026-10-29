@@ -14,7 +14,7 @@ function load(path) {
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText, { exports, TextEncoder, require: name => modules[name] ?? require(name) });
+  }).outputText, { exports, TextEncoder, URL, require: name => modules[name] ?? require(name) });
   return exports;
 }
 modules['@/app/editor/styleConfig'] = load('app/editor/styleConfig.ts');
@@ -73,10 +73,11 @@ test.each([content([]), '{"root":{"type":"root","children":[]}}'])('opens an emp
   expect(JSON.parse(sanitizeNoteContent(JSON.stringify(state.toJSON())))).toEqual(state.toJSON());
 });
 
-test.each(['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>', 'vbscript:alert(1)', 'file:///etc/passwd'])('Lexical also blocks unsafe saved link %s', url => {
+test.each(['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>', 'vbscript:alert(1)', 'file:///etc/passwd'])('an unsafe saved link becomes text without losing the note: %s', url => {
   parse(content([element('paragraph', [element('link', [text('link')], { url })])])).read(() => {
-    const link = lexical.$getRoot().getFirstChild().getFirstChild();
-    expect(link.sanitizeUrl(link.getURL())).toBe('about:blank');
+    const child = lexical.$getRoot().getFirstChild().getFirstChild();
+    expect(lexical.$isTextNode(child)).toBe(true);
+    expect(child.getTextContent()).toBe('link');
   });
 });
 
