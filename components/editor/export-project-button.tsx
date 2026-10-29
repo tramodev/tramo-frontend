@@ -2,6 +2,8 @@
 
 import { useRef, useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
+import { getProject } from '@/lib/projects-store';
+import { projectEmbedErrors } from '@/lib/project-embed-errors';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -16,7 +18,10 @@ export function ExportProjectButton({ projectId, beforeExport }: { projectId: st
     setError('');
     try {
       await beforeExport();
-      const response = await fetch(`/api/projects/${projectId}/export`, { method: 'POST' });
+      const project = await getProject(projectId);
+      if (!project) throw new Error('Could not load the project for export.');
+      const errors = await projectEmbedErrors(project.items);
+      const response = await fetch(`/api/projects/${projectId}/export?embedErrors=${errors.length}`, { method: 'POST' });
       if (!response.ok) {
         const failure = await response.json().catch(() => null);
         throw new Error(failure?.message ?? 'Could not export this project. Please try again.');

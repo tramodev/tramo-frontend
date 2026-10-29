@@ -17,7 +17,7 @@ test.each(['notifications', 'export'])('%s preserves refresh outages, authentica
     runInNewContext(ts.transpileModule(readFileSync(path, 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     }).outputText, {
-      exports, Response, Headers,
+      exports, Response, Headers, URL,
       require: name => ({
         '@/lib/backend-fetch': { backendFetch },
         '@/lib/config': { API_BASE_URL: 'http://backend' },
