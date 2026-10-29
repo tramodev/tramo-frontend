@@ -357,6 +357,7 @@ export default function MusicComponent({ abc, nodeKey }: MusicComponentProps) {
           <div ref={previewRef} />
         </div>
         <div role="status" className={lengthError ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>{draft.length.toLocaleString()}/10,000 characters</div>
+        {draft !== (abc === '' ? DEFAULT_ABC : abc) && <button type="button" className="text-xs text-destructive underline" onClick={() => commit('after', false)}>Discard changes</button>}
         {(lengthError || warnings.length > 0) && (
           <div id={`music-error-${nodeKey}`} role="alert" className="editor-music-error">{lengthError || warnings.join('\n')}</div>
         )}

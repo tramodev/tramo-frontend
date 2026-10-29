@@ -124,6 +124,17 @@ test.each(['Equation', 'Music'])('%s closes an oversized draft while showing its
   expect(s.content).toBe(oversized);
 });
 
+test.each(['Equation', 'Music'])('%s discards an oversized edit only when explicitly requested', kind => {
+  const s = setup(kind, 'original');
+  s.enter();
+  s.type('x'.repeat(10001));
+  const discard = [s.render().props.children].flat().find(child => child?.props?.children === 'Discard changes');
+  expect(discard).toBeDefined();
+  discard.props.onClick();
+  expect(s.content).toBe('original');
+  expect(s.input()).toBeUndefined();
+});
+
 test.each(['Equation', 'Music'])('%s removes an explicitly finished empty embed', kind => {
   const s = setup(kind);
   s.type('');

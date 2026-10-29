@@ -196,6 +196,23 @@ test('a resource limit explains the failure and retains the unsaved content', as
   expect(await retry).toBe(true);
 });
 
+test('a rejected oversized draft stays backed up and warns before leaving', async () => {
+  const s = setup(0, { userId: 'author' });
+  s.select('note');
+  const content = { root: { type: 'root', children: [{ type: 'equation', equation: 'x'.repeat(10001) }] } };
+  s.edit(content);
+  s.flush();
+  s.requests[0].reject(new Error('Equations must not exceed 10,000 characters.'));
+  await settle();
+  expect(s.statuses.at(-1)).toBe('error');
+  expect(s.errors.at(-1)).toContain('10,000');
+  expect(s.backups.readItemContentBackup('author', 'project-context', 'note').content).toBe(JSON.stringify(content));
+  let warned = false;
+  s.unload({ preventDefault: () => { warned = true; } });
+  expect(warned).toBe(true);
+  expect(s.requests[1].content).toBe(JSON.stringify(content));
+});
+
 test('a temporary session outage keeps pending edits without redirecting to login', async () => {
   const s = setup();
   s.select('a');

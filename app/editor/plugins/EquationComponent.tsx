@@ -408,6 +408,7 @@ export default function EquationComponent({
         </span>
         <span className="editor-equation-preview" ref={previewRef} aria-hidden />
         <span role="status" className={lengthError ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>{draft.length.toLocaleString()}/10,000 characters</span>
+        {draft !== equation && <button type="button" className="text-xs text-destructive underline" onClick={() => commit('after', false)}>Discard changes</button>}
         {(lengthError || error) && <span id={`equation-error-${nodeKey}`} role="alert" className="editor-equation-error">{lengthError || error}</span>}
       </span>
     );
