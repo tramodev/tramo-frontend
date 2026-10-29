@@ -236,16 +236,16 @@ export const WIKI_SCREENSHOTS: Record<string, Record<string, Screenshot[]>> = {
       width: 225, height: 295,
     }],
     'Resize images': [{
-      src: '/wiki/images-and-blocks/resize-image.jpg',
-      alt: 'A selected image of a project map surrounded by resize handles on its corners and edges.',
+      src: '/wiki/images-and-blocks/resize-sunflower.jpg',
+      alt: 'A sunflower photograph surrounded by resize handles on its corners and edges.',
       caption: 'Select an image to reveal its handles. Drag a handle to adjust the displayed size.',
-      width: 570, height: 430,
+      width: 570, height: 455,
     }],
     'Captions and alt text': [{
-      src: '/wiki/images-and-blocks/caption-alt.jpg',
-      alt: 'An image with its alternative description being edited at the top and a visible caption beneath it.',
+      src: '/wiki/images-and-blocks/caption-sunflower.jpg',
+      alt: 'A sunflower photograph with the alt text A bright yellow sunflower and the caption Sunflower on a summer walk.',
       caption: 'Use Alt text to describe the image for readers who cannot see it. The caption below the image is visible to everyone.',
-      width: 570, height: 430,
+      width: 570, height: 455,
     }],
     'Tables': [{
       src: '/wiki/images-and-blocks/table-picker.jpg',
