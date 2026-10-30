@@ -36,7 +36,7 @@ export function ResourcesMenu() {
 
   return <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
     <DropdownMenuTrigger asChild>
-      <button type="button" onMouseEnter={keepOpen} onMouseLeave={closeAfterHover} className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring data-[state=open]:bg-muted data-[state=open]:text-foreground">Resources<ChevronDown aria-hidden="true" className="size-3.5" /></button>
+      <button type="button" onMouseEnter={keepOpen} onMouseLeave={closeAfterHover} className="flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring data-[state=open]:bg-muted data-[state=open]:text-foreground">Resources<ChevronDown aria-hidden="true" className="size-3.5" /></button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start" className="w-44" onMouseEnter={keepOpen} onMouseLeave={closeAfterHover} onCloseAutoFocus={event => {
       if (closedByHover.current) event.preventDefault();

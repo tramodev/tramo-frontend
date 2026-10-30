@@ -38,6 +38,7 @@ test('desktop and mobile provide the same resource destinations', () => {
   const resources = load('components/layout/resources-menu.tsx');
   const mobile = load('components/layout/nav-mobile-menu.tsx', {
     '@/components/layout/resources-menu': resources,
+    '@/components/layout/landing-section-link': { LandingSectionLink: 'Link' },
   });
   const expected = ['/wiki', '/changelog', '/roadmap', '/blog'];
   const desktop = flatten(resources.ResourcesMenu());

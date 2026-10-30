@@ -3,6 +3,7 @@
 "use client"
 
 import Link from "next/link"
+import { LandingSectionLink } from "@/components/layout/landing-section-link"
 import { ChevronDown, Menu } from "lucide-react"
 import { RESOURCE_LINKS } from "@/components/layout/resources-menu"
 import { Button } from "@/components/ui/button"
@@ -29,12 +30,12 @@ export function NavMobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
         </SheetHeader>
         <nav className="flex flex-col gap-1 px-4 pt-2">
           <SheetClose asChild>
-            <Link href="/#product" className="rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+            <LandingSectionLink href="/#product" className="rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
               Product
-            </Link>
+            </LandingSectionLink>
           </SheetClose>
           <SheetClose asChild>
-            <Link href="/#pricing" className="rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Plans</Link>
+            <LandingSectionLink href="/#pricing" className="rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Plans</LandingSectionLink>
           </SheetClose>
           <details className="group">
             <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground [&::-webkit-details-marker]:hidden">Resources<ChevronDown aria-hidden="true" className="size-3.5 transition-transform group-open:rotate-180" /></summary>
