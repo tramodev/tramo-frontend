@@ -122,7 +122,7 @@ test('inline and display equations validate in the same mode as rendering', () =
 
 test('shared persisted-content contract identifies legacy sources without losing them', () => {
   const { isLegacyNoteContent, serializeNoteContent } = load('app/editor/note-content.ts', {
-    '@/app/editor/styleConfig': { parseAllowedColor: () => '', parseAllowedFontSize: () => '' },
+    '@/app/editor/styleConfig': load('app/editor/styleConfig.ts'),
   });
   const fixtures = JSON.parse(readFileSync('tests/fixtures/editor-content-contract.json', 'utf8'));
   for (const fixture of fixtures) {

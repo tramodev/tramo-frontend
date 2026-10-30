@@ -16,5 +16,7 @@ export const parseAllowedFontSize = (input: string): string => {
 };
 
 export function parseAllowedColor(input: string) {
-  return /^rgb\(\d+, \d+, \d+\)$/.test(input) ? input : '';
+  const rgb = input.match(/^rgb\((\d+), (\d+), (\d+)\)$/);
+  return rgb && rgb.slice(1).every(channel => Number(channel) <= 255)
+    || /^var\(--ed-(?:red|orange|green|blue|purple|gray)\)$/.test(input) ? input : '';
 }

@@ -214,3 +214,44 @@ test('editing surrounding text preserves marked numeric and oversized legacy sou
   await page.reload();
   await expect(page.locator('.embed-invalid')).toHaveCount(2);
 });
+
+test('toolbar palette color is saved and survives a reload', async ({ page, request }) => {
+  await seed(request, [paragraph('Colored words')]);
+  await page.goto('/editor/embeds');
+  const editor = page.locator('.editor-input');
+  await editor.click();
+  await editor.press('ControlOrMeta+A');
+  if (await page.getByRole('button', { name: 'More formatting', exact: true }).isVisible()) {
+    await page.getByRole('button', { name: 'More formatting', exact: true }).click();
+  }
+  await page.getByRole('button', { name: 'Text color', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Red', exact: true }).click();
+  await expect.poll(async () => (await saved(request)).content).toContain('color: var(--ed-red)');
+  await page.reload();
+  await expect(page.locator('.editor-input [style*="--ed-red"]')).toContainText('Colored words');
+});
+
+for (const width of [1280, 390]) {
+  test(`history preview restores the selected version at ${width}px`, async ({ page, context, request }) => {
+    await page.setViewportSize({ width, height: 850 });
+    const previous = state([paragraph('Restored version text')]);
+    await request.post(`${api}/fixture`, { data: { content: state([paragraph('Current draft text')]), historyContent: previous } });
+    await page.goto('/editor/embeds');
+    await page.getByRole('button', { name: 'Version history', exact: true }).click();
+    const previewOpened = context.waitForEvent('page');
+    await page.getByRole('link', { name: /Preview Earlier version/ }).click();
+    const preview = await previewOpened;
+    await preview.bringToFront();
+    await preview.waitForLoadState();
+    await preview.setViewportSize({ width, height: 850 });
+    await expect(preview.getByRole('button', { name: 'Restore this version', exact: true })).toBeVisible();
+    await preview.getByRole('button', { name: 'Restore this version', exact: true }).click();
+    await preview.getByRole('alertdialog').getByRole('button', { name: 'Restore version', exact: true }).click();
+    await expect.poll(async () => (await saved(request)).restores).toBe(1);
+    await expect(preview.getByRole('status')).toContainText('Version restored.');
+    await preview.getByRole('button', { name: 'Open editor', exact: true }).click();
+    await expect(preview.locator('.editor-input')).toContainText('Restored version text');
+    expect((await saved(request)).content).toBe(previous);
+    await preview.close();
+  });
+}

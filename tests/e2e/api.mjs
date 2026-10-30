@@ -4,7 +4,8 @@ const profile = { userId: '1', username: 'embedtester', email: 'embed@example.te
 const now = new Date().toISOString();
 const project = { id: 'embeds', title: 'Embed tests', description: 'Browser regression fixture', tags: [], visibility: 'private', restoreEpoch: 0, thumbnailImageUrl: null, creationDate: now, modifiedDate: now, storageBytes: 0 };
 const item = { id: 1, title: 'Note', titleAlign: 'left', unfiled: true, type: null };
-let content = '', published = 0, saves = 0, creations = 0;
+let content = '', historyContent = '', published = 0, saves = 0, creations = 0, restores = 0;
+const version = { id: 1, createdAt: now, type: 'MANUAL', name: 'Earlier version', authorUsername: profile.username };
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, 'http://127.0.0.1:3180');
   const path = url.pathname;
@@ -15,11 +16,14 @@ const server = createServer(async (request, response) => {
   if (path === '/health') return send({ ok: true });
   if (path === '/fixture' && request.method === 'POST') {
     content = body.content ?? '';
+    historyContent = body.historyContent ?? content;
+    project.restoreEpoch = 0;
+    restores = 0;
     project.visibility = body.visibility ?? 'private';
     published = saves = creations = 0;
     return send({ ok: true });
   }
-  if (path === '/fixture') return send({ content, published, saves, creations });
+  if (path === '/fixture') return send({ content, published, saves, creations, restores, restoreEpoch: project.restoreEpoch });
   if (path === '/api/profile/me') return send(profile);
   if (path === '/api/project/embeds/editor') return send({ ...project, trails: [], items: [{ ...item, words: 0, characters: 0 }], selectedItemId: 1, selectedTrailId: null, contents: [{ id: 1, content, extractionEpoch: 0 }], username: profile.username, imageUrl: null });
   if (path === '/api/project/embeds') return send(project);
@@ -39,7 +43,15 @@ const server = createServer(async (request, response) => {
     return send({ projectId: 'embeds', trailId: null, itemId: 1, restoreEpoch: 0, projectTitle: project.title, trailTitle: 'Trail', itemTitle: item.title });
   }
   if (path === '/api/public/project/embeds') return send({ ...project, ownerUsername: 'embedtester', trails: [], looseItems: [{ ...item, content }], voteCount: 0, viewCount: 0, commentCount: 0, canFork: false, canComment: false, votedByRequester: false, bookmarkedByRequester: false });
-  if (path.endsWith('/history')) return send({ versions: [], nextCursor: null, unavailable: false });
+  if (path === '/api/project/embeds/history') return send({ versions: [version], nextCursor: null, unavailable: false });
+  if (path === '/api/project/embeds/history/1') return send({ version, snapshot: { title: project.title, description: project.description, trails: [], items: [{ ...item, content: historyContent }] } });
+  if (path === '/api/project/embeds/history/1/restore' && request.method === 'POST') {
+    if (request.headers['x-project-epoch'] !== String(project.restoreEpoch)) return send({ message: 'Stale project epoch' }, 409);
+    content = historyContent;
+    restores++;
+    project.restoreEpoch++;
+    return send({ restoreEpoch: project.restoreEpoch });
+  }
   if (path.endsWith('/unread-count')) return send({ count: 0 });
   if (path.endsWith('/storage')) return send({ storageUsedBytes: 0, storageImageBytes: 0, storageTextBytes: 0 });
   if (path.endsWith('/comments')) return send({ content: [], totalElements: 0, totalPages: 0 });

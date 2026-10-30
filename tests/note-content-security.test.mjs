@@ -113,3 +113,11 @@ test('stored unsafe styles and embeds are marked as legacy', () => {
   expect(isLegacyNoteContent(content([{ type: 'embed', provider: 'youtube', id: 'dQw4w9WgXcQ', src: 'https://evil.test' }]))).toBe(true);
   expect(isLegacyNoteContent(content([{ type: 'embed', provider: 'youtube', id: 'dQw4w9WgXcQ' }]))).toBe(false);
 });
+
+test.each(['red', 'orange', 'green', 'blue', 'purple', 'gray'])('the toolbar %s palette token survives sanitization and a Lexical reload', color => {
+  const style = `color: var(--ed-${color});`;
+  const original = content([element('paragraph', [text('colored text', style)])]);
+  expect(sanitizeNoteContent(original)).toBe(original);
+  expect(isLegacyNoteContent(original)).toBe(false);
+  parse(original).read(() => expect(lexical.$getRoot().getFirstChild().getFirstChild().getStyle()).toBe(style));
+});
