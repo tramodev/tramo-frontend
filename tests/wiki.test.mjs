@@ -61,6 +61,8 @@ test.each([['getting-started', 2], ['projects', 3], ['notes-and-trails', 13], ['
   const article = await page.default({ params: Promise.resolve({ slug }) });
   const images = nodes(article).filter(node => node.type === 'img');
   expect(images).toHaveLength(count);
+  expect(images[0].props.loading).toBe('eager');
+  expect(images.slice(1).every(image => image.props.loading === 'lazy')).toBe(true);
   const section = content.SECTIONS.find(section => section.id === slug);
   expect(Object.keys(screenshots.WIKI_SCREENSHOTS[slug])).toEqual(section.features.map(([title]) => title));
   for (const image of images) {

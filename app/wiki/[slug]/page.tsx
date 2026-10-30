@@ -25,6 +25,7 @@ export default async function WikiTopicPage({ params }: { params: Promise<{ slug
   const section = SECTIONS.find(section => section.id === slug);
   if (!section) notFound();
   const screenshots = WIKI_SCREENSHOTS[section.id];
+  const firstScreenshot = section.features.flatMap(([title]) => screenshots?.[title] ?? [])[0]?.src;
   const sectionIndex = SECTIONS.indexOf(section);
   const previous = SECTIONS[sectionIndex - 1];
   const next = SECTIONS[sectionIndex + 1];
@@ -42,7 +43,7 @@ export default async function WikiTopicPage({ params }: { params: Promise<{ slug
         <p className="text-base leading-7 text-muted-foreground">{description}</p>
         <div className="flex flex-wrap items-start justify-center gap-x-6">
         {screenshots?.[title]?.map(screenshot => <figure key={screenshot.src} style={{ width: screenshot.width }} className="mt-5 max-w-full overflow-hidden rounded-lg border border-border bg-card">
-          <Image src={screenshot.src} alt={screenshot.alt} width={screenshot.width} height={screenshot.height} unoptimized className="h-auto w-full" />
+          <Image src={screenshot.src} alt={screenshot.alt} width={screenshot.width} height={screenshot.height} loading={screenshot.src === firstScreenshot ? 'eager' : 'lazy'} unoptimized className="h-auto w-full" />
           <figcaption className="border-t border-border px-4 py-3 text-sm leading-6 text-muted-foreground">{screenshot.caption}</figcaption>
         </figure>)}
         </div>
