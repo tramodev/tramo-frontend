@@ -33,7 +33,7 @@ export function ProjectShell({
               <span className="h-[18px] w-px bg-border shrink-0" />
             </>
           )}
-          <div className="min-w-0 flex-1 md:min-w-24">{titleSlot}</div>
+          <div className="project-shell-title min-w-0 flex-1 md:min-w-24">{titleSlot}</div>
           <div className="project-shell-actions ml-auto flex min-w-0 shrink-0 items-center gap-2 [&>*]:shrink-0">
             {actions}
           </div>

@@ -327,7 +327,7 @@ export default function FindReplacePlugin() {
   return createPortal(
     <div
       className="find-replace-bar"
-      style={{ top: position.top, right: position.right }}
+      style={{ top: position.top, right: position.right, maxWidth: `calc(100vw - ${position.right + 8}px)` }}
       onMouseDown={(e) => e.preventDefault()}
     >
       <div className="find-replace-row">

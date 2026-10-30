@@ -100,6 +100,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import { insertImageWithUpload } from './ImagesPlugin';
 import { OPEN_LINK_EDITOR_COMMAND } from './FloatingLinkEditorPlugin';
 import { OPEN_FIND_REPLACE_COMMAND } from './FindReplacePlugin';
@@ -254,8 +255,25 @@ function ToolbarMenuButton({
 const TABLE_PICKER_ROWS = 8;
 const TABLE_PICKER_COLUMNS = 8;
 
-function TableSizePicker({ onPick }: { onPick: (rows: number, columns: number) => void }) {
+function TableSizePicker({ onPick, compact = false }: { onPick: (rows: number, columns: number) => void; compact?: boolean }) {
   const [hovered, setHovered] = useState({ rows: 0, columns: 0 });
+  if (compact) return (
+    <form className="toolbar-table-picker grid gap-2" onSubmit={event => {
+      event.preventDefault();
+      const values = new FormData(event.currentTarget);
+      onPick(Number(values.get('rows')), Number(values.get('columns')));
+    }}>
+      <label className="flex items-center justify-between gap-2 text-sm">
+        Rows
+        <input className="w-20 rounded-md border border-input px-2" name="rows" type="number" min={1} max={TABLE_PICKER_ROWS} defaultValue={2} required />
+      </label>
+      <label className="flex items-center justify-between gap-2 text-sm">
+        Columns
+        <input className="w-20 rounded-md border border-input px-2" name="columns" type="number" min={1} max={TABLE_PICKER_COLUMNS} defaultValue={2} required />
+      </label>
+      <Button type="submit">Insert table</Button>
+    </form>
+  );
   const cells = Array.from({ length: TABLE_PICKER_ROWS * TABLE_PICKER_COLUMNS }, (_, index) => ({
     rows: Math.floor(index / TABLE_PICKER_COLUMNS) + 1,
     columns: (index % TABLE_PICKER_COLUMNS) + 1,
@@ -326,10 +344,10 @@ export default function ToolbarPlugin({
 
   const [formats, setFormats] = useState<Set<string>>(new Set());
   const [fontFamily, setFontFamily] = useState('Arial');
-  const [fontFamilyPointerFocus, setFontFamilyPointerFocus] = useState(false);
   const [fontSize, setFontSize] = useState('15');
   const [textColor, setTextColor] = useState('');
   const colorSelection = useRef<RangeSelection | null>(null);
+  const insertSelection = useRef<RangeSelection | null>(null);
   const [elementFormat, setElementFormat] = useState<ElementFormat>('left');
   const [insertMenuOpen, setInsertMenuOpen] = useState(false);
   const afterMenuCloseRef = useRef<(() => void) | null>(null);
@@ -571,14 +589,59 @@ export default function ToolbarPlugin({
     });
   };
 
+  const tableSizePicker = (
+    <TableSizePicker
+      compact={compact}
+      onPick={(rows, columns) => {
+        setInsertMenuOpen(false);
+        editor.update(() => {
+          if (insertSelection.current) $setSelection(insertSelection.current.clone());
+          editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+            rows: String(rows),
+            columns: String(columns),
+            includeHeaders: { rows: true, columns: false },
+          });
+        });
+      }}
+    />
+  );
+
+  const textColorControl = (
+      <DropdownMenu onOpenChange={(open) => {
+        if (open) {
+          editor.getEditorState().read(() => {
+            const selection = $getSelection();
+            colorSelection.current = $isRangeSelection(selection) ? selection.clone() : null;
+          });
+        }
+      }}>
+        <ToolbarMenuButton label="Text color" tooltip="Text color" className="toolbar-item spaced">
+          <Baseline size={18} style={textColor ? { color: textColor } : undefined} />
+        </ToolbarMenuButton>
+        <DropdownMenuContent align="start">
+          {COLOR_OPTIONS.map(({ value, label }) => (
+            <DropdownMenuItem key={label} onSelect={() => editor.update(() => {
+              const selection = colorSelection.current?.clone();
+              if (!selection) return;
+              $setSelection(selection);
+              $patchStyleText(selection, { color: value || null });
+            })}>
+              <span
+                className="toolbar-color-swatch"
+                style={{ background: value || 'var(--foreground)' }}
+              />
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+  );
+
   const formattingControls = <>
       <DropdownMenu>
-        <ToolbarMenuButton label={`${activeBlock.label}: Text Styles`} tooltip="Text Styles" className="toolbar-item align-dropdown-trigger spaced">
+        <ToolbarMenuButton label={`${activeBlock.label}: Text Styles`} tooltip="Text Styles" className="toolbar-item align-dropdown-trigger text-dropdown-trigger spaced">
           <ActiveBlockIcon size={18} />
-          <span className="grid text-left">
-            <span className="col-start-1 row-start-1">{activeBlock.label}</span>
-            <span aria-hidden="true" className="invisible col-start-1 row-start-1">Numbered list</span>
-          </span>
+          <span className="min-w-0 flex-1 truncate text-left">{activeBlock.label}</span>
           <ChevronDown size={12} />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start" onCloseAutoFocus={handleMenuClose}>
@@ -598,26 +661,21 @@ export default function ToolbarPlugin({
       </DropdownMenu>
 
       <Divider />
-      <Toolbar.Button asChild>
-      <select
-        className="toolbar-item font-family-select"
-        data-pointer-focus={fontFamilyPointerFocus}
-        onPointerDown={() => setFontFamilyPointerFocus(true)}
-        onKeyDown={() => setFontFamilyPointerFocus(false)}
-        onBlur={() => setFontFamilyPointerFocus(false)}
-        value={fontFamily}
-        onChange={(e) => onFontFamilySelect(e.target.value)}
-        aria-label="Font Family"
-        style={{ fontFamily }}
-      >
-        {FONT_FAMILY_OPTIONS.map(([value, label]) => (
-          <option key={value} value={value} style={{ fontFamily: value }}>
-            {label}
-          </option>
-        ))}
-      </select>
-      </Toolbar.Button>
-      <Divider />
+      <div className="toolbar-font-controls">
+      <DropdownMenu>
+        <ToolbarMenuButton label="Font Family" tooltip="Font Family" className="toolbar-item align-dropdown-trigger text-dropdown-trigger spaced">
+          <span className="min-w-0 flex-1 truncate text-left" style={{ fontFamily }}>{fontFamily}</span>
+          <ChevronDown size={12} />
+        </ToolbarMenuButton>
+        <DropdownMenuContent align="start">
+          {FONT_FAMILY_OPTIONS.map(([value, label]) => (
+            <DropdownMenuItem key={value} onSelect={() => onFontFamilySelect(value)} style={{ fontFamily: value }}>
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {!compact && <Divider />}
       <div className="font-size-control">
         <ToolbarButton
           label="Decrease font size"
@@ -654,34 +712,8 @@ export default function ToolbarPlugin({
           onClick={() => updateFontSizeByStep(1)}
         />
       </div>
-      <DropdownMenu onOpenChange={(open) => {
-        if (open) {
-          editor.getEditorState().read(() => {
-            const selection = $getSelection();
-            colorSelection.current = $isRangeSelection(selection) ? selection.clone() : null;
-          });
-        }
-      }}>
-        <ToolbarMenuButton label="Text color" tooltip="Text color" className="toolbar-item spaced">
-          <Baseline size={18} style={textColor ? { color: textColor } : undefined} />
-        </ToolbarMenuButton>
-        <DropdownMenuContent align="start">
-          {COLOR_OPTIONS.map(({ value, label }) => (
-            <DropdownMenuItem key={label} onSelect={() => editor.update(() => {
-              const selection = colorSelection.current?.clone();
-              if (!selection) return;
-              $setSelection(selection);
-              $patchStyleText(selection, { color: value || null });
-            })}>
-              <span
-                className="toolbar-color-swatch"
-                style={{ background: value || 'var(--foreground)' }}
-              />
-              {label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {textColorControl}
+      </div>
 
       <Divider />
       <DropdownMenu>
@@ -706,8 +738,8 @@ export default function ToolbarPlugin({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Divider />
-      {[...TEXT_FORMATS, INLINE_CODE_FORMAT].filter(({ format }) => !compact || format !== 'bold').map(({ format, label, tooltip, Icon }) => (
+      {!compact && <Divider />}
+      {[...TEXT_FORMATS, INLINE_CODE_FORMAT].map(({ format, label, tooltip, Icon }) => (
         <ToolbarButton
           key={format}
           label={label}
@@ -717,16 +749,6 @@ export default function ToolbarPlugin({
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, format)}
         />
       ))}
-      <Divider />
-      <ToolbarButton
-        label="Find and replace"
-        tooltip="Find and replace (⌘F / Ctrl+F)"
-        Icon={Search}
-        onClick={() => {
-          setFormattingOpen(false);
-          requestAnimationFrame(() => editor.dispatchCommand(OPEN_FIND_REPLACE_COMMAND, undefined));
-        }}
-      />
   </>;
 
   return (
@@ -754,8 +776,6 @@ export default function ToolbarPlugin({
       />
       <Divider />
       {compact ? <>
-        <ToolbarButton label="Format Bold" tooltip="Bold" Icon={Bold} active={formats.has('bold')}
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} />
         <Popover.Root open={formattingOpen} onOpenChange={setFormattingOpen}>
           <Popover.Trigger asChild>
             <Toolbar.Button asChild>
@@ -766,7 +786,11 @@ export default function ToolbarPlugin({
           </Popover.Trigger>
           <Popover.Portal>
             <Popover.Content className="toolbar-options" aria-label="Additional formatting" sideOffset={8} collisionPadding={12}
-              align="end" onKeyDown={event => event.stopPropagation()}>
+              onOpenAutoFocus={event => {
+                event.preventDefault();
+                (event.currentTarget as HTMLElement).focus();
+              }}
+              align="center" onKeyDown={event => event.stopPropagation()}>
               <Toolbar.Root loop aria-label="Additional text formatting" className="toolbar toolbar-overflow" onKeyDown={handleToolbarKeyDown}>{formattingControls}</Toolbar.Root>
             </Popover.Content>
           </Popover.Portal>
@@ -781,30 +805,30 @@ export default function ToolbarPlugin({
         disabled={blockType === 'code'}
         onClick={insertLink}
       />
-      <DropdownMenu open={insertMenuOpen} onOpenChange={setInsertMenuOpen}>
+      <DropdownMenu open={insertMenuOpen} onOpenChange={open => {
+        if (open) editor.getEditorState().read(() => {
+          const selection = $getSelection();
+          insertSelection.current = $isRangeSelection(selection) ? selection.clone() : null;
+        });
+        setInsertMenuOpen(open);
+      }}>
         <ToolbarMenuButton label="Insert" tooltip="Insert" className="toolbar-item align-dropdown-trigger spaced">
           <Plus size={18} />
           <ChevronDown size={12} />
         </ToolbarMenuButton>
-        <DropdownMenuContent align="start" onCloseAutoFocus={handleMenuClose}>
-          <DropdownMenuSub>
+        <DropdownMenuContent align="start" className={compact ? 'toolbar-insert-menu' : undefined} onCloseAutoFocus={handleMenuClose}>
+          {compact ? <div role="group" aria-label="Table size">
+            <div className="flex items-center gap-2 px-2 py-1.5 text-sm"><TableIcon className="h-4 w-4" />Table</div>
+            {tableSizePicker}
+          </div> : <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <TableIcon className="h-4 w-4" />
               Table
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
-              <TableSizePicker
-                onPick={(rows, columns) => {
-                  setInsertMenuOpen(false);
-                  editor.dispatchCommand(INSERT_TABLE_COMMAND, {
-                    rows: String(rows),
-                    columns: String(columns),
-                    includeHeaders: { rows: true, columns: false },
-                  });
-                }}
-              />
+              {tableSizePicker}
             </DropdownMenuSubContent>
-          </DropdownMenuSub>
+          </DropdownMenuSub>}
           <DropdownMenuItem
             disabled={blockType === 'code'}
             onSelect={() => fileInputRef.current?.click()}
@@ -851,6 +875,12 @@ export default function ToolbarPlugin({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ToolbarButton
+        label="Find and replace"
+        tooltip="Find and replace (⌘F / Ctrl+F)"
+        Icon={Search}
+        onClick={() => editor.dispatchCommand(OPEN_FIND_REPLACE_COMMAND, undefined)}
+      />
       <input
         ref={fileInputRef}
         type="file"

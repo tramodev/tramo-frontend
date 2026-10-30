@@ -295,7 +295,7 @@ test('toolbar moves secondary formatting into a menu when its container narrows'
     },
   }).default;
   const render = () => { index = refIndex = 0; effects.length = 0; return Toolbar({}); };
-  const elements = element => !element || typeof element !== 'object' ? [] : [element, ...[element.props?.children].flat().flatMap(elements)];
+  const elements = element => Array.isArray(element) ? element.flatMap(elements) : !element || typeof element !== 'object' ? [] : [element, ...elements(element.props?.children)];
   render().props.ref.current = { parentElement: container };
   const cleanup = effects[0]();
   expect(observed).toBe(container);
@@ -304,16 +304,17 @@ test('toolbar moves secondary formatting into a menu when its container narrows'
   expect(tree.props.className).toContain('toolbar-compact');
   const popup = find(tree, 'PopoverContent');
   expect(elements(popup).find(node => node.props?.['aria-label'] === 'Additional text formatting').props.loop).toBe(true);
-  expect(elements(popup).some(node => node.props?.['aria-label'] === 'Font Family')).toBe(true);
-  expect(elements(popup).some(node => node.props?.label === 'Format Bold')).toBe(false);
-  for (const label of ['Undo', 'Redo', 'Format Bold', 'Insert Link', 'Insert']) {
+  expect(elements(popup).some(node => node.props?.label === 'Font Family')).toBe(true);
+  expect(elements(popup).some(node => node.props?.label === 'Format Bold')).toBe(true);
+  expect(elements(tree).filter(node => node.props?.label === 'Format Bold')).toHaveLength(1);
+  for (const label of ['Undo', 'Redo', 'Insert Link', 'Insert', 'Find and replace']) {
     expect(elements(tree).some(node => node.props?.label === label && !elements(popup).includes(node))).toBe(true);
   }
   resize([{ contentRect: { width: 1200 } }]);
   tree = render();
   expect(tree.props.className).toBe('toolbar');
   expect(find(tree, 'PopoverContent')).toBeUndefined();
-  expect(elements(tree).some(node => node.props?.['aria-label'] === 'Font Family')).toBe(true);
+  expect(elements(tree).some(node => node.props?.label === 'Font Family')).toBe(true);
   cleanup();
   expect(disconnected).toBe(true);
 });
@@ -329,9 +330,10 @@ test('font changes preserve DOM focus inside a looping toolbar', () => {
     './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
   }).default;
   const tree = Toolbar({});
-  const font = find(tree, 'select');
+  const elements = element => !element || typeof element !== 'object' ? [] : [element, ...[element.props?.children].flat().flatMap(elements)];
+  const font = elements(tree).find(node => node.props?.style?.fontFamily === 'Georgia');
   const input = find(tree, 'input');
-  font.props.onChange({ target: { value: 'Georgia' } });
+  font.props.onSelect();
   input.props.onBlur({ target: { value: '24' } });
   expect(styles).toEqual([[selection, { 'font-family': 'Georgia' }], [selection, { 'font-size': '24px' }]]);
   expect(updates).toEqual([{ tag: 'skip-dom-selection' }, { tag: 'skip-dom-selection' }]);

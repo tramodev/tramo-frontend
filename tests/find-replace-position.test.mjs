@@ -80,7 +80,7 @@ test.each([false, true])('opening find aligns with the text column, connections 
   const s = setup(open);
   expect(s.observers).toHaveLength(0);
   const bar = s.open();
-  expect(bar.props.style).toEqual({ top: 128, right: open ? 448 : 328 });
+  expect(bar.props.style).toEqual({ top: 128, right: open ? 448 : 328, maxWidth: `calc(100vw - ${open ? 456 : 336}px)` });
   expect(s.observers.at(-1).targets).toEqual([s.viewport, s.column]);
 });
 
@@ -97,7 +97,7 @@ test('opening and closing connections moves the existing bar without clearing th
 test('window resizing updates both the viewport offset and the column alignment', () => {
   const s = setup();
   s.open();
-  expect(s.resizeWindow().props.style).toEqual({ top: 98, right: 248 });
+  expect(s.resizeWindow().props.style).toEqual({ top: 98, right: 248, maxWidth: 'calc(100vw - 256px)' });
 });
 
 test('closing find disconnects layout observation and restores focus to the editor', () => {

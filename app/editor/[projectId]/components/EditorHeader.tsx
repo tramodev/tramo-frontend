@@ -120,8 +120,10 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
       </span>
       {saveStatus === 'error' && saveError && <span role="alert" className="basis-full text-xs text-destructive">{saveError}</span>}
       {onDiscardRecoveredChanges && <>
-        {onKeepRecoveredChanges && <Button variant="outline" size="sm" onClick={() => setKeepRecoveryOpen(true)}>Keep my version</Button>}
-        <Button variant="outline" size="sm" onClick={() => setDiscardRecoveryOpen(true)}>Use server version</Button>
+        <div className="editor-recovery-actions flex basis-full flex-wrap gap-2">
+          {onKeepRecoveredChanges && <Button variant="outline" size="sm" className="min-h-11" onClick={() => setKeepRecoveryOpen(true)}>Keep my version</Button>}
+          <Button variant="outline" size="sm" className="min-h-11" onClick={() => setDiscardRecoveryOpen(true)}>Use server version</Button>
+        </div>
         {onKeepRecoveredChanges && <ConfirmDialog open={keepRecoveryOpen} onOpenChange={setKeepRecoveryOpen}
           title="Save your recovered version?"
           description="This replaces the server content of the conflicting notes with your recovered text, including your latest edits in this tab."

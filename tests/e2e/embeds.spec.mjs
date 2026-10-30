@@ -20,6 +20,115 @@ test.beforeEach(async ({ context }) => {
   await context.addCookies([{ name: 'accessToken', value: `test.${payload}.fixture`, url: 'http://127.0.0.1:3100', httpOnly: true }, { name: 'username', value: 'embedtester', url: 'http://127.0.0.1:3100', httpOnly: true }]);
 });
 
+for (const width of [659, 375, 320]) {
+  test(`table insertion fits and works at ${width}px`, async ({ page, request }) => {
+    await seed(request, [paragraph('Insert a table')]);
+    await page.setViewportSize({ width, height: 667 });
+    await page.goto('/editor/embeds');
+    await page.getByRole('textbox', { name: 'Content of Note' }).click();
+    await page.getByRole('button', { name: 'Insert', exact: true }).click();
+    const picker = page.getByRole('group', { name: 'Table size', exact: true });
+    const rows = picker.getByRole('spinbutton', { name: 'Rows', exact: true });
+    const columns = picker.getByRole('spinbutton', { name: 'Columns', exact: true });
+    const insert = picker.getByRole('button', { name: 'Insert table', exact: true });
+    for (const control of [rows, columns, insert]) {
+      await expect(control).toBeInViewport({ ratio: 1 });
+      await expect.poll(async () => (await control.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    }
+    await rows.fill('9');
+    await insert.click();
+    await expect(page.locator('.editor-input table')).toHaveCount(0);
+    await rows.fill('2');
+    await columns.fill('3');
+    await insert.click();
+    await expect(page.locator('.editor-input table tr')).toHaveCount(2);
+    await expect(page.locator('.editor-input table tr').first().locator('th, td')).toHaveCount(3);
+    await expect(picker).toHaveCount(0);
+  });
+}
+
+test('find and replace fits narrow screens and keeps its controls usable', async ({ page, request }) => {
+  await seed(request, [paragraph('Find this text')]);
+  await page.setViewportSize({ width: 444, height: 667 });
+  await page.goto('/editor/embeds');
+  await page.getByRole('textbox', { name: 'Content of Note' }).click();
+  await page.keyboard.press('ControlOrMeta+f');
+  const bar = page.locator('.find-replace-bar');
+  await bar.getByPlaceholder('Find', { exact: true }).fill('text');
+  for (const width of [444, 375, 320]) {
+    await page.setViewportSize({ width, height: 667 });
+    await expect.poll(async () => {
+      const box = await bar.boundingBox();
+      return box && box.x >= 8 && box.x + box.width <= width;
+    }).toBe(true);
+    for (const control of await bar.locator('input, button').all()) {
+      await expect(control).toBeInViewport({ ratio: 1 });
+    }
+    await bar.getByRole('button', { name: 'Next match', exact: true }).click();
+  }
+  await bar.getByPlaceholder('Replace', { exact: true }).fill('word');
+  await bar.getByRole('button', { name: 'Replace All', exact: true }).click();
+  await expect.poll(async () => (await saved(request)).content).toContain('Find this word');
+  await bar.getByRole('button', { name: 'Close find and replace', exact: true }).click();
+  await expect(bar).toHaveCount(0);
+});
+
+test('mobile formatting groups fonts and alignment into shared rows', async ({ page, request }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await seed(request, [paragraph('Mobile formatting')]);
+  await page.goto('/editor/embeds');
+  await expect(page.getByRole('button', { name: 'Format Bold', exact: true })).toHaveCount(0);
+  const mainToolbar = page.getByRole('toolbar', { name: 'Text formatting', exact: true });
+  const search = mainToolbar.getByRole('button', { name: 'Find and replace', exact: true });
+  await expect(search).toBeInViewport({ ratio: 1 });
+  const insert = await mainToolbar.getByRole('button', { name: 'Insert', exact: true }).boundingBox();
+  expect((await search.boundingBox()).x).toBeGreaterThan(insert.x);
+  await page.getByRole('button', { name: 'More formatting', exact: true }).click();
+  const toolbar = page.getByRole('toolbar', { name: 'Additional text formatting', exact: true });
+  const panel = page.getByRole('dialog', { name: 'Additional formatting', exact: true });
+  await expect(panel).toBeFocused();
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  const font = await toolbar.getByRole('button', { name: 'Font Family', exact: true }).boundingBox();
+  const size = await toolbar.getByRole('spinbutton', { name: 'Font Size', exact: true }).boundingBox();
+  const color = await toolbar.getByRole('button', { name: 'Text color', exact: true }).boundingBox();
+  const increase = await toolbar.getByRole('button', { name: 'Increase font size', exact: true }).boundingBox();
+  const align = await toolbar.getByRole('button', { name: 'Align text', exact: true }).boundingBox();
+  const bold = await toolbar.getByRole('button', { name: 'Format Bold', exact: true }).boundingBox();
+  const italic = await toolbar.getByRole('button', { name: 'Format Italics', exact: true }).boundingBox();
+  const code = await toolbar.getByRole('button', { name: 'Format Code', exact: true }).boundingBox();
+  expect(size.y).toBe(font.y);
+  expect(color.y).toBe(size.y);
+  expect(color.x).toBeGreaterThan(increase.x);
+  expect(italic.y).toBe(align.y);
+  expect(bold.y).toBe(italic.y);
+  expect(bold.x).toBeLessThan(italic.x);
+  expect(code.y).toBe(align.y);
+  await expect(toolbar.getByRole('button', { name: 'Text color', exact: true })).toBeInViewport({ ratio: 1 });
+  await page.keyboard.press('Tab');
+  await expect(toolbar.getByRole('button', { name: /: Text Styles$/ })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await search.click();
+  await expect(page.getByPlaceholder('Find', { exact: true })).toBeFocused();
+});
+
+test('recovery choices are tappable at 375px and open their confirmations', async ({ page, request }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await seed(request, [paragraph('Server version')]);
+  await page.addInitScript(backup => {
+    localStorage.setItem('tramo:draft-owner', '1');
+    localStorage.setItem('tramo:item-content:1:embeds:1', JSON.stringify(backup));
+  }, { content: state([paragraph('Recovered version')]), expectedContent: state([paragraph('Earlier version')]), restoreEpoch: 0, extractionEpoch: 0 });
+  await page.goto('/editor/embeds');
+  for (const [label, title] of [['Keep my version', 'Save your recovered version?'], ['Use server version', 'Discard recovered changes?']]) {
+    const button = page.getByRole('button', { name: label, exact: true });
+    await expect(button).toBeInViewport({ ratio: 1 });
+    await button.click();
+    await expect(page.getByRole('alertdialog')).toContainText(title);
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  }
+  expect((await saved(request)).saves).toBe(0);
+});
+
 test('invalid equation and score save on Escape and remain marked after reload', async ({ page, request }) => {
   await seed(request, [equation('x'), music(validMusic), paragraph()]);
   await page.goto('/editor/embeds');

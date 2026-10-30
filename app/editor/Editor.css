@@ -333,6 +333,7 @@ a[rel^="mypath-idea:"] {
 }
 
 .find-replace-bar input {
+  min-width: 0;
   background: transparent;
   border: none;
   outline: none;
@@ -559,6 +560,10 @@ div.editor-equation {
 
 .toolbar-table-picker {
   padding: 4px;
+}
+
+.toolbar-insert-menu {
+  width: min(360px, calc(100vw - 24px));
 }
 
 .toolbar-table-grid {
@@ -1111,13 +1116,33 @@ pre::-webkit-scrollbar-thumb {
   display: contents;
 }
 
+.toolbar-font-controls {
+  display: contents;
+}
+
+.toolbar-overflow .toolbar-font-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.toolbar-overflow .toolbar-font-controls > * {
+  flex-shrink: 0;
+}
+
+.toolbar-overflow .toolbar-font-controls > .text-dropdown-trigger {
+  flex: 1;
+  min-width: 0;
+}
+
 .toolbar-compact > .divider {
   display: none;
 }
 
 .toolbar-options {
   z-index: 50;
-  width: 320px;
+  width: 352px;
   max-width: calc(100vw - 24px);
   max-height: var(--radix-popover-content-available-height);
   overflow-y: auto;
@@ -1131,6 +1156,8 @@ pre::-webkit-scrollbar-thumb {
 
 .toolbar.toolbar-overflow {
   flex-wrap: wrap;
+  gap: 2px;
+  justify-content: flex-start;
   width: 100%;
   max-width: 100%;
   margin: 0;
@@ -1152,26 +1179,8 @@ pre::-webkit-scrollbar-thumb {
   padding: 0 5px;
 }
 
-.toolbar .font-family-select {
-  background: none;
-  border: none;
-  border-radius: 8px;
-  color: var(--foreground);
-  font-size: 0.8125rem;
-  padding: 4px 6px;
-  margin-right: 4px;
-  max-width: 120px;
-  height: 32px;
-  cursor: pointer;
-}
-
-.toolbar .font-family-select[data-pointer-focus="true"] {
-  outline: none;
-}
-
-.toolbar .font-family-select option {
-  color: var(--foreground);
-  background: var(--popover);
+.toolbar button.toolbar-item.text-dropdown-trigger {
+  width: 144px;
 }
 
 .toolbar .font-size-control {
@@ -1212,7 +1221,6 @@ pre::-webkit-scrollbar-thumb {
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .toolbar .font-family-select,
   .toolbar .font-size-input {
     font-size: 1rem;
   }
@@ -1244,6 +1252,19 @@ pre::-webkit-scrollbar-thumb {
     gap: 4px;
   }
 
+  .project-shell-header:has(.editor-recovery-actions) {
+    flex-wrap: wrap;
+  }
+
+  .project-shell-header:has(.editor-recovery-actions) .project-shell-title {
+    order: 1;
+    flex-basis: 100%;
+  }
+
+  .editor-project-title:has(.editor-recovery-actions) {
+    flex-wrap: wrap;
+  }
+
   .editor-project-title > span:not([role="alert"]) {
     width: 16px;
     font-size: 0;
@@ -1262,7 +1283,7 @@ pre::-webkit-scrollbar-thumb {
   }
 
   .toolbar {
-    justify-content: flex-start;
+    justify-content: center;
     flex-wrap: nowrap;
     width: 100%;
     max-width: 100%;
@@ -1281,7 +1302,6 @@ pre::-webkit-scrollbar-thumb {
     height: 44px;
   }
 
-  .toolbar .font-family-select,
   .toolbar .font-size-control,
   .toolbar .font-size-input {
     height: 44px;
