@@ -17,6 +17,7 @@ const jsx = (type, props) => ({ type, props });
 const page = load('app/wiki/[slug]/page.tsx', {
   '@/app/wiki/content': content,
   '@/app/wiki/screenshots': screenshots,
+  'next/link': { default: 'a' },
   'next/image': { default: 'img' },
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/navigation': { notFound: () => { throw new Error('not found'); } },
@@ -41,6 +42,18 @@ test('unknown wiki topics return not found', async () => {
   const props = { params: Promise.resolve({ slug: 'missing-topic' }) };
   await expect(page.generateMetadata(props)).rejects.toThrow('not found');
   await expect(page.default(props)).rejects.toThrow('not found');
+});
+
+test.each([0, 1, content.SECTIONS.length - 1])('topic navigation follows wiki order at index %s', async index => {
+  const nodes = node => Array.isArray(node) ? node.flatMap(nodes) : !node?.props ? [] : [node, ...nodes(node.props.children)];
+  const article = await page.default({ params: Promise.resolve({ slug: content.SECTIONS[index].id }) });
+  const navigation = nodes(article).find(node => node.props['aria-label'] === 'Topic navigation');
+  const links = nodes(navigation).filter(node => node.type === 'a');
+  expect(links.map(link => link.props.href)).toEqual([
+    '/wiki',
+    ...content.SECTIONS.slice(Math.max(0, index - 1), index).map(section => `/wiki/${section.id}`),
+    ...content.SECTIONS.slice(index + 1, index + 2).map(section => `/wiki/${section.id}`),
+  ]);
 });
 
 test.each([['getting-started', 2], ['projects', 3], ['notes-and-trails', 13], ['writing', 5], ['images-and-blocks', 7], ['connections-and-map', 10], ['navigation', 5], ['publishing', 10], ['community', 13], ['profile-and-account', 13], ['storage-and-supporter', 5]])('%s illustrates every feature with accessible local screenshots without changing other topics', async (slug, count) => {

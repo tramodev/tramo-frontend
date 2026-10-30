@@ -25,6 +25,9 @@ export default async function WikiTopicPage({ params }: { params: Promise<{ slug
   const section = SECTIONS.find(section => section.id === slug);
   if (!section) notFound();
   const screenshots = WIKI_SCREENSHOTS[section.id];
+  const sectionIndex = SECTIONS.indexOf(section);
+  const previous = SECTIONS[sectionIndex - 1];
+  const next = SECTIONS[sectionIndex + 1];
   return <article>
     <Link href="/wiki" className="mb-4 inline-block text-sm text-primary hover:underline">Wiki</Link>
     <h1 className="mb-6 font-display text-[clamp(32px,4vw,44px)] font-medium leading-tight">{section.title}</h1>
@@ -45,6 +48,12 @@ export default async function WikiTopicPage({ params }: { params: Promise<{ slug
         </div>
       </section>)}
     </div>
-    <div className="mt-12 border-t border-border pt-6"><Link href="/wiki" className="text-sm text-primary hover:underline">Back to all topics</Link></div>
+    <nav aria-label="Topic navigation" className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6 text-sm text-primary">
+      <Link href="/wiki" className="hover:underline">Back to all topics</Link>
+      <div className="flex flex-wrap gap-6">
+        {previous && <Link href={`/wiki/${previous.id}`} rel="prev" className="hover:underline">← Previous: {previous.title}</Link>}
+        {next && <Link href={`/wiki/${next.id}`} rel="next" className="hover:underline">Next: {next.title} →</Link>}
+      </div>
+    </nav>
   </article>;
 }
