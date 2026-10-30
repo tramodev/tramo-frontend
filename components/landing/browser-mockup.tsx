@@ -33,6 +33,7 @@ import {
   Lock,
   ArrowRight,
   MoreVertical,
+  Ellipsis,
 } from 'lucide-react';
 import { Mark } from '@/components/layout/logo';
 import { SharedNoteIndicator } from '@/components/editor/shared-note-indicator';
@@ -229,9 +230,11 @@ export const BrowserMockup: React.FC = () => {
 
       <div className="flex flex-1 min-h-0 gap-3 p-3">
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background" data-mock-editor>
-          <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2 rounded-[24px] bg-muted px-3 py-2 shrink-0 text-muted-foreground" data-mock-toolbar>
+          <div className="mx-auto flex w-fit max-w-full flex-nowrap items-center justify-center gap-2 rounded-[24px] bg-muted px-3 py-2 shrink-0 text-muted-foreground md:flex-wrap [&>svg]:shrink-0" data-mock-toolbar>
             <Undo className="w-3.5 h-3.5" />
             <Redo className="w-3.5 h-3.5" />
+            <Ellipsis className="w-3.5 h-3.5 md:hidden" />
+            <div className="hidden md:contents" data-mock-formatting>
             <span className="h-3.5 w-px shrink-0 bg-border" />
             <span className="flex items-center gap-1 text-[0.6875rem] shrink-0"><Type className="w-3.5 h-3.5" />Normal<ChevronDown className="w-3 h-3" /></span>
             <span className="h-3.5 w-px shrink-0 bg-border" />
@@ -257,10 +260,11 @@ export const BrowserMockup: React.FC = () => {
             <Highlighter className="w-3.5 h-3.5" />
             <Code className="w-3.5 h-3.5" />
             <span className="h-3.5 w-px shrink-0 bg-border" />
+            </div>
             <LinkIcon className="w-3.5 h-3.5" />
             <Plus className="w-3.5 h-3.5" />
             <ChevronDown className="w-3 h-3" />
-            <span className="h-3.5 w-px shrink-0 bg-border" />
+            <span className="hidden h-3.5 w-px shrink-0 bg-border md:block" />
             <Search className="w-3.5 h-3.5" />
           </div>
 
