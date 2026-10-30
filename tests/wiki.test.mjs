@@ -43,7 +43,7 @@ test('unknown wiki topics return not found', async () => {
   await expect(page.default(props)).rejects.toThrow('not found');
 });
 
-test.each([['projects', 8], ['notes-and-trails', 13], ['writing', 16], ['images-and-blocks', 10]])('%s illustrates every feature with accessible local screenshots without changing other topics', async (slug, count) => {
+test.each([['getting-started', 2], ['projects', 3], ['notes-and-trails', 13], ['writing', 5], ['images-and-blocks', 7], ['connections-and-map', 10], ['navigation', 5], ['publishing', 10], ['community', 13], ['profile-and-account', 13], ['storage-and-supporter', 5]])('%s illustrates every feature with accessible local screenshots without changing other topics', async (slug, count) => {
   const nodes = node => Array.isArray(node) ? node.flatMap(nodes) : !node?.props ? [] : [node, ...nodes(node.props.children)];
   const article = await page.default({ params: Promise.resolve({ slug }) });
   const images = nodes(article).filter(node => node.type === 'img');
@@ -56,8 +56,6 @@ test.each([['projects', 8], ['notes-and-trails', 13], ['writing', 16], ['images-
     expect(image.props.height).toBeGreaterThan(0);
     expect(readFileSync(`public${image.props.src}`).subarray(0, 2).toString('hex')).toBe('ffd8');
   }
-  const other = await page.default({ params: Promise.resolve({ slug: 'connections-and-map' }) });
-  expect(nodes(other).filter(node => node.type === 'img')).toHaveLength(0);
 });
 
 test('wiki navigation opens the current category and marks only the selected page', () => {
