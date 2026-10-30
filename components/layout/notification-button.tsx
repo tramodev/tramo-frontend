@@ -189,7 +189,7 @@ export function NotificationButton({ loggedIn, userId }: { loggedIn: boolean; us
         <button
           type="button"
           aria-label={unreadCount > 0 ? `Notifications, ${unreadCount > 9 ? '9+' : unreadCount} unread` : 'Notifications'}
-          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
+          className="relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
