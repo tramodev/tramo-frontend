@@ -223,7 +223,7 @@ export default function PublishPage() {
         <button
           type="button"
           onClick={() => router.push(`/editor/${projectId}`)}
-          className="flex items-center gap-0.5 text-sm leading-none text-muted-foreground hover:text-foreground"
+          className="flex cursor-pointer items-center gap-0.5 text-sm leading-none text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
           <span className="leading-none">Editor</span>
@@ -251,7 +251,7 @@ export default function PublishPage() {
                   disabled={isPublishing}
                   onClick={() => changeVisibility(option.value)}
                   className={cn(
-                    "flex items-center gap-3 rounded-md border px-3.5 py-2.5 text-left transition-colors disabled:opacity-60",
+                    "flex cursor-pointer items-center gap-3 rounded-md border px-3.5 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                     isActive ? "border-foreground bg-foreground/5" : "border-border hover:bg-muted"
                   )}
                 >
@@ -330,7 +330,7 @@ export default function PublishPage() {
             type="button"
             onClick={() => handleConfirm()}
             disabled={isPublishing || justPublished}
-            className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.875rem] font-medium text-background shadow-elevation-2 disabled:opacity-60"
+            className="flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[0.875rem] font-medium text-background shadow-elevation-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isPublishing ? (
               <>

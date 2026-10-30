@@ -1165,6 +1165,10 @@ pre::-webkit-scrollbar-thumb {
   cursor: pointer;
 }
 
+.toolbar .font-family-select[data-pointer-focus="true"] {
+  outline: none;
+}
+
 .toolbar .font-family-select option {
   color: var(--foreground);
   background: var(--popover);

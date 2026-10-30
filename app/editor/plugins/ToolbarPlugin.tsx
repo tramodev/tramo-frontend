@@ -326,6 +326,7 @@ export default function ToolbarPlugin({
 
   const [formats, setFormats] = useState<Set<string>>(new Set());
   const [fontFamily, setFontFamily] = useState('Arial');
+  const [fontFamilyPointerFocus, setFontFamilyPointerFocus] = useState(false);
   const [fontSize, setFontSize] = useState('15');
   const [textColor, setTextColor] = useState('');
   const colorSelection = useRef<RangeSelection | null>(null);
@@ -600,6 +601,10 @@ export default function ToolbarPlugin({
       <Toolbar.Button asChild>
       <select
         className="toolbar-item font-family-select"
+        data-pointer-focus={fontFamilyPointerFocus}
+        onPointerDown={() => setFontFamilyPointerFocus(true)}
+        onKeyDown={() => setFontFamilyPointerFocus(false)}
+        onBlur={() => setFontFamilyPointerFocus(false)}
         value={fontFamily}
         onChange={(e) => onFontFamilySelect(e.target.value)}
         aria-label="Font Family"
