@@ -54,7 +54,9 @@ test.each([['getting-started', 2], ['projects', 3], ['notes-and-trails', 13], ['
     expect(image.props.alt.length).toBeGreaterThan(10);
     expect(image.props.width).toBeGreaterThan(0);
     expect(image.props.height).toBeGreaterThan(0);
-    expect(readFileSync(`public${image.props.src}`).subarray(0, 2).toString('hex')).toBe('ffd8');
+    const data = readFileSync(`public${image.props.src}`);
+    expect(data.subarray(0, 4).toString()).toBe('RIFF');
+    expect(data.subarray(8, 12).toString()).toBe('WEBP');
   }
 });
 
