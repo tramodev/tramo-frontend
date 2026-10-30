@@ -1,6 +1,32 @@
 import { test, expect } from '@playwright/test';
 import { SECTIONS } from '@/app/wiki/content';
 
+test('wiki screenshots preserve their dimensions without resize warnings', async ({ page }) => {
+  test.setTimeout(120000);
+  const warnings = [];
+  page.on('console', message => {
+    if (message.text().includes('has either width or height modified')) warnings.push(message.text());
+  });
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const { id: slug } of SECTIONS) {
+      await page.goto(`/wiki/${slug}`);
+      for (const image of await page.locator('article img').all()) {
+        await image.scrollIntoViewIfNeeded();
+        await expect.poll(() => image.evaluate(element => element.complete && element.naturalWidth > 0)).toBe(true);
+        const dimensions = await image.evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          return { width: rect.width, height: rect.height, naturalWidth: element.naturalWidth, naturalHeight: element.naturalHeight, left: rect.left, right: rect.right };
+        });
+        expect(Math.abs(dimensions.height - dimensions.width * dimensions.naturalHeight / dimensions.naturalWidth)).toBeLessThan(1);
+        expect(dimensions.left).toBeGreaterThanOrEqual(0);
+        expect(dimensions.right).toBeLessThanOrEqual(width);
+      }
+    }
+  }
+  expect(warnings).toEqual([]);
+});
+
 for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 }]) {
   test(`wiki loads only the leading screenshot eagerly at ${viewport.width}px`, async ({ page }, testInfo) => {
     test.setTimeout(120000);

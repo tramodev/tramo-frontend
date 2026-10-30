@@ -43,7 +43,9 @@ export default async function WikiTopicPage({ params }: { params: Promise<{ slug
         <p className="text-base leading-7 text-muted-foreground">{description}</p>
         <div className="flex flex-wrap items-start justify-center gap-x-6">
         {screenshots?.[title]?.map(screenshot => <figure key={screenshot.src} style={{ width: screenshot.width }} className="mt-5 max-w-full overflow-hidden rounded-lg border border-border bg-card">
-          <Image src={screenshot.src} alt={screenshot.alt} width={screenshot.width} height={screenshot.height} loading={screenshot.src === firstScreenshot ? 'eager' : 'lazy'} unoptimized className="h-auto w-full" />
+          <div className="relative" style={{ aspectRatio: screenshot.width / screenshot.height }}>
+            <Image src={screenshot.src} alt={screenshot.alt} fill loading={screenshot.src === firstScreenshot ? 'eager' : 'lazy'} unoptimized className="object-contain" />
+          </div>
           <figcaption className="border-t border-border px-4 py-3 text-sm leading-6 text-muted-foreground">{screenshot.caption}</figcaption>
         </figure>)}
         </div>

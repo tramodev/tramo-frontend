@@ -67,8 +67,10 @@ test.each([['getting-started', 2], ['projects', 3], ['notes-and-trails', 13], ['
   expect(Object.keys(screenshots.WIKI_SCREENSHOTS[slug])).toEqual(section.features.map(([title]) => title));
   for (const image of images) {
     expect(image.props.alt.length).toBeGreaterThan(10);
-    expect(image.props.width).toBeGreaterThan(0);
-    expect(image.props.height).toBeGreaterThan(0);
+    expect(image.props.fill).toBe(true);
+    const screenshot = Object.values(screenshots.WIKI_SCREENSHOTS[slug]).flat().find(screenshot => screenshot.src === image.props.src);
+    const frame = nodes(article).find(node => node.props.children === image);
+    expect(frame.props.style.aspectRatio).toBe(screenshot.width / screenshot.height);
     const data = readFileSync(`public${image.props.src}`);
     expect(data.subarray(0, 4).toString()).toBe('RIFF');
     expect(data.subarray(8, 12).toString()).toBe('WEBP');
