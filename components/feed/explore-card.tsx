@@ -33,7 +33,7 @@ export function ExploreCard({
   loading?: "eager" | "lazy"
 }) {
   return (
-    <div className="relative flex flex-col sm:flex-row sm:justify-between gap-5 rounded-lg border border-border bg-popover p-6">
+    <div className="relative isolate flex flex-col sm:flex-row sm:justify-between gap-5 rounded-lg border border-border bg-popover p-6">
       {interactive && (
         <Link href={`/p/${project.id}`} className="absolute inset-0 z-0" aria-label={project.title} />
       )}

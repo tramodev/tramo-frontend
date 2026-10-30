@@ -36,16 +36,16 @@ export function ForkBadge({
   }
 
   const usernameLink = (
-    <Link href={`/u/${encodeURIComponent(forkedFromOwnerUsername)}`} className="hover:underline">
+    <Link href={`/u/${encodeURIComponent(forkedFromOwnerUsername)}`} className="shrink-0 hover:underline">
       @{forkedFromOwnerUsername}
     </Link>
   )
 
   return (
-    <span className="relative z-10 inline-flex w-fit flex-wrap items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-      <GitFork className="h-3 w-3" />
+    <span className="relative z-10 inline-flex w-fit max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+      <GitFork className="h-3 w-3 shrink-0" />
       Forked from{" "}
-      <Link href={`/p/${encodeURIComponent(forkedFromProjectId)}`} className="hover:underline">
+      <Link href={`/p/${encodeURIComponent(forkedFromProjectId)}`} title={forkedFromTitle ?? "Original project"} className="min-w-0 truncate hover:underline">
         {forkedFromTitle ?? "Original project"}
       </Link>
       {" by "}
