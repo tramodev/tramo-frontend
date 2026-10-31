@@ -10,12 +10,17 @@ import { cancelSubscription, type SubscriptionStatus } from "@/lib/subscription"
 import { formatBytes } from "@/lib/format-bytes"
 import { PatreonButton } from "@/components/profile/patreon-button"
 
-export function StorageMeter({ status }: { status: Pick<SubscriptionStatus, "storageUsedBytes" | "storageImageBytes" | "storageTextBytes"> & { storageQuotaBytes?: number } }) {
+export function StorageMeter({ status }: { status: Pick<SubscriptionStatus, "storageUsedBytes" | "storageImageBytes" | "storageTextBytes" | "storageThumbnailBytes" | "storageProfileImageBytes"> & { storageQuotaBytes?: number } }) {
   const quota = status.storageQuotaBytes ?? status.storageUsedBytes
   const scale = Math.max(quota, status.storageUsedBytes, 1)
   const pct = Math.min(100, status.storageUsedBytes / Math.max(quota, 1) * 100)
-  const images = formatBytes(status.storageImageBytes)
-  const text = formatBytes(status.storageTextBytes)
+  const hasBreakdown = status.storageThumbnailBytes !== undefined
+  const categories = [
+    { label: hasBreakdown ? "Project images" : "Images", bytes: status.storageImageBytes - (status.storageThumbnailBytes ?? 0) - (status.storageProfileImageBytes ?? 0), color: "bg-chart-1" },
+    ...(hasBreakdown ? [{ label: "Thumbnails", bytes: status.storageThumbnailBytes ?? 0, color: "bg-chart-3" }] : []),
+    ...(status.storageProfileImageBytes !== undefined ? [{ label: "Profile images", bytes: status.storageProfileImageBytes, color: "bg-chart-4" }] : []),
+    { label: "Text", bytes: status.storageTextBytes, color: "bg-chart-2" },
+  ]
   const used = formatBytes(status.storageUsedBytes)
   const total = status.storageQuotaBytes === undefined ? used : `${used} / ${formatBytes(status.storageQuotaBytes)}`
 
@@ -31,21 +36,20 @@ export function StorageMeter({ status }: { status: Pick<SubscriptionStatus, "sto
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-valuetext={`${total}. Images: ${images}. Text: ${text}.`}
+        aria-valuetext={`${total}. ${categories.map(category => `${category.label}: ${formatBytes(category.bytes)}.`).join(" ")}`}
         className="mt-2 flex h-2 overflow-hidden rounded-full bg-muted"
       >
-        <div aria-hidden="true" className="h-full shrink-0 bg-chart-1" style={{ width: `${status.storageImageBytes / scale * 100}%` }} />
-        <div aria-hidden="true" className="h-full shrink-0 bg-chart-2" style={{ width: `${status.storageTextBytes / scale * 100}%` }} />
+        {categories.map(category => (
+          <div key={category.label} aria-hidden="true" className={`h-full shrink-0 ${category.color}`} style={{ width: `${category.bytes / scale * 100}%` }} />
+        ))}
       </div>
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="size-2 rounded-full bg-chart-1" />
-          Images <span className="tabular-nums">{images}</span>
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="size-2 rounded-full bg-chart-2" />
-          Text <span className="tabular-nums">{text}</span>
-        </span>
+        {categories.map(category => (
+          <span key={category.label} className="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" className={`size-2 rounded-full ${category.color}`} />
+            {category.label} <span className="tabular-nums">{formatBytes(category.bytes)}</span>
+          </span>
+        ))}
       </div>
     </div>
   )

@@ -105,7 +105,7 @@ export const SECTIONS = [
   },
   {
     id: 'storage-and-supporter', title: 'Storage and Supporter', features: [
-      ['Storage usage', 'Open Settings, then Plan for your total storage, quota and image/text breakdown. For one project, choose Usage breakdown from its menu on My Projects.'],
+      ['Storage usage', 'Open Settings, then Plan for your total storage, quota and a breakdown of project images, thumbnails, profile images and text. For one project, choose Usage breakdown from its menu on My Projects.'],
       ['Unused image cleanup', 'Cleanup runs automatically after a grace period. Images referenced by notes or published versions are kept.'],
       ['Support through Patreon', 'Connect Patreon to activate Tramo Supporter.'],
       ['Supporter benefits', 'Get more storage, an animated GIF avatar, a profile banner and a Supporter badge.'],

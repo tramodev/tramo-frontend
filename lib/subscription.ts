@@ -9,6 +9,8 @@ export interface SubscriptionStatus {
   supporter: boolean;
   storageUsedBytes: number;
   storageImageBytes: number;
+  storageThumbnailBytes?: number;
+  storageProfileImageBytes?: number;
   storageTextBytes: number;
   storageQuotaBytes: number;
   publishesPerWeek: number; // -1 = unlimited

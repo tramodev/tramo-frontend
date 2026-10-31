@@ -5,7 +5,7 @@ import ts from 'typescript';
 
 const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : node?.props ? [node, ...flatten(node.props.children)] : [];
 
-function meter(imageBytes, textBytes, quotaBytes) {
+function meter(imageBytes, textBytes, quotaBytes, breakdown = {}) {
   const exports = {};
   const formats = {};
   const jsx = (type, props) => ({ type, props });
@@ -25,7 +25,7 @@ function meter(imageBytes, textBytes, quotaBytes) {
   const panel = exports.PlanPanel({ initialStatus: {
     supporter: false, storageUsedBytes: imageBytes + textBytes,
     storageImageBytes: imageBytes, storageTextBytes: textBytes,
-    storageQuotaBytes: quotaBytes, publishesPerWeek: -1,
+    storageQuotaBytes: quotaBytes, publishesPerWeek: -1, ...breakdown,
   } });
   const component = flatten(panel).find(node => node.type?.name === 'StorageMeter');
   return flatten(component.type(component.props));
@@ -41,7 +41,7 @@ test('storage shows proportional image and text segments with matching legends',
   expect(bar.props.children[0].props.className).toContain('bg-chart-1');
   expect(bar.props.children[1].props.className).toContain('bg-chart-2');
   expect(nodes.filter(node => node.props.className?.includes('inline-flex')).map(node => node.props.children[1]))
-    .toEqual(['Images ', 'Text ']);
+    .toEqual(['Images', 'Text']);
 });
 
 test('over-quota storage fills the bar without changing the image/text proportions', () => {
@@ -71,4 +71,26 @@ test('project storage shows its own total and proportions without a plan quota',
   const empty = meter(0, 0).find(node => node.props.role === 'progressbar');
   expect(empty.props['aria-valuenow']).toBe(0);
   expect(empty.props.children.map(node => node.props.style.width)).toEqual(['0%', '0%']);
+});
+
+test('account storage separates project images, thumbnails and profile images without double counting', () => {
+  const mb = 1024 * 1024;
+  const nodes = meter(80 * mb, 20 * mb, 200 * mb, { storageThumbnailBytes: 20 * mb, storageProfileImageBytes: 10 * mb });
+  const bar = nodes.find(node => node.props.role === 'progressbar');
+  expect(bar.props['aria-valuetext']).toBe('100.0MB / 200.0MB. Project images: 50.0MB. Thumbnails: 20.0MB. Profile images: 10.0MB. Text: 20.0MB.');
+  expect(bar.props.children.map(node => node.props.style.width)).toEqual(['25%', '10%', '5%', '10%']);
+  expect(nodes.filter(node => node.props.className?.includes('inline-flex')).map(node => node.props.children[1]))
+    .toEqual(['Project images', 'Thumbnails', 'Profile images', 'Text']);
+});
+
+test('project storage separates thumbnails and omits the account profile category', () => {
+  const mb = 1024 * 1024;
+  const bar = meter(80 * mb, 20 * mb, undefined, { storageThumbnailBytes: 30 * mb }).find(node => node.props.role === 'progressbar');
+  expect(bar.props['aria-valuetext']).toBe('100.0MB. Project images: 50.0MB. Thumbnails: 30.0MB. Text: 20.0MB.');
+  expect(bar.props.children.map(node => node.props.style.width)).toEqual(['50%', '30%', '20%']);
+});
+
+test('empty categorized storage has zero-width segments', () => {
+  const bar = meter(0, 0, 100, { storageThumbnailBytes: 0, storageProfileImageBytes: 0 }).find(node => node.props.role === 'progressbar');
+  expect(bar.props.children.map(node => node.props.style.width)).toEqual(['0%', '0%', '0%', '0%']);
 });

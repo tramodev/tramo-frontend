@@ -144,6 +144,7 @@ export async function listProjects(): Promise<Project[]> {
 export interface ProjectStorage {
   storageUsedBytes: number;
   storageImageBytes: number;
+  storageThumbnailBytes?: number;
   storageTextBytes: number;
 }
 
