@@ -116,7 +116,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
       }}
       open={leftSidebarOpen}
       onOpenChange={setLeftSidebarOpen}
-      style={{ "--sidebar-width": "288px", "--sidebar-width-icon": "272px" } as React.CSSProperties}
+      style={{ "--sidebar-width": "18rem", "--sidebar-width-icon": "17rem" } as React.CSSProperties}
       className="editor-workspace h-dvh min-h-0"
     >
       <ProjectShell
@@ -136,7 +136,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
         }
         actions={
           project.loaded && <>
-          {project.view === 'write' && project.selectedItem && <button ref={formattingTriggerRef} type="button" className="editor-toolbar-toggle size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={toolbarOpen ? 'Close formatting' : 'Formatting'} title="Formatting" aria-expanded={toolbarOpen} aria-controls="editor-formatting-toolbar" onClick={() => setToolbarOpen(open => !open)}>
+          {project.view === 'write' && project.selectedItem && <button ref={formattingTriggerRef} type="button" className="editor-toolbar-toggle size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-foreground hover:bg-accent" aria-label={toolbarOpen ? 'Close formatting' : 'Formatting'} title="Formatting" aria-expanded={toolbarOpen} aria-controls="editor-formatting-toolbar" onClick={() => setToolbarOpen(open => !open)}>
             <Type className="size-4" />
           </button>}
           <EditorActions

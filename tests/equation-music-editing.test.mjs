@@ -290,6 +290,7 @@ test('toolbar reduces when its full row does not fit and expands when space retu
     'radix-ui': { Toolbar: { Root: 'ToolbarRoot', Button: 'ToolbarButton' }, Popover: { Root: 'PopoverRoot', Trigger: 'PopoverTrigger', Portal: 'PopoverPortal', Content: 'PopoverContent' } },
     './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {}, './EquationsPlugin': {}, './MusicPlugin': {},
   }, '', {
+    getComputedStyle: () => ({ fontSize: '16px' }),
     ResizeObserver: class {
       constructor(callback) { resize = callback; }
       observe(target) { observed.push(target); }

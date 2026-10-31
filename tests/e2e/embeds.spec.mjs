@@ -413,17 +413,76 @@ for (const path of ['/editor/embeds', '/p/embeds']) {
     const trigger = page.getByRole('button', { name: 'Toggle Sidebar', exact: true });
     const sidebar = page.locator('[data-slot="sidebar-container"]');
     await expect(sidebar).toBeVisible();
-    await expect(trigger).toBeHidden();
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+    await expect(page.locator('[data-slot="sidebar"][data-state="collapsed"]')).toBeVisible();
+    await trigger.click();
+    await expect(page.locator('[data-slot="sidebar"][data-state="expanded"]')).toBeVisible();
     await page.setViewportSize({ width: 899, height: 900 });
     await expect(sidebar).toHaveCount(0);
     await expect(trigger).toBeVisible();
     await trigger.click();
     const drawer = page.getByRole('dialog', { name: 'Sidebar', exact: true });
     await expect(drawer).toBeVisible();
-    await page.keyboard.press('Escape');
+    await expect(drawer.getByRole('button', { name: 'Close sidebar', exact: true })).toBeFocused();
+    await drawer.getByRole('button', { name: 'Close sidebar', exact: true }).click();
     await expect(drawer).toBeHidden();
     await page.setViewportSize({ width: 900, height: 900 });
     await expect(sidebar).toBeVisible();
-    await expect(trigger).toBeHidden();
+    await expect(trigger).toBeVisible();
   });
 }
+
+test('keyboard focus is visible on the note title and body', async ({ page, request }) => {
+  await seed(request, [paragraph('Focus indication')]);
+  await page.goto('/editor/embeds');
+  const title = page.getByRole('textbox', { name: 'Note title', exact: true });
+  const body = page.getByRole('textbox', { name: 'Content of Note', exact: true });
+  await page.keyboard.press('Tab');
+  await title.focus();
+  await expect(title).toHaveCSS('outline-style', 'solid');
+  await expect(title).toHaveCSS('outline-width', '2px');
+  await page.keyboard.press('Tab');
+  await expect(body).toBeFocused();
+  await expect(body).toHaveCSS('outline-style', 'solid');
+  await expect(body).toHaveCSS('outline-width', '2px');
+});
+
+test('landscape formatting button looks enabled and opens the toolbar', async ({ page, request }) => {
+  await seed(request, [paragraph('Landscape formatting')]);
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto('/editor/embeds');
+  const button = page.getByRole('button', { name: 'Formatting', exact: true });
+  await expect(button).toBeVisible();
+  await expect(button).toBeEnabled();
+  expect(await button.evaluate(element => getComputedStyle(element).color === getComputedStyle(element.closest('.editor-workspace')).color)).toBe(true);
+  await button.click();
+  await expect(page.getByRole('toolbar', { name: 'Text formatting', exact: true })).toBeVisible();
+});
+
+test('wide editor controls scale with the root typography', async ({ page, request }) => {
+  await seed(request, [paragraph('Large screen controls')]);
+  await page.goto('/editor/embeds');
+  const toolbar = page.getByRole('toolbar', { name: 'Text formatting', exact: true });
+  for (const width of [1920, 2560, 3840, 1920]) {
+    await page.setViewportSize({ width, height: 1080 });
+    await expect(toolbar.getByRole('button', { name: 'Format Bold', exact: true })).toBeVisible();
+    const rootSize = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
+    await expect.poll(async () => (await page.locator('[data-slot="sidebar-container"]').boundingBox()).width).toBeCloseTo(18 * rootSize, 1);
+    const undo = toolbar.getByRole('button', { name: 'Undo', exact: true });
+    expect((await undo.boundingBox()).width).toBeCloseTo(1.75 * rootSize, 1);
+    expect((await undo.locator('svg').boundingBox()).width).toBeCloseTo(1.125 * rootSize, 1);
+  }
+});
+
+test.describe('double-density display', () => {
+  test.use({ deviceScaleFactor: 2 });
+  test('keeps the editor controls proportional at a 1920px viewport', async ({ page, request }) => {
+    await seed(request, [paragraph('High density controls')]);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto('/editor/embeds');
+    await expect(page.getByRole('toolbar', { name: 'Text formatting', exact: true })).toBeVisible();
+    expect((await page.locator('[data-slot="sidebar-container"]').boundingBox()).width).toBe(288);
+    expect((await page.getByRole('button', { name: 'Undo', exact: true }).boundingBox()).width).toBe(28);
+  });
+});

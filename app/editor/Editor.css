@@ -116,9 +116,10 @@
   padding-top: 0;
 }
 
-.editor-input:focus,
-.editor-input:focus-visible {
-  outline: 0;
+.editor-input:focus-visible,
+[data-note-title]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
 }
 
 .editor-placeholder {
@@ -1061,12 +1062,12 @@ pre::-webkit-scrollbar-thumb {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 0.1875rem;
   flex: none;
   width: fit-content;
   max-width: calc(100% - 16px);
   margin: 0 auto 8px;
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   flex-wrap: nowrap;
   justify-content: flex-start;
   background-color: var(--muted);
@@ -1084,8 +1085,8 @@ pre::-webkit-scrollbar-thumb {
   justify-content: center;
   background: none;
   border-radius: 8px;
-  width: 28px;
-  height: 28px;
+  width: 1.75rem;
+  height: 1.75rem;
   padding: 0;
   cursor: pointer;
   color: var(--foreground);
@@ -1126,7 +1127,7 @@ pre::-webkit-scrollbar-thumb {
 
 .toolbar-inline-controls {
   display: flex;
-  gap: 3px;
+  gap: 0.1875rem;
 }
 
 .toolbar-overflow .toolbar-font-controls {
@@ -1193,18 +1194,18 @@ pre::-webkit-scrollbar-thumb {
 }
 
 .toolbar button.toolbar-item.text-dropdown-trigger {
-  width: 96px;
+  width: 6rem;
 }
 
 .toolbar .font-size-control {
   display: flex;
   align-items: center;
-  height: 32px;
+  height: 2rem;
   margin-right: 4px;
 }
 
 .toolbar .font-size-input {
-  width: 32px;
+  width: 2rem;
   border: 0;
   background: none;
   color: var(--foreground);

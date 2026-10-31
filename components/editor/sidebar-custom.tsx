@@ -147,7 +147,7 @@ export function SidebarCustom({
   trailOrderError,
   onMoveItemToTrail,
 }: SidebarCustomProps) {
-  const { state, setOpen } = useSidebar();
+  const { state, setOpen, isMobile, setOpenMobile } = useSidebar();
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -357,6 +357,7 @@ export function SidebarCustom({
       className="border-r"
     >
       <SidebarContent role="navigation" aria-label="Project notes" className="project-sidebar gap-0.5 overflow-x-hidden">
+        {isMobile && <Button variant="ghost" size="icon" aria-label="Close sidebar" className="mr-2 mt-2 shrink-0 self-end" onClick={() => setOpenMobile(false)}><X className="size-4" /></Button>}
         {state !== "collapsed" && (
           <div className="flex items-center gap-2 px-2.5 pt-4">
             <Link href={homeHref} title="Back to projects" className="shrink-0">

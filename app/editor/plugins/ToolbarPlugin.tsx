@@ -217,7 +217,7 @@ function ToolbarButton({
           className={`toolbar-item${spaced ? ' spaced' : ''}${active ? ' active' : ''}`}
           aria-pressed={active}
           aria-label={label}>
-          <Icon size={size} />
+          <Icon size={`${size / 16}rem`} />
         </button>
         </Toolbar.Button>
       </TooltipTrigger>
@@ -341,15 +341,16 @@ export default function ToolbarPlugin({
     let fullWidth = 0;
     let intermediateWidth = 0;
     const observer = new ResizeObserver(() => {
+      const fontSize = parseFloat(getComputedStyle(toolbar).fontSize);
       if (!toolbar.classList.contains('toolbar-compact') && !toolbar.classList.contains('toolbar-intermediate')) {
-        fullWidth = Math.max(fullWidth, toolbar.scrollWidth + 16);
-        intermediateWidth = fullWidth - (inlineControlsRef.current?.scrollWidth ?? 0) + 28;
+        fullWidth = Math.max(fullWidth, (toolbar.scrollWidth + 16) / fontSize);
+        intermediateWidth = fullWidth - (inlineControlsRef.current?.scrollWidth ?? 0) / fontSize + 1.75;
       }
       const styles = layout && getComputedStyle(layout);
       const availableWidth = layout && styles && layout.querySelector('#editor-connections')
         ? layout.clientWidth - parseFloat(styles.getPropertyValue('--connections-panel-width')) - parseFloat(styles.columnGap)
         : container.clientWidth;
-      setLayoutMode(availableWidth >= fullWidth ? 'full' : availableWidth >= intermediateWidth ? 'intermediate' : 'compact');
+      setLayoutMode(availableWidth / fontSize >= fullWidth ? 'full' : availableWidth / fontSize >= intermediateWidth ? 'intermediate' : 'compact');
     });
     observer.observe(container);
     observer.observe(toolbar);
@@ -636,7 +637,7 @@ export default function ToolbarPlugin({
         }
       }}>
         <ToolbarMenuButton label="Text color" tooltip="Text color" className="toolbar-item spaced">
-          <Baseline size={18} style={textColor ? { color: textColor } : undefined} />
+          <Baseline size="1.125rem" style={textColor ? { color: textColor } : undefined} />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start">
           {COLOR_OPTIONS.map(({ value, label }) => (
@@ -660,9 +661,9 @@ export default function ToolbarPlugin({
   const formattingControls = <>
       <DropdownMenu>
         <ToolbarMenuButton label={`${activeBlock.label}: Text Styles`} tooltip="Text Styles" className="toolbar-item align-dropdown-trigger text-dropdown-trigger spaced">
-          <ActiveBlockIcon size={18} />
+          <ActiveBlockIcon size="1.125rem" />
           <span className="min-w-0 flex-1 truncate text-left">{activeBlock.label}</span>
-          <ChevronDown size={12} />
+          <ChevronDown size="0.75rem" />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start" onCloseAutoFocus={handleMenuClose}>
           {BLOCK_OPTIONS.map(({ value, label, Icon }) => (
@@ -685,7 +686,7 @@ export default function ToolbarPlugin({
       <DropdownMenu>
         <ToolbarMenuButton label="Font Family" tooltip="Font Family" className="toolbar-item align-dropdown-trigger text-dropdown-trigger spaced">
           <span className="min-w-0 flex-1 truncate text-left" style={{ fontFamily }}>{fontFamily}</span>
-          <ChevronDown size={12} />
+          <ChevronDown size="0.75rem" />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start">
           {FONT_FAMILY_OPTIONS.map(([value, label]) => (
@@ -738,8 +739,8 @@ export default function ToolbarPlugin({
       <Divider />
       <DropdownMenu>
         <ToolbarMenuButton label="Align text" tooltip="Align text" className="toolbar-item align-dropdown-trigger spaced">
-          <ActiveAlignIcon size={18} />
-          <ChevronDown size={12} />
+          <ActiveAlignIcon size="1.125rem" />
+          <ChevronDown size="0.75rem" />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start">
           {(titleFocused ? ALIGN_OPTIONS.filter((option) => option.value !== 'justify') : ALIGN_OPTIONS).map(({ value, label, Icon }) => (
@@ -803,7 +804,7 @@ export default function ToolbarPlugin({
           <Popover.Trigger asChild>
             <Toolbar.Button asChild>
             <button type="button" className="toolbar-item" aria-label="More formatting" title="More formatting">
-              <Ellipsis size={18} />
+              <Ellipsis size="1.125rem" />
             </button>
             </Toolbar.Button>
           </Popover.Trigger>
@@ -836,8 +837,8 @@ export default function ToolbarPlugin({
         setInsertMenuOpen(open);
       }}>
         <ToolbarMenuButton label="Insert" tooltip="Insert" className="toolbar-item align-dropdown-trigger spaced">
-          <Plus size={18} />
-          <ChevronDown size={12} />
+          <Plus size="1.125rem" />
+          <ChevronDown size="0.75rem" />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start" className={compact ? 'toolbar-insert-menu' : undefined} onCloseAutoFocus={handleMenuClose}>
           {compact ? <div role="group" aria-label="Table size">

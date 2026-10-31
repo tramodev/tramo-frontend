@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { ChevronRight, Search } from "lucide-react"
+import { ChevronRight, Search, X } from "lucide-react"
 import { Mark } from "@/components/layout/logo"
 import { SharedNoteIndicator } from "@/components/editor/shared-note-indicator"
 import {
@@ -19,6 +19,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { PublicItem, PublicTrail } from "@/lib/public-project"
 import { MIN_SEARCH_LENGTH, searchableText } from "@/app/editor/editor-utils"
@@ -34,7 +35,7 @@ interface PublicSidebarProps {
 }
 
 export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, activeTrailId, onSelectItem, onSelectTrail }: PublicSidebarProps) {
-  const { state, setOpenMobile } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const [query, setQuery] = useState("");
   const allItems = useMemo(() => [...new Map([...looseItems, ...trails.flatMap(trail => trail.items)].map(item => [item.id, item])).values()], [trails, looseItems]);
   const bodies = useMemo(() => new Map(allItems.map(item => [item.id, searchableText(item.content)])), [allItems]);
@@ -57,6 +58,7 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
   return (
     <Sidebar variant="sidebar" collapsible="icon" className="border-r">
       <SidebarContent role="navigation" aria-label="Project notes" className="project-sidebar gap-0.5 overflow-x-hidden">
+        {isMobile && <Button variant="ghost" size="icon" aria-label="Close sidebar" className="mr-2 mt-2 shrink-0 self-end" onClick={() => setOpenMobile(false)}><X className="size-4" /></Button>}
         {state !== "collapsed" && <>
           <div className="flex items-center gap-2 px-2.5 pt-4">
             <Link href={homeHref} title="Back to projects" className="shrink-0"><Mark size={26} /></Link>
