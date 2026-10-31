@@ -35,7 +35,8 @@ interface PublicSidebarProps {
 }
 
 export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, activeTrailId, onSelectItem, onSelectTrail }: PublicSidebarProps) {
-  const { state, setOpenMobile, isMobile } = useSidebar();
+  const { state: sidebarState, setOpenMobile, isMobile } = useSidebar();
+  const state = isMobile ? "expanded" : sidebarState;
   const [query, setQuery] = useState("");
   const allItems = useMemo(() => [...new Map([...looseItems, ...trails.flatMap(trail => trail.items)].map(item => [item.id, item])).values()], [trails, looseItems]);
   const bodies = useMemo(() => new Map(allItems.map(item => [item.id, searchableText(item.content)])), [allItems]);
@@ -56,8 +57,8 @@ export function PublicSidebar({ homeHref, trails, looseItems, selectedItemId, ac
   };
 
   return (
-    <Sidebar variant="sidebar" collapsible="icon" className="border-r">
-      <SidebarContent role="navigation" aria-label="Project notes" className="project-sidebar gap-0.5 overflow-x-hidden">
+    <Sidebar variant="sidebar" collapsible="offcanvas" className="border-r">
+      <SidebarContent inert={state === "collapsed"} role="navigation" aria-label="Project notes" className="project-sidebar gap-0.5 overflow-x-hidden">
         {isMobile && <Button variant="ghost" size="icon" aria-label="Close sidebar" className="mr-2 mt-2 shrink-0 self-end" onClick={() => setOpenMobile(false)}><X className="size-4" /></Button>}
         {state !== "collapsed" && <>
           <div className="flex items-center gap-2 px-2.5 pt-4">

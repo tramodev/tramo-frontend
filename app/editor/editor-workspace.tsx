@@ -116,7 +116,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
       }}
       open={leftSidebarOpen}
       onOpenChange={setLeftSidebarOpen}
-      style={{ "--sidebar-width": "18rem", "--sidebar-width-icon": "17rem" } as React.CSSProperties}
+      style={{ "--sidebar-width": "18rem" } as React.CSSProperties}
       className="editor-workspace h-dvh min-h-0"
     >
       <ProjectShell

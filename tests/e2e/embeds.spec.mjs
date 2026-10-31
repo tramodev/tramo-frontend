@@ -406,30 +406,39 @@ test('toolbar uses one row and keeps its mode when connections toggle', async ({
 });
 
 for (const path of ['/editor/embeds', '/p/embeds']) {
-  test(`sidebar uses a drawer below 900px on ${path}`, async ({ page, request }) => {
+  test(`sidebar hides completely and still opens as a mobile drawer on ${path}`, async ({ page, request }) => {
     await seed(request, [paragraph('Sidebar breakpoint')], 'published');
     await page.setViewportSize({ width: 900, height: 900 });
     await page.goto(path);
     const trigger = page.getByRole('button', { name: 'Toggle Sidebar', exact: true });
     const sidebar = page.locator('[data-slot="sidebar-container"]');
+    const gap = page.locator('[data-slot="sidebar-gap"]');
+    const main = page.locator('#main-content');
     await expect(sidebar).toBeVisible();
-    await expect(trigger).toBeVisible();
+    const expandedSidebarWidth = (await sidebar.boundingBox()).width;
+    const mainWidth = (await main.boundingBox()).width;
     await trigger.click();
-    await expect(page.locator('[data-slot="sidebar"][data-state="collapsed"]')).toBeVisible();
-    await trigger.click();
-    await expect(page.locator('[data-slot="sidebar"][data-state="expanded"]')).toBeVisible();
+    await expect(gap).toHaveCSS('width', '0px');
+    await expect.poll(async () => (await sidebar.boundingBox()).x + (await sidebar.boundingBox()).width).toBeLessThanOrEqual(0);
+    await expect.poll(async () => (await main.boundingBox()).width).toBeGreaterThanOrEqual(mainWidth + expandedSidebarWidth - 1);
+    await trigger.focus();
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement.closest('[data-slot="sidebar-container"]'))).toBeNull();
     await page.setViewportSize({ width: 899, height: 900 });
     await expect(sidebar).toHaveCount(0);
     await expect(trigger).toBeVisible();
     await trigger.click();
     const drawer = page.getByRole('dialog', { name: 'Sidebar', exact: true });
     await expect(drawer).toBeVisible();
+    await expect(drawer.getByRole('textbox', { name: 'Search this project', exact: true })).toBeVisible();
     await expect(drawer.getByRole('button', { name: 'Close sidebar', exact: true })).toBeFocused();
     await drawer.getByRole('button', { name: 'Close sidebar', exact: true }).click();
     await expect(drawer).toBeHidden();
     await page.setViewportSize({ width: 900, height: 900 });
-    await expect(sidebar).toBeVisible();
-    await expect(trigger).toBeVisible();
+    await expect(gap).toHaveCSS('width', '0px');
+    await trigger.click();
+    await expect.poll(async () => (await gap.boundingBox()).width).toBeCloseTo(expandedSidebarWidth, 1);
+    await expect(sidebar).toBeInViewport();
   });
 }
 
