@@ -17,6 +17,10 @@
   font-weight: 600;
 }
 
+.editor-write-layout {
+  --connections-panel-width: 288px;
+}
+
 .editor-container {
   --editor-content-max-width: calc(72ch + 28px);
   margin: 0;
@@ -1120,6 +1124,11 @@ pre::-webkit-scrollbar-thumb {
   display: contents;
 }
 
+.toolbar-inline-controls {
+  display: flex;
+  gap: 3px;
+}
+
 .toolbar-overflow .toolbar-font-controls {
   display: flex;
   align-items: center;
@@ -1134,6 +1143,10 @@ pre::-webkit-scrollbar-thumb {
 .toolbar-overflow .toolbar-font-controls > .text-dropdown-trigger {
   flex: 1;
   min-width: 0;
+}
+
+.toolbar-compact {
+  overflow-x: auto;
 }
 
 .toolbar-compact > .divider {
@@ -1180,7 +1193,7 @@ pre::-webkit-scrollbar-thumb {
 }
 
 .toolbar button.toolbar-item.text-dropdown-trigger {
-  width: 144px;
+  width: 96px;
 }
 
 .toolbar .font-size-control {

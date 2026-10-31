@@ -24,7 +24,7 @@ export function ProjectShell({
       {sidebar}
       <SidebarInset id="main-content" tabIndex={-1} className="min-w-0">
         <header className="project-shell-header flex min-h-16 shrink-0 items-center gap-2 px-3 py-2 md:gap-4 md:px-8">
-          <SidebarTrigger className="project-sidebar-trigger size-9 shrink-0 md:hidden" />
+          <SidebarTrigger className="project-sidebar-trigger size-9 shrink-0 min-[900px]:hidden" />
           {showLogo && (
             <>
               <Link href={homeHref} title="Back to projects">

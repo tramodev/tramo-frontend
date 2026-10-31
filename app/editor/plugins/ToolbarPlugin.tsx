@@ -51,6 +51,7 @@ import {
 } from '@lexical/selection';
 
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Popover, Toolbar } from 'radix-ui';
 import {
   Baseline,
@@ -326,16 +327,35 @@ export default function ToolbarPlugin({
 } = {}) {
   const [editor] = useLexicalComposerContext();
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const [compact, setCompact] = useState(false);
+  const inlineControlsRef = useRef<HTMLDivElement>(null);
+  const [layoutMode, setLayoutMode] = useState<'full' | 'intermediate' | 'compact'>('full');
+  const compact = useIsMobile() || layoutMode === 'compact';
+  const reduced = compact || layoutMode === 'intermediate';
   const [formattingOpen, setFormattingOpen] = useState(false);
 
   useEffect(() => {
-    const container = toolbarRef.current?.parentElement;
-    if (!container) return;
-    const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < 960));
+    const toolbar = toolbarRef.current;
+    const container = toolbar?.parentElement;
+    if (!toolbar || !container) return;
+    const layout = toolbar.closest<HTMLElement>('.editor-write-layout');
+    let fullWidth = 0;
+    let intermediateWidth = 0;
+    const observer = new ResizeObserver(() => {
+      if (!toolbar.classList.contains('toolbar-compact') && !toolbar.classList.contains('toolbar-intermediate')) {
+        fullWidth = Math.max(fullWidth, toolbar.scrollWidth + 16);
+        intermediateWidth = fullWidth - (inlineControlsRef.current?.scrollWidth ?? 0) + 28;
+      }
+      const styles = layout && getComputedStyle(layout);
+      const availableWidth = layout && styles && layout.querySelector('#editor-connections')
+        ? layout.clientWidth - parseFloat(styles.getPropertyValue('--connections-panel-width')) - parseFloat(styles.columnGap)
+        : container.clientWidth;
+      setLayoutMode(availableWidth >= fullWidth ? 'full' : availableWidth >= intermediateWidth ? 'intermediate' : 'compact');
+    });
     observer.observe(container);
+    observer.observe(toolbar);
     return () => observer.disconnect();
   }, []);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [canUndo, setCanUndo] = useState(() => !!history?.undoStack.length);
   const [canRedo, setCanRedo] = useState(() => !!history?.redoStack.length);
@@ -738,7 +758,9 @@ export default function ToolbarPlugin({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {!compact && <Divider />}
+  </>;
+
+  const inlineControls = <div ref={inlineControlsRef} className="toolbar-inline-controls">
       {[...TEXT_FORMATS, INLINE_CODE_FORMAT].map(({ format, label, tooltip, Icon }) => (
         <ToolbarButton
           key={format}
@@ -749,13 +771,13 @@ export default function ToolbarPlugin({
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, format)}
         />
       ))}
-  </>;
+  </div>;
 
   return (
     <Toolbar.Root loop
       role="toolbar"
       aria-label="Text formatting"
-      className={compact ? 'toolbar toolbar-compact' : 'toolbar'}
+      className={compact ? 'toolbar toolbar-compact' : reduced ? 'toolbar toolbar-intermediate' : 'toolbar'}
       ref={toolbarRef}
       onKeyDown={handleToolbarKeyDown}
     >
@@ -775,7 +797,8 @@ export default function ToolbarPlugin({
         onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
       />
       <Divider />
-      {compact ? <>
+      {!compact && <div className="toolbar-formatting">{formattingControls}<Divider />{!reduced && inlineControls}</div>}
+      {reduced && <>
         <Popover.Root open={formattingOpen} onOpenChange={setFormattingOpen}>
           <Popover.Trigger asChild>
             <Toolbar.Button asChild>
@@ -791,11 +814,11 @@ export default function ToolbarPlugin({
                 (event.currentTarget as HTMLElement).focus();
               }}
               align="center" onKeyDown={event => event.stopPropagation()}>
-              <Toolbar.Root loop aria-label="Additional text formatting" className="toolbar toolbar-overflow" onKeyDown={handleToolbarKeyDown}>{formattingControls}</Toolbar.Root>
+              <Toolbar.Root loop aria-label="Additional text formatting" className="toolbar toolbar-overflow" onKeyDown={handleToolbarKeyDown}>{compact && formattingControls}{inlineControls}</Toolbar.Root>
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>
-      </> : <div className="toolbar-formatting">{formattingControls}</div>}
+      </>}
       <Divider />
       <ToolbarButton
         label="Insert Link"

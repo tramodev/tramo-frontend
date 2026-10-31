@@ -364,3 +364,66 @@ for (const width of [1280, 390]) {
     await preview.close();
   });
 }
+
+test('toolbar uses one row and keeps its mode when connections toggle', async ({ page, request }) => {
+  await seed(request, [paragraph('Responsive formatting')]);
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await page.goto('/editor/embeds');
+  const toolbar = page.getByRole('toolbar', { name: 'Text formatting', exact: true });
+  await expect(toolbar).toBeVisible();
+  const modes = new Map();
+  for (const open of [true, false]) {
+    const toggle = page.getByRole('button', { name: open ? 'Connections' : 'Close connections', exact: true });
+    if (await toggle.isVisible()) await toggle.click();
+    for (const width of [1920, 1680, 1600, 1440, 1400, 1280, 1024, 900, 768, 375, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      if (width === 1920) await expect(toolbar.getByRole('button', { name: 'Format Bold', exact: true })).toBeVisible();
+      if (width === 900 || width === 375) await expect(toolbar.getByRole('button', { name: 'More formatting', exact: true })).toBeVisible();
+      await expect.poll(() => toolbar.evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        const boxes = [...element.querySelectorAll('button')].filter(button => button.getClientRects().length).map(button => button.getBoundingClientRect());
+        const compact = element.classList.contains('toolbar-compact');
+        return boxes.every(box => Math.abs(box.y - boxes[0].y) < 1 && (compact || box.x >= bounds.x - 1 && box.right <= bounds.right + 1));
+      }), { message: `One toolbar row at ${width}px with connections ${open}` }).toBe(true);
+      if (open) modes.set(width, await toolbar.getAttribute('class'));
+      else await expect(toolbar).toHaveAttribute('class', modes.get(width));
+      if (width === 1400) {
+        await expect(toolbar.getByRole('button', { name: 'Font Family', exact: true })).toBeVisible();
+        await expect(toolbar.getByRole('button', { name: 'Format Bold', exact: true })).toHaveCount(0);
+        await toolbar.getByRole('button', { name: 'More formatting', exact: true }).click();
+        const popup = page.getByRole('toolbar', { name: 'Additional text formatting', exact: true });
+        await expect(popup.getByRole('button', { name: 'Format Bold', exact: true })).toBeVisible();
+        await expect(popup.getByRole('button', { name: 'Format Code', exact: true })).toBeVisible();
+        await expect(popup.getByRole('button', { name: 'Font Family', exact: true })).toHaveCount(0);
+        await page.keyboard.press('Escape');
+      }
+      const search = toolbar.getByRole('button', { name: 'Find and replace', exact: true });
+      await search.scrollIntoViewIfNeeded();
+      await expect(search).toBeInViewport();
+    }
+  }
+});
+
+for (const path of ['/editor/embeds', '/p/embeds']) {
+  test(`sidebar uses a drawer below 900px on ${path}`, async ({ page, request }) => {
+    await seed(request, [paragraph('Sidebar breakpoint')], 'published');
+    await page.setViewportSize({ width: 900, height: 900 });
+    await page.goto(path);
+    const trigger = page.getByRole('button', { name: 'Toggle Sidebar', exact: true });
+    const sidebar = page.locator('[data-slot="sidebar-container"]');
+    await expect(sidebar).toBeVisible();
+    await expect(trigger).toBeHidden();
+    await page.setViewportSize({ width: 899, height: 900 });
+    await expect(sidebar).toHaveCount(0);
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+    const drawer = page.getByRole('dialog', { name: 'Sidebar', exact: true });
+    await expect(drawer).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(drawer).toBeHidden();
+    await page.setViewportSize({ width: 900, height: 900 });
+    await expect(sidebar).toBeVisible();
+    await expect(trigger).toBeHidden();
+  });
+}

@@ -5,7 +5,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
-const modules = {};
+const modules = { '@/hooks/use-mobile': { useIsMobile: () => false } };
 function load(path, overrides, suffix = '', globals = {}) {
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync(path, 'utf8') + suffix, {
@@ -275,10 +275,12 @@ test.each(['Inline equation', 'Equation', 'Music score'])('toolbar waits for men
 });
 
 
-test('toolbar moves secondary formatting into a menu when its container narrows', () => {
+test('toolbar reduces when its full row does not fit and expands when space returns', () => {
   const states = [], effects = [], refs = [];
-  let index = 0, refIndex = 0, resize, observed, disconnected = false;
-  const container = {};
+  let index = 0, refIndex = 0, resize, disconnected = false;
+  const observed = [];
+  const container = { clientWidth: 1200 };
+  const toolbar = { closest: () => null, parentElement: container, scrollWidth: 800, classList: { contains: name => name === `toolbar-${states[0]}` } };
   const Toolbar = load('app/editor/plugins/ToolbarPlugin.tsx', {
     react: {
       useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = value; }]; },
@@ -290,16 +292,28 @@ test('toolbar moves secondary formatting into a menu when its container narrows'
   }, '', {
     ResizeObserver: class {
       constructor(callback) { resize = callback; }
-      observe(target) { observed = target; }
+      observe(target) { observed.push(target); }
       disconnect() { disconnected = true; }
     },
   }).default;
   const render = () => { index = refIndex = 0; effects.length = 0; return Toolbar({}); };
   const elements = element => Array.isArray(element) ? element.flatMap(elements) : !element || typeof element !== 'object' ? [] : [element, ...elements(element.props?.children)];
-  render().props.ref.current = { parentElement: container };
+  render().props.ref.current = toolbar;
+  refs[1].current = { scrollWidth: 180 };
   const cleanup = effects[0]();
-  expect(observed).toBe(container);
-  resize([{ contentRect: { width: 375 } }]);
+  expect(observed).toEqual([container, toolbar]);
+  resize();
+  expect(render().props.className).toBe('toolbar');
+  container.clientWidth = 815;
+  resize();
+  let intermediate = render();
+  expect(intermediate.props.className).toContain('toolbar-intermediate');
+  const inlinePopup = find(intermediate, 'PopoverContent');
+  expect(elements(inlinePopup).some(node => node.props?.label === 'Format Bold')).toBe(true);
+  expect(elements(inlinePopup).some(node => node.props?.label === 'Font Family')).toBe(false);
+  expect(elements(intermediate).some(node => node.props?.label === 'Font Family')).toBe(true);
+  container.clientWidth = 663;
+  resize();
   let tree = render();
   expect(tree.props.className).toContain('toolbar-compact');
   const popup = find(tree, 'PopoverContent');
@@ -310,11 +324,19 @@ test('toolbar moves secondary formatting into a menu when its container narrows'
   for (const label of ['Undo', 'Redo', 'Insert Link', 'Insert', 'Find and replace']) {
     expect(elements(tree).some(node => node.props?.label === label && !elements(popup).includes(node))).toBe(true);
   }
-  resize([{ contentRect: { width: 1200 } }]);
+  toolbar.scrollWidth = 200;
+  resize();
+  expect(render().props.className).toContain('toolbar-compact');
+  container.clientWidth = 816;
+  resize();
   tree = render();
   expect(tree.props.className).toBe('toolbar');
   expect(find(tree, 'PopoverContent')).toBeUndefined();
   expect(elements(tree).some(node => node.props?.label === 'Font Family')).toBe(true);
+  resize();
+  container.clientWidth = 815;
+  resize();
+  expect(render().props.className).toContain('toolbar-intermediate');
   cleanup();
   expect(disconnected).toBe(true);
 });
