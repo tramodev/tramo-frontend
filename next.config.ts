@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 import { publicImageOrigins } from "./lib/csp";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   poweredByHeader: false,
   distDir: process.env.PLAYWRIGHT_TEST === '1' ? '.next/e2e' : '.next',
   experimental: {
