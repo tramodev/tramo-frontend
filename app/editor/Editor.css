@@ -116,10 +116,9 @@
   padding-top: 0;
 }
 
-.editor-input:focus-visible,
-[data-note-title]:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
+.editor-input:focus,
+.editor-input:focus-visible {
+  outline: 0;
 }
 
 .editor-placeholder {
