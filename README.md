@@ -10,4 +10,4 @@ Built with Next.js 16, React 19, TypeScript and Lexical.
 
 - [Setup](docs/setup.md): requirements, environment variables and running locally.
 - [Architecture](docs/architecture.md): notes, trails, connections, stack and layout.
-- [Testing](docs/testing.md): tests, checks and browser verification.
+- [Testing](docs/testing.md): tests, checks and browser verification
