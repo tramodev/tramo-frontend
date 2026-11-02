@@ -196,7 +196,7 @@ export default function ProjectsPage() {
         <h1 className="font-display text-[2.75rem] font-normal leading-[1.1] mb-7">
           Start a new project
         </h1>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <button
             disabled={creating}
             onClick={() => handleCreateProject()}
@@ -285,7 +285,7 @@ export default function ProjectsPage() {
               No projects yet. Start writing or try an example.
             </p>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {sortedProjects.map((project, index) => (
                 <Card
                   key={project.id}
