@@ -143,7 +143,7 @@ export const BrowserMockup: React.FC = () => {
         <div className="w-[184px] hidden lg:flex flex-col shrink-0 p-2.5 gap-2.5 overflow-hidden bg-card border-r border-border">
           <div className="flex items-center gap-2 pt-0.5">
             <Mark size={22} className="shrink-0" />
-            <div className="flex flex-1 items-center gap-1.5 rounded-full bg-popover px-2.5 py-1.5 text-[0.6875rem] text-muted-foreground">
+            <div className="flex flex-1 items-center gap-1.5 rounded-full border border-input bg-popover px-2.5 py-1.5 text-[0.6875rem] text-muted-foreground">
               <Search className="w-3 h-3 shrink-0" />
               Search this project
             </div>

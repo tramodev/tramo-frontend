@@ -107,7 +107,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
           editorState: contents[selected.note] ?? (() => {
             const root = $getRoot();
             for (const text of note.text.split('\n\n')) root.append($createParagraphNode().append($createTextNode(text)));
-            root.append($createParagraphNode().append($createLinkNode(`#${note.related}`).append($createTextNode(`@${NOTES[note.related].title}`))));
+            if (variant === 'shared') root.append($createParagraphNode().append($createLinkNode(`#${note.related}`).append($createTextNode(`@${NOTES[note.related].title}`))));
           }),
         }}>
           <DemoToolbar />
