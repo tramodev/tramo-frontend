@@ -190,10 +190,14 @@
 @layer base {
   html {
     font-size: clamp(100%, calc(0.75rem + 0.208333vw), 125%);
+    scrollbar-gutter: stable;
   }
 
   * {
     @apply border-border outline-ring/50;
+    /* thin thumb, no track: approximates macOS scrollbars on Windows/Linux */
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) transparent;
   }
   body {
     @apply bg-background text-foreground;
