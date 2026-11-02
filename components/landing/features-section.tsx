@@ -1,5 +1,5 @@
-import Image from 'next/image';
 import { ProductEditorDemo } from '@/components/landing/product-editor-demo';
+import { ProductMapDemo } from '@/components/landing/product-map-demo';
 import { MockGuard } from '@/components/landing/mock-guard';
 import { FadeUp } from '@/components/landing/landing-motion';
 import { cn } from '@/lib/utils';
@@ -44,10 +44,7 @@ export function FeaturesSection() {
           )}
           style={{ background: `var(${color})` }}
         >
-          {index === 2 ? <div className="relative aspect-[1802/1332] overflow-hidden rounded-t-lg dark:aspect-[1860/1298]">
-            <Image src="/landing-product-map-light.png" alt="Two trails connected through the shared Memex note" fill sizes="100vw" className="object-contain dark:hidden" />
-            <Image src="/landing-product-map.png" alt="Two trails connected through the shared Memex note" fill sizes="100vw" className="hidden object-contain dark:block" />
-          </div> : <MockGuard><ProductEditorDemo variant={index === 0 ? 'connections' : 'shared'} /></MockGuard>}
+          {index === 2 ? <div className="overflow-hidden rounded-t-lg"><ProductMapDemo /></div> : <MockGuard><ProductEditorDemo variant={index === 0 ? 'connections' : 'shared'} /></MockGuard>}
         </div>
       </article></FadeUp>)}
     </div>
