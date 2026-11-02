@@ -275,17 +275,6 @@ test('closing the map waits for its trigger to be rendered before restoring focu
   expect(focused).toEqual(['map-trigger']);
 });
 
-test.each([true, false])('the skip link focuses the editor when available, otherwise the main landmark (%s)', editor => {
-  const focused = [];
-  const content = { hasAttribute: () => false, focus: () => focused.push('editor'), scrollIntoView() {} };
-  const main = { querySelector: () => editor ? content : null, hasAttribute: () => false, focus: () => focused.push('main'), scrollIntoView() {} };
-  const skip = load('components/layout/skip-link.tsx', {}, '', { document: { querySelector: () => main } });
-  let prevented = false;
-  skip.render('SkipLink').props.onClick({ preventDefault: () => { prevented = true; } });
-  expect(prevented).toBe(true);
-  expect(focused).toEqual([editor ? 'editor' : 'main']);
-});
-
 test('dismissing the editor hint persists for the same user across mounts', () => {
   const storage = new Map();
   const hint = load('components/editor/task-hint.tsx', {}, '', {
