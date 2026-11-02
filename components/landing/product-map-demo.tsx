@@ -43,7 +43,7 @@ export function ProductMapDemo() {
   return <div role="img" aria-label="Two trails connected through the shared Memex note" className="@container">
     <div
       className="relative bg-background text-foreground [--u:calc(100cqw/1802)]"
-      style={{ backgroundImage: 'radial-gradient(var(--border) calc(1.5 * var(--u)), transparent 0)', backgroundSize: `${u(40)} ${u(40)}`, padding: `${u(35)} ${u(53)} ${u(19)} ${u(35)}` }}
+      style={{ backgroundImage: 'radial-gradient(color-mix(in oklab, var(--border) 45%, transparent) var(--u), transparent 0)', backgroundSize: `${u(40)} ${u(40)}`, padding: `${u(35)} ${u(53)} ${u(19)} ${u(35)}` }}
     >
       <div className="grid grid-cols-[810fr_811fr] items-start gap-x-[var(--gap-x)]" style={{ '--gap-x': u(93) } as CSSProperties}>
         {TRAILS.map(trail => <section key={trail.title}>
