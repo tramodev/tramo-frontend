@@ -36,7 +36,7 @@ test('failed passwords preserve the captcha requirement for the next attempt', a
 });
 
 test('successful challenged login stores tokens and respects onboarding', async () => {
-  const s = setup(Response.json({ accessToken: 'access', refreshToken: 'refresh', requiresBirthDate: true }));
+  const s = setup(Response.json({ accessToken: 'access', refreshToken: 'refresh', username: 'victim', requiresBirthDate: true }));
   await s.run({ captchaRequired: true });
   expect(s.cookies).toEqual([{ accessToken: 'access', refreshToken: 'refresh', username: 'victim' }]);
   expect(s.redirects).toEqual(['/onboarding/birth-date']);

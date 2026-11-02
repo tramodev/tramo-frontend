@@ -75,7 +75,7 @@ export function LoginForm({
       <div>
         <h1 className="font-display text-[2.25rem] font-normal">Log in</h1>
         <p className="mt-3 text-[0.9375rem] leading-6 text-muted-foreground">
-          Enter your username below to access your account.
+          Enter your username or email below to access your account.
         </p>
       </div>
       <FieldGroup className="mt-2 gap-[22px]">
@@ -83,12 +83,12 @@ export function LoginForm({
           <div id="login-error" role="alert" className="flex flex-col items-center gap-2 text-sm text-center text-destructive">
             {captchaError || state?.error}
             {state?.needsVerification && (
-              <ResendVerificationButton username={username} />
+              <ResendVerificationButton {...(username.includes("@") ? { email: username } : { username })} />
             )}
           </div>
         )}
         <Field floatingLabel>
-          <FieldLabel htmlFor="username">Username</FieldLabel>
+          <FieldLabel htmlFor="username">Username or email</FieldLabel>
           <Input
             id="username"
             name="username"

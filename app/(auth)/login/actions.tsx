@@ -49,7 +49,7 @@ export async function authenticateHandler(
   await setAuthCookies({
     accessToken: data.accessToken,
     refreshToken: data.refreshToken,
-    username: typeof username === 'string' ? username : undefined,
+    username: typeof data.username === 'string' ? data.username : undefined,
   });
 
   redirect(data.requiresBirthDate ? '/onboarding/birth-date' : '/');
