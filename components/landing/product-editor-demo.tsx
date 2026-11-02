@@ -67,7 +67,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
 
   return <div className={cn('@container flex h-[35rem] flex-col overflow-hidden rounded-lg border border-border bg-background text-foreground [overflow-anchor:none]', variant === 'connections' ? 'rounded-r-none border-r-0 lg:w-[110%]' : 'rounded-l-none border-l-0')}>
     <div className={cn('grid min-h-0 flex-1 overflow-hidden', variant === 'connections' ? 'grid-rows-1 @min-[36rem]:grid-cols-[12rem_minmax(0,1fr)]' : 'grid-rows-[minmax(0,1fr)_auto] @min-[28rem]:grid-cols-[minmax(0,1fr)_16rem] @min-[28rem]:grid-rows-1')}>
-      {variant === 'connections' && <nav aria-label="Demo trails" className="hidden min-h-0 min-w-0 overflow-y-auto border-r border-border bg-sidebar p-3 @min-[36rem]:block">
+      {variant === 'connections' && <nav aria-label="Demo trails" className="hidden min-h-0 min-w-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-r border-border bg-sidebar p-3 @min-[36rem]:block">
         <div className="mb-4 flex items-center gap-2">
           <Mark size={22} className="shrink-0" />
           <div className="relative min-w-0 flex-1">
@@ -111,7 +111,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
           }),
         }}>
           <DemoToolbar />
-          <div className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6', variant === 'connections' && 'pb-10 sm:pb-[3.25rem] lg:pr-[calc(100cqw/11+1.5rem)]')}>
+          <div className={cn('min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-5 sm:px-6', variant === 'connections' && 'pb-10 sm:pb-[3.25rem] lg:pr-[calc(100cqw/11+1.5rem)]')}>
             <h4 className="mb-3 font-display text-2xl font-medium">{note.title}</h4>
             {memberTrails.length > 1 && <div className="mb-5 text-xs leading-relaxed text-muted-foreground">
               <p>Used in 2 trails. Edits appear in both.</p>
@@ -135,7 +135,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
           <OnChangePlugin ignoreSelectionChange onChange={state => setContents(previous => ({ ...previous, [selected.note]: JSON.stringify(state.toJSON()) }))} />
         </LexicalComposer>
       </div>
-      {variant === 'shared' && <aside aria-label="Demo connections" className="m-3 max-h-48 min-h-0 min-w-0 space-y-3 overflow-y-auto rounded-2xl border border-border bg-popover p-3 @min-[28rem]:max-h-none">
+      {variant === 'shared' && <aside aria-label="Demo connections" className="m-3 max-h-48 min-h-0 min-w-0 space-y-3 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden rounded-2xl border border-border bg-popover p-3 @min-[28rem]:max-h-none">
         <div className="flex items-center justify-between gap-2"><h5 className="text-sm font-medium">Connections ({connectedNotes.length})</h5><X aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" /></div>
         <p className="text-xs leading-relaxed text-muted-foreground">Connections involving “{note.title}”.</p>
         {connectedNotes.map(id => <button key={id} type="button" aria-label={`Open ${NOTES[id].title}`} className="block w-full space-y-2 rounded-lg border border-border p-3 text-left hover:bg-muted" onClick={() => openNote(id)}>

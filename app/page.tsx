@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { ArrowRight, Link2 } from "lucide-react";
 import { BrowserMockup } from "@/components/landing/browser-mockup";
+import { MockGuard } from "@/components/landing/mock-guard";
 import { Hero } from "@/components/landing/hero";
 import { Navbar } from "@/components/layout/navbar";
 import { FeaturesSection } from "@/components/landing/features-section";
@@ -25,7 +26,7 @@ export default async function Home() {
         <main id="main-content" tabIndex={-1} className="container-app px-6 md:px-12">
           <Hero />
           <FadeUp scaleIn className="pt-16 pb-[84px]">
-            <BrowserMockup />
+            <MockGuard><BrowserMockup /></MockGuard>
           </FadeUp>
           <hr className="border-t border-border" />
           <FeaturesSection />
