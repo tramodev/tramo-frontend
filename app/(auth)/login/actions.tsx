@@ -16,7 +16,7 @@ export async function authenticateHandler(
   prevState: AuthResult | null,
   formData: FormData
 ): Promise<AuthResult | null> {
-  const username = formData.get('username');
+  const username = String(formData.get('username') ?? '').trim();
   const password = formData.get('password');
   const captchaToken = formData.get('captchaToken');
 
