@@ -249,7 +249,7 @@ export default function ProjectsPage() {
                   size="icon"
                   aria-label="Grid view"
                   aria-pressed={viewMode === "grid"}
-                  className={`h-[calc(2rem-2px)] w-9 rounded-none pointer-coarse:h-[42px] ${viewMode === "grid" ? "bg-muted text-foreground" : "text-muted-foreground"}`}
+                  className={`h-[calc(2rem-2px)] min-h-[calc(2rem-2px)]! w-9 rounded-none pointer-coarse:h-[42px] pointer-coarse:min-h-[42px]! ${viewMode === "grid" ? "bg-muted text-foreground" : "text-muted-foreground"}`}
                   onClick={() => setViewMode("grid")}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -259,7 +259,7 @@ export default function ProjectsPage() {
                   size="icon"
                   aria-label="List view"
                   aria-pressed={viewMode === "list"}
-                  className={`h-[calc(2rem-2px)] w-9 rounded-none pointer-coarse:h-[42px] border-l border-input ${viewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground"}`}
+                  className={`h-[calc(2rem-2px)] min-h-[calc(2rem-2px)]! w-9 rounded-none pointer-coarse:h-[42px] pointer-coarse:min-h-[42px]! border-l border-input ${viewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground"}`}
                   onClick={() => setViewMode("list")}
                 >
                   <ListIcon className="h-4 w-4" />
