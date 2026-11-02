@@ -193,6 +193,10 @@
     scrollbar-gutter: stable;
   }
 
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
+  }
+
   * {
     @apply border-border outline-ring/50;
     /* thin thumb, no track: approximates macOS scrollbars on Windows/Linux */
