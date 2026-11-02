@@ -195,6 +195,9 @@
 
   * {
     @apply border-border outline-ring/50;
+    /* thin thumb, no track: approximates macOS scrollbars on Windows/Linux */
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) transparent;
   }
   body {
     @apply bg-background text-foreground;
