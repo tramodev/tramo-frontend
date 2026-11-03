@@ -21,13 +21,12 @@ export async function generateMetadata({
   if (!project) return { title: "Project not found" }
   const description = project.description ?? `A trail by ${project.ownerUsername} on Tramo.`
   const images = project.thumbnailImageUrl ? [project.thumbnailImageUrl] : undefined
-  const cardTitle = `@${project.ownerUsername} · ${project.title}`
   return {
     title: project.title,
     description,
     alternates: { canonical: `/p/${projectId}` },
-    openGraph: { title: cardTitle, description, type: "article", siteName: "Tramo", publishedTime: project.modifiedDate, images },
-    twitter: { card: images ? "summary_large_image" : "summary", title: cardTitle, description, images },
+    openGraph: { title: project.title, description, type: "article", siteName: "Tramo", publishedTime: project.modifiedDate, images },
+    twitter: { card: images ? "summary_large_image" : "summary", title: project.title, description, images },
     ...(project.visibility !== "published" && { robots: { index: false, follow: false } }),
   }
 }
