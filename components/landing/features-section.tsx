@@ -47,7 +47,7 @@ export function FeaturesSection() {
             index === 1 ? '-mb-5 -ml-5 max-h-[35rem] self-end rounded-l-none rounded-b-none border-l-0 border-b-0 pt-5 pr-5 sm:-mb-8 sm:-ml-8 sm:pt-8 sm:pr-8 lg:col-start-1 lg:row-start-1' : index === 2 ? '-mb-5 rounded-b-none border-b-0 px-5 pt-5 sm:-mb-8 sm:px-8 sm:pt-8 lg:col-span-2 lg:px-20 lg:pt-12' : '-mr-5 -mb-5 max-h-[35rem] self-end rounded-r-none rounded-b-none border-r-0 border-b-0 pt-5 pl-5 sm:-mr-8 sm:-mb-8 sm:pt-8 sm:pl-8',
           )}
         >
-          <Image src={image} alt="" fill placeholder="blur" sizes="(min-width: 1024px) 60vw, 100vw" className="-z-10 object-cover" />
+          <Image src={image} alt="" fill placeholder="blur" sizes={index === 2 ? '(min-width: 1400px) 1400px, 100vw' : '(min-width: 1024px) 60vw, 100vw'} className="-z-10 object-cover" />
           {index === 2 ? <div className="overflow-hidden rounded-t-lg"><ProductMapDemo /></div> : <MockGuard><ProductEditorDemo variant={index === 0 ? 'connections' : 'shared'} /></MockGuard>}
         </div>
       </article></FadeUp>)}
