@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Next.js-000?logo=nextdotjs&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/Lexical-1f2937" alt="Lexical" />
   <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/github/last-commit/OWNER/REPO" alt="Last commit" />
+  <img src="https://img.shields.io/github/last-commit/tramodev/tramo-frontend" alt="Last commit" />
 </p>
 
 <p align="center">
