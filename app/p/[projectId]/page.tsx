@@ -20,13 +20,12 @@ export async function generateMetadata({
   const project = await fetchProject(projectId)
   if (!project) return { title: "Project not found" }
   const description = project.description ?? `A trail by ${project.ownerUsername} on Tramo.`
-  const images = project.thumbnailImageUrl ? [project.thumbnailImageUrl] : undefined
   return {
     title: project.title,
     description,
     alternates: { canonical: `/p/${projectId}` },
-    openGraph: { title: project.title, description, type: "article", images },
-    twitter: { card: "summary_large_image", title: project.title, description, images },
+    openGraph: { title: project.title, description, type: "article" },
+    twitter: { card: "summary_large_image", title: project.title, description },
     ...(project.visibility !== "published" && { robots: { index: false, follow: false } }),
   }
 }
