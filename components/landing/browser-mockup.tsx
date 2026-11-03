@@ -186,7 +186,7 @@ export const BrowserMockup: React.FC = () => {
             ))}
           </div>
 
-          <div className="mt-1 flex items-center justify-between px-2 border-t border-border pt-2.5">
+          <div className="mt-1 flex items-center justify-between px-2">
             <p className="text-[0.6875rem] font-medium text-muted-foreground">
               Notes
             </p>
