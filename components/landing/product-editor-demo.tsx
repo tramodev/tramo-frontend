@@ -31,6 +31,8 @@ const NOTES = {
 
 type NoteId = keyof typeof NOTES;
 
+const INITIAL_SELECTION: { note: NoteId; trail: number } = { note: 'memex', trail: 0 };
+
 const DEMO_ITEMS: Record<string, Item> = Object.fromEntries(Object.entries(NOTES).map(([id, note]) => [id, {
   id, title: note.title, titleAlign: 'left', unfiled: false, content: null,
 }]));
@@ -53,7 +55,7 @@ function DemoToolbar({ variant }: { variant: 'connections' | 'shared' }) {
 }
 
 export function ProductEditorDemo({ variant }: { variant: 'connections' | 'shared' }) {
-  const [selected, setSelected] = useState<{ note: NoteId; trail: number }>({ note: 'memex', trail: 0 });
+  const [selected, setSelected] = useState<{ note: NoteId; trail: number }>(INITIAL_SELECTION);
   const [contents, setContents] = useState<Partial<Record<NoteId, string>>>({});
   const [revision, setRevision] = useState(0);
   const [query, setQuery] = useState('');
@@ -95,9 +97,9 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
         </details>
       </nav>}
       <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-2">
+        <div className={cn('flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-2', variant === 'connections' && 'lg:pr-[calc(100cqw/11+1rem)]')}>
           <span className="min-w-0 flex-1 truncate text-sm font-medium">Memex and Vannevar Bush</span>
-          <Button type="button" variant="ghost" size="icon-sm" aria-label="Reset demo" onClick={() => { setContents({}); setRevision(value => value + 1); }}><RotateCcw className="size-4" /></Button>
+          <Button type="button" variant="ghost" size="icon-sm" aria-label="Reset demo" onClick={() => { setContents({}); setSelected(INITIAL_SELECTION); setQuery(''); setRevision(value => value + 1); }}><RotateCcw className="size-4" /></Button>
         </div>
         <LexicalComposer key={`${selected.note}-${revision}`} initialConfig={{
           namespace: `landing-${variant}`,
