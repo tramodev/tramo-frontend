@@ -133,7 +133,7 @@ export const BrowserMockup: React.FC = () => {
         </span>
         <div className="mx-auto flex items-center gap-1.5 rounded-full bg-popover px-3 py-1 text-[0.6875rem] text-muted-foreground max-w-[60%] truncate">
           <Lock className="w-2.5 h-2.5 shrink-0" />
-          tramo.app/memex
+          tramo.dev/p/y1Og16
         </div>
       </div>
       <div className="relative h-[36rem] overflow-hidden md:aspect-[16/9] md:h-auto">
