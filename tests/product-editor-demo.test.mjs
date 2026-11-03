@@ -73,11 +73,14 @@ test('edits follow a shared note across trails, survive note navigation and rese
 });
 
 test('the demo initializes valid Lexical content with a working local note link', () => {
-  const nodes = loadDemo('connections')();
-  const config = nodes.find(node => node.type === 'Composer').props.initialConfig;
-  const editor = lexical.createEditor({ ...config, editorState: undefined });
-  editor.update(config.editorState, { discrete: true });
-  const content = editor.getEditorState().toJSON();
+  const parse = variant => {
+    const config = loadDemo(variant)().find(node => node.type === 'Composer').props.initialConfig;
+    const editor = lexical.createEditor({ ...config, editorState: undefined });
+    editor.update(config.editorState, { discrete: true });
+    return { editor, content: editor.getEditorState().toJSON() };
+  };
+  expect(parse('connections').content.root.children).toHaveLength(2);
+  const { editor, content } = parse('shared');
   expect(content.root.children).toHaveLength(3);
   expect(content.root.children[2].children[0].type).toBe('link');
   expect(content.root.children[2].children[0].url).toBe('#essay');
