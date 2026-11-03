@@ -1,10 +1,16 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Geist, Roboto_Mono } from "next/font/google";
+import { Roboto, Roboto_Flex, Roboto_Mono } from "next/font/google";
 
-export const geist = Geist({
+export const robotoFlex = Roboto_Flex({
   subsets: ["latin"],
-  variable: "--font-geist",
+  axes: ["opsz"],
+  variable: "--font-roboto-flex",
+});
+
+export const roboto = Roboto({
+  subsets: ["latin"],
+  variable: "--font-roboto",
 });
 
 export const robotoMono = Roboto_Mono({

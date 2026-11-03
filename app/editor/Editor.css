@@ -932,7 +932,7 @@ div.editor-equation {
 }
 
 .editor-heading-h1 {
-  font-family: var(--font-geist);
+  font-family: var(--font-roboto-flex);
   font-size: 2rem;
   color: var(--foreground);
   font-weight: 400;
@@ -942,7 +942,7 @@ div.editor-equation {
 }
 
 .editor-heading-h2 {
-  font-family: var(--font-geist);
+  font-family: var(--font-roboto-flex);
   font-size: 1.25rem;
   color: var(--foreground);
   font-weight: 500;
@@ -952,7 +952,7 @@ div.editor-equation {
 }
 
 .editor-heading-h3 {
-  font-family: var(--font-geist);
+  font-family: var(--font-roboto-flex);
   font-size: 1.0625rem;
   color: var(--foreground);
   font-weight: 500;

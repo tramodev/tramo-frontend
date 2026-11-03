@@ -7,7 +7,7 @@ import "katex/dist/katex.min.css";
 import "./editor/Editor.css";
 
 import { ThemeProvider } from "@/components/layout/theme-provider";
-import { geist, robotoMono } from "@/lib/fonts";
+import { robotoFlex, roboto, robotoMono } from "@/lib/fonts";
 import { SITE_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -33,7 +33,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geist.variable} ${robotoMono.variable} font-sans antialiased`}
+        className={`${robotoFlex.variable} ${roboto.variable} ${robotoMono.variable} font-sans antialiased`}
       >
         <ThemeProvider
           nonce={nonce}
