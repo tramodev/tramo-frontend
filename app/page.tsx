@@ -40,12 +40,11 @@ export default async function Home() {
           <ExplorePublishSection />
           <hr className="border-t border-border" />
           <PricingSection />
-          <FadeUp className="relative isolate mb-[84px] overflow-hidden rounded-lg border border-border bg-card p-6 pb-40 sm:p-12 sm:pb-56 lg:p-16 lg:pb-72">
+          <FadeUp className="relative isolate mb-[84px] flex min-h-[28rem] items-center justify-center overflow-hidden rounded-lg border border-border bg-card p-6 sm:p-12 lg:min-h-[32rem] lg:p-16">
             <Image src={ctaBg} alt="" fill placeholder="blur" sizes="(min-width: 1396px) 1300px, 100vw" className="-z-20 object-cover object-bottom" />
-            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-b from-card via-card/75 to-transparent" />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-card/60" />
             <div className="flex flex-col items-center text-center">
               <h2 className="max-w-[16ch] font-display text-5xl font-medium leading-[1.05] tracking-tight sm:text-6xl">Start your first trail.</h2>
-              <p className="mt-6 max-w-[44ch] text-base leading-relaxed text-muted-foreground">A question, a connection, a new way to see things. Start with one note and follow where it takes you.</p>
               <Button asChild size="xl" className="mt-8">
                 <a href="/signup">Start for free<ArrowRight className="size-4" /></a>
               </Button>
