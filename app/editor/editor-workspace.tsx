@@ -52,17 +52,6 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   useEffect(() => {
     try { localStorage.setItem(CONNECTIONS_OPEN_STORAGE_KEY, String(connectionsPanelOpen)); } catch {}
   }, [connectionsPanelOpen]);
-  useEffect(() => {
-    const blockSidebarShortcut = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'b') return;
-      const target = event.target as HTMLElement | null;
-      if (target?.isContentEditable || target?.closest?.('[contenteditable="true"], input, textarea')) return;
-      event.stopImmediatePropagation();
-    };
-    window.addEventListener('keydown', blockSidebarShortcut, true);
-    return () => window.removeEventListener('keydown', blockSidebarShortcut, true);
-  }, []);
-
   const project = useProjectEditorState(routeProjectId, connectionsPanelOpen, user);
   const hasPendingEmbedDraft = useSyncExternalStore(subscribeEmbedDrafts, hasPendingEmbedDrafts, () => false);
   const projectId = project.projectId;

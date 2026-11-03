@@ -24,6 +24,7 @@ const GROUPS: { title: string; shortcuts: [string, string][] }[] = [
       ["⌘/", "Keyboard shortcuts"],
       ["Esc", "Move to the toolbar and back"],
       ["⌘F", "Find and replace in this note"],
+      ["⌘B outside the text", "Collapse / expand the sidebar"],
     ],
   },
   {
