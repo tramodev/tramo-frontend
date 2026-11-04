@@ -73,7 +73,7 @@ test('public reader shares the editor column and connections panel without mutat
     '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
     '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
     '@/components/project/public-sidebar': { PublicSidebar: 'PublicSidebar' },
-    '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
+    '@/hooks/use-scroll-spy': { useScrollSpy: () => () => {} },
   });
   const project = { id: 'project', title: 'Project', ownerUsername: 'author', trails: [], looseItems: [{ id: 'a', title: 'A', content: '', titleAlign: 'left' }] };
   const nodes = render('PublicProjectView', { project });
@@ -117,7 +117,7 @@ test('public long projects mount only nearby, selected and text-selected notes',
     '@/components/project/lexical-read-only': { LexicalReadOnly: 'Reader' },
     '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
     '@/components/editor/graph-view': { GraphView: 'GraphView' },
-    '@/hooks/use-scroll-spy': { useScrollSpy: options => { onVisible = options.onVisible; } },
+    '@/hooks/use-scroll-spy': { useScrollSpy: options => { onVisible = options.onVisible; return () => {}; } },
     '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds, selectionIds, heights: new Map([[slot('1'), 950]]) }) },
   }, { requestAnimationFrame: () => 0 });
   const notes = Array.from({ length: 100 }, (_, i) => ({ id: String(i), title: `Note ${i}`, content: `Body ${i}`, titleAlign: 'left' }));
@@ -152,7 +152,7 @@ test('all trails and loose notes form one document with distinct shared-note slo
     '@/components/project/lexical-read-only': { LexicalReadOnly: 'Reader' },
     '@/components/project/comments-section': { CommentsSection: 'Comments' },
     '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(['trail:second:item:c']), selectionIds: new Set(), heights: new Map() }) },
-    '@/hooks/use-scroll-spy': { useScrollSpy: options => { onVisible = options.onVisible; } },
+    '@/hooks/use-scroll-spy': { useScrollSpy: options => { onVisible = options.onVisible; return () => {}; } },
   }, { requestAnimationFrame: callback => frames.push(callback) });
   const note = id => ({ id, title: id.toUpperCase(), content: '', titleAlign: 'left' });
   const shared = note('a');
@@ -238,7 +238,7 @@ test('jumping to comments follows virtual note resizing until user input or navi
       useEffect: effect => cleanups.push(effect()),
     },
     '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
-    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    '@/hooks/use-scroll-spy': { useScrollSpy: () => () => {} },
   }, {
     requestAnimationFrame: () => 0,
     ResizeObserver: class {
@@ -283,7 +283,7 @@ test('empty public projects still render their introduction and project comments
   const render = load('components/project/public-project-view.tsx', {
     '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
     '@/components/project/comments-section': { CommentsSection: 'Comments' },
-    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    '@/hooks/use-scroll-spy': { useScrollSpy: () => () => {} },
   });
   const project = { id: 'empty', title: 'Empty project', trails: [], looseItems: [] };
   const shell = render('PublicProjectView', { project }).find(node => node.type === 'ProjectShell');
@@ -413,7 +413,7 @@ test('historical publications use the public reader and resolve images from the 
     '@/components/project/comments-section': { CommentsSection: 'Comments' },
     '@/components/social/fork-button': { ForkButton: 'Fork' },
     '@/components/social/share-to-followers-button': { ShareToFollowersButton: 'Share' },
-    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    '@/hooks/use-scroll-spy': { useScrollSpy: () => () => {} },
     'next/link': { default: 'Link' },
   });
   const item = { id: 'old-note', title: 'Old note', titleAlign: 'right', content: 'Saved content' };
@@ -437,7 +437,7 @@ test('historical dates keep the server text during hydration and use browser for
   const render = load('components/project/public-project-view.tsx', {
     '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
     '@/hooks/use-mounted': { useMounted: () => mounted },
-    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    '@/hooks/use-scroll-spy': { useScrollSpy: () => () => {} },
   }, { Date: class extends Date {
     toLocaleString() { formatted++; return '17/10/2026, 16:21:46'; }
   } });
@@ -489,7 +489,7 @@ test('private history preview uses saved image access and offers restore without
     '@/components/project/lexical-read-only': { LexicalReadOnly: 'Reader' },
     '@/components/project/comments-section': { CommentsSection: 'Comments' },
     '@/components/social/share-to-followers-button': { ShareToFollowersButton: 'Share' },
-    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    '@/hooks/use-scroll-spy': { useScrollSpy: () => () => {} },
     'next/link': { default: 'Link' },
   });
   const historyVersion = { id: 42, type: 'MANUAL', name: 'Milestone', createdAt: '2026-10-17T12:00:00Z', restoreEpoch: 3 };
@@ -554,7 +554,7 @@ test('failed restoration displays the error and permits retry without navigation
 test('fork attribution links to the original project and disappears without a public source', () => {
   const render = load('components/project/public-project-view.tsx', {
     '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
-    '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+    '@/hooks/use-scroll-spy': { useScrollSpy: () => () => {} },
     'next/link': { default: 'Link' },
   });
   const project = { id: 'fork', title: 'Fork', trails: [], looseItems: [],

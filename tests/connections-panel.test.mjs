@@ -35,11 +35,12 @@ function setup() {
   let props = { items, item: items.a, trails: [], open: true };
   const render = changes => { props = { ...props, ...changes }; state = ref = 0; return flatten(exports.ConnectionsPanel(props)); };
   const find = (nodes, type, text) => nodes.find(node => node.type === type && (text === undefined || node.props.children === text));
-  return { render, items, find };
+  const card = (nodes, title) => nodes.find(node => node.type === 'div' && node.props.onClick && flatten(node.props.children).some(child => child.type === 'button' && child.props.children === title));
+  return { render, items, find, card };
 }
 
 test('@ mentions appear from both notes without duplicates', () => {
-  const { render, items, find } = setup();
+  const { render, items, find, card } = setup();
   items.a.content = JSON.stringify({ root: { children: [{ type: 'link', rel: 'tramo-idea:b' }] } });
   items.c.content = null;
   const selected = [];
@@ -49,12 +50,12 @@ test('@ mentions appear from both notes without duplicates', () => {
   expect(find(nodes, 'button', 'C — A')).toBeDefined();
   expect(find(nodes, 'button', 'Remove')).toBeUndefined();
   expect(find(nodes, 'p', 'No connections.')).toBeUndefined();
-  find(nodes, 'button', 'C — A').props.onClick();
+  card(nodes, 'C — A').props.onClick();
   expect(selected).toEqual(['c']);
 
   nodes = render({ item: items.b });
   expect(find(nodes, 'button', 'A — B')).toBeDefined();
-  find(nodes, 'button', 'A — B').props.onClick();
+  card(nodes, 'A — B').props.onClick();
   expect(selected).toEqual(['c', 'a']);
 
   nodes = render({ item: items.a });
