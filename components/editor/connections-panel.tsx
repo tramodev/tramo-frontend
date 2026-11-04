@@ -43,7 +43,7 @@ export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapP
     {utilities}
   </aside>;
   return <aside id="editor-connections" aria-label="Connections" className="absolute inset-y-0 right-0 z-20 flex w-[var(--connections-panel-width)] max-w-full flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-popover p-4 shadow-elevation-2 md:static md:shrink-0 md:shadow-none">
-    <div className="flex shrink-0 items-center justify-between gap-2"><h2 className="text-sm font-medium">Connections ({mentioned.length})</h2><button type="button" aria-label="Close connections" onClick={onToggleOpen} className="rounded p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
+    <div className="flex shrink-0 items-center justify-between gap-2"><h2 className="text-sm font-medium">Connections ({mentioned.length})</h2><button type="button" aria-label="Close connections" onClick={onToggleOpen} className="rounded-full p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
     <section className="min-h-0 flex-1 space-y-2 overflow-y-auto">
       {!mentioned.length && <p className="text-xs text-muted-foreground">{readOnly ? 'No connections for this note.' : 'Use @ to connect notes.'}</p>}
       {!!mentioned.length && <p className="text-xs text-muted-foreground">Connections involving “{item.title}”.</p>}
