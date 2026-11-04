@@ -297,12 +297,12 @@ export const BrowserMockup: React.FC = () => {
             <p className="text-sm leading-6 mb-3 text-muted-foreground sm:text-[0.8125rem]">
               Bush&apos;s Memex is a proposed personal library for books, records and communications.
               Introduced in{' '}
-              <span className="text-primary font-medium">
+              <span className="cursor-pointer text-[var(--ed-blue)] underline underline-offset-2">
                 As We May Think
               </span>
               , it lets readers connect records and revisit those connections through{' '}
-              <span className="text-primary font-medium">
-                associative trails
+              <span className="cursor-pointer text-[var(--ed-blue)] underline underline-offset-2">
+                Associative trails
               </span>
               .
             </p>
