@@ -40,7 +40,7 @@ function MapCard({ note, index, last }: { note: MapNote; index: number; last: bo
 }
 
 export function ProductMapDemo() {
-  return <div role="img" aria-label="Two trails connected through the shared Memex note" className="@container">
+  return <div role="img" aria-label="Two trails connected through the shared Memex note" className="@container select-none">
     <div
       className="relative bg-background text-foreground [--u:calc(100cqw/1802)]"
       style={{ backgroundImage: 'radial-gradient(color-mix(in oklab, var(--border) 45%, transparent) var(--u), transparent 0)', backgroundSize: `${u(40)} ${u(40)}`, padding: `${u(35)} ${u(53)} ${u(19)} ${u(35)}` }}

@@ -32,7 +32,7 @@ import {
   X,
   Lock,
   ArrowRight,
-  MoreVertical,
+  MoreHorizontal,
   Ellipsis,
 } from 'lucide-react';
 import { Mark } from '@/components/layout/logo';
@@ -124,7 +124,7 @@ const CONNECTIONS = [
 
 export const BrowserMockup: React.FC = () => {
   return (
-    <div className="w-full flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-elevation-2">
+    <div className="@container w-full flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-elevation-2">
       <div className="h-9 flex items-center gap-2 px-4 shrink-0 bg-card border-b border-border">
         <span className="flex gap-1.5 shrink-0">
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--ed-red)' }} />
@@ -140,7 +140,7 @@ export const BrowserMockup: React.FC = () => {
       <div
         className="flex h-full w-full overflow-hidden"
       >
-        <div className="w-[184px] hidden lg:flex flex-col shrink-0 p-2.5 gap-2.5 overflow-hidden bg-card border-r border-border">
+        <div className="w-[19cqw] hidden lg:flex flex-col shrink-0 p-2.5 gap-2.5 overflow-hidden bg-card border-r border-border">
           <div className="flex items-center gap-2 pt-0.5">
             <Mark size={22} className="shrink-0" />
             <div className="flex flex-1 items-center gap-1.5 rounded-full border border-input bg-popover px-2.5 py-1.5 text-[0.6875rem] text-muted-foreground">
@@ -162,7 +162,7 @@ export const BrowserMockup: React.FC = () => {
                   <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
                   <span className="min-w-0 flex-1 truncate">{trail.title}</span>
                   <Plus className="h-3 w-3 shrink-0 text-muted-foreground" />
-                  <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground group-hover/trail:opacity-100"><MoreVertical className="h-3 w-3" /></span>
+                  <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 transition-colors hover:text-foreground group-hover/trail:opacity-100"><MoreHorizontal className="h-3 w-3" /></span>
                 </div>
                 <ul className="relative -mx-2.5 mt-1 flex flex-col gap-0.5 before:pointer-events-none before:absolute before:inset-y-0 before:left-7 before:border-l before:border-sidebar-border">
                   {trail.items.map((item, i) => (
@@ -178,7 +178,7 @@ export const BrowserMockup: React.FC = () => {
                       <span className="w-3 shrink-0 text-[0.625rem] tabular-nums">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate">{item.title}</span>
                       {item.shared && <SharedNoteIndicator trails={GRAPH_TRAILS} />}
-                      <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground group-hover/note:opacity-100"><MoreVertical className="h-3 w-3" /></span>
+                      <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 transition-colors hover:text-foreground group-hover/note:opacity-100"><MoreHorizontal className="h-3 w-3" /></span>
                     </li>
                   ))}
                 </ul>
@@ -201,7 +201,7 @@ export const BrowserMockup: React.FC = () => {
                 <span className="w-[7px] h-[7px] shrink-0 rounded-full box-border border-[1.5px] border-input" />
                 <span className="min-w-0 flex-1 truncate">{item.title}</span>
                 {item.linked && <LinkIcon className="w-2.5 h-2.5 shrink-0 text-primary" />}
-                <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 hover:bg-primary/10 hover:text-foreground group-hover/note:opacity-100"><MoreVertical className="h-3 w-3" /></span>
+                <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 transition-colors hover:text-foreground group-hover/note:opacity-100"><MoreHorizontal className="h-3 w-3" /></span>
               </li>
             ))}
           </ul>
@@ -269,7 +269,7 @@ export const BrowserMockup: React.FC = () => {
           </div>
 
           <div
-            className="flex-1 min-h-0 cursor-text overflow-y-auto px-4 py-6 sm:px-8"
+            className="flex-1 min-h-0 cursor-text overflow-y-auto px-4 py-6 sm:px-8 lg:px-[max(2rem,calc((100%_-_43cqw)/2))]"
             onClick={(event) => {
               if (event.target !== event.currentTarget) return;
               const content = event.currentTarget.querySelector<HTMLDivElement>('div[contenteditable]');
@@ -284,7 +284,7 @@ export const BrowserMockup: React.FC = () => {
             }}
           >
             <p className="mb-3 text-[0.625rem] font-medium uppercase tracking-widest text-foreground">Step 3</p>
-            <h1 contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" aria-label="Demo note title" className="font-display font-medium text-[1.75rem] mb-2.5 cursor-text outline-none">
+            <h1 contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" aria-label="Demo note title" className="font-display font-medium text-[1.75rem] mb-2.5 cursor-text text-center outline-none">
               Memex
             </h1>
             <div className="mb-5 text-[0.6875rem] text-muted-foreground">
@@ -306,10 +306,10 @@ export const BrowserMockup: React.FC = () => {
               </span>
               .
             </p>
-            <ul className="flex flex-col gap-1.5 text-sm text-muted-foreground sm:text-[0.8125rem]">
-              <li>— Connect records by association</li>
-              <li>— Reuse the same record in different trails</li>
-              <li>— Share a path for others to explore</li>
+            <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm text-muted-foreground sm:text-[0.8125rem]">
+              <li>Connect records by association</li>
+              <li>Reuse the same record in different trails</li>
+              <li>Share a path for others to explore</li>
             </ul>
             </div>
             <div className="mt-8 flex justify-end">
@@ -322,7 +322,7 @@ export const BrowserMockup: React.FC = () => {
           </div>
         </div>
 
-        <div className="w-[204px] hidden lg:flex flex-col shrink-0 p-4 gap-3 overflow-hidden rounded-2xl border border-border bg-popover">
+        <div className="w-[19cqw] hidden lg:flex flex-col shrink-0 p-4 gap-3 overflow-hidden rounded-2xl border border-border bg-popover">
           <div className="flex items-center justify-between gap-1">
             <p className="text-[0.75rem] font-medium">Connections (2)</p>
             <X className="w-3.5 h-3.5 text-muted-foreground" />

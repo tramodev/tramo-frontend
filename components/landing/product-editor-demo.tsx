@@ -10,7 +10,7 @@ import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { AlignLeft, Baseline, Bold, ChevronDown, Code, Highlighter, Italic, Link2, Plus, Redo, RotateCcw, Search, Strikethrough, Underline, Undo, X } from 'lucide-react';
+import { AlignLeft, Baseline, Bold, ChevronDown, Code, Highlighter, Italic, Link2, MoreHorizontal, Plus, Redo, RotateCcw, Search, Strikethrough, Underline, Undo, X } from 'lucide-react';
 import { Mark } from '@/components/layout/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +34,7 @@ type NoteId = keyof typeof NOTES;
 const INITIAL_SELECTION: { note: NoteId; trail: number } = { note: 'memex', trail: 0 };
 
 const DEMO_ITEMS: Record<string, Item> = Object.fromEntries(Object.entries(NOTES).map(([id, note]) => [id, {
-  id, title: note.title, titleAlign: 'left', unfiled: false, content: null,
+  id, title: note.title, titleAlign: 'center', unfiled: false, content: null,
 }]));
 
 const TRAILS: { title: string; notes: NoteId[] }[] = [
@@ -67,7 +67,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
     setSelected({ note: id, trail });
   }
 
-  return <div className={cn('@container flex h-[35rem] flex-col overflow-hidden rounded-lg border border-border bg-background text-foreground [overflow-anchor:none]', variant === 'connections' ? 'rounded-r-none border-r-0 lg:w-[110%]' : 'rounded-l-none border-l-0')}>
+  return <div className={cn('@container relative flex h-[35rem] flex-col overflow-hidden rounded-lg border border-border bg-background text-foreground [overflow-anchor:none]', variant === 'connections' ? 'rounded-r-none border-r-0 lg:w-[110%]' : 'rounded-l-none border-l-0')}>
     <div className={cn('grid min-h-0 flex-1 overflow-hidden', variant === 'connections' ? 'grid-rows-1 @min-[36rem]:grid-cols-[12rem_minmax(0,1fr)]' : 'grid-rows-[minmax(0,1fr)_auto] @min-[28rem]:grid-cols-[minmax(0,1fr)_16rem] @min-[28rem]:grid-rows-1')}>
       {variant === 'connections' && <nav aria-label="Demo trails" className="hidden min-h-0 min-w-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-r border-border bg-sidebar p-3 @min-[36rem]:block">
         <div className="mb-4 flex items-center gap-2">
@@ -81,15 +81,16 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
           <summary className="mb-3 flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-muted-foreground"><ChevronDown className="size-3" />Trails</summary>
           <div className="grid grid-cols-2 gap-3 @min-[36rem]:grid-cols-1 @min-[36rem]:gap-4">
         {TRAILS.map((trail, trailIndex) => <div key={trail.title}>
-          <button type="button" className="mb-2 flex w-full items-center gap-1 text-left text-xs font-medium hover:underline" onClick={() => openNote('memex', trailIndex)}>
+          <button type="button" className="group/trail -mx-3 mb-1 flex h-8 w-[calc(100%+1.5rem)] items-center gap-1 px-3 text-left text-xs font-medium hover:bg-sidebar-accent" onClick={() => openNote('memex', trailIndex)}>
             <ChevronDown className="size-3 shrink-0" />{trail.title}
           </button>
-          <ol className="space-y-1 border-l border-sidebar-border">
-            {trail.notes.map((id, index) => NOTES[id].title.toLowerCase().includes(query.trim().toLowerCase()) && <li key={id}>
-              <button type="button" aria-current={selected.note === id && selected.trail === trailIndex ? 'page' : undefined} onClick={() => openNote(id, trailIndex)} className={cn('flex w-full min-w-0 items-center gap-2 rounded-r-md px-2 py-2 text-left text-xs hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring', selected.note === id && selected.trail === trailIndex && 'bg-sidebar-accent font-medium text-sidebar-accent-foreground')}>
+          <ol className="relative -mx-3 space-y-0.5 before:pointer-events-none before:absolute before:inset-y-0 before:left-7 before:border-l before:border-sidebar-border">
+            {trail.notes.map((id, index) => NOTES[id].title.toLowerCase().includes(query.trim().toLowerCase()) && <li key={id} className="group/note relative">
+              <button type="button" aria-current={selected.note === id && selected.trail === trailIndex ? 'page' : undefined} onClick={() => openNote(id, trailIndex)} className={cn('flex h-7 w-full min-w-0 items-center gap-2 pr-8 pl-10 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:outline-ring', selected.note === id && selected.trail === trailIndex && 'bg-[color-mix(in_srgb,var(--primary)_15%,var(--sidebar))] font-semibold text-foreground')}>
                 <span className="text-muted-foreground">{index + 1}</span><span className="min-w-0 flex-1 truncate">{NOTES[id].title}</span>
                 {id === 'memex' && <SharedNoteIndicator trails={TRAILS} />}
               </button>
+              <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 flex w-6 -translate-x-1 items-center justify-center text-muted-foreground opacity-0 transition-colors hover:text-foreground group-hover/note:opacity-100"><MoreHorizontal className="size-3" /></span>
             </li>)}
           </ol>
         </div>)}
@@ -97,9 +98,9 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
         </details>
       </nav>}
       <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-        <div className={cn('flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-2', variant === 'connections' && 'lg:pr-[calc(100cqw/11+1rem)]')}>
+        <div className={cn('flex shrink-0 items-center justify-between gap-2 px-4 py-2', variant === 'connections' && 'lg:pr-[calc(100cqw/11+1rem)]')}>
           <span className="min-w-0 flex-1 truncate text-sm font-medium">Memex and Vannevar Bush</span>
-          <Button type="button" variant="ghost" size="icon-sm" aria-label="Reset demo" onClick={() => { setContents({}); setSelected(INITIAL_SELECTION); setQuery(''); setRevision(value => value + 1); }}><RotateCcw className="size-4" /></Button>
+          <Button type="button" variant="ghost" size="icon-sm" aria-label="Reset demo" className={cn(variant === 'shared' && 'absolute top-2 right-3 z-10')} onClick={() => { setContents({}); setSelected(INITIAL_SELECTION); setQuery(''); setRevision(value => value + 1); }}><RotateCcw className="size-4" /></Button>
         </div>
         <LexicalComposer key={`${selected.note}-${revision}`} initialConfig={{
           namespace: `landing-${variant}`,
@@ -114,7 +115,8 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
         }}>
           <DemoToolbar variant={variant} />
           <div className={cn('min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-5 sm:px-6', variant === 'connections' && 'pb-10 sm:pb-[3.25rem] lg:pr-[calc(100cqw/11+1.5rem)]')}>
-            <h4 className="mb-3 font-display text-2xl font-medium">{note.title}</h4>
+            <div className={cn(variant === 'connections' && 'lg:mx-auto lg:max-w-[68%]')}>
+            <h4 className="mb-3 text-center font-display text-2xl font-medium">{note.title}</h4>
             {memberTrails.length > 1 && <div className="mb-5 text-xs leading-relaxed text-muted-foreground">
               <p>Used in 2 trails. Edits appear in both.</p>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">{TRAILS.map((trail, index) => <button key={trail.title} type="button" className="underline underline-offset-2 hover:text-foreground" onClick={() => openNote('memex', index)}>{trail.title}</button>)}</div>
@@ -131,16 +133,17 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
             }}>
               <RichTextPlugin contentEditable={<ContentEditable aria-label={`${note.title} demo editor`} className="min-h-40 break-words text-sm leading-relaxed outline-none [&_p]:min-h-5" />} placeholder={null} ErrorBoundary={LexicalErrorBoundary} />
             </div>
+            </div>
           </div>
           <HistoryPlugin />
           <ItemMentionPlugin items={DEMO_ITEMS} currentItemId={selected.note} />
           <OnChangePlugin ignoreSelectionChange onChange={state => setContents(previous => ({ ...previous, [selected.note]: JSON.stringify(state.toJSON()) }))} />
         </LexicalComposer>
       </div>
-      {variant === 'shared' && <aside aria-label="Demo connections" className="m-3 max-h-48 min-h-0 min-w-0 space-y-3 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden rounded-2xl border border-border bg-popover p-3 @min-[28rem]:max-h-none">
+      {variant === 'shared' && <aside aria-label="Demo connections" className="m-3 @min-[28rem]:mt-15 max-h-48 min-h-0 min-w-0 space-y-3 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden rounded-2xl border border-border bg-popover p-3 @min-[28rem]:max-h-none">
         <div className="flex items-center justify-between gap-2"><h5 className="text-sm font-medium">Connections ({connectedNotes.length})</h5><X aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" /></div>
         <p className="text-xs leading-relaxed text-muted-foreground">Connections involving “{note.title}”.</p>
-        {connectedNotes.map(id => <button key={id} type="button" aria-label={`Open ${NOTES[id].title}`} className="block w-full space-y-2 rounded-lg border border-border p-3 text-left hover:bg-muted" onClick={() => openNote(id)}>
+        {connectedNotes.map(id => <button key={id} type="button" aria-label={`Open ${NOTES[id].title}`} className="block w-full cursor-pointer space-y-2 rounded-lg border border-border p-3 text-left hover:bg-muted" onClick={() => openNote(id)}>
           <span className="block text-sm">{id === note.related ? `${note.title} — ${NOTES[id].title}` : `${NOTES[id].title} — ${note.title}`}</span>
           <span className="block text-xs text-muted-foreground">@ mention in {id === note.related ? note.title : NOTES[id].title}</span>
         </button>)}
