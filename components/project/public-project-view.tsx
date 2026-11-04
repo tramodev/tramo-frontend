@@ -112,7 +112,7 @@ export function PublicProjectView({
   const slotRefs = useRef(new Map<string, HTMLElement>())
   const { visibleIds, selectionIds, heights } = useVirtualNotes(columnRef, slotRefs, noteIds, view === 'content')
 
-  useScrollSpy({
+  const pinScrollSpy = useScrollSpy({
     root: columnRef,
     slots: slotRefs,
     ids,
@@ -146,6 +146,7 @@ export function PublicProjectView({
     setView('content')
     if (!id) return
     setSelectedId(id)
+    pinScrollSpy()
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const slot = slotRefs.current.get(id)
       slot?.scrollIntoView({ block: 'start' })

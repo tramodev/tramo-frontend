@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useEffect, useRef, type RefObject } from "react"
+import { useCallback, useEffect, useRef, type RefObject } from "react"
 import { visibleItemAtLine } from "@/app/editor/trail-navigation"
 
 export function useScrollSpy({
@@ -21,6 +21,11 @@ export function useScrollSpy({
     onVisibleRef.current = onVisible
   })
 
+  const pinned = useRef(false)
+  const pin = useCallback(() => {
+    pinned.current = true
+  }, [])
+
   const key = ids.join("|")
 
   useEffect(() => {
@@ -32,6 +37,7 @@ export function useScrollSpy({
 
     const measure = () => {
       frame = 0
+      if (pinned.current) return
       const line = container.getBoundingClientRect().top + container.clientHeight * 0.3
       const positions = order.flatMap((id) => {
         const element = slots.current.get(id);
@@ -47,7 +53,13 @@ export function useScrollSpy({
       if (!frame) frame = requestAnimationFrame(measure)
     }
 
+    const unpin = () => {
+      pinned.current = false
+    }
+    const unpinEvents = ["wheel", "touchstart", "pointerdown"]
+
     container.addEventListener("scroll", onScroll, { passive: true })
+    for (const type of unpinEvents) container.addEventListener(type, unpin, { passive: true })
     const observer = new ResizeObserver(onScroll)
     observer.observe(container)
     for (const element of slots.current.values()) observer.observe(element)
@@ -55,7 +67,9 @@ export function useScrollSpy({
     return () => {
       observer.disconnect()
       container.removeEventListener("scroll", onScroll)
+      for (const type of unpinEvents) container.removeEventListener(type, unpin)
       if (frame) cancelAnimationFrame(frame)
     }
   }, [root, slots, key, enabled])
+  return pin
 }

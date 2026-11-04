@@ -384,7 +384,7 @@ export function WriteView(props: WriteViewProps) {
       sessions.delete(id);
     }
   }, [items, sessions]);
-  useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: active && revealed, onVisible: (id) => {
+  const pinScrollSpy = useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: active && revealed, onVisible: (id) => {
     if (!navigationRequest || handledRequest.current === navigationRequest.sequence) onVisibleItem(id);
   } });
 
@@ -444,6 +444,7 @@ export function WriteView(props: WriteViewProps) {
       const editor = editors.current.get(targetId);
       if (!editor && !invalidItems.has(targetId)) return;
       handledRequest.current = request?.sequence ?? null;
+      pinScrollSpy();
       slotRefs.current.get(targetId)?.scrollIntoView({ block: 'start' });
       setFocusedItemId(targetId);
       onVisibleItem(targetId);
@@ -451,7 +452,7 @@ export function WriteView(props: WriteViewProps) {
       if (request?.focus && request.embedIndex === undefined && editor) requestAnimationFrame(() => focusEditor(editor));
     });
     return () => cancelAnimationFrame(frame);
-  }, [active, navigationRequest, contentReady, onVisibleItem, positionedContext, context, item.id, visibleIds, invalidItems]);
+  }, [active, navigationRequest, contentReady, onVisibleItem, pinScrollSpy, positionedContext, context, item.id, visibleIds, invalidItems]);
 
   useEffect(() => {
     if (!active || props.draft) return;
