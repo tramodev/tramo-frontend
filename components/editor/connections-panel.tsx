@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { CircleHelp, Loader2, Network, PanelRightOpen, X } from 'lucide-react';
 import type { Item, Trail } from '@/app/editor/types';
@@ -29,6 +29,8 @@ interface ConnectionsPanelProps {
 }
 
 export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapPreviews, graphColors, activeTrailId, onSelectItem, onOpenGraph, open, onToggleOpen, readOnly = false }: ConnectionsPanelProps) {
+  const [closing, setClosing] = useState(false);
+  const closeAnimated = () => window.matchMedia('(min-width: 768px)').matches ? setClosing(true) : onToggleOpen();
   const references = useMemo(() => Object.fromEntries(Object.values(items).map(note => [note.id, note.content != null ? itemIdsFromContent(note.content) : mapPreviews?.[note.id]?.linkedItemIds ?? []])), [items, mapPreviews]);
   const mentioned = Object.values(items).filter(note => note.id !== item.id && (references[item.id]?.includes(note.id) || references[note.id]?.includes(item.id)));
   const utilities = !readOnly && <div className={`mt-auto flex shrink-0 items-center justify-center gap-2 ${open ? 'border-t border-border pt-3' : 'flex-col pt-2'}`}>
@@ -37,13 +39,14 @@ export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapP
       <CircleHelp className="h-4 w-4" />{open && <span>Help</span>}
     </button>
   </div>;
-  if (!open) return <aside id="editor-connections" aria-label="Connections tools" className="connections-tools flex w-12 shrink-0 flex-col items-center gap-2 rounded-2xl bg-popover py-3">
+  if (!open) return <aside id="editor-connections" aria-label="Connections tools" className="connections-tools flex w-12 shrink-0 md:animate-in md:fade-in-0 md:duration-200 md:ease-linear md:transition-[width] flex-col items-center gap-2 rounded-2xl bg-popover py-3">
     <button type="button" data-tour="connections-toggle" aria-label="Connections" title="Connections" aria-expanded={false} onClick={onToggleOpen} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><PanelRightOpen className="h-4 w-4" /></button>
     <button type="button" aria-label="Open map" title="Open map" data-map-trigger onClick={onOpenGraph} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Network className="h-4 w-4" /></button>
     {utilities}
   </aside>;
-  return <aside id="editor-connections" aria-label="Connections" className="absolute inset-y-0 right-0 z-20 flex w-[var(--connections-panel-width)] max-w-full flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-popover p-4 shadow-elevation-2 md:static md:shrink-0 md:shadow-none">
-    <div className="flex shrink-0 items-center justify-between gap-2"><h2 className="text-sm font-medium">Connections ({mentioned.length})</h2><button type="button" aria-label="Close connections" onClick={onToggleOpen} className="rounded-full p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
+  return <aside id="editor-connections" aria-label="Connections" onTransitionEnd={e => { if (closing && e.target === e.currentTarget && e.propertyName === 'width') { setClosing(false); onToggleOpen(); } }} className={`absolute inset-y-0 right-0 z-20 flex w-[var(--connections-panel-width)] max-w-full flex-col overflow-hidden rounded-2xl border border-border bg-popover p-4 shadow-elevation-2 md:duration-200 md:ease-linear md:static md:shrink-0 md:shadow-none md:transition-[width] ${closing ? 'md:w-12' : ''}`}>
+    <div className={`flex min-h-0 w-full flex-1 flex-col gap-4 transition-opacity duration-200 ease-linear md:w-[calc(var(--connections-panel-width)-2rem-2px)] ${closing ? 'opacity-0' : ''}`}>
+    <div className="flex shrink-0 items-center justify-between gap-2"><h2 className="text-sm font-medium">Connections ({mentioned.length})</h2><button type="button" aria-label="Close connections" onClick={closeAnimated} className="rounded-full p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
     <section className="min-h-0 flex-1 space-y-2 overflow-y-auto">
       {!mentioned.length && <p className="text-xs text-muted-foreground">{readOnly ? 'No connections for this note.' : 'Use @ to connect notes.'}</p>}
       {!!mentioned.length && <p className="text-xs text-muted-foreground">Connections involving “{item.title}”.</p>}
@@ -57,5 +60,6 @@ export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapP
     </section>
     <div className="flex h-40 shrink-0 flex-col border-t border-border pt-2"><button type="button" data-map-trigger onClick={onOpenGraph} className="mb-1 self-start text-sm text-primary">Open map</button><div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">{mapPreviews === undefined && !readOnly ? <div role="status" aria-label="Loading map" className="flex h-full items-center justify-center text-muted-foreground"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" /></div> : mapPreviews === null ? <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph trails={trails} items={items} mapPreviews={mapPreviews} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" />}</div></div>
     {utilities}
+    </div>
   </aside>;
 }
