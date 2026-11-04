@@ -35,7 +35,7 @@ export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapP
   const mentioned = Object.values(items).filter(note => note.id !== item.id && (references[item.id]?.includes(note.id) || references[note.id]?.includes(item.id)));
   const utilities = !readOnly && <div className={`mt-auto flex shrink-0 items-center justify-center gap-2 ${open ? 'border-t border-border pt-3' : 'flex-col pt-2'}`}>
     <ShortcutsDialog compact={!open} />
-    <button type="button" aria-label="Help" title="Help" onClick={startEditorTour} className="flex items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+    <button type="button" aria-label="Help" title="Help" onClick={startEditorTour} className="flex cursor-pointer items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
       <CircleHelp className="h-4 w-4" />{open && <span>Help</span>}
     </button>
   </div>;
@@ -52,13 +52,13 @@ export function ConnectionsPanel({ item, items, trails, mapPreviews, onRetryMapP
       {!!mentioned.length && <p className="text-xs text-muted-foreground">Connections involving “{item.title}”.</p>}
       {mentioned.map(note => {
         const outgoing = references[item.id]?.includes(note.id);
-        return <div key={`mention:${note.id}`} className="space-y-2 rounded-lg border border-border p-3 text-sm">
-          <button type="button" className="text-left hover:text-primary" onClick={() => onSelectItem(note)}>{outgoing ? `${item.title} — ${note.title}` : `${note.title} — ${item.title}`}</button>
+        return <div key={`mention:${note.id}`} onClick={() => onSelectItem(note)} className="cursor-pointer space-y-2 rounded-lg border border-border p-3 text-sm hover:bg-muted/50">
+          <button type="button" className="cursor-pointer text-left hover:text-primary">{outgoing ? `${item.title} — ${note.title}` : `${note.title} — ${item.title}`}</button>
           <p className="text-xs text-muted-foreground">@ mention in {outgoing ? item.title : note.title}</p>
         </div>;
       })}
     </section>
-    <div className="flex h-40 shrink-0 flex-col border-t border-border pt-2"><button type="button" data-map-trigger onClick={onOpenGraph} className="mb-1 self-start text-sm text-primary">Open map</button><div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">{mapPreviews === undefined && !readOnly ? <div role="status" aria-label="Loading map" className="flex h-full items-center justify-center text-muted-foreground"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" /></div> : mapPreviews === null ? <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph trails={trails} items={items} mapPreviews={mapPreviews} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" />}</div></div>
+    <div className="flex h-40 shrink-0 flex-col border-t border-border pt-2"><button type="button" data-map-trigger onClick={onOpenGraph} className="mb-1 cursor-pointer self-start text-sm text-primary">Open map</button><div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">{mapPreviews === undefined && !readOnly ? <div role="status" aria-label="Loading map" className="flex h-full items-center justify-center text-muted-foreground"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" /></div> : mapPreviews === null ? <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 text-xs text-destructive">Map preview could not load. <button type="button" className="text-primary underline" onClick={onRetryMapPreviews}>Retry</button></div> : <KnowledgeGraph trails={trails} items={items} mapPreviews={mapPreviews} graphColors={graphColors} activeTrailId={activeTrailId} selectedItemId={item.id} onSelectItem={onSelectItem} variant="preview" />}</div></div>
     {utilities}
     </div>
   </aside>;

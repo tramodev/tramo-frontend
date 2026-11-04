@@ -70,7 +70,7 @@ export function ShortcutsDialog({ compact = false }: { compact?: boolean }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button type="button" aria-label="Shortcuts" title="Shortcuts" className="flex items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground" onClick={(event) => {
+        <button type="button" aria-label="Shortcuts" title="Shortcuts" className="flex cursor-pointer items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground" onClick={(event) => {
           previousFocusRef.current = event.currentTarget
         }}>
           <Keyboard className="h-4 w-4" />
