@@ -19,6 +19,7 @@
 
 # production
 /build
+/collab/dist
 
 # misc
 .DS_Store

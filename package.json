@@ -10,7 +10,9 @@
     "lint": "eslint",
     "knip": "knip",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "collab:build": "node collab/build.mjs",
+    "collab:start": "node collab/dist/server.mjs"
   },
   "dependencies": {
     "@hocuspocus/provider": "4.8.0",

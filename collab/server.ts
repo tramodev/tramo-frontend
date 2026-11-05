@@ -1,0 +1,251 @@
+// Copyright (C) 2026 Ezequiel Martino
+// SPDX-License-Identifier: AGPL-3.0-only
+import { Server, type Connection, type Document, type Hocuspocus } from '@hocuspocus/server';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import type { IncomingMessage } from 'node:http';
+import * as Y from 'yjs';
+import { toLexical, toYjs } from './lexical';
+
+type Context = { userId: number; perm: 'edit' | 'view'; sv: string | null };
+type Claims = { iss?: string; aud?: string | string[]; sub?: string; item?: string; perm?: string; sv?: string | null; exp?: number };
+type DocState = { epoch: number; author: number | null; bootstrapHash: string | null; poisoned: boolean };
+type Bucket = { tokens: number; at: number };
+
+function setting(name: string, fallback?: string): string {
+  const value = process.env[name] ?? fallback;
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
+
+const apiUrl = setting('COLLAB_API_URL', 'http://127.0.0.1:8080');
+const secret = setting('COLLAB_INTERNAL_SECRET');
+const tokenKey = Buffer.from(setting('COLLAB_TOKEN_SECRET'), 'base64');
+const origins = new Set(setting('COLLAB_ALLOWED_ORIGINS', 'http://localhost:3000').split(','));
+const limits = {
+  messageBytes: Number(setting('COLLAB_MAX_MESSAGE_BYTES', String(256 * 1024))),
+  perUser: Number(setting('COLLAB_MAX_CONNECTIONS_PER_USER', '10')),
+  perDocument: Number(setting('COLLAB_MAX_CONNECTIONS_PER_DOCUMENT', '25')),
+  documents: Number(setting('COLLAB_MAX_DOCUMENTS', '500')),
+  ratePerSecond: Number(setting('COLLAB_UPDATES_PER_SECOND', '30')),
+  burst: Number(setting('COLLAB_UPDATES_BURST', '60')),
+};
+
+const documents = new Map<string, DocState>();
+const buckets = new WeakMap<Connection, Bucket>();
+
+const log = (event: string, fields: Record<string, unknown> = {}) =>
+  console.log([`event=${event}`, ...Object.entries(fields).map(([key, value]) => `${key}=${value}`)].join(' '));
+
+function sha256(text: string): string {
+  return createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+function verify(token: string): Claims | null {
+  const [header, payload, signature] = token.split('.');
+  if (!header || !payload || !signature) return null;
+  try {
+    if (JSON.parse(Buffer.from(header, 'base64url').toString()).alg !== 'HS256') return null;
+    const expected = createHmac('sha256', tokenKey).update(`${header}.${payload}`).digest();
+    const supplied = Buffer.from(signature, 'base64url');
+    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
+    const claims = JSON.parse(Buffer.from(payload, 'base64url').toString()) as Claims;
+    const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+    if (claims.iss !== 'tramo-api' || !audience.includes('tramo-collab') || !claims.exp || claims.exp * 1000 <= Date.now()) return null;
+    return claims;
+  } catch {
+    return null;
+  }
+}
+
+function api(path: string, init: RequestInit = {}) {
+  return fetch(`${apiUrl}/internal/collab${path}`, {
+    ...init,
+    headers: { 'X-Collab-Secret': secret, 'Content-Type': 'application/json', ...init.headers },
+    signal: AbortSignal.timeout(10_000),
+  });
+}
+
+function connections(instance: Hocuspocus): Array<[Document, Connection<Context>]> {
+  return [...instance.documents.values()].flatMap(document =>
+    [...document.connections.keys()].map(connection => [document, connection as Connection<Context>] as [Document, Connection<Context>]));
+}
+
+function poison(instance: Hocuspocus, name: string) {
+  const state = documents.get(name);
+  if (state) state.poisoned = true;
+  const document = instance.documents.get(name);
+  if (!document) return;
+  document.connections.forEach((_, connection) => connection.close({ code: 4000, reason: 'reload' }));
+  if (document.getConnectionsCount() === 0) void instance.unloadDocument(document);
+}
+
+function revoke(instance: Hocuspocus, matches: (connection: Connection<Context>) => boolean) {
+  for (const [document, connection] of connections(instance)) {
+    if (matches(connection)) {
+      log('collab_connection_revoked', { item: document.name, user: connection.context.userId });
+      connection.close({ code: 4001, reason: 'revoked' });
+    }
+  }
+}
+
+function hasPendingImage(content: string) {
+  return content.includes('"imageId":""');
+}
+
+function readBody(request: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    request.setEncoding('utf8');
+    request.on('data', chunk => {
+      body += chunk;
+      if (body.length > 64 * 1024) request.destroy();
+    });
+    request.on('end', () => {
+      try { resolve(JSON.parse(body || '{}')); } catch (error) { reject(error); }
+    });
+    request.on('error', reject);
+  });
+}
+
+async function store(document: Document, state: DocState, content = toLexical(document)) {
+  if (state.poisoned || state.author === null) return true;
+  if (hasPendingImage(content)) return true;
+  const started = Date.now();
+  const response = await api(`/items/${document.name}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      state: Buffer.from(Y.encodeStateAsUpdate(document)).toString('base64'),
+      content,
+      extractionEpoch: state.epoch,
+      authorId: state.author,
+      bootstrapHash: state.bootstrapHash,
+    }),
+  });
+  log('collab_store', { item: document.name, status: response.status, ms: Date.now() - started });
+  if (response.ok) state.bootstrapHash = null;
+  return response.ok || response.status >= 500;
+}
+
+const server = new Server<Context>({
+  name: 'tramo-collab',
+  port: Number(setting('COLLAB_PORT', '1234')),
+  address: setting('COLLAB_ADDRESS', '127.0.0.1'),
+  quiet: true,
+  debounce: 2000,
+  maxDebounce: 10_000,
+  unloadImmediately: false,
+  websocketOptions: { maxPayload: limits.messageBytes },
+
+  async onAuthenticate({ token, documentName, connectionConfig, requestHeaders, instance }) {
+    const origin = requestHeaders.get('origin');
+    const claims = verify(token);
+    if ((origin && !origins.has(origin)) || !claims || claims.item !== documentName || !claims.sub) throw new Error('forbidden');
+    if (documents.get(documentName)?.poisoned) throw new Error('reload');
+    const userId = Number(claims.sub);
+    const open = connections(instance);
+    if (open.filter(([, connection]) => connection.context.userId === userId).length >= limits.perUser
+        || (instance.documents.get(documentName)?.getConnectionsCount() ?? 0) >= limits.perDocument
+        || (!instance.documents.has(documentName) && instance.documents.size >= limits.documents)) {
+      log('collab_rejected_limit', { item: documentName, user: userId });
+      throw new Error('limit');
+    }
+    connectionConfig.readOnly = claims.perm !== 'edit';
+    return { userId, perm: claims.perm === 'edit' ? 'edit' : 'view', sv: claims.sv ?? null };
+  },
+
+  async onLoadDocument({ documentName, document, context }) {
+    const response = await api(`/items/${documentName}`);
+    if (!response.ok) throw new Error(`load failed with ${response.status}`);
+    const loaded = await response.json() as { state: string | null; content: string; extractionEpoch: number };
+    const state: DocState = { epoch: loaded.extractionEpoch, author: null, bootstrapHash: null, poisoned: false };
+    if (loaded.state) {
+      Y.applyUpdate(document, Buffer.from(loaded.state, 'base64'));
+    } else {
+      Y.applyUpdate(document, toYjs(loaded.content));
+      state.bootstrapHash = sha256(loaded.content);
+      if (context.perm === 'edit') {
+        state.author = context.userId;
+        if (!await store(document, state, loaded.content)) throw new Error('bootstrap rejected');
+        state.author = null;
+      }
+    }
+    documents.set(documentName, state);
+    log('collab_document_loaded', { item: documentName, bootstrapped: !loaded.state });
+  },
+
+  async beforeHandleMessage({ connection }) {
+    const now = Date.now();
+    const bucket = buckets.get(connection) ?? { tokens: limits.burst, at: now };
+    bucket.tokens = Math.min(limits.burst, bucket.tokens + (now - bucket.at) * limits.ratePerSecond / 1000);
+    bucket.at = now;
+    buckets.set(connection, bucket);
+    if (bucket.tokens < 1) {
+      log('collab_rejected_limit', { reason: 'rate', user: connection.context.userId });
+      throw Object.assign(new Error('rate'), { code: 1008, reason: 'rate-limited' });
+    }
+    bucket.tokens -= 1;
+  },
+
+  async onChange({ documentName, context, connection }) {
+    const state = documents.get(documentName);
+    if (state && connection && context.perm === 'edit') state.author = context.userId;
+  },
+
+  async onStoreDocument({ documentName, document, instance }) {
+    const state = documents.get(documentName);
+    if (!state) return;
+    try {
+      if (!await store(document, state)) poison(instance, documentName);
+    } catch (error) {
+      log('collab_store_failed', { item: documentName, error: (error as Error).message });
+    }
+  },
+
+  async afterUnloadDocument({ documentName }) {
+    documents.delete(documentName);
+  },
+
+  async onRequest({ request, response, instance }) {
+    const path = new URL(request.url ?? '/', 'http://collab').pathname;
+    if (request.method !== 'POST' || !['/internal/revoke', '/internal/reset'].includes(path)) return;
+    const supplied = Buffer.from(String(request.headers['x-collab-secret'] ?? ''));
+    const expected = Buffer.from(secret);
+    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+      response.writeHead(403).end();
+      return Promise.reject();
+    }
+    const body = await readBody(request).catch(() => null) as { userId?: number; itemIds?: number[] } | null;
+    if (path === '/internal/revoke' && typeof body?.userId === 'number') {
+      revoke(instance, connection => connection.context.userId === body.userId);
+    } else if (path === '/internal/reset' && Array.isArray(body?.itemIds)) {
+      body.itemIds.forEach(id => poison(instance, String(id)));
+    } else {
+      response.writeHead(400).end();
+      return Promise.reject();
+    }
+    response.writeHead(204).end();
+    return Promise.reject();
+  },
+});
+
+setInterval(async () => {
+  const open = connections(server.hocuspocus);
+  if (!open.length) return;
+  try {
+    const response = await api('/check', {
+      method: 'POST',
+      body: JSON.stringify(open.map(([document, connection]) => ({
+        userId: connection.context.userId, itemId: Number(document.name), sv: connection.context.sv, perm: connection.context.perm,
+      }))),
+    });
+    if (!response.ok) throw new Error(`check failed with ${response.status}`);
+    const invalid = new Set(await response.json() as number[]);
+    const stale = new Set(open.filter((_, index) => invalid.has(index)).map(([, connection]) => connection));
+    revoke(server.hocuspocus, connection => stale.has(connection));
+  } catch (error) {
+    log('collab_check_failed', { error: (error as Error).message });
+  }
+}, 60_000).unref();
+
+await server.listen();
+log('collab_listening', { port: server.configuration.port });
