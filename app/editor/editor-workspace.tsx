@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useSelectedLayoutSegments } from 'next/navigation';
+import { useRouter, useSelectedLayoutSegments } from 'next/navigation';
 import type { UserProfile } from '@/lib/profile';
 import { FolderPlus, Loader2, Type } from 'lucide-react';
 import { ProjectShell } from '@/components/editor/project-shell';
@@ -14,6 +14,8 @@ import { startExistingProject } from '@/lib/projects-store';
 import { TaskHint } from '@/components/editor/task-hint';
 import { GraphView } from '@/components/editor/graph-view';
 import { hasPendingEmbedDrafts, subscribeEmbedDrafts } from '@/app/editor/embed-draft-status';
+import { subscribeNotificationCount } from '@/lib/notification-stream';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export function EditorWorkspace({ user }: { user: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'> }) {
   const segments = useSelectedLayoutSegments();
@@ -55,6 +57,14 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   const project = useProjectEditorState(routeProjectId, connectionsPanelOpen, user);
   const hasPendingEmbedDraft = useSyncExternalStore(subscribeEmbedDrafts, hasPendingEmbedDrafts, () => false);
   const projectId = project.projectId;
+  const router = useRouter();
+  const [accessRevoked, setAccessRevoked] = useState(false);
+  useEffect(() => {
+    if (!user.userId) return;
+    return subscribeNotificationCount(String(user.userId), () => {}, revokedId => {
+      if (revokedId === projectId) setAccessRevoked(true);
+    });
+  }, [user.userId, projectId]);
   useEffect(() => {
     if (project.loaded) document.title = `${project.projectTitle} | Tramo`;
   }, [project.loaded, project.projectTitle]);
@@ -145,6 +155,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
               if (!await project.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
             }}
             profile={project.profile}
+            canShare={project.role === 'OWNER'}
           />
           </>
         }
@@ -254,6 +265,17 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
           </div>
         }
       />
+      <AlertDialog open={accessRevoked}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>You no longer have access to this project</AlertDialogTitle>
+            <AlertDialogDescription>The owner removed you or revoked the link you joined with. Changes you had not saved yet were not kept.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => router.replace('/projects')}>Back to projects</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   )
 }

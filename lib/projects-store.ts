@@ -10,6 +10,7 @@ import { anonIdHeader } from "./public-project";
 import { assertProjectText, PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation";
 
 export type ProjectVisibility = "private" | "unlisted" | "published";
+export type ProjectRole = "OWNER" | "EDITOR" | "VIEWER";
 export type MapPreviews = Record<string, { text: string; linkedItemIds: string[] }>;
 
 export interface Project {
@@ -29,6 +30,8 @@ export interface Project {
   forkedFromProjectId: string | null;
   forkedFromTitle: string | null;
   forkedFromOwnerUsername: string | null;
+  ownerUsername: string | null;
+  role: ProjectRole;
 }
 
 
@@ -47,6 +50,8 @@ interface ProjectDTO {
   forkedFromProjectId: string | null;
   forkedFromTitle: string | null;
   forkedFromOwnerUsername: string | null;
+  ownerUsername: string | null;
+  role: ProjectRole | null;
 }
 
 interface TrailDTO {
@@ -120,6 +125,8 @@ function toProjectSummary(dto: ProjectDTO): Project {
     forkedFromProjectId: dto.forkedFromProjectId,
     forkedFromTitle: dto.forkedFromTitle,
     forkedFromOwnerUsername: dto.forkedFromOwnerUsername,
+    ownerUsername: dto.ownerUsername ?? null,
+    role: dto.role ?? "OWNER",
   };
 }
 

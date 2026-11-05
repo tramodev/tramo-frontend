@@ -146,6 +146,7 @@ interface EditorActionsProps {
   beforeExport: () => Promise<void>;
   restoreEpoch: number;
   profile: { username: string; imageUrl: string | null } | null;
+  canShare?: boolean;
 }
 
 export function EditorActions({
@@ -157,6 +158,7 @@ export function EditorActions({
   beforeExport,
   restoreEpoch,
   disabled,
+  canShare = true,
 }: EditorActionsProps) {
   return (
     <>
@@ -168,7 +170,7 @@ export function EditorActions({
       ) : <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
       {!disabled && <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />}
       {!disabled && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
-      {disabled ? <Button variant="secondary" size="lg" disabled aria-label="Publish & Share project"><Share2 className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish &amp; Share</span></Button> : <Button data-tour="share" variant="secondary" size="lg" asChild>
+      {!canShare ? null : disabled ? <Button variant="secondary" size="lg" disabled aria-label="Publish & Share project"><Share2 className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish &amp; Share</span></Button> : <Button data-tour="share" variant="secondary" size="lg" asChild>
         <Link href={`/projects/${projectId}/share`} aria-label="Publish & Share project">
           <Share2 className="h-[15px] w-[15px]" />
           <span className="hidden sm:inline">Publish &amp; Share</span>

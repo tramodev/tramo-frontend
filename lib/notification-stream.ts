@@ -1,6 +1,6 @@
 import { getUnreadCount } from "@/lib/notifications"
 
-export function subscribeNotificationCount(userId: string, onCount: (count: number) => void) {
+export function subscribeNotificationCount(userId: string, onCount: (count: number) => void, onAccessRevoked?: (projectId: string) => void) {
   const shared = typeof BroadcastChannel !== "undefined" && Boolean(navigator.locks)
   const key = `tramo:notifications:${userId}`
   const channel = shared ? new BroadcastChannel(key) : null
@@ -67,6 +67,16 @@ export function subscribeNotificationCount(userId: string, onCount: (count: numb
       } catch {
       }
     })
+    current.addEventListener("access-revoked", (event) => {
+      if (stopped || source !== current) return
+      try {
+        const projectId = JSON.parse((event as MessageEvent<string>).data)?.projectId
+        if (typeof projectId !== "string") return
+        onAccessRevoked?.(projectId)
+        channel?.postMessage({ type: "access-revoked", projectId })
+      } catch {
+      }
+    })
     current.addEventListener("evicted", () => {
       if (stopped || source !== current) return
       evicted = true
@@ -85,6 +95,8 @@ export function subscribeNotificationCount(userId: string, onCount: (count: numb
         closeStream()
       } else if (event.data.type === "unread-count") {
         receive(event.data.unreadCount)
+      } else if (event.data.type === "access-revoked" && typeof event.data.projectId === "string") {
+        onAccessRevoked?.(event.data.projectId)
       } else if (event.data.type === "snapshot-request" && releaseLeader && count !== null) {
         channel.postMessage({ type: "unread-count", unreadCount: count })
       }

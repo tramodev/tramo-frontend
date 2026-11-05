@@ -28,6 +28,7 @@ import {
 } from '@/lib/projects-store';
 import { resolveItemTrail } from '../../trail-navigation';
 import { getEditorBootstrap } from '@/lib/editor-bootstrap-client';
+import type { ProjectRole } from '@/lib/projects-store';
 import { acceptLoadedContents, getItemContent, getTrailContents, resetItemContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
 import { useAutoSave } from '@/app/editor/[projectId]/hooks/useAutoSave';
@@ -146,6 +147,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   }, [loaded, items, recoverItemContent]);
   const [view, setView] = useState<'write' | 'graph'>('write');
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
+  const [role, setRole] = useState<ProjectRole>('OWNER');
 
   useEffect(() => {
     if (!draft) return;
@@ -240,6 +242,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       setTrails(project.trails);
       setItems(project.items);
       setProfile(result.profile);
+      setRole(result.role);
       setLoaded(true);
       const itemId = result.selectedItemId;
       setNavigation({ trailId: result.selectedTrailId, itemId,
@@ -715,6 +718,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     tags,
     setTags,
     profile,
+    role,
     trails,
     items,
     mapPreviews,

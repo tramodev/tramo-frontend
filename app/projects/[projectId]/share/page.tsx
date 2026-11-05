@@ -24,6 +24,7 @@ import { Mark } from "@/components/layout/logo"
 import { SharePreview } from "@/components/project/share-preview"
 import { TagsField } from "@/components/project/tags-field"
 import { ThumbnailPicker } from "@/components/project/thumbnail-picker"
+import { CollaboratorsSection } from "@/components/project/collaborators-section"
 import {
   getProject,
   setProjectVisibility,
@@ -46,7 +47,7 @@ const VISIBILITY_OPTIONS: {
   description: string;
   icon: typeof Lock;
 }[] = [
-  { value: "private", label: "Private", description: "Only you can access this project", icon: Lock },
+  { value: "private", label: "Private", description: "Only you and your collaborators", icon: Lock },
   { value: "unlisted", label: "Unlisted", description: "Anyone with the link can view it", icon: Users },
   { value: "published", label: "Published", description: "Listed on Explore for everyone", icon: Globe },
 ];
@@ -78,6 +79,10 @@ export default function PublishPage() {
     getProject(projectId).then((p) => {
       if (cancelled) return;
       if (!p) return;
+      if (p.role !== "OWNER") {
+        router.replace(`/editor/${projectId}`);
+        return;
+      }
       setProject(p);
       setDescription(p.description);
       setTags(p.tags);
@@ -90,7 +95,7 @@ export default function PublishPage() {
       if (!cancelled && p) setProfile({ username: p.username, imageUrl: p.imageUrl, selectedBadge: p.selectedBadge });
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [projectId]);
+  }, [projectId, router]);
 
   if (!project) return <main id="main-content" tabIndex={-1} className="flex min-h-svh flex-col items-center justify-center gap-4 p-6">
     {loading ? <p role="status">Loading project…</p> : <>
@@ -272,6 +277,8 @@ export default function PublishPage() {
             })}
           </div>
         </div>
+
+        <CollaboratorsSection projectId={projectId} />
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="publish-description">Description</Label>

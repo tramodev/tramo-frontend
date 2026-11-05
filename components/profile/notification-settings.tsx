@@ -17,6 +17,8 @@ const TYPES: { value: NotificationType; label: string; desc: string }[] = [
   { value: "SHARE", label: "Shared projects", desc: "Someone you follow shares a project." },
   { value: "BADGE", label: "Badges", desc: "You earn a badge." },
   { value: "FEATURED", label: "Featured", desc: "One of your projects gets featured." },
+  { value: "MEMBER_ADDED", label: "Collaborations", desc: "Someone adds you to their project." },
+  { value: "MEMBER_JOINED", label: "New collaborators", desc: "Someone joins your project through an invite link." },
 ]
 
 export function NotificationSettings({

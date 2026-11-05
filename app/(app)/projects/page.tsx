@@ -38,6 +38,7 @@ import { useMounted } from "@/hooks/use-mounted"
 import { useCurrentUserId } from "@/components/auth/current-user"
 import { beginDraft } from "@/lib/editor-draft"
 import { formatBytes } from "@/lib/format-bytes"
+import { PENDING_JOIN_KEY } from "@/lib/pending-join"
 import { PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 import {
   startExampleProject,
@@ -57,6 +58,11 @@ function formatUpdatedAt(iso: string): string {
     day: "numeric",
     year: "numeric",
   })
+}
+
+function sharedLabel(project: Project) {
+  if (project.role === "OWNER") return null
+  return `Shared by @${project.ownerUsername} · ${project.role === "EDITOR" ? "Can edit" : "Can view"}`
 }
 
 export default function ProjectsPage() {
@@ -93,6 +99,10 @@ export default function ProjectsPage() {
   useEffect(() => {
     try { localStorage.setItem("tramo:projects:view", savedViewMode) } catch {}
   }, [savedViewMode])
+
+  useEffect(() => {
+    if (sessionStorage.getItem(PENDING_JOIN_KEY)) router.replace("/join")
+  }, [router])
 
   useEffect(() => {
     let cancelled = false
@@ -324,7 +334,7 @@ export default function ProjectsPage() {
                             className="min-w-0 flex-1 line-clamp-2 break-words text-sm font-medium"
                             onDoubleClick={(e) => {
                               e.stopPropagation()
-                              startRename(project)
+                              if (project.role !== "VIEWER") startRename(project)
                             }}
                           >
                             {project.title}
@@ -349,32 +359,34 @@ export default function ProjectsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} onCloseAutoFocus={focusRename}>
-                          <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
+                          {project.role !== "VIEWER" && <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
                             <Pencil className="h-3.5 w-3.5" />
                             Rename
-                          </DropdownMenuItem>
+                          </DropdownMenuItem>}
                           <DropdownMenuItem onSelect={() => openInNewTab(project.id)}>
                             <ExternalLink className="h-3.5 w-3.5" />
                             Open in new tab
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
-                            <HardDrive className="h-3.5 w-3.5" />
-                            Usage breakdown
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() => setDeleteTarget(project)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
-                          </DropdownMenuItem>
+                          {project.role === "OWNER" && <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
+                              <HardDrive className="h-3.5 w-3.5" />
+                              Usage breakdown
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => setDeleteTarget(project)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Delete
+                            </DropdownMenuItem>
+                          </>}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                     <p className="text-xs tabular-nums mt-1 text-muted-foreground">
-                      Edited {formatUpdatedAt(project.updatedAt)} · {formatBytes(project.storageBytes)}
+                      Edited {formatUpdatedAt(project.updatedAt)} · {sharedLabel(project) ?? formatBytes(project.storageBytes)}
                     </p>
                   </CardHeader>
                 </Card>
@@ -424,7 +436,7 @@ export default function ProjectsPage() {
                           className="truncate text-sm font-medium"
                           onDoubleClick={(e) => {
                             e.stopPropagation()
-                            startRename(project)
+                            if (project.role !== "VIEWER") startRename(project)
                           }}
                         >
                           {project.title}
@@ -437,14 +449,14 @@ export default function ProjectsPage() {
                       </span>
                     )}
                     <p className="mt-1 text-xs text-muted-foreground md:hidden">
-                      <span className="capitalize">{project.visibility}</span> · {formatUpdatedAt(project.updatedAt)} · {formatBytes(project.storageBytes)}
+                      <span className="capitalize">{project.visibility}</span> · {formatUpdatedAt(project.updatedAt)} · {sharedLabel(project) ?? formatBytes(project.storageBytes)}
                     </p>
                   </div>
                   <div className="hidden w-28 shrink-0 md:block text-sm capitalize text-muted-foreground">
                     {project.visibility}
                   </div>
                   <div className="hidden w-32 shrink-0 md:block text-xs tabular-nums text-muted-foreground">
-                    {formatUpdatedAt(project.updatedAt)} · {formatBytes(project.storageBytes)}
+                    {formatUpdatedAt(project.updatedAt)} · {sharedLabel(project) ?? formatBytes(project.storageBytes)}
                   </div>
                   <div className="w-8 shrink-0">
                     <DropdownMenu>
@@ -460,27 +472,29 @@ export default function ProjectsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} onCloseAutoFocus={focusRename}>
-                        <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
+                        {project.role !== "VIEWER" && <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
                           <Pencil className="h-3.5 w-3.5" />
                           Rename
-                        </DropdownMenuItem>
+                        </DropdownMenuItem>}
                         <DropdownMenuItem onSelect={() => openInNewTab(project.id)}>
                           <ExternalLink className="h-3.5 w-3.5" />
                           Open in new tab
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
-                          <HardDrive className="h-3.5 w-3.5" />
-                          Usage breakdown
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onSelect={() => setDeleteTarget(project)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        {project.role === "OWNER" && <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
+                            <HardDrive className="h-3.5 w-3.5" />
+                            Usage breakdown
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => setDeleteTarget(project)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { subscribeNotificationCount } from "@/lib/notification-stream"
 import { useRouter } from "next/navigation"
-import { ArrowBigUp, Award, Bell, Check, CheckCheck, GitFork, MessageCircle, Rocket, Share2, UserPlus, X } from "lucide-react"
+import { ArrowBigUp, Award, Bell, Check, CheckCheck, GitFork, MessageCircle, Rocket, Share2, UserPlus, Users, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,8 @@ const ICONS: Record<AppNotification["type"], React.ComponentType<{ className?: s
   SHARE: Share2,
   COMMENT: MessageCircle,
   MODERATION: Bell,
+  MEMBER_ADDED: Users,
+  MEMBER_JOINED: Users,
 }
 
 function others(count: number) {
@@ -58,6 +60,10 @@ function notificationText(n: AppNotification) {
       return <>{n.latestActorUsername}{others(n.count)} shared <strong>{n.projectTitle}</strong></>
     case "COMMENT":
       return <>{n.latestActorUsername}{others(n.count)} commented on <strong>{n.projectTitle}</strong></>
+    case "MEMBER_ADDED":
+      return <>{n.latestActorUsername} shared <strong>{n.projectTitle}</strong> with you</>
+    case "MEMBER_JOINED":
+      return <>{n.latestActorUsername}{others(n.count)} joined <strong>{n.projectTitle}</strong></>
   }
 }
 
