@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { SegmentedControl } from "@/components/ui/segmented-control"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { AuthorAvatar } from "@/components/shared/author-avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -82,17 +81,21 @@ function OptionMenu<T extends string>({ value, options, onChange, disabled, labe
   )
 }
 
-export function CollaboratorsSection({ projectId, owner, onLinkChange }: {
+export type Invitee = { username: string; imageUrl: string | null }
+
+export function CollaboratorsSection({ projectId, owner, onLinkChange, inviting, onInvitingChange }: {
   projectId: string
   owner?: { username: string; imageUrl: string | null } | null
   onLinkChange?: (url: string | null) => void
+  inviting: Invitee | null
+  onInvitingChange: (invitee: Invitee | null) => void
 }) {
   const [members, setMembers] = useState<ProjectMember[]>(() => owner ? [{ ...owner, role: "OWNER", viaLink: false }] : [])
   const [loaded, setLoaded] = useState(false)
   const [link, setLink] = useState<ShareLink | null>(null)
   const [username, setUsername] = useState("")
   const [role, setRole] = useState<MemberRole>("VIEWER")
-  const [inviting, setInviting] = useState<string | null>(null)
+  const setInviting = onInvitingChange
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmRestrict, setConfirmRestrict] = useState(false)
@@ -157,12 +160,12 @@ export function CollaboratorsSection({ projectId, owner, onLinkChange }: {
     if (!invitable || busy) return
     setError(null)
     setRole((members.find((member) => member.username === invitable.username)?.role as MemberRole | undefined) ?? "VIEWER")
-    setInviting(invitable.username)
+    setInviting({ username: invitable.username, imageUrl: invitable.imageUrl })
   }
 
   const invite = async () => {
     if (!inviting) return
-    if (await run(() => addMember(projectId, inviting, role))) {
+    if (await run(() => addMember(projectId, inviting.username, role))) {
       setInviting(null)
       setUsername("")
     }
@@ -178,19 +181,35 @@ export function CollaboratorsSection({ projectId, owner, onLinkChange }: {
     }
   }
 
-  if (inviting) return (
-    <div className="flex flex-col gap-3">
-      <p className="text-[0.8125rem]">Invite <span className="font-medium">@{inviting}</span></p>
-      <SegmentedControl options={ROLE_OPTIONS} value={role} onChange={setRole} />
-      <div className="flex justify-end gap-2">
-        <Button variant="ghost" disabled={busy} onClick={() => { setError(null); setInviting(null) }}>Back</Button>
-        <Button disabled={busy} onClick={() => void invite()}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Invite"}
-        </Button>
+  if (inviting) {
+    const cancel = () => { setError(null); setInviting(null) }
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-stretch gap-2">
+          <div className="relative flex min-h-14 min-w-0 flex-1 items-center rounded-xs border border-input px-2">
+            <span className="absolute -top-2 left-3 bg-background px-1 text-xs font-medium text-muted-foreground">Add people by username</span>
+            <span className="flex h-[30px] min-w-0 items-center gap-1.5 rounded-full border border-input bg-muted pl-1 pr-0.5 text-[0.8125rem] leading-none">
+              <AuthorAvatar username={inviting.username} avatar={inviting.imageUrl} size={20} />
+              <span className="truncate font-medium">@{inviting.username}</span>
+              <button type="button" onClick={cancel} disabled={busy} aria-label={`Remove @${inviting.username}`}
+                className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          </div>
+          <OptionMenu value={role} options={ROLE_OPTIONS} disabled={busy} onChange={setRole} label={`Role for @${inviting.username}`}
+            className="min-h-14 rounded-xs border border-input px-4 text-sm" />
+        </div>
+        {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" disabled={busy} onClick={cancel}>Cancel</Button>
+          <Button disabled={busy} onClick={() => void invite()}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send"}
+          </Button>
+        </div>
       </div>
-      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
