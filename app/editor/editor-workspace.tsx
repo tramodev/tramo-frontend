@@ -57,6 +57,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   const project = useProjectEditorState(routeProjectId, connectionsPanelOpen, user);
   const hasPendingEmbedDraft = useSyncExternalStore(subscribeEmbedDrafts, hasPendingEmbedDrafts, () => false);
   const projectId = project.projectId;
+  const readOnly = project.role === 'VIEWER';
   const router = useRouter();
   const [accessRevoked, setAccessRevoked] = useState(false);
   useEffect(() => {
@@ -97,7 +98,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
       <FolderPlus className="h-12 w-12 opacity-40" />
       <p className="text-lg font-medium">{project.activeTrail ? project.activeTrail.title : 'Start with a note'}</p>
       <p className="max-w-sm text-sm">Write first. A trail is an ordered sequence of notes; you can organize and reuse them as you go.</p>
-      <button type="button" disabled={starting} onClick={startWriting} className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground disabled:opacity-50">{starting ? 'Opening…' : 'Start writing'}</button>
+      {!readOnly && <button type="button" disabled={starting} onClick={startWriting} className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground disabled:opacity-50">{starting ? 'Opening…' : 'Start writing'}</button>}
       {startError && <p role="alert" className="text-sm text-destructive">{startError}</p>}
     </div>
   );
@@ -123,6 +124,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
         showLogo={false}
         titleSlot={
           project.loaded ? <EditorTitleSlot
+            readOnly={readOnly}
             projectTitle={project.projectTitle}
             draft={project.isDraft}
             onDraftTitleChange={project.onDraftProjectTitle}
@@ -156,11 +158,13 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             }}
             profile={project.profile}
             canShare={project.role === 'OWNER'}
+            canEdit={!readOnly}
           />
           </>
         }
         sidebar={
           project.loaded ? <SidebarCustom
+            readOnly={readOnly}
             homeHref="/projects"
             draft={project.isDraft}
             onDraftTrailTitleChange={project.onDraftTrailTitle}
@@ -197,7 +201,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
               <GraphView
                 projectId={projectId}
                 graphColors={project.graphColors}
-                onSaveColors={project.handleSetGraphColors}
+                onSaveColors={readOnly ? undefined : project.handleSetGraphColors}
                 trails={project.trails}
                 items={project.items}
                 mapPreviews={project.mapPreviews}
@@ -211,6 +215,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             <div className={project.view === 'graph' ? 'hidden' : 'editor-write-layout flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden'} inert={project.view === 'graph'}>
             {project.selectedItem ? (
               <WriteView
+                readOnly={readOnly}
                 toolbarOpen={toolbarOpen}
                 hint={project.profile && <TaskHint id={`${project.profile.username}:write`}>
                   Start writing in the note. Your changes save automatically; you can add a title later.

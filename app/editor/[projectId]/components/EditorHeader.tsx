@@ -24,9 +24,10 @@ interface EditorTitleSlotProps {
   saveError: string;
   onDiscardRecoveredChanges?: () => void;
   onKeepRecoveredChanges?: () => Promise<void>;
+  readOnly?: boolean;
 }
 
-export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange, onDiscardRecoveredChanges, onKeepRecoveredChanges }: EditorTitleSlotProps) {
+export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange, onDiscardRecoveredChanges, onKeepRecoveredChanges }: EditorTitleSlotProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [discardRecoveryOpen, setDiscardRecoveryOpen] = useState(false);
   const [keepRecoveryOpen, setKeepRecoveryOpen] = useState(false);
@@ -81,6 +82,15 @@ export function EditorTitleSlot({ projectTitle, onRenameProject, saveStatus, sav
           onBlur={submitEditTitle}
         />
         {titleError && <p role="alert" className="text-xs text-destructive">{titleError}</p>}
+      </div>
+    );
+  }
+
+  if (readOnly) {
+    return (
+      <div className="editor-project-title flex min-w-0 items-center gap-2">
+        <span className="min-w-0 truncate text-[0.9375rem] font-medium">{projectTitle || 'Untitled project'}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">View only</span>
       </div>
     );
   }
@@ -147,6 +157,7 @@ interface EditorActionsProps {
   restoreEpoch: number;
   profile: { username: string; imageUrl: string | null } | null;
   canShare?: boolean;
+  canEdit?: boolean;
 }
 
 export function EditorActions({
@@ -159,6 +170,7 @@ export function EditorActions({
   restoreEpoch,
   disabled,
   canShare = true,
+  canEdit = true,
 }: EditorActionsProps) {
   return (
     <>
@@ -169,7 +181,7 @@ export function EditorActions({
         </span>
       ) : <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
       {!disabled && <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />}
-      {!disabled && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
+      {!disabled && canEdit && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
       {!canShare ? null : disabled ? <Button variant="secondary" size="lg" disabled aria-label="Publish & Share project"><Share2 className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish &amp; Share</span></Button> : <Button data-tour="share" variant="secondary" size="lg" asChild>
         <Link href={`/projects/${projectId}/share`} aria-label="Publish & Share project">
           <Share2 className="h-[15px] w-[15px]" />

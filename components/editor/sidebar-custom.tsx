@@ -54,6 +54,7 @@ interface SidebarCustomProps {
   onReorderTrails: (trailIds: string[]) => void;
   trailOrderError?: string | null;
   onMoveItemToTrail: (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => Promise<void>;
+  readOnly?: boolean;
 }
 
 function InlineInput({
@@ -146,6 +147,7 @@ export function SidebarCustom({
   onReorderTrails,
   trailOrderError,
   onMoveItemToTrail,
+  readOnly = false,
 }: SidebarCustomProps) {
   const { state: sidebarState, setOpen, isMobile, setOpenMobile } = useSidebar();
   const state = isMobile ? "expanded" : sidebarState;
@@ -451,9 +453,9 @@ export function SidebarCustom({
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[0.6875rem] font-normal group-data-[state=open]/trails:hidden">{trails.length}</span>
-                    <Button variant="ghost" size="icon" className={`h-11 w-11 ${ICON_ACTION_CLASS}`} aria-label="New trail" title="New trail" disabled={draft} onClick={() => setIsCreating(true)}>
+                    {!readOnly && <Button variant="ghost" size="icon" className={`h-11 w-11 ${ICON_ACTION_CLASS}`} aria-label="New trail" title="New trail" disabled={draft} onClick={() => setIsCreating(true)}>
                       <Plus className="h-4 w-4" />
-                    </Button>
+                    </Button>}
                   </span>
                 </div>
                 <CollapsibleContent className="pl-2">
@@ -490,7 +492,7 @@ export function SidebarCustom({
                             {trailDrag?.overIndex === trails.length && trailIndex === trails.length - 1 && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 bottom-0 z-10 h-0.5 bg-primary" />}
                               <div
                                 className={`group/trail -ml-4 -mr-2 flex items-center hover:bg-sidebar-accent ${dropTrailId === trail.id && drag?.overIndex === null ? "bg-accent ring-1 ring-inset ring-primary" : ""}`}
-                                draggable={!draft && editingTrailId !== (trail.editorKey ?? trail.id)}
+                                draggable={!draft && !readOnly && editingTrailId !== (trail.editorKey ?? trail.id)}
                                 onDragStart={event => {
                                   event.stopPropagation();
                                   event.dataTransfer.effectAllowed = "move";
@@ -555,7 +557,7 @@ export function SidebarCustom({
                                         </span>
                                       </SidebarMenuButton>
                                     </CollapsibleTrigger>
-                                    <Button
+                                    {!readOnly && <Button
                                       variant="ghost"
                                       size="icon"
                                       className={`h-11 w-11 ${ICON_ACTION_CLASS}`}
@@ -564,8 +566,8 @@ export function SidebarCustom({
                                       onClick={() => setCreatingItemTrailId(trail.id)}
                                     >
                                       <Plus className="h-3 w-3" />
-                                    </Button>
-                                    <DropdownMenu>
+                                    </Button>}
+                                    {!readOnly && <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <Button
                                           variant="ghost"
@@ -600,7 +602,7 @@ export function SidebarCustom({
                                           Delete trail
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    </DropdownMenu>}
                                   </>
                                 )}
                               </div>
@@ -653,7 +655,7 @@ export function SidebarCustom({
                                     return (
                                       <SidebarMenuSubItem
                                         key={item.editorKey ?? item.id}
-                                        draggable={!draft && (editingItem?.itemId !== (item.editorKey ?? item.id) || editingItem.trailId !== (trail.editorKey ?? trail.id))}
+                                        draggable={!draft && !readOnly && (editingItem?.itemId !== (item.editorKey ?? item.id) || editingItem.trailId !== (trail.editorKey ?? trail.id))}
                                         onDragStart={(e) => {
                                           e.dataTransfer.effectAllowed = "move";
                                           setDrag({ trailId: trail.id, itemId: item.id, overIndex: null });
@@ -714,7 +716,7 @@ export function SidebarCustom({
                                               <SharedNoteIndicator trails={trailsForItem(item.id)} />
                                               </button>
                                             </SidebarMenuSubButton>
-                                            <DropdownMenu>
+                                            {!readOnly && <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Button
                                                   variant="ghost"
@@ -764,7 +766,7 @@ export function SidebarCustom({
                                                   Delete note
                                                 </DropdownMenuItem>
                                               </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            </DropdownMenu>}
                                           </div>
                                         )}
                                         {addToTrailItemId === item.id && (
@@ -827,9 +829,9 @@ export function SidebarCustom({
                   </CollapsibleTrigger>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[0.6875rem] font-normal group-data-[state=open]/items:hidden">{allItems.length}</span>
-                    <Button variant="ghost" size="icon" className={`h-11 w-11 ${ICON_ACTION_CLASS}`} aria-label="New note" title="New note" disabled={draft} onClick={() => setIsCreatingLoose(true)}>
+                    {!readOnly && <Button variant="ghost" size="icon" className={`h-11 w-11 ${ICON_ACTION_CLASS}`} aria-label="New note" title="New note" disabled={draft} onClick={() => setIsCreatingLoose(true)}>
                       <Plus className="h-4 w-4" />
-                    </Button>
+                    </Button>}
                   </span>
                 </div>
                 <CollapsibleContent className="pl-2">
@@ -884,7 +886,7 @@ export function SidebarCustom({
                                 <span className={`truncate ${!item.title ? "text-muted-foreground" : ""}`}>{item.title || "Untitled note"}</span>
                                 <SharedNoteIndicator trails={memberTrails} />
                               </SidebarMenuButton>
-                              <DropdownMenu>
+                              {!readOnly && <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -911,7 +913,7 @@ export function SidebarCustom({
                                     Delete note
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
-                              </DropdownMenu>
+                              </DropdownMenu>}
                             </div>
                           )}
                           {addToTrailItemId === item.id && (

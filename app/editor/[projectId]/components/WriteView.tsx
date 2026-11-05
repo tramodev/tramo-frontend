@@ -62,6 +62,7 @@ interface WriteViewProps {
   hint?: ReactNode;
   toolbarOpen?: boolean;
   draft?: boolean;
+  readOnly?: boolean;
   onDraftTitleChange?: (id: string, title: string) => void;
   resolveProjectId?: () => Promise<string | undefined>;
   active?: boolean;
@@ -196,7 +197,7 @@ interface ItemEditorProps {
 
 function ItemEditor(props: ItemEditorProps) {
   const [initialContent] = useState(() => props.session.state?.clone(null) ?? props.item.content);
-  return <SafeNoteComposer initialConfig={{ ...editorConfig, editorState: initialContent || undefined }}
+  return <SafeNoteComposer initialConfig={{ ...editorConfig, editable: !props.props.readOnly, editorState: initialContent || undefined }}
     onError={() => props.onContentError(props.item.id)}
     fallback={<div className="trail-item-editor pl-7 py-4">
       <h3 className="font-display text-[1.75rem]">{props.item.title}</h3>
@@ -225,7 +226,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
       <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor} onFocusCapture={event => {
         if (event.currentTarget.contains(event.target)) onFocus(item.id);
       }}>
-        <ItemTitle item={item} onDraftTitleChange={props.onDraftTitleChange} move={move} onCommitTitle={props.onCommitTitle} onFocus={() => {
+        <ItemTitle item={item} readOnly={props.readOnly} onDraftTitleChange={props.onDraftTitleChange} move={move} onCommitTitle={props.onCommitTitle} onFocus={() => {
           setTitleFocused(true);
           onFocus(item.id);
         }} />
@@ -274,7 +275,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           const json = JSON.stringify(state.toJSON());
           if (json === lastContentRef.current) return;
           lastContentRef.current = json;
-          if (tags.has('extraction')) return;
+          if (tags.has('extraction') || props.readOnly) return;
           const pendingCommand = !!props.draft && state.read(() => {
             const selection = $getSelection();
             if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
@@ -283,7 +284,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           });
           props.onChange(item.id, state, pendingCommand);
         }} ignoreSelectionChange ignoreHistoryMergeTagChange={false} />
-        {focused && props.active !== false && <>
+        {focused && props.active !== false && !props.readOnly && <>
           {!props.draft && <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail} history={history}
             sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}
             onOpen={result => props.onSelectItem(result.item, result.trailId)} />}
@@ -299,8 +300,9 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
   );
 }
 
-function ItemTitle({ item, onCommitTitle, onFocus, move, onDraftTitleChange }: {
+function ItemTitle({ item, onCommitTitle, onFocus, move, onDraftTitleChange, readOnly }: {
   onDraftTitleChange?: (id: string, title: string) => void;
+  readOnly?: boolean;
   item: Item;
   onCommitTitle: WriteViewProps['onCommitTitle'];
   onFocus: () => void;
@@ -313,13 +315,13 @@ function ItemTitle({ item, onCommitTitle, onFocus, move, onDraftTitleChange }: {
     if (input && input !== document.activeElement) input.value = item.title;
   }, [item.title]);
   return <div className="pl-7 pt-2">
-    <input ref={inputRef} data-note-title defaultValue={item.title} aria-label="Note title" onFocus={(event) => {
+    <input ref={inputRef} data-note-title defaultValue={item.title} aria-label="Note title" readOnly={readOnly} onFocus={(event) => {
       event.currentTarget.select();
       onFocus();
     }}
       onChange={event => onDraftTitleChange?.(item.id, event.target.value)}
       maxLength={255}
-      onBlur={(event) => onCommitTitle(item.id, item.title, event.target.value)}
+      onBlur={(event) => { if (!readOnly) onCommitTitle(item.id, item.title, event.target.value); }}
       onKeyDown={(event) => {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
           if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.nativeEvent.isComposing || editor.isComposing()) return;
@@ -459,7 +461,7 @@ export function WriteView(props: WriteViewProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest('[role="dialog"], [role="menu"], [role="listbox"], .find-replace-bar')) return;
-      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.altKey && inTrail && trail
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.altKey && inTrail && trail && !props.readOnly
           && target?.closest('.trail-item-editor')) {
         event.preventDefault();
         props.onCreateItem(trail.id, 'Untitled');
@@ -527,7 +529,7 @@ export function WriteView(props: WriteViewProps) {
                 </NextTrailButton>}
               </section>;
             })}
-            {inTrail && trail && <div className="mt-16 flex justify-center pb-4">
+            {inTrail && trail && !props.readOnly && <div className="mt-16 flex justify-center pb-4">
               <button type="button" disabled={props.draft} onClick={() => props.onCreateItem(trail.id, 'Untitled')}
                 className="flex items-center gap-1.5 text-[0.6875rem] font-medium uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground disabled:opacity-50">
                 <Plus className="h-3.5 w-3.5" /> Add next step <kbd>⌘↵</kbd>
