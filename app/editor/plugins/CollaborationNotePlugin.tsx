@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useRef, type ComponentProps } from 'react';
 import { CollaborationPluginV2__EXPERIMENTAL } from '@lexical/react/LexicalCollaborationPlugin';
+import { LexicalCollaboration } from '@lexical/react/LexicalCollaborationContext';
 import { HocuspocusProvider, type HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 import { cursorColor, fetchCollabToken } from '@/lib/collab-client';
@@ -69,6 +70,8 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     return () => { destroyTimer.current = setTimeout(() => connection.provider.destroy(), 0); };
   }, [connection]);
 
-  return <CollaborationPluginV2__EXPERIMENTAL id={itemId} doc={connection.doc} provider={connection.lexicalProvider}
-    username={username} cursorColor={cursorColor(userId)} />;
+  return <LexicalCollaboration>
+    <CollaborationPluginV2__EXPERIMENTAL id={itemId} doc={connection.doc} provider={connection.lexicalProvider}
+      username={username} cursorColor={cursorColor(userId)} />
+  </LexicalCollaboration>;
 }
