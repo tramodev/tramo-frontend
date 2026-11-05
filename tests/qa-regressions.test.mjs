@@ -144,8 +144,9 @@ test('the editor header marks pending embed text and rejected drafts as not save
 
 function shareSetup(getProject, saveDescription = async () => {}, validateEmbeds = async () => []) {
   const published = [], savedTags = [], copied = [];
+  const router = {};
   const page = load('app/projects/[projectId]/share/page.tsx', {
-    'next/navigation': { useParams: () => ({ projectId: 'project' }), useRouter: () => ({}) },
+    'next/navigation': { useParams: () => ({ projectId: 'project' }), useRouter: () => router },
     '@/lib/projects-store': {
       getProject, setProjectDescription: saveDescription,
       setProjectVisibility: async () => ({ error: null }),
@@ -171,7 +172,7 @@ test.each([null, new Error('Unavailable')])('share load failures render a visibl
   expect(nodes.some(node => node.props.href === '/projects')).toBe(true);
 });
 
-const project = { items: {}, id: 'project', title: 'Project', description: '', tags: '', visibility: 'private', restoreEpoch: 0 };
+const project = { items: {}, id: 'project', title: 'Project', description: '', tags: '', visibility: 'private', restoreEpoch: 0, role: 'OWNER' };
 const confirmButton = nodes => nodes.find(node => node.type === 'button' && node.props.children === 'Publish');
 
 test('a failed description save is reported and prevents publishing stale metadata', async () => {
@@ -333,6 +334,8 @@ test.each([false, true])('My Projects falls back safely when storage is invalid 
 test('Escape closes compact formatting and restores its trigger without closing nested menus', () => {
   const frames = [], focused = [];
   const workspace = load('app/editor/editor-workspace.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/lib/notification-stream': { subscribeNotificationCount: () => () => {} },
     '@/app/editor/editor-utils': { countProjectTextStats: () => null },
     '@/app/editor/embed-draft-status': { subscribeEmbedDrafts: () => () => {}, hasPendingEmbedDrafts: () => false },
     '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => ({
@@ -345,7 +348,7 @@ test('Escape closes compact formatting and restores its trigger without closing 
   const render = () => workspace.render('ProjectEditor', { routeProjectId: 'project', user: { userId: '1' } });
   let root = render();
   root.props.ref.current = { dataset: { shortViewport: 'true' } };
-  const trigger = () => flatten(root.props.children.props.actions).find(node => node.props['aria-controls'] === 'editor-formatting-toolbar');
+  const trigger = () => flatten(flatten(root.props.children).find(node => node.props?.actions).props.actions).find(node => node.props['aria-controls'] === 'editor-formatting-toolbar');
   trigger().props.ref.current = { focus: () => focused.push('formatting') };
   trigger().props.onClick();
   root = render();

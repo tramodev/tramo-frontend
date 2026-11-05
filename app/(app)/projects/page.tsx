@@ -101,7 +101,7 @@ export default function ProjectsPage() {
   }, [savedViewMode])
 
   useEffect(() => {
-    if (sessionStorage.getItem(PENDING_JOIN_KEY)) router.replace("/join")
+    try { if (sessionStorage.getItem(PENDING_JOIN_KEY)) router.replace("/join") } catch {}
   }, [router])
 
   useEffect(() => {

@@ -36,7 +36,7 @@ function projectsSetup() {
       listProjects: () => new Promise((resolve, reject) => requests.push({ resolve, reject })),
       startExampleProject: () => new Promise((resolve, reject) => starts.push({ resolve, reject })),
     },
-  })[name] ?? {}, { sessionStorage: { getItem: () => 'request', setItem() {}, removeItem() {} } });
+  })[name] ?? {}, { sessionStorage: { getItem: key => key === 'tramo:pending-join' ? null : 'request', setItem() {}, removeItem() {} } });
   function render() {
     index = effectIndex = 0;
     const nodes = flatten(page.default());
