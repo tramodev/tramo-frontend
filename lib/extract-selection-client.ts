@@ -3,10 +3,6 @@ import type { Item, TrailStep } from '@/app/editor/types';
 export interface ExtractionRequest {
   operationId: string;
   title: string;
-  leaveLink: boolean;
-  expectedContent: string;
-  extractionEpoch: number;
-  sourceContent: string;
   extractedContent: string;
   trailId: number | null;
   appendToTrail: boolean;
@@ -14,8 +10,6 @@ export interface ExtractionRequest {
 }
 export interface ExtractionResult {
   item: Item;
-  sourceContent: string;
-  extractionEpoch: number;
   trailId?: string;
   steps: TrailStep[];
 }
@@ -29,6 +23,6 @@ export async function extractSelection(projectId: string, sourceId: string, requ
   const data = await response.json().catch(() => null);
   if (!response.ok || !data) throw new Error(data?.message ?? 'Could not extract this selection. Your local content is unchanged. Retry the same request.');
   return { item: { id: String(data.item.id), title: data.item.title, titleAlign: data.item.titleAlign ?? 'center', unfiled: data.item.unfiled, content: data.content },
-    sourceContent: data.sourceContent, extractionEpoch: data.extractionEpoch, trailId: data.trailId == null ? undefined : String(data.trailId),
+    trailId: data.trailId == null ? undefined : String(data.trailId),
     steps: data.steps.map((step: { id: number }) => ({ itemId: String(step.id) })) };
 }

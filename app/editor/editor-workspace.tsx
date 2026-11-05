@@ -246,18 +246,15 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
                 onCreateItem={project.handleCreateItem}
                 onOpenGraph={() => project.setView('graph')}
                 onChange={project.onChange}
+                collab={user.userId && user.username ? { userId: String(user.userId), username: user.username } : undefined}
+                onCollabChange={project.onCollabChange}
+                onCollabStatus={project.setCollabStatus}
                 extractionActions={{
                   restoreEpoch: project.restoreEpoch,
-                  beforeExtract: async (id, state) => {
-                    project.onChange(id, state);
-                    if (!await project.flushPendingContent()) throw new Error('Could not save note content. Your selection is kept; wait for image uploads or retry.');
+                  beforeExtract: async () => {
                     try { await project.flushProjectChanges(); }
                     catch { throw new Error('Could not save project changes. Your selection is kept; retry the failed edit before extracting.'); }
-                    if (!await project.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
                   },
-                  pauseItem: project.pauseItem,
-                  resumeItem: project.resumeItem,
-                  acceptPersistedItem: project.acceptPersistedItem,
                   onExtracted: project.applyExtraction,
                 }}
                 connectionsPanelOpen={!project.isDraft && connectionsPanelOpen}

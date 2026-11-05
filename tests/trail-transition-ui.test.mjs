@@ -14,6 +14,7 @@ runInNewContext(source('app/editor/[projectId]/components/WriteView.tsx'), {
     react: { useState: value => [typeof value === 'function' ? value() : value, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useCallback: fn => fn, useEffect: () => {} },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
+    '@/hooks/use-mounted': { useMounted: () => false },
     '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(['a']), selectionIds: new Set(), heights: new Map() }) },
     '@/components/editor/connections-panel': { ConnectionsPanel: 'ConnectionsPanel' },
     '@/components/editor/trail-connector': { TrailConnector: 'TrailConnector' },

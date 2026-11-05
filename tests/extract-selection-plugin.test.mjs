@@ -4,7 +4,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
 function setup({ inTrail = true } = {}) {
-  const states = [], refs = [], effects = [], requests = [], accepted = [], applied = [], history = [], saves = [];
+  const states = [], refs = [], effects = [], requests = [], applied = [], replacements = [], saves = [];
   let si = 0, ri = 0, initialized = false, inspect, now = 0, timerId = 0, collapsed = false, captures = 0;
   let rect = { top: 80, bottom: 100, left: 100 };
   let viewport = { top: 0, bottom: 600, left: 0, right: 1000 };
@@ -14,14 +14,12 @@ function setup({ inTrail = true } = {}) {
   const timers = new Map();
   const advance = ms => { now += ms; for (const [id, timer] of timers) if (timer.at <= now) { timers.delete(id); timer.fn(); } };
   const original = { root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'original' }] }] } };
-  let current = original, editable = true, failSave = false;
-  const captured = { state: { toJSON: () => original }, content: JSON.stringify(original), selection: {} };
+  let current = original, editable = true, failSave = false, replaceResult = true;
+  const captured = { state: { toJSON: () => original }, text: 'original', selection: {} };
   const root = { contains: () => true, closest: () => container };
   const editor = {
     getEditorState: () => ({ toJSON: () => current }), getRootElement: () => root,
     registerUpdateListener: () => () => {}, isEditable: () => editable, setEditable: value => { editable = value; },
-    parseEditorState: content => JSON.parse(content), setEditorState: state => { current = state; },
-    dispatchCommand: command => history.push(command),
   };
   const jsx = (type, props) => ({ type, props }); const exports = {};
   runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/ExtractSelectionPlugin.tsx', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
@@ -29,23 +27,23 @@ function setup({ inTrail = true } = {}) {
     require: name => ({
       react: { useRef: value => refs[ri++] ?? (refs[ri - 1] = { current: value }), useState: value => { const index = si++; if (!(index in states)) states[index] = value; return [states[index], next => { states[index] = next; }]; }, useEffect: effect => { if (!initialized) effects.push(effect); } },
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' }, 'react-dom': { createPortal: (element, target) => { portals.push(target); return element; } },
-      '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] }, lexical: { CLEAR_HISTORY_COMMAND: 'clear-history' },
+      '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
       '@/components/ui/button': { Button: 'Button' }, '@/components/ui/input': { Input: 'Input' },
       '@/components/ui/dialog': Object.fromEntries(['Dialog', 'DialogContent', 'DialogDescription', 'DialogHeader', 'DialogTitle'].map(name => [name, name])),
-      './extract-selection': { applyExtractedContent: (editor, _history, content) => { editor.setEditorState(editor.parseEditorState(content)); editor.dispatchCommand('clear-history'); }, captureSelection: () => { captures++; return { capture: captured }; }, prepareExtraction: (...args) => { prepared.push(args); return { expectedContent: captured.content, sourceContent: 'replacement draft', extractedContent: 'extracted draft' }; } },
-      '@/lib/item-content-client': { getExtractionEpoch: () => 0, acceptExtractionEpoch: (...args) => accepted.push(args) },
+      './extract-selection': { captureSelection: () => { captures++; return { capture: captured }; }, prepareExtraction: (...args) => { prepared.push(args); return 'extracted draft'; },
+        replaceExtractedSelection: (...args) => { replacements.push(args); return replaceResult; } },
       '@/lib/extract-selection-client': { getExtractionTrailCount: async () => 2, extractSelection: (...args) => new Promise((resolve, reject) => requests.push({ args, resolve, reject })) },
     })[name],
     window: { innerWidth: 1000, getSelection: () => ({ get isCollapsed() { return collapsed; }, rangeCount: 1, anchorNode: {}, focusNode: {}, getRangeAt: () => ({ getBoundingClientRect: () => rect }) }), addEventListener: () => {}, removeEventListener: () => {} },
     document: { body: {}, addEventListener: (_, fn) => { inspect = fn; }, removeEventListener: () => {} },
   });
-  const actions = { beforeExtract: async () => { saves.push('save'); if (failSave) throw new Error('Save failed'); }, pauseItem: () => {}, resumeItem: () => {}, acceptPersistedItem: () => {}, onExtracted: (...args) => applied.push(args) };
+  const actions = { beforeExtract: async () => { saves.push('save'); if (failSave) throw new Error('Save failed'); }, onExtracted: (...args) => applied.push(args) };
   const flatten = element => Array.isArray(element) ? element.flatMap(flatten) : element?.props ? [element, ...flatten(element.props.children)] : [];
   function render() { si = ri = 0; const elements = flatten(exports.default({ projectId: 'project', itemId: 'source', trail: inTrail ? { id: '1', itemIds: ['2', '3'] } : undefined, sharedCount: 2, actions, onOpen: () => {} })); if (!initialized) { initialized = true; effects.forEach(fn => fn()); } return elements; }
   function button(label) { return render().find(node => node.type === 'Button' && node.props.children === label); }
   function open() { render(); inspect(); advance(16); button('Extract to new note').props.onClick(); render().find(node => node.type === 'Input').props.onChange({ target: { value: 'New note' } }); }
-  const result = { item: { id: 'new', title: 'New note', content: 'extracted' }, sourceContent: JSON.stringify({ root: { children: [{ text: 'replacement' }] } }), extractionEpoch: 1, steps: [] };
-  return { render, button, open, advance, inspect: () => inspect(), setRect: next => { rect = next; }, setViewport: next => { viewport = next; }, container, portals, collapse: () => { collapsed = true; }, captures: () => captures, result, requests, accepted, applied, history, saves, prepared, failSave: () => { failSave = true; }, change: () => { current = { root: { children: [{ text: 'later edit' }] } }; }, content: () => current, editable: () => editable };
+  const result = { item: { id: 'new', title: 'New note', content: 'extracted' }, steps: [] };
+  return { render, button, open, advance, inspect: () => inspect(), setRect: next => { rect = next; }, setViewport: next => { viewport = next; }, container, portals, collapse: () => { collapsed = true; }, captures: () => captures, result, requests, applied, replacements, saves, prepared, failSave: () => { failSave = true; }, selectionChanged: () => { replaceResult = false; }, content: () => current, editable: () => editable };
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
@@ -64,11 +62,13 @@ test('double submit is blocked and ambiguous failure retries the same operation 
   s.button('Try again').props.onClick(); await settle();
   expect(s.requests).toHaveLength(2); expect(s.requests[1].args[2]).toBe(s.requests[0].args[2]); expect(s.saves).toHaveLength(1);
   s.requests[1].resolve(s.result); await settle();
-  expect(s.applied).toHaveLength(1); expect(s.history).toEqual(['clear-history']); expect(s.accepted[0]).toEqual(['source', 1, s.result.sourceContent]); expect(s.editable()).toBe(true); expect(s.content()).toEqual(JSON.parse(s.result.sourceContent));
+  expect(s.applied).toEqual([[s.result]]); expect(s.replacements).toHaveLength(1); expect(s.replacements[0].slice(2)).toEqual(['new', 'New note', true]); expect(s.editable()).toBe(true);
+  expect(s.requests[0].args[2]).toEqual({ operationId: 'fixed-operation-id', title: 'New note', extractedContent: 'extracted draft', trailId: 1, appendToTrail: true, expectedOrder: [2, 3] });
 });
-test('late response does not discard content changed after submission', async () => {
-  const s = setup(); s.open(); await settle(); s.button('Extract').props.onClick(); await settle(); s.change(); s.requests[0].resolve(s.result); await settle();
-  expect(s.applied[0][3]).toBe(false); expect(s.accepted).toHaveLength(0); expect(s.history).toHaveLength(0); expect(s.content().root.children[0].text).toBe('later edit'); expect(s.render().find(node => node.props.role === 'alert').props.children).toContain('local text was kept');
+test('a selection changed while extracting is left in place and reported', async () => {
+  const s = setup(); s.open(); await settle(); s.selectionChanged(); s.button('Extract').props.onClick(); await settle(); s.requests[0].resolve(s.result); await settle();
+  expect(s.applied).toHaveLength(1);
+  expect(JSON.stringify(s.render().find(node => node.props.role === 'status').props.children)).toContain('left in place');
 });
 
 test('floats above the selection without debounce and stays anchored while extending down', () => {
@@ -130,21 +130,23 @@ test.each(['', '   '])('empty title %j extracts as Untitled with a link by defau
   expect(s.button('Extract').props.disabled).toBe(false);
   expect(s.render().find(node => node.props.type === 'checkbox').props.checked).toBe(true);
   s.button('Extract').props.onClick(); await settle();
-  expect(s.requests[0].args[2]).toMatchObject({ title: 'Untitled', leaveLink: true, appendToTrail: true });
-  expect(s.prepared[0].slice(2)).toEqual(['Untitled', 'fixed-operation-id', true]);
+  expect(s.requests[0].args[2]).toMatchObject({ title: 'Untitled', appendToTrail: true });
+  s.requests[0].resolve(s.result); await settle();
+  expect(s.replacements[0].slice(3)).toEqual(['Untitled', true]);
 });
 
 test('link can be disabled independently of trail placement and stays frozen on retry', async () => {
   const s = setup(); s.open(); await settle();
   s.render().find(node => node.props.type === 'checkbox').props.onChange({ target: { checked: false } });
   s.button('Extract').props.onClick(); await settle();
-  expect(s.requests[0].args[2]).toMatchObject({ title: 'New note', leaveLink: false, trailId: 1, appendToTrail: true });
-  expect(s.prepared[0][4]).toBe(false);
+  expect(s.requests[0].args[2]).toMatchObject({ title: 'New note', trailId: 1, appendToTrail: true });
   expect(s.render().find(node => node.props.type === 'checkbox').props.disabled).toBe(true);
   s.requests[0].reject(new Error('Connection lost')); await settle();
   expect(s.render().find(node => node.props.type === 'checkbox').props.disabled).toBe(true);
   s.button('Try again').props.onClick(); await settle();
   expect(s.requests[1].args[2]).toBe(s.requests[0].args[2]);
+  s.requests[1].resolve(s.result); await settle();
+  expect(s.replacements[0][4]).toBe(false);
 });
 
 test('extraction without a current trail defaults to outside', async () => {

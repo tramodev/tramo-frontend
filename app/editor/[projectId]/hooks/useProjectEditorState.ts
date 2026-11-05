@@ -737,10 +737,9 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     handleSelectTrail,
     redirectToLogin,
     flushProjectChanges: async () => { await Promise.all([titleSaves.flush(), pendingSaves.current.flush()]); },
-    applyExtraction: (sourceId: string, expectedContent: string, result: ExtractionResult, applySource: boolean) => {
+    applyExtraction: (result: ExtractionResult) => {
       setItems(previous => ({ ...previous,
         [result.item.id]: { ...result.item, textStats: countTextStats(result.item.content ?? '') },
-        ...(applySource && previous[sourceId]?.content === expectedContent ? { [sourceId]: { ...previous[sourceId], content: result.sourceContent, textStats: countTextStats(result.sourceContent) } } : {}),
       }));
       if (result.trailId) setTrails(previous => previous.map(trail => trail.id === result.trailId
         ? { ...trail, steps: result.steps, itemIds: result.steps.map(step => step.itemId) } : trail));

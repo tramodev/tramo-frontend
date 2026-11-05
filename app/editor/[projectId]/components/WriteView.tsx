@@ -46,6 +46,11 @@ import ItemMentionPlugin from '../../plugins/ItemMentionPlugin';
 import ExtractSelectionPlugin, { type ExtractionActions } from '../../plugins/ExtractSelectionPlugin';
 import WikiLinkPlugin from '../../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
+import CollaborationNotePlugin, { type CollabClosedReason, type CollabStatus } from '../../plugins/CollaborationNotePlugin';
+import { HocuspocusProviderWebsocket } from '@hocuspocus/provider';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useMounted } from '@/hooks/use-mounted';
+import { collabUrl } from '@/lib/collab-client';
 import { editorConfig, placeholder } from '../../lexical-config';
 import { isLegacyNoteContent } from '@/app/editor/note-content';
 import { ImageNode } from '@/app/editor/nodes/ImageNode';
@@ -88,6 +93,9 @@ interface WriteViewProps {
   onCreateItem: (trailId: string, title: string) => void;
   onOpenGraph: () => void;
   onChange: (itemId: string, editorState: EditorState, pendingCommand?: boolean) => void;
+  collab?: { userId: string; username: string };
+  onCollabChange?: (itemId: string, editorState: EditorState) => void;
+  onCollabStatus?: (itemId: string, status: CollabStatus | null) => void;
   extractionActions: ExtractionActions;
   connectionsPanelOpen: boolean;
   onToggleConnectionsPanelOpen: () => void;
@@ -193,21 +201,24 @@ interface ItemEditorProps {
   session: ItemEditorSession;
   onPendingImages: (itemId: string, pending: boolean) => void;
   onContentError: (itemId: string) => void;
+  socket: HocuspocusProviderWebsocket | null;
+  onCollabClosed: (reason: CollabClosedReason) => void;
 }
 
 function ItemEditor(props: ItemEditorProps) {
-  const [initialContent] = useState(() => props.session.state?.clone(null) ?? props.item.content);
-  return <SafeNoteComposer initialConfig={{ ...editorConfig, editable: !props.props.readOnly, editorState: initialContent || undefined }}
+  const [collaborative] = useState(() => !props.props.draft && !!props.props.collab);
+  const [initialContent] = useState(() => collaborative ? null : props.session.state?.clone(null) ?? props.item.content);
+  return <SafeNoteComposer initialConfig={{ ...editorConfig, editable: !props.props.readOnly, editorState: collaborative ? null : initialContent || undefined }}
     onError={() => props.onContentError(props.item.id)}
     fallback={<div className="trail-item-editor pl-7 py-4">
       <h3 className="font-display text-[1.75rem]">{props.item.title}</h3>
       <p role="alert" className="mt-2 text-sm text-destructive">Could not open this note. Its original content has not been changed.</p>
     </div>}>
-    <ItemEditorContent {...props} />
+    <ItemEditorContent {...props} collaborative={collaborative} />
   </SafeNoteComposer>;
 }
 
-function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, register, move, session, onPendingImages }: ItemEditorProps) {
+function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, register, move, session, onPendingImages, socket, onCollabClosed, collaborative }: ItemEditorProps & { collaborative: boolean }) {
   const [editor] = useLexicalComposerContext();
   const legacyContent = useMemo(() => !!item.content && isLegacyNoteContent(item.content), [item.content]);
   const [titleFocused, setTitleFocused] = useState(false);
@@ -242,7 +253,10 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
               placeholder={<div className="editor-placeholder">{placeholder}</div>} />
           } ErrorBoundary={LexicalErrorBoundary} />
         </div>
-        <HistoryPlugin externalHistoryState={history} />
+        {collaborative
+          ? socket && props.collab && <CollaborationNotePlugin itemId={item.id} socket={socket} username={props.collab.username} userId={props.collab.userId}
+            onStatus={(id, status) => props.onCollabStatus?.(id, status)} onClosed={onCollabClosed} />
+          : <HistoryPlugin externalHistoryState={history} />}
         <ListPlugin />
         <CheckListPlugin />
         <LinkPlugin />
@@ -275,6 +289,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           const json = JSON.stringify(state.toJSON());
           if (json === lastContentRef.current) return;
           lastContentRef.current = json;
+          if (collaborative) { props.onCollabChange?.(item.id, state); return; }
           if (tags.has('extraction') || props.readOnly) return;
           const pendingCommand = !!props.draft && state.read(() => {
             const selection = $getSelection();
@@ -285,11 +300,11 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           props.onChange(item.id, state, pendingCommand);
         }} ignoreSelectionChange ignoreHistoryMergeTagChange={false} />
         {focused && props.active !== false && !props.readOnly && <>
-          {!props.draft && <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail} history={history}
+          {collaborative && <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail}
             sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}
             onOpen={result => props.onSelectItem(result.item, result.trailId)} />}
           {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId}
-            history={history}
+            history={collaborative ? undefined : history}
             titleFocused={titleFocused} titleAlign={item.titleAlign}
             onSetTitleAlign={(align) => props.onSetTitleAlign(item.id, align)} />, toolbar)}
           <FloatingLinkEditorPlugin />
@@ -356,6 +371,14 @@ export function WriteView(props: WriteViewProps) {
   const [focusedItemId, setFocusedItemId] = useState(item.id);
   const [positionedContext, setPositionedContext] = useState<string | null>(null);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
+  const mounted = useMounted();
+  const collaborative = !props.draft && !!props.collab;
+  const socket = useMemo(() => mounted && collaborative ? new HocuspocusProviderWebsocket({ url: collabUrl(), autoConnect: false }) : null, [mounted, collaborative]);
+  useEffect(() => {
+    socket?.connect();
+    return () => socket?.disconnect();
+  }, [socket]);
+  const [collabClosed, setCollabClosed] = useState<CollabClosedReason | null>(null);
   const editorInnerRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef(new Map<string, HTMLElement>());
   const editors = useRef(new Map<string, LexicalEditor>());
@@ -519,7 +542,8 @@ export function WriteView(props: WriteViewProps) {
                   Step {index + 1}
                 </div>
                 {stepItem.content != null && (mounted ? <ItemEditor item={stepItem} revealed={revealed} props={props} focused={focusedId === stepItem.id}
-                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} session={session} onPendingImages={onPendingImages} onContentError={onContentError} /> : <button type="button"
+                  toolbar={toolbar} onFocus={onFocus} register={register} move={move} session={session} onPendingImages={onPendingImages} onContentError={onContentError}
+                  socket={socket} onCollabClosed={setCollabClosed} /> : <button type="button"
                   aria-label={`Open note: ${stepItem.title}`} onClick={() => props.onSelectItem(stepItem, props.activeTrailId)}
                   className="w-full pl-7 pt-2 text-left font-display text-[1.75rem] font-medium" style={{ textAlign: stepItem.titleAlign }}>
                   {stepItem.title}
@@ -542,5 +566,18 @@ export function WriteView(props: WriteViewProps) {
     {!props.draft && <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} mapPreviews={props.mapPreviews} onRetryMapPreviews={props.onRetryMapPreviews} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
       onSelectItem={props.onSelectItem} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />}
+    <AlertDialog open={!!collabClosed}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{collabClosed === 'revoked' ? 'Your access to this note changed' : 'This note changed in another session'}</AlertDialogTitle>
+          <AlertDialogDescription>{collabClosed === 'revoked'
+            ? 'Your role in this project changed or your session ended. Reload to continue with your current access.'
+            : 'It was restored to an earlier version or rejected an invalid edit. Reload to keep editing the latest version.'}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction onClick={() => window.location.reload()}>Reload</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </EditorImagesProvider>;
 }

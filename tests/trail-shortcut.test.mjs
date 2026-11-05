@@ -14,6 +14,7 @@ function setup({ next = true, previous = false, emptyPrevious = false, active = 
       react: { useState: value => [typeof value === 'function' ? value() : value, next => { if (next?.itemId) moves.push(next); }], useRef: value => ({ current: value }), useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
       'react/jsx-runtime': { jsx: () => ({}), jsxs: () => ({}), Fragment: 'Fragment' },
       '@/hooks/use-scroll-spy': { useScrollSpy() {} },
+      '@/hooks/use-mounted': { useMounted: () => false },
       '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(), selectionIds: new Set(), heights: new Map() }) },
     })[name] ?? {},
   });

@@ -6,8 +6,10 @@ import type { EditorState } from 'lexical';
 import { acceptExtractionEpoch, getExtractionEpoch, getItemContentSnapshot, getSavedItemContent, saveItemContent } from '@/lib/item-content-client';
 import { readItemContentBackup, writeItemContentBackup, removeItemContentBackup, type ItemContentBackup } from '@/lib/item-content-backup';
 import { isAuthError } from '../../editor-utils';
+import type { CollabStatus } from '../../plugins/CollaborationNotePlugin';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'unsaved';
+const STATUS_RANK: SaveStatus[] = ['idle', 'saved', 'unsaved', 'saving', 'error'];
 
 interface UseAutoSaveParams {
   userId?: string;
@@ -30,6 +32,7 @@ export function useAutoSave({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState('');
   const [recoveredConflict, setRecoveredConflict] = useState(false);
+  const [collabStatuses, setCollabStatuses] = useState<Record<string, CollabStatus>>({});
   const conflictedBackupsRef = useRef(new Set<string>());
   const resolvingConflictsRef = useRef(false);
   const pendingContentRef = useRef(new Map<string, string>());
@@ -163,6 +166,29 @@ export function useAutoSave({
     });
   }, [flushOptimisticContent, flushPendingContent, userId, projectId, restoreEpoch]);
 
+  const onCollabChange = useCallback((itemId: string, editorState: EditorState) => {
+    editorState.read(() => {
+      optimisticContentRef.current.set(itemId, serializeNoteContent(editorState.toJSON()));
+      if (!optimisticTimeoutRef.current) optimisticTimeoutRef.current = setTimeout(flushOptimisticContent, 150);
+    });
+  }, [flushOptimisticContent]);
+
+  const setCollabStatus = useCallback((itemId: string, status: CollabStatus | null) => {
+    setCollabStatuses(previous => {
+      if ((previous[itemId] ?? null) === status) return previous;
+      const next = { ...previous };
+      if (status) next[itemId] = status;
+      else delete next[itemId];
+      return next;
+    });
+  }, []);
+  const collabValues = Object.values(collabStatuses);
+  const collabStatus: SaveStatus = collabValues.includes('offline') ? 'error' : collabValues.includes('syncing') ? 'saving' : collabValues.length ? 'saved' : 'idle';
+  const localStatus: SaveStatus = recoveredConflict ? 'error' : saveStatus;
+  const combinedStatus = STATUS_RANK[Math.max(STATUS_RANK.indexOf(collabStatus), STATUS_RANK.indexOf(localStatus))];
+  const combinedError = recoveredConflict && !saveError ? 'Recovered changes need a decision before they can sync.'
+    : saveError || (collabStatus === 'error' ? 'Offline. Reconnecting; your edits stay in this tab until the connection returns.' : '');
+
   const recoverItemContent = useCallback((itemId: string, backup: ItemContentBackup, serverContent: string) => {
     if (!pendingContentRef.current.has(itemId)) pendingContentRef.current.set(itemId, backup.content);
     if (backup.restoreEpoch !== restoreEpoch || backup.extractionEpoch !== getExtractionEpoch(itemId)
@@ -246,5 +272,5 @@ export function useAutoSave({
       }
     } catch { setSaveError('Local backup is unavailable. Keep this tab open until your changes are saved.'); }
   }, [flushOptimisticContent, userId, projectId]);
-  return { saveStatus: recoveredConflict ? 'error' as const : saveStatus, saveError: recoveredConflict && !saveError ? 'Recovered changes need a decision before they can sync.' : saveError, onKeepRecoveredChanges: recoveredConflict ? keepRecoveredChanges : undefined, onDiscardRecoveredChanges: recoveredConflict ? discardRecoveredChanges : undefined, recoverItemContent, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
+  return { saveStatus: combinedStatus, saveError: combinedError, onCollabChange, setCollabStatus, onKeepRecoveredChanges: recoveredConflict ? keepRecoveredChanges : undefined, onDiscardRecoveredChanges: recoveredConflict ? discardRecoveredChanges : undefined, recoverItemContent, onChange, discardItem, flushPendingContent, pauseItem, resumeItem, acceptPersistedItem, renameItemId };
 }
