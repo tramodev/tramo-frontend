@@ -37,7 +37,7 @@ const TOUR_STEPS = [
     element: '[data-tour="share"]',
     popover: {
       title: 'Share',
-      description: 'Control who can see this project and publish it when you\'re ready.',
+      description: 'Invite people to edit or view this project. Publish it from the button next to it when you\'re ready.',
     },
   },
 ];

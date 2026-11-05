@@ -145,7 +145,7 @@ test('the editor header marks pending embed text and rejected drafts as not save
 function shareSetup(getProject, saveDescription = async () => {}, validateEmbeds = async () => []) {
   const published = [], savedTags = [], copied = [];
   const router = {};
-  const page = load('app/projects/[projectId]/share/page.tsx', {
+  const page = load('app/projects/[projectId]/publish/page.tsx', {
     'next/navigation': { useParams: () => ({ projectId: 'project' }), useRouter: () => router },
     '@/lib/projects-store': {
       getProject, setProjectDescription: saveDescription,

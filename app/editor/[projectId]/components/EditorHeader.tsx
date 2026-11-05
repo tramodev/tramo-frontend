@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Check, Loader2, Share2 } from 'lucide-react';
+import { AlertCircle, Check, Globe, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -12,6 +12,7 @@ import type { ProjectEmbedError } from '@/lib/project-embed-errors';
 import type { Item } from '@/app/editor/types';
 import { ExportProjectButton } from '@/components/editor/export-project-button';
 import { ProjectHistorySheet } from '@/components/editor/project-history-sheet';
+import { ShareDialog } from '@/components/project/share-dialog';
 import { PROJECT_TEXT_MAX_LENGTH } from '@/lib/project-validation';
 import type { SaveStatus } from '../hooks/useAutoSave';
 
@@ -153,6 +154,7 @@ interface EditorActionsProps {
   disabled?: boolean;
   textStats: { words: number; characters: number } | null;
   projectId: string;
+  projectTitle: string;
   beforeExport: () => Promise<void>;
   restoreEpoch: number;
   profile: { username: string; imageUrl: string | null } | null;
@@ -165,6 +167,7 @@ export function EditorActions({
   onReviewEmbed,
   textStats,
   projectId,
+  projectTitle,
   profile,
   beforeExport,
   restoreEpoch,
@@ -172,6 +175,7 @@ export function EditorActions({
   canShare = true,
   canEdit = true,
 }: EditorActionsProps) {
+  const [shareOpen, setShareOpen] = useState(false);
   return (
     <>
       <EmbedErrorsStatus key={`${projectId}:${restoreEpoch}`} items={items} onReview={onReviewEmbed} />
@@ -182,12 +186,19 @@ export function EditorActions({
       ) : <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
       {!disabled && <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />}
       {!disabled && canEdit && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
-      {!canShare ? null : disabled ? <Button variant="secondary" size="lg" disabled aria-label="Publish & Share project"><Share2 className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish &amp; Share</span></Button> : <Button data-tour="share" variant="secondary" size="lg" asChild>
-        <Link href={`/projects/${projectId}/share`} aria-label="Publish & Share project">
-          <Share2 className="h-[15px] w-[15px]" />
-          <span className="hidden sm:inline">Publish &amp; Share</span>
-        </Link>
-      </Button>}
+      {canShare && <>
+        <Button data-tour="share" variant="secondary" size="lg" className="project-share-button" disabled={disabled} aria-label="Share project" onClick={() => setShareOpen(true)}>
+          <UserPlus className="h-[15px] w-[15px]" />
+          <span className="hidden sm:inline">Share</span>
+        </Button>
+        {disabled ? <Button variant="secondary" size="lg" className="project-share-button" disabled aria-label="Publish project"><Globe className="h-[15px] w-[15px]" /><span className="hidden sm:inline">Publish</span></Button> : <Button variant="secondary" size="lg" className="project-share-button" asChild>
+          <Link href={`/projects/${projectId}/publish`} aria-label="Publish project">
+            <Globe className="h-[15px] w-[15px]" />
+            <span className="hidden sm:inline">Publish</span>
+          </Link>
+        </Button>}
+        {!disabled && <ShareDialog projectId={projectId} projectTitle={projectTitle} owner={profile} open={shareOpen} onOpenChange={setShareOpen} />}
+      </>}
       <UserMenu loggedIn={!!profile} username={profile?.username ?? null} imageUrl={profile?.imageUrl ?? null} />
     </>
   );

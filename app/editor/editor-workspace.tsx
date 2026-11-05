@@ -150,6 +150,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             restoreEpoch={project.restoreEpoch}
             textStats={textStats}
             projectId={projectId}
+            projectTitle={project.projectTitle}
             beforeExport={async () => {
               if (!await project.flushPendingContent()) throw new Error('Could not save note content. Wait for image uploads to finish or retry before exporting.');
               try { await project.flushProjectChanges(); }

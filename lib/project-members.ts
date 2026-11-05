@@ -16,13 +16,11 @@ export interface ProjectMember {
 }
 
 export interface ShareLink {
-  id: number;
   role: MemberRole;
   createdAt: string;
-  expiresAt: string | null;
   lastUsedAt: string | null;
   useCount: number;
-  token: string | null;
+  token: string;
 }
 
 type Result<T> = { data: T; error: null; status: number } | { data: null; error: string; status: number };
@@ -40,8 +38,8 @@ function membersPath(projectId: string) {
   return `/api/project/${encodeURIComponent(projectId)}/members`;
 }
 
-function linksPath(projectId: string) {
-  return `/api/project/${encodeURIComponent(projectId)}/share-links`;
+function linkPath(projectId: string) {
+  return `/api/project/${encodeURIComponent(projectId)}/share-link`;
 }
 
 export async function listMembers(projectId: string): Promise<ProjectMember[]> {
@@ -65,16 +63,18 @@ export async function leaveProject(projectId: string): Promise<Result<null>> {
   return request(`/api/project/${encodeURIComponent(projectId)}/membership`, { method: "DELETE" });
 }
 
-export async function listShareLinks(projectId: string): Promise<ShareLink[]> {
-  return parseResponse<ShareLink[]>(await authenticatedFetch(`${API_BASE_URL}${linksPath(projectId)}`));
+export async function getShareLink(projectId: string): Promise<ShareLink | null> {
+  const result = await request<ShareLink | null>(linkPath(projectId));
+  if (result.error) throw new Error(result.error);
+  return result.data;
 }
 
-export async function createShareLink(projectId: string, role: MemberRole): Promise<Result<ShareLink>> {
-  return request(linksPath(projectId), { method: "POST", headers: jsonHeaders, body: JSON.stringify({ role }) });
+export async function setShareLink(projectId: string, role: MemberRole): Promise<Result<ShareLink>> {
+  return request(linkPath(projectId), { method: "PUT", headers: jsonHeaders, body: JSON.stringify({ role }) });
 }
 
-export async function revokeShareLink(projectId: string, linkId: number): Promise<Result<null>> {
-  return request(`${linksPath(projectId)}/${linkId}`, { method: "DELETE" });
+export async function clearShareLink(projectId: string): Promise<Result<null>> {
+  return request(linkPath(projectId), { method: "DELETE" });
 }
 
 export async function acceptShareLink(token: string): Promise<Result<{ projectId: string }>> {
