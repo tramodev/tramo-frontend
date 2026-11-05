@@ -217,7 +217,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
               <WriteView
                 readOnly={readOnly}
                 toolbarOpen={toolbarOpen}
-                hint={project.profile && <TaskHint id={`${project.profile.username}:write`}>
+                hint={project.profile && !readOnly && <TaskHint id={`${project.profile.username}:write`}>
                   Start writing in the note. Your changes save automatically; you can add a title later.
                 </TaskHint>}
                 draft={project.isDraft}

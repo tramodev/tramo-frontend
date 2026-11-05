@@ -49,7 +49,8 @@ export async function listMembers(projectId: string): Promise<ProjectMember[]> {
 }
 
 export async function addMember(projectId: string, username: string, role: MemberRole): Promise<Result<ProjectMember>> {
-  return request(membersPath(projectId), { method: "POST", headers: jsonHeaders, body: JSON.stringify({ username, role }) });
+  const result = await request<ProjectMember>(membersPath(projectId), { method: "POST", headers: jsonHeaders, body: JSON.stringify({ username, role }) });
+  return result.status === 404 ? { data: null, error: "No user with that username.", status: 404 } : result;
 }
 
 export async function changeMemberRole(projectId: string, username: string, role: MemberRole): Promise<Result<ProjectMember>> {
