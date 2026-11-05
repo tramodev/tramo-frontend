@@ -110,8 +110,8 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
   }
 
   constructor(
-    src: string,
-    altText: string,
+    src = '',
+    altText = '',
     width?: 'inherit' | number,
     height?: 'inherit' | number,
     caption?: string,
