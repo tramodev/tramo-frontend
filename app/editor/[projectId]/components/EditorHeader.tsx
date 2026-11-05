@@ -108,7 +108,7 @@ export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveS
       >
         {projectTitle || 'Untitled project'}
       </button>
-      <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground w-[60px]">
+      <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground min-w-[60px] whitespace-nowrap">
         {saveStatus === 'saving' && (
           <>
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
