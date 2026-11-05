@@ -16,6 +16,7 @@ import {
   List as ListIcon,
   HardDrive,
   Loader2,
+  LogOut,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -39,6 +40,7 @@ import { useCurrentUserId } from "@/components/auth/current-user"
 import { beginDraft } from "@/lib/editor-draft"
 import { formatBytes } from "@/lib/format-bytes"
 import { PENDING_JOIN_KEY } from "@/lib/pending-join"
+import { leaveProject } from "@/lib/project-members"
 import { PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 import {
   startExampleProject,
@@ -81,6 +83,8 @@ export default function ProjectsPage() {
   const renamingRef = useRef(false)
   const renameAfterClose = useRef<Project | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
+  const [leaveTarget, setLeaveTarget] = useState<Project | null>(null)
+  const [leaveError, setLeaveError] = useState("")
   const [usageTarget, setUsageTarget] = useState<Project | null>(null)
   const mounted = useMounted()
   const [savedSortBy, setSortBy] = useState<SortBy>(() => {
@@ -189,9 +193,20 @@ export default function ProjectsPage() {
     setProjects((prev) => prev.filter((p) => p.id !== project.id))
   }
 
+  const confirmLeave = async () => {
+    if (!leaveTarget) return
+    const project = leaveTarget
+    setLeaveTarget(null)
+    setLeaveError("")
+    const { error } = await leaveProject(project.id)
+    if (error) setLeaveError(error)
+    else setProjects((prev) => prev.filter((p) => p.id !== project.id))
+  }
+
   return (
     <main id="main-content" tabIndex={-1} className="w-full flex-1 pb-[84px]">
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
+      {leaveError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{leaveError}</p>}
       <section className="bg-surface-container-high pb-16">
         <div className="container-app px-5 py-11 sm:px-10 lg:px-12">
         <div className="mb-2 flex items-center justify-between">
@@ -382,6 +397,13 @@ export default function ProjectsPage() {
                               Delete
                             </DropdownMenuItem>
                           </>}
+                          {project.role !== "OWNER" && <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" onSelect={() => setLeaveTarget(project)}>
+                              <LogOut className="h-3.5 w-3.5" />
+                              Leave project
+                            </DropdownMenuItem>
+                          </>}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -495,6 +517,13 @@ export default function ProjectsPage() {
                             Delete
                           </DropdownMenuItem>
                         </>}
+                        {project.role !== "OWNER" && <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" onSelect={() => setLeaveTarget(project)}>
+                            <LogOut className="h-3.5 w-3.5" />
+                            Leave project
+                          </DropdownMenuItem>
+                        </>}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -514,6 +543,17 @@ export default function ProjectsPage() {
         description="This can't be undone."
         confirmLabel="Delete"
         onConfirm={confirmDelete}
+      />
+      <ConfirmDialog
+        open={leaveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setLeaveTarget(null)
+        }}
+        title={`Leave "${leaveTarget?.title ?? ""}"?`}
+        description="You lose access until the owner adds you again or you join with a new invite link."
+        confirmLabel="Leave"
+        destructive
+        onConfirm={confirmLeave}
       />
     </main>
   )

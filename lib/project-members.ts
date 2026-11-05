@@ -61,6 +61,10 @@ export async function removeMember(projectId: string, username: string): Promise
   return request(`${membersPath(projectId)}/${encodeURIComponent(username)}`, { method: "DELETE" });
 }
 
+export async function leaveProject(projectId: string): Promise<Result<null>> {
+  return request(`/api/project/${encodeURIComponent(projectId)}/membership`, { method: "DELETE" });
+}
+
 export async function listShareLinks(projectId: string): Promise<ShareLink[]> {
   return parseResponse<ShareLink[]>(await authenticatedFetch(`${API_BASE_URL}${linksPath(projectId)}`));
 }
