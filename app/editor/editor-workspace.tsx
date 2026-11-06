@@ -8,6 +8,7 @@ import { SidebarCustom } from '@/components/editor/sidebar-custom';
 import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sidebar';
 import { countProjectTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '@/app/editor/editor-utils';
 import { useProjectEditorState } from '@/app/editor/[projectId]/hooks/useProjectEditorState';
+import { useCollabSocket } from '@/app/editor/[projectId]/hooks/useCollabSocket';
 import { EditorTitleSlot, EditorActions } from '@/app/editor/[projectId]/components/EditorHeader';
 import { WriteView } from '@/app/editor/[projectId]/components/WriteView';
 import { startExistingProject } from '@/lib/projects-store';
@@ -59,6 +60,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   const projectId = project.projectId;
   const { refreshProject } = project;
   const readOnly = project.role === 'VIEWER';
+  const collabSocket = useCollabSocket(!project.isDraft && !!user.userId);
   const router = useRouter();
   const [accessRevoked, setAccessRevoked] = useState(false);
   useEffect(() => {
@@ -249,6 +251,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
                 onOpenGraph={() => project.setView('graph')}
                 onChange={project.onChange}
                 collab={user.userId ? { userId: String(user.userId), username: user.username || 'Someone' } : undefined}
+                collabSocket={collabSocket}
                 collabHandoff={project.collabHandoff}
                 onCollabHandoff={project.onCollabHandoff}
                 onCollabChange={project.onCollabChange}

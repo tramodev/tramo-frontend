@@ -47,10 +47,8 @@ import ExtractSelectionPlugin, { type ExtractionActions } from '../../plugins/Ex
 import WikiLinkPlugin from '../../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
 import CollaborationNotePlugin, { rememberCaret, type CollabClosedReason, type CollabHandoff, type CollabStatus, type CollabWaiting } from '../../plugins/CollaborationNotePlugin';
-import { HocuspocusProviderWebsocket } from '@hocuspocus/provider';
+import type { HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useMounted } from '@/hooks/use-mounted';
-import { collabUrl } from '@/lib/collab-client';
 import { editorConfig, placeholder } from '../../lexical-config';
 import { isLegacyNoteContent } from '@/app/editor/note-content';
 import { ImageNode } from '@/app/editor/nodes/ImageNode';
@@ -95,6 +93,7 @@ interface WriteViewProps {
   onOpenGraph: () => void;
   onChange: (itemId: string, editorState: EditorState, pendingCommand?: boolean) => void;
   collab?: { userId: string; username: string };
+  collabSocket?: HocuspocusProviderWebsocket | null;
   collabHandoff?: CollabHandoff & { itemId: string } | null;
   onCollabHandoff?: (applied: boolean) => void;
   onCollabChange?: (itemId: string, editorState: EditorState) => void;
@@ -384,13 +383,7 @@ export function WriteView(props: WriteViewProps) {
   const [focusedItemId, setFocusedItemId] = useState(item.id);
   const [positionedContext, setPositionedContext] = useState<string | null>(null);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
-  const mounted = useMounted();
-  const collaborative = !props.draft && !!props.collab;
-  const socket = useMemo(() => mounted && collaborative ? new HocuspocusProviderWebsocket({ url: collabUrl(), autoConnect: false }) : null, [mounted, collaborative]);
-  useEffect(() => {
-    socket?.connect();
-    return () => socket?.disconnect();
-  }, [socket]);
+  const socket = props.collabSocket ?? null;
   const [collabClosed, setCollabClosed] = useState<CollabClosedReason | null>(null);
   const editorInnerRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef(new Map<string, HTMLElement>());

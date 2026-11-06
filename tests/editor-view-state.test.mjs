@@ -21,6 +21,7 @@ test('the map hides the write view without unmounting it and keeps an empty proj
       '@/lib/notification-stream': { subscribeNotificationCount: () => () => {} },
       '@/app/editor/editor-utils': { countProjectTextStats: () => ({ words: 0, characters: 0 }) },
       '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => project },
+      '@/app/editor/[projectId]/hooks/useCollabSocket': { useCollabSocket: () => null },
       '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
       '@/app/editor/[projectId]/components/WriteView': { WriteView: 'WriteView' },
       '@/components/editor/graph-view': { GraphView: 'GraphView' },
