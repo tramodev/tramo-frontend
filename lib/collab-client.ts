@@ -19,30 +19,43 @@ const tokens = new Map<string, { token: string; expiresAt: number }>();
 const pending = new Map<string, Promise<string>>();
 let cooldownUntil = 0;
 
-function expiresAt(token: string): number {
-  try { return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp * 1000; } catch { return 0; }
+function claims(token: string): { exp?: number; project?: string } {
+  try { return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); } catch { return {}; }
 }
 
-export function forgetCollabToken(itemId: string) {
-  tokens.delete(itemId);
+export function presenceDocument(token: string): string | null {
+  const project = claims(token).project;
+  return project ? `project-${project}` : null;
+}
+
+export function forgetCollabToken(key: string) {
+  tokens.delete(key);
 }
 
 export function fetchCollabToken(itemId: string): Promise<string> {
-  const cached = tokens.get(itemId);
+  return fetchToken(itemId, '/api/collab/token', { itemId: Number(itemId) });
+}
+
+export function fetchProjectToken(projectId: string): Promise<string> {
+  return fetchToken(`project:${projectId}`, '/api/collab/project-token', { projectId });
+}
+
+function fetchToken(key: string, path: string, body: object): Promise<string> {
+  const cached = tokens.get(key);
   if (cached && cached.expiresAt - Date.now() > 20_000) return Promise.resolve(cached.token);
-  const inFlight = pending.get(itemId);
+  const inFlight = pending.get(key);
   if (inFlight) return inFlight;
-  const request = requestCollabToken(itemId).finally(() => pending.delete(itemId));
-  pending.set(itemId, request);
+  const request = requestToken(key, path, body).finally(() => pending.delete(key));
+  pending.set(key, request);
   return request;
 }
 
-async function requestCollabToken(itemId: string): Promise<string> {
+async function requestToken(key: string, path: string, body: object): Promise<string> {
   if (Date.now() < cooldownUntil) throw new Error('Live editing is busy. Retrying shortly.');
-  const response = await fetch('/api/collab/token', {
+  const response = await fetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ itemId: Number(itemId) }),
+    body: JSON.stringify(body),
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || typeof data?.token !== 'string') {
@@ -51,6 +64,6 @@ async function requestCollabToken(itemId: string): Promise<string> {
     if (response.status === 429) cooldownUntil = Date.now() + (Number(response.headers.get('Retry-After')) || 10) * 1000;
     throw error;
   }
-  tokens.set(itemId, { token: data.token, expiresAt: expiresAt(data.token) });
+  tokens.set(key, { token: data.token, expiresAt: (claims(data.token).exp ?? 0) * 1000 });
   return data.token;
 }

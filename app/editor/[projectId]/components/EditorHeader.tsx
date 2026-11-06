@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { AlertCircle, Globe, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -139,6 +139,7 @@ interface EditorActionsProps {
   profile: { username: string; imageUrl: string | null } | null;
   canShare?: boolean;
   canEdit?: boolean;
+  presence?: ReactNode;
 }
 
 export function EditorActions({
@@ -153,6 +154,7 @@ export function EditorActions({
   disabled,
   canShare = true,
   canEdit = true,
+  presence,
 }: EditorActionsProps) {
   const [shareOpen, setShareOpen] = useState(false);
   return (
@@ -165,6 +167,7 @@ export function EditorActions({
       ) : <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
       {!disabled && <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />}
       {!disabled && canEdit && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
+      {presence}
       {canShare && <>
         <Button data-tour="share" variant="secondary" size="lg" className="project-share-button" disabled={disabled} aria-label="Share project" onClick={() => setShareOpen(true)}>
           <UserPlus className="h-[15px] w-[15px]" />

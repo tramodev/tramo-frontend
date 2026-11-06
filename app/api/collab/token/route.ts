@@ -8,7 +8,7 @@ import { readRequestBody } from '@/lib/request-body';
 export async function POST(request: NextRequest) {
   const body = await readRequestBody(request);
   if (body instanceof Response) return body;
-  const response = await authenticatedFetch(`${API_BASE_URL}/api/collab/token`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}${request.nextUrl.pathname}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body,

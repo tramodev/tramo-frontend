@@ -39,3 +39,16 @@ test.each([401, 403, 404])('a %i marks the failure as lost access', async status
   const s = setup([() => Response.json({ message: 'No access' }, { status })]);
   await expect(s.api.fetchCollabToken('7')).rejects.toMatchObject({ name: s.api.COLLAB_ACCESS_DENIED });
 });
+
+test('project tokens share the cache machinery without colliding with note tokens', async () => {
+  const exp = Math.floor(Date.now() / 1000) + 120;
+  const project = `h.${Buffer.from(JSON.stringify({ exp, project: '12' })).toString('base64url')}.s`;
+  const note = jwt(exp);
+  const s = setup([() => Response.json({ token: project }), () => Response.json({ token: note })]);
+  expect(await s.api.fetchProjectToken('abc123')).toBe(project);
+  expect(await s.api.fetchProjectToken('abc123')).toBe(project);
+  expect(await s.api.fetchCollabToken('12')).toBe(note);
+  expect(s.calls).toEqual([{ projectId: 'abc123' }, { itemId: 12 }]);
+  expect(s.api.presenceDocument(project)).toBe('project-12');
+  expect(s.api.presenceDocument(note)).toBeNull();
+});

@@ -340,7 +340,7 @@ test('Escape closes compact formatting and restores its trigger without closing 
     '@/lib/notification-stream': { subscribeNotificationCount: () => () => {} },
     '@/app/editor/editor-utils': { countProjectTextStats: () => null },
     '@/app/editor/embed-draft-status': { subscribeEmbedDrafts: () => () => {}, hasPendingEmbedDrafts: () => false },
-    '@/app/editor/[projectId]/hooks/useCollabSocket': { useCollabSocket: () => null },
+    '@/app/editor/[projectId]/hooks/useCollabSocket': { useCollabSocket: () => null }, '@/app/editor/[projectId]/hooks/useProjectPresence': { useProjectPresence: () => [] },
     '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => ({
       loaded: true, view: 'write', items: {}, selectedItem: { id: 'note' }, projectTitle: 'Test',
     }) },

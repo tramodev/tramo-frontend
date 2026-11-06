@@ -9,6 +9,9 @@ import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sideba
 import { countProjectTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '@/app/editor/editor-utils';
 import { useProjectEditorState } from '@/app/editor/[projectId]/hooks/useProjectEditorState';
 import { useCollabSocket } from '@/app/editor/[projectId]/hooks/useCollabSocket';
+import { useProjectPresence } from '@/app/editor/[projectId]/hooks/useProjectPresence';
+import { PresenceAvatars } from '@/app/editor/[projectId]/components/PresenceAvatars';
+import type { Peer } from '@/app/editor/presence';
 import { EditorTitleSlot, EditorActions } from '@/app/editor/[projectId]/components/EditorHeader';
 import { WriteView } from '@/app/editor/[projectId]/components/WriteView';
 import { startExistingProject } from '@/lib/projects-store';
@@ -61,6 +64,16 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   const { refreshProject } = project;
   const readOnly = project.role === 'VIEWER';
   const collabSocket = useCollabSocket(!project.isDraft && !!user.userId);
+  const peers = useProjectPresence(collabSocket, projectId, project.loaded && user.userId ? {
+    user: { id: String(user.userId), name: user.username || 'Someone', imageUrl: user.imageUrl ?? null },
+    role: project.role,
+    itemId: project.selectedItemId ?? null,
+    trailId: project.activeTrailId ?? null,
+  } : null);
+  const selectPeer = (peer: Peer) => {
+    const item = peer.itemId && Object.hasOwn(project.items, peer.itemId) ? project.items[peer.itemId] : null;
+    if (item) project.handleSelectItem(item, peer.trailId ?? undefined);
+  };
   const router = useRouter();
   const [accessRevoked, setAccessRevoked] = useState(false);
   useEffect(() => {
@@ -163,6 +176,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             profile={project.profile}
             canShare={project.role === 'OWNER'}
             canEdit={!readOnly}
+            presence={<PresenceAvatars peers={peers} items={project.items} onSelect={selectPeer} />}
           />
           </>
         }
