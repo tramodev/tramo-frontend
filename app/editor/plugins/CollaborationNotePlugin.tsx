@@ -130,6 +130,18 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     let settled = false;
     let settleTimer: ReturnType<typeof setTimeout> | undefined;
     let cursorFrame: number | undefined;
+    const redrawCursors = () => {
+      if (cursorFrame !== undefined || (provider.awareness?.getStates().size ?? 0) < 2) return;
+      cursorFrame = requestAnimationFrame(() => {
+        cursorFrame = undefined;
+        provider.awareness?.emit('update', [{ added: [], updated: [], removed: [] }, provider]);
+      });
+    };
+    const resize = new ResizeObserver(redrawCursors);
+    const unregisterRoot = editor.registerRootListener(root => {
+      resize.disconnect();
+      if (root) resize.observe(root);
+    });
     const waitingTimer = setTimeout(() => { if (!settled) callbacks.current.onWaiting?.('connecting'); }, 1500);
     const onSynced = () => {
       if (provider.isSynced) { attempt = 0; online = true; }
@@ -146,7 +158,7 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
           onHandoff?.(applied);
         }
         restoreCaret(editor, itemId);
-        cursorFrame = requestAnimationFrame(() => provider.awareness?.emit('update', [{ added: [], updated: [], removed: [] }, 'local']));
+        redrawCursors();
       }, 0);
     };
     const warnUnsynced = (event: BeforeUnloadEvent) => {
@@ -156,6 +168,7 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     };
     window.addEventListener('beforeunload', warnUnsynced);
     window.addEventListener('offline', onBrowserOffline);
+    window.addEventListener('scroll', redrawCursors, true);
     window.addEventListener('online', onBrowserOnline);
     provider.on('status', onStatusChange);
     provider.on('synced', onSynced);
@@ -168,6 +181,9 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       provider.off('status', onStatusChange);
       clearTimeout(settleTimer);
       if (cursorFrame !== undefined) cancelAnimationFrame(cursorFrame);
+      unregisterRoot();
+      resize.disconnect();
+      window.removeEventListener('scroll', redrawCursors, true);
       clearTimeout(retryTimer);
       clearTimeout(offlineTimer);
       clearTimeout(waitingTimer);
