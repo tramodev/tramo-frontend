@@ -136,6 +136,12 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
         restoreCaret(editor, itemId);
       }, 0);
     };
+    const warnUnsynced = (event: BeforeUnloadEvent) => {
+      if (provider.unsyncedChanges === 0) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnUnsynced);
     provider.on('status', onStatusChange);
     provider.on('synced', onSynced);
     provider.on('unsyncedChanges', report);
@@ -149,6 +155,7 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       clearTimeout(retryTimer);
       clearTimeout(offlineTimer);
       clearTimeout(waitingTimer);
+      window.removeEventListener('beforeunload', warnUnsynced);
       provider.off('synced', onSynced);
       provider.off('unsyncedChanges', report);
       provider.off('close', onClose);

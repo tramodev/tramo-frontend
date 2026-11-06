@@ -8,7 +8,10 @@ import { replaceContent, toLexical, toYjs } from './lexical';
 
 type Context = { userId: number; perm: 'edit' | 'view'; sv: string | null };
 type Claims = { iss?: string; aud?: string | string[]; sub?: string; item?: string; perm?: string; sv?: string | null; exp?: number };
-type DocState = { epoch: number; author: number | null; bootstrapHash: string | null; poisoned: boolean };
+type DocState = {
+  epoch: number; author: number | null; bootstrapHash: string | null; poisoned: boolean;
+  unsaved: boolean; attempts: number; retry?: ReturnType<typeof setTimeout>;
+};
 type Bucket = { tokens: number; at: number };
 
 function setting(name: string, fallback?: string): string {
@@ -36,6 +39,7 @@ const documents = new Map<string, DocState>();
 const buckets = new WeakMap<Connection, Bucket>();
 const counters = new Map<string, number>();
 const storeSeconds = { sum: 0, count: 0 };
+let shuttingDown = false;
 
 function count(name: string, labels: Record<string, string | number> = {}) {
   const key = `${name}{${Object.entries(labels).map(([label, value]) => `${label}="${value}"`).join(',')}}`;
@@ -128,6 +132,31 @@ function hasPendingImage(content: string) {
   return content.includes('"imageId":""');
 }
 
+function withoutPendingImages(content: string) {
+  return JSON.stringify(JSON.parse(content), (key, value) => key === 'children' && Array.isArray(value)
+    ? value.filter(node => node?.type !== 'image' || node.imageId !== '') : value);
+}
+
+function scheduleRetry(instance: Hocuspocus, name: string) {
+  const state = documents.get(name);
+  if (!state || state.retry || state.poisoned || shuttingDown) return;
+  state.retry = setTimeout(async () => {
+    state.retry = undefined;
+    const document = instance.documents.get(name);
+    if (!document) return;
+    try {
+      const stored = await document.saveMutex.runExclusive(() => store(document, state));
+      if (!stored) poison(instance, name);
+      state.attempts = 0;
+      if (!state.unsaved) void instance.unloadDocument(document);
+    } catch (error) {
+      log('collab_store_failed', { item: name, error: (error as Error).message, retry: true });
+      count('collab_store_retries_total');
+      scheduleRetry(instance, name);
+    }
+  }, Math.min(5000 * 2 ** state.attempts++, 60_000));
+}
+
 function readBody(request: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -167,7 +196,14 @@ async function restore(instance: Hocuspocus, name: string) {
 
 async function store(document: Document, state: DocState, content = toLexical(document)) {
   if (state.poisoned || state.author === null) return true;
-  if (hasPendingImage(content)) return true;
+  if (hasPendingImage(content)) {
+    if (document.getConnectionsCount() > 0) {
+      state.unsaved = true;
+      return true;
+    }
+    replaceContent(document, withoutPendingImages(content));
+    content = toLexical(document);
+  }
   const started = Date.now();
   const epoch = state.epoch;
   const response = await api(`/items/${document.name}`, {
@@ -185,12 +221,16 @@ async function store(document: Document, state: DocState, content = toLexical(do
   storeSeconds.sum += (Date.now() - started) / 1000;
   storeSeconds.count += 1;
   if (state.epoch !== epoch) return true;
-  if (response.ok) state.bootstrapHash = null;
+  if (response.status >= 500) throw new Error(`store failed with ${response.status}`);
+  if (response.ok) {
+    state.bootstrapHash = null;
+    state.unsaved = false;
+  }
   if (response.status === 200) {
     const sanitized = (await response.json() as { content?: unknown }).content;
     if (typeof sanitized === 'string') replaceContent(document, sanitized);
   }
-  return response.ok || response.status >= 500;
+  return response.ok;
 }
 
 const server = new Server<Context>({
@@ -226,7 +266,7 @@ const server = new Server<Context>({
     const response = await api(`/items/${documentName}`);
     if (!response.ok) throw new Error(`load failed with ${response.status}`);
     const loaded = await response.json() as { state: string | null; content: string; extractionEpoch: number };
-    const state: DocState = { epoch: loaded.extractionEpoch, author: null, bootstrapHash: null, poisoned: false };
+    const state: DocState = { epoch: loaded.extractionEpoch, author: null, bootstrapHash: null, poisoned: false, unsaved: false, attempts: 0 };
     if (loaded.state) {
       Y.applyUpdate(document, Buffer.from(loaded.state, 'base64'));
     } else {
@@ -268,10 +308,26 @@ const server = new Server<Context>({
       if (!await store(document, state)) poison(instance, documentName);
     } catch (error) {
       log('collab_store_failed', { item: documentName, error: (error as Error).message });
+      if (shuttingDown) {
+        count('collab_store_lost_total');
+        return;
+      }
+      state.unsaved = true;
+      count('collab_store_retries_total');
+      scheduleRetry(instance, documentName);
+      throw error;
     }
   },
 
+  async beforeUnloadDocument({ documentName, instance }) {
+    const state = documents.get(documentName);
+    if (!state?.unsaved || state.poisoned || shuttingDown) return;
+    scheduleRetry(instance, documentName);
+    throw new Error('unsaved');
+  },
+
   async afterUnloadDocument({ documentName }) {
+    clearTimeout(documents.get(documentName)?.retry);
     documents.delete(documentName);
   },
 
@@ -323,6 +379,14 @@ setInterval(async () => {
     log('collab_check_failed', { error: (error as Error).message });
   }
 }, 60_000).unref();
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    shuttingDown = true;
+    const unsaved = [...documents.values()].filter(state => state.unsaved && !state.poisoned).length;
+    if (unsaved) log('collab_shutdown_unsaved', { documents: unsaved });
+  });
+}
 
 await server.listen();
 log('collab_listening', { port: server.configuration.port });

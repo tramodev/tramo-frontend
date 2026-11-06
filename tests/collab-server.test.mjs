@@ -38,6 +38,7 @@ let lexical;
 const items = new Map();
 const stores = [];
 const deleted = new Set();
+const failures = new Map();
 const SAFE = JSON.stringify({ root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'label' }] }] } });
 
 function freePort() {
@@ -100,6 +101,10 @@ beforeAll(async () => {
         const item = items.get(id) ?? { state: null, content: '', extractionEpoch: 0 };
         return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(item));
       }
+      if (request.method === 'PUT' && id && failures.get(id) > 0) {
+        failures.set(id, failures.get(id) - 1);
+        return response.writeHead(503).end();
+      }
       if (request.method === 'PUT' && id) {
         const stored = JSON.parse(body);
         stores.push({ id, ...stored });
@@ -135,10 +140,12 @@ beforeAll(async () => {
   });
 }, 60000);
 
-afterAll(() => {
+afterAll(async () => {
+  const exited = sidecar && sidecar.exitCode === null ? new Promise(resolve => sidecar.once('exit', resolve)) : null;
   sidecar?.kill();
   api?.close();
-});
+  await exited;
+}, 10000);
 
 test('every editor node survives the JSON to Yjs round trip', () => {
   const doc = new Y.Doc();
@@ -269,6 +276,37 @@ test('links the API strips are removed from the live document too', async () => 
   close(author);
 }, 30000);
 
+test('edits survive an API outage after the last editor leaves', async () => {
+  items.set('31', { state: null, content: SAFE, extractionEpoch: 0 });
+  const author = connect(31, 310, 'edit');
+  await until(() => author.synced);
+  await until(() => stores.some(store => store.id === '31'));
+  failures.set('31', 2);
+  const edited = JSON.stringify({ root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'written before closing' }] }] } });
+  lexical.replaceContent(author.document, edited);
+  await until(() => author.unsyncedChanges === 0);
+  close(author);
+  const stored = await until(() => stores.find(store => store.id === '31' && store.content.includes('written before closing')), 25000);
+  expect(failures.get('31')).toBe(0);
+  expect(stored.authorId).toBe(310);
+}, 40000);
+
+test('an image left uploading by a closed tab is dropped so the rest of the note is saved', async () => {
+  items.set('32', { state: null, content: SAFE, extractionEpoch: 0 });
+  const author = connect(32, 320, 'edit');
+  await until(() => author.synced);
+  await until(() => stores.some(store => store.id === '32'));
+  const withUpload = JSON.stringify({ root: { type: 'root', children: [
+    { type: 'paragraph', children: [{ type: 'text', text: 'kept text' }] },
+    { type: 'image', imageId: '', altText: 'uploading' },
+  ] } });
+  lexical.replaceContent(author.document, withUpload);
+  await until(() => author.unsyncedChanges === 0);
+  close(author);
+  const stored = await until(() => stores.find(store => store.id === '32' && store.content.includes('kept text')), 25000);
+  expect(stored.content).not.toContain('"imageId":""');
+}, 40000);
+
 test('metrics are served in Prometheus format only with the metrics secret', async () => {
   expect((await fetch(`http://127.0.0.1:${port}/metrics`)).status).toBe(404);
   expect((await fetch(`http://127.0.0.1:${port}/metrics`, { headers: { 'X-Metrics-Secret': SECRET } })).status).toBe(404);
@@ -279,4 +317,5 @@ test('metrics are served in Prometheus format only with the metrics secret', asy
   expect(body).toContain('collab_rejections_total{reason="forbidden"}');
   expect(body).toContain('collab_restores_total{result="applied"} 1');
   expect(body).toMatch(/^collab_stores_total\{status="204"\} \d+$/m);
+  expect(body).toMatch(/^collab_store_retries_total \d+$/m);
 });
