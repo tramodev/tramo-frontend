@@ -274,6 +274,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
                 onCollabHandoff={project.onCollabHandoff}
                 onCollabChange={project.onCollabChange}
                 onCollabStatus={project.setCollabStatus}
+                onAccessChanged={refreshProject}
                 extractionActions={{
                   restoreEpoch: project.restoreEpoch,
                   beforeExtract: async () => {
@@ -292,7 +293,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
           </div>
         }
       />
-      <AlertDialog open={accessRevoked}>
+      <AlertDialog open={accessRevoked || project.accessLost}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>You no longer have access to this project</AlertDialogTitle>

@@ -99,6 +99,7 @@ interface WriteViewProps {
   onCollabHandoff?: (applied: boolean) => void;
   onCollabChange?: (itemId: string, editorState: EditorState) => void;
   onCollabStatus?: (itemId: string, status: CollabStatus | null) => void;
+  onAccessChanged?: () => void;
   extractionActions: ExtractionActions;
   connectionsPanelOpen: boolean;
   onToggleConnectionsPanelOpen: () => void;
@@ -239,6 +240,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
     return () => { unregister(); saveItemSession(session, editor, history); };
   }, [editor, history, item.id, item.editorKey, session, onPendingImages]);
   useEffect(() => () => { if (!collaborative) rememberCaret(editor, item.id); }, [editor, collaborative, item.id]);
+  useEffect(() => { editor.setEditable(!props.readOnly); }, [editor, props.readOnly]);
   return (
       <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor} onFocusCapture={event => {
         if (event.currentTarget.contains(event.target)) onFocus(item.id);
@@ -385,7 +387,11 @@ export function WriteView(props: WriteViewProps) {
   const [positionedContext, setPositionedContext] = useState<string | null>(null);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   const socket = props.collabSocket ?? null;
-  const [collabClosed, setCollabClosed] = useState<CollabClosedReason | null>(null);
+  const [collabClosed, setCollabClosed] = useState(false);
+  const onCollabClosed = (reason: CollabClosedReason) => {
+    if (reason === 'reload') setCollabClosed(true);
+    else props.onAccessChanged?.();
+  };
   const editorInnerRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef(new Map<string, HTMLElement>());
   const editors = useRef(new Map<string, LexicalEditor>());
@@ -550,7 +556,7 @@ export function WriteView(props: WriteViewProps) {
                 </div>
                 {stepItem.content != null && (mounted ? <ItemEditor item={stepItem} revealed={revealed} props={props} focused={focusedId === stepItem.id}
                   toolbar={toolbar} onFocus={onFocus} register={register} move={move} session={session} onPendingImages={onPendingImages} onContentError={onContentError}
-                  socket={socket} onCollabClosed={setCollabClosed} /> : <button type="button"
+                  socket={socket} onCollabClosed={onCollabClosed} /> : <button type="button"
                   aria-label={`Open note: ${stepItem.title}`} onClick={() => props.onSelectItem(stepItem, props.activeTrailId)}
                   className="w-full pl-7 pt-2 text-left font-display text-[1.75rem] font-medium" style={{ textAlign: stepItem.titleAlign }}>
                   {stepItem.title}
@@ -573,13 +579,11 @@ export function WriteView(props: WriteViewProps) {
     {!props.draft && <ConnectionsPanel item={items[focusedId]} items={items} trails={props.trails} mapPreviews={props.mapPreviews} onRetryMapPreviews={props.onRetryMapPreviews} graphColors={props.graphColors} activeTrailId={props.activeTrailId}
       onSelectItem={props.onSelectItem} onOpenGraph={props.onOpenGraph}
       open={props.connectionsPanelOpen} onToggleOpen={props.onToggleConnectionsPanelOpen} />}
-    <AlertDialog open={!!collabClosed}>
+    <AlertDialog open={collabClosed}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{collabClosed === 'revoked' ? 'Your access to this note changed' : 'This note changed in another session'}</AlertDialogTitle>
-          <AlertDialogDescription>{collabClosed === 'revoked'
-            ? 'Your role in this project changed or your session ended. Reload to continue with your current access.'
-            : 'It was restored to an earlier version or rejected an invalid edit. Reload to keep editing the latest version.'}</AlertDialogDescription>
+          <AlertDialogTitle>This note changed in another session</AlertDialogTitle>
+          <AlertDialogDescription>It was restored to an earlier version or rejected an invalid edit. Reload to keep editing the latest version.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction onClick={() => window.location.reload()}>Reload</AlertDialogAction>

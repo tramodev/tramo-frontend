@@ -104,7 +104,13 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       else if (status === 'disconnected' && !offlineTimer) offlineTimer = setTimeout(() => { online = false; report(); }, 1500);
     };
     const onClose = ({ event }: { event: { reason?: string } }) => {
-      if (event.reason === 'reload' || event.reason === 'revoked') callbacks.current.onClosed(event.reason);
+      if (event.reason === 'reload') callbacks.current.onClosed('reload');
+      else if (event.reason === 'revoked') {
+        forgetCollabToken(itemId);
+        callbacks.current.onClosed('revoked');
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => { provider.detach(); provider.attach(); }, 0);
+      }
       else if (event.reason === 'deleted') provider.detach();
     };
     let retryTimer: ReturnType<typeof setTimeout> | undefined;

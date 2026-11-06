@@ -128,6 +128,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const [view, setView] = useState<'write' | 'graph'>('write');
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
   const [role, setRole] = useState<ProjectRole>('OWNER');
+  const [accessLost, setAccessLost] = useState(false);
 
   useEffect(() => {
     if (!draft) return;
@@ -201,7 +202,8 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     getEditorBootstrap(routeProjectId, preferredItemId, entry.get('trail')).then((result) => {
       if (cancelled) return;
       if (!result) {
-        router.replace('/projects');
+        if (refreshKey) setAccessLost(true);
+        else router.replace('/projects');
         return;
       }
       const { project } = result;
@@ -690,6 +692,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     setTags,
     profile,
     role,
+    accessLost,
     trails,
     items,
     mapPreviews,
