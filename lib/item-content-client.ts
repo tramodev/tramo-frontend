@@ -6,7 +6,6 @@ import { sanitizeNoteContent } from '@/app/editor/note-content';
 const extractionEpochs = new Map<string, number>();
 const savedContents = new Map<string, string>();
 const contentSessions = new Map<string, number>();
-export const getSavedItemContent = (id: string) => savedContents.get(id) ?? '';
 export const getExtractionEpoch = (id: string) => extractionEpochs.get(id) ?? 0;
 export const acceptExtractionEpoch = (id: string, epoch: number, content: string) => { extractionEpochs.set(id, epoch); savedContents.set(id, content); };
 
@@ -60,7 +59,7 @@ export async function saveItemContent(itemId: string, content: string, restoreEp
   if (response.status === 409) {
     const data = await response.json().catch(() => null);
     const error = new Error(data?.message ?? 'This note changed in another session. Reload before saving.');
-    error.name = data?.code === 'PROJECT_VERSION_CONFLICT' ? 'ProjectVersionConflict' : 'ContentConflict';
+    error.name = data?.code === 'PROJECT_VERSION_CONFLICT' ? 'ProjectVersionConflict' : data?.code === 'COLLAB_ACTIVE' ? 'CollabActive' : 'ContentConflict';
     throw error;
   }
   if (response.status === 413 || response.status === 429) {

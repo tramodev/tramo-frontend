@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { AlertCircle, Check, Globe, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { UserMenu } from '@/components/layout/user-menu';
 import { EmbedErrorsStatus } from '@/components/editor/embed-errors-status';
 import type { ProjectEmbedError } from '@/lib/project-embed-errors';
@@ -23,15 +22,12 @@ interface EditorTitleSlotProps {
   onRenameProject: (title: string) => Promise<void>;
   saveStatus: SaveStatus;
   saveError: string;
-  onDiscardRecoveredChanges?: () => void;
-  onKeepRecoveredChanges?: () => Promise<void>;
+  onCopyUnsyncedText?: () => Promise<void>;
   readOnly?: boolean;
 }
 
-export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange, onDiscardRecoveredChanges, onKeepRecoveredChanges }: EditorTitleSlotProps) {
+export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveStatus, saveError, draft, onDraftTitleChange, onCopyUnsyncedText }: EditorTitleSlotProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [discardRecoveryOpen, setDiscardRecoveryOpen] = useState(false);
-  const [keepRecoveryOpen, setKeepRecoveryOpen] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [titleError, setTitleError] = useState('');
   const [savingTitle, setSavingTitle] = useState(false);
@@ -130,20 +126,9 @@ export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveS
         )}
       </span>
       {saveStatus === 'error' && saveError && <span role="alert" className="basis-full text-xs text-destructive">{saveError}</span>}
-      {onDiscardRecoveredChanges && <>
-        <div className="editor-recovery-actions flex basis-full flex-wrap gap-2">
-          {onKeepRecoveredChanges && <Button variant="outline" size="sm" className="min-h-11" onClick={() => setKeepRecoveryOpen(true)}>Keep my version</Button>}
-          <Button variant="outline" size="sm" className="min-h-11" onClick={() => setDiscardRecoveryOpen(true)}>Use server version</Button>
-        </div>
-        {onKeepRecoveredChanges && <ConfirmDialog open={keepRecoveryOpen} onOpenChange={setKeepRecoveryOpen}
-          title="Save your recovered version?"
-          description="This replaces the server content of the conflicting notes with your recovered text, including your latest edits in this tab."
-          confirmLabel="Keep my version" onConfirm={() => { void onKeepRecoveredChanges(); }} />}
-        <ConfirmDialog open={discardRecoveryOpen} onOpenChange={setDiscardRecoveryOpen}
-          title="Discard recovered changes?"
-          description="Copy any recovered text you want to keep first. This removes the local backups for conflicting notes and reloads their server versions."
-          confirmLabel="Use server version" onConfirm={onDiscardRecoveredChanges} />
-      </>}
+      {onCopyUnsyncedText && <div className="editor-recovery-actions flex basis-full flex-wrap gap-2">
+        <Button variant="outline" size="sm" className="min-h-11" onClick={() => { void onCopyUnsyncedText().catch(() => {}); }}>Copy my text</Button>
+      </div>}
     </div>
   );
 }

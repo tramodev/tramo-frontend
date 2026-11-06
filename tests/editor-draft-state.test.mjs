@@ -112,6 +112,6 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   expect(renames.slice(1).map(args => args.slice(0, 2))).toEqual([['22', 'Title still being typed'], ['other-note', 'Another title']]);
   hook.onChange('22', { toJSON: () => ({ root: { children: [] } }) });
   expect(pendingImages.at(-1)).toBe(false);
-  expect(ordinarySaves).toBe(1);
+  expect(ordinarySaves).toBe(0);
   expect(render('real').selectedItem.title).toBe('Title still being typed');
 });

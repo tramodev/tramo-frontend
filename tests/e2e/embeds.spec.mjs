@@ -111,24 +111,6 @@ test('mobile formatting groups fonts and alignment into shared rows', async ({ p
   await expect(page.getByPlaceholder('Find', { exact: true })).toBeFocused();
 });
 
-test('recovery choices are tappable at 375px and open their confirmations', async ({ page, request }) => {
-  await page.setViewportSize({ width: 375, height: 667 });
-  await seed(request, [paragraph('Server version')]);
-  await page.addInitScript(backup => {
-    localStorage.setItem('tramo:draft-owner', '1');
-    localStorage.setItem('tramo:item-content:1:embeds:1', JSON.stringify(backup));
-  }, { content: state([paragraph('Recovered version')]), expectedContent: state([paragraph('Earlier version')]), restoreEpoch: 0, extractionEpoch: 0 });
-  await page.goto('/editor/embeds');
-  for (const [label, title] of [['Keep my version', 'Save your recovered version?'], ['Use server version', 'Discard recovered changes?']]) {
-    const button = page.getByRole('button', { name: label, exact: true });
-    await expect(button).toBeInViewport({ ratio: 1 });
-    await button.click();
-    await expect(page.getByRole('alertdialog')).toContainText(title);
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  }
-  expect((await saved(request)).saves).toBe(0);
-});
-
 test('invalid equation and score save on Escape and remain marked after reload', async ({ page, request }) => {
   await seed(request, [equation('x'), music(validMusic), paragraph()]);
   await page.goto('/editor/embeds');

@@ -46,7 +46,7 @@ import ItemMentionPlugin from '../../plugins/ItemMentionPlugin';
 import ExtractSelectionPlugin, { type ExtractionActions } from '../../plugins/ExtractSelectionPlugin';
 import WikiLinkPlugin from '../../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
-import CollaborationNotePlugin, { type CollabClosedReason, type CollabStatus } from '../../plugins/CollaborationNotePlugin';
+import CollaborationNotePlugin, { rememberCaret, type CollabClosedReason, type CollabHandoff, type CollabStatus } from '../../plugins/CollaborationNotePlugin';
 import { HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useMounted } from '@/hooks/use-mounted';
@@ -94,6 +94,8 @@ interface WriteViewProps {
   onOpenGraph: () => void;
   onChange: (itemId: string, editorState: EditorState, pendingCommand?: boolean) => void;
   collab?: { userId: string; username: string };
+  collabHandoff?: CollabHandoff & { itemId: string } | null;
+  onCollabHandoff?: (applied: boolean) => void;
   onCollabChange?: (itemId: string, editorState: EditorState) => void;
   onCollabStatus?: (itemId: string, status: CollabStatus | null) => void;
   extractionActions: ExtractionActions;
@@ -233,6 +235,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
     });
     return () => { unregister(); saveItemSession(session, editor, history); };
   }, [editor, history, item.id, item.editorKey, session, onPendingImages]);
+  useEffect(() => () => { if (!collaborative) rememberCaret(editor, item.id); }, [editor, collaborative, item.id]);
   return (
       <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor} onFocusCapture={event => {
         if (event.currentTarget.contains(event.target)) onFocus(item.id);
@@ -255,6 +258,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         </div>
         {collaborative
           ? socket && props.collab && <CollaborationNotePlugin itemId={item.id} socket={socket} username={props.collab.username} userId={props.collab.userId}
+            handoff={props.collabHandoff?.itemId === item.id ? props.collabHandoff : null} onHandoff={props.onCollabHandoff}
             onStatus={(id, status) => props.onCollabStatus?.(id, status)} onClosed={onCollabClosed} />
           : <HistoryPlugin externalHistoryState={history} />}
         <ListPlugin />

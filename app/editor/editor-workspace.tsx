@@ -131,8 +131,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             onRenameProject={project.handleRenameProject}
             saveStatus={project.saveStatus === 'error' ? 'error' : hasPendingEmbedDraft ? 'unsaved' : project.saveStatus}
             saveError={project.saveError}
-            onDiscardRecoveredChanges={project.onDiscardRecoveredChanges}
-            onKeepRecoveredChanges={project.onKeepRecoveredChanges}
+            onCopyUnsyncedText={project.onCopyUnsyncedText}
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={
@@ -152,10 +151,9 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             projectId={projectId}
             projectTitle={project.projectTitle}
             beforeExport={async () => {
-              if (!await project.flushPendingContent()) throw new Error('Could not save note content. Wait for image uploads to finish or retry before exporting.');
+              if (!project.contentSynced) throw new Error('Some note changes are still syncing. Please try again.');
               try { await project.flushProjectChanges(); }
               catch { throw new Error('Could not save project changes. Retry the failed edit or refresh the project before exporting.'); }
-              if (!await project.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
             }}
             profile={project.profile}
             canShare={project.role === 'OWNER'}
@@ -184,7 +182,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             onRenameItem={project.handleRenameItem}
             onDeleteTrail={project.handleDeleteTrail}
             onUnlinkItemFromTrail={project.handleUnlinkItemFromTrail}
-            onDeleteItem={async (itemId) => { await project.handleDeleteItem(itemId); project.discardItem(itemId); }}
+            onDeleteItem={project.handleDeleteItem}
             onReorderTrailItems={project.handleReorderTrailItems}
             onReorderTrails={project.handleReorderTrails}
             trailOrderError={project.trailOrderError}
@@ -247,7 +245,9 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
                 onCreateItem={project.handleCreateItem}
                 onOpenGraph={() => project.setView('graph')}
                 onChange={project.onChange}
-                collab={user.userId && user.username ? { userId: String(user.userId), username: user.username } : undefined}
+                collab={user.userId ? { userId: String(user.userId), username: user.username || 'Someone' } : undefined}
+                collabHandoff={project.collabHandoff}
+                onCollabHandoff={project.onCollabHandoff}
                 onCollabChange={project.onCollabChange}
                 onCollabStatus={project.setCollabStatus}
                 extractionActions={{
