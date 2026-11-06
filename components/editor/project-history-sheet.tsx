@@ -62,7 +62,7 @@ export function ProjectHistorySheet({ projectId, restoreEpoch, beforeSave }: { p
   return <>
     <Sheet open={open} onOpenChange={next => { if (action.current) return; setOpen(next); if (next) { setCreating(false); setName(''); setTab('project'); setHistory(null); setCompareIds([]); void load(); } }}>
       <SheetTrigger asChild><Button variant="ghost" size="icon" title="Version history" aria-label="Version history"><History className="h-[15px] w-[15px]" /></Button></SheetTrigger>
-      <SheetContent className="top-28 h-[calc(100%-7rem)] md:top-16 md:h-[calc(100%-4rem)] overflow-y-auto sm:max-w-lg 2xl:max-w-[37.5rem]">
+      <SheetContent className="overflow-y-auto sm:max-w-lg 2xl:max-w-[37.5rem]">
         <SheetHeader className="pr-12"><SheetTitle>Version history</SheetTitle><SheetDescription>Browse project drafts and published versions.</SheetDescription></SheetHeader>
         <Tabs.Root value={tab} onValueChange={value => { setTab(value); if (value === 'publish') return loadPublications(); }} className="space-y-4 px-4 pb-4">
           <Tabs.List aria-label="History type" className="inline-flex gap-1 rounded-full bg-muted p-1">
