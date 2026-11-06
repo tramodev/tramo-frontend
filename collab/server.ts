@@ -198,7 +198,15 @@ async function restore(instance: Hocuspocus, name: string) {
   log('collab_document_restored', { item: name, epoch: state.epoch });
 }
 
-async function store(document: Document, state: DocState, content = toLexical(document)) {
+function otherEditor(document: Document, tried: Set<number>) {
+  for (const connection of document.connections.keys()) {
+    const { userId, perm } = (connection as Connection<Context>).context;
+    if (perm === 'edit' && !tried.has(userId)) return userId;
+  }
+  return null;
+}
+
+async function store(document: Document, state: DocState, content = toLexical(document), tried = new Set<number>()): Promise<boolean> {
   if (state.poisoned || state.author === null) return true;
   if (hasPendingImage(content)) {
     if (document.getConnectionsCount() > 0) {
@@ -210,6 +218,7 @@ async function store(document: Document, state: DocState, content = toLexical(do
   }
   const started = Date.now();
   const epoch = state.epoch;
+  tried.add(state.author);
   const response = await api(`/items/${document.name}`, {
     method: 'PUT',
     body: JSON.stringify({
@@ -226,6 +235,12 @@ async function store(document: Document, state: DocState, content = toLexical(do
   storeSeconds.count += 1;
   if (state.epoch !== epoch) return true;
   if (response.status >= 500) throw new Error(`store failed with ${response.status}`);
+  const next = response.status === 403 ? otherEditor(document, tried) : null;
+  if (next !== null) {
+    log('collab_store_reassigned', { item: document.name, from: state.author, to: next });
+    state.author = next;
+    return store(document, state, content, tried);
+  }
   if (response.ok) {
     state.bootstrapHash = null;
     state.unsaved = false;

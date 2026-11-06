@@ -40,6 +40,7 @@ const stores = [];
 const deleted = new Set();
 const failures = new Map();
 const apiRequests = [];
+const forbiddenAuthors = new Set();
 const SAFE = JSON.stringify({ root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'label' }] }] } });
 
 function freePort() {
@@ -116,6 +117,7 @@ beforeAll(async () => {
         failures.set(id, failures.get(id) - 1);
         return response.writeHead(503).end();
       }
+      if (request.method === 'PUT' && id && forbiddenAuthors.has(JSON.parse(body).authorId)) return response.writeHead(403).end();
       if (request.method === 'PUT' && id) {
         const stored = JSON.parse(body);
         stores.push({ id, ...stored });
@@ -385,4 +387,36 @@ test('a note remounted with a new provider while the old one was still authentic
   second.attach();
   await until(() => second.synced && second.unsyncedChanges === 0);
   close(second);
+}, 30000);
+
+test('an edit by someone who lost edit access is saved by another editor instead of forcing a reload', async () => {
+  items.set('53', { state: null, content: SAFE, extractionEpoch: 0 });
+  const demoted = connect(53, 530, 'edit');
+  const staying = connect(53, 531, 'edit');
+  await until(() => demoted.synced && staying.synced);
+  const closes = [];
+  staying.on('close', ({ event }) => closes.push(event.reason));
+  forbiddenAuthors.add(530);
+  demoted.document.getMap('probe').set('from', 'demoted');
+  const saved = store => {
+    const persisted = new Y.Doc();
+    Y.applyUpdate(persisted, Buffer.from(store.state, 'base64'));
+    return persisted.getMap('probe').get('from') === 'demoted';
+  };
+  const stored = await until(() => stores.find(store => store.id === '53' && saved(store)), 15000);
+  expect(stored.authorId).toBe(531);
+  expect(closes).toEqual([]);
+  close(demoted, staying);
+}, 30000);
+
+test('with no other editor left a rejected edit still asks to reload', async () => {
+  items.set('54', { state: null, content: SAFE, extractionEpoch: 0 });
+  const demoted = connect(54, 540, 'edit');
+  await until(() => demoted.synced);
+  const closes = [];
+  demoted.on('close', ({ event }) => closes.push(event.reason));
+  forbiddenAuthors.add(540);
+  demoted.document.getMap('probe').set('from', 'demoted');
+  await until(() => closes.includes('reload'), 15000);
+  close(demoted);
 }, 30000);
