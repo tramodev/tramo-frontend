@@ -34,7 +34,7 @@ export function ExplorePublishSection() {
     <div className="mb-4 text-sm font-medium text-primary">Explore & publish</div>
     <h2 className="mb-3.5 max-w-[25ch] font-display text-[2.5rem] font-medium leading-[1.1]">Your thinking doesn’t have to end with you.</h2>
     <p className="mb-10 max-w-[60ch] text-[1.0625rem] leading-relaxed text-muted-foreground">Follow someone else’s trail. Share a path of your own. Build on ideas instead of starting from a blank page.</p>
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
       <FadeUp className="h-full">
         <div className="flex h-full flex-col overflow-hidden rounded-t-[28px] rounded-b-sm bg-card">
           <div className="flex flex-1 flex-col p-6 sm:p-9">
