@@ -87,7 +87,7 @@ export function CollaborationSection() {
     <div>
       <h2 className="mb-4 font-display text-[2.5rem] font-medium leading-[1.1] sm:text-[3rem]">Write together.</h2>
       <p className="mb-8 max-w-[44ch] text-[1.0625rem] leading-relaxed text-muted-foreground">
-        Invite people to your project and build trails side by side. <Link href="/wiki/publishing" className="font-medium text-primary underline-offset-4 hover:underline">Learn more.</Link>
+        Invite people to your project and build trails side by side. <Link href="/wiki/collaboration" className="font-medium text-primary underline-offset-4 hover:underline">Learn more.</Link>
       </p>
       <div className="-mx-4 flex flex-col gap-1">
         {FEATURES.map(({ icon: Icon, lead, rest }, index) => <button key={lead} type="button" aria-pressed={active === index}
