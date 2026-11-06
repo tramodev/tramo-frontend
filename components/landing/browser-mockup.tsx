@@ -278,7 +278,7 @@ export const BrowserMockup: React.FC = () => {
           </div>
 
           <div
-            className="flex-1 min-h-0 cursor-text overflow-y-auto px-4 py-6 sm:px-8 lg:px-[max(2rem,calc((100%_-_43cqw)/2))]"
+            className="flex-1 min-h-0 cursor-text overflow-y-auto px-4 py-6 sm:px-8 lg:px-[max(2rem,calc((100%_-_73cqw)/2))]"
             onClick={(event) => {
               if (event.target !== event.currentTarget) return;
               const content = event.currentTarget.querySelector<HTMLDivElement>('div[contenteditable]');
