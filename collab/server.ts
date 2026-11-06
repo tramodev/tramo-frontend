@@ -23,7 +23,8 @@ const tokenKey = Buffer.from(setting('COLLAB_TOKEN_SECRET'), 'base64');
 const origins = new Set(setting('COLLAB_ALLOWED_ORIGINS', 'http://localhost:3000').split(','));
 const limits = {
   messageBytes: Number(setting('COLLAB_MAX_MESSAGE_BYTES', String(256 * 1024))),
-  perUser: Number(setting('COLLAB_MAX_CONNECTIONS_PER_USER', '10')),
+  socketsPerUser: Number(setting('COLLAB_MAX_SOCKETS_PER_USER', '10')),
+  documentsPerSocket: Number(setting('COLLAB_MAX_DOCUMENTS_PER_SOCKET', '50')),
   perDocument: Number(setting('COLLAB_MAX_CONNECTIONS_PER_DOCUMENT', '25')),
   documents: Number(setting('COLLAB_MAX_DOCUMENTS', '500')),
   ratePerSecond: Number(setting('COLLAB_UPDATES_PER_SECOND', '30')),
@@ -63,6 +64,10 @@ function api(path: string, init: RequestInit = {}) {
     headers: { 'X-Collab-Secret': secret, 'Content-Type': 'application/json', ...init.headers },
     signal: AbortSignal.timeout(10_000),
   });
+}
+
+function reject(reason: string) {
+  return Object.assign(new Error(reason), { reason });
 }
 
 function connections(instance: Hocuspocus): Array<[Document, Connection<Context>]> {
@@ -136,18 +141,20 @@ const server = new Server<Context>({
   unloadImmediately: false,
   websocketOptions: { maxPayload: limits.messageBytes },
 
-  async onAuthenticate({ token, documentName, connectionConfig, requestHeaders, instance }) {
+  async onAuthenticate({ token, documentName, connectionConfig, requestHeaders, socketId, instance }) {
     const origin = requestHeaders.get('origin');
     const claims = verify(token);
-    if ((origin && !origins.has(origin)) || !claims || claims.item !== documentName || !claims.sub) throw new Error('forbidden');
-    if (documents.get(documentName)?.poisoned) throw new Error('reload');
+    if ((origin && !origins.has(origin)) || !claims || claims.item !== documentName || !claims.sub) throw reject('forbidden');
+    if (documents.get(documentName)?.poisoned) throw reject('reload');
     const userId = Number(claims.sub);
-    const open = connections(instance);
-    if (open.filter(([, connection]) => connection.context.userId === userId).length >= limits.perUser
+    const mine = connections(instance).filter(([, connection]) => connection.context.userId === userId).map(([, connection]) => connection.socketId);
+    const sockets = new Set(mine);
+    if ((!sockets.has(socketId) && sockets.size >= limits.socketsPerUser)
+        || mine.filter(id => id === socketId).length >= limits.documentsPerSocket
         || (instance.documents.get(documentName)?.getConnectionsCount() ?? 0) >= limits.perDocument
         || (!instance.documents.has(documentName) && instance.documents.size >= limits.documents)) {
       log('collab_rejected_limit', { item: documentName, user: userId });
-      throw new Error('limit');
+      throw reject('limit');
     }
     connectionConfig.readOnly = claims.perm !== 'edit';
     return { userId, perm: claims.perm === 'edit' ? 'edit' : 'view', sv: claims.sv ?? null };

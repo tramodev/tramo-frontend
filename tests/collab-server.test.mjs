@@ -54,7 +54,7 @@ function token(item, user, perm, expiresIn = 120) {
 }
 
 function connect(item, user, perm, options = {}) {
-  const websocketProvider = new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
+  const websocketProvider = options.socket ?? new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
   const provider = new HocuspocusProvider({ websocketProvider, name: String(item), document: new Y.Doc(), token: token(item, user, perm, options.expiresIn), ...options.provider });
   provider.attach();
   return provider;
@@ -117,6 +117,7 @@ beforeAll(async () => {
       COLLAB_TOKEN_SECRET: TOKEN_KEY.toString('base64'),
       COLLAB_PORT: String(port),
       COLLAB_MAX_MESSAGE_BYTES: String(64 * 1024),
+      COLLAB_MAX_SOCKETS_PER_USER: '2',
     },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
@@ -191,6 +192,27 @@ test('oversized messages close the socket', async () => {
   const closed = new Promise(resolve => provider.configuration.websocketProvider.on('disconnect', resolve));
   provider.document.getMap('probe').set('big', 'x'.repeat(128 * 1024));
   await closed;
+  close(provider);
+}, 30000);
+
+test('the connection limit counts tabs, not the notes open in each tab', async () => {
+  const first = connect(91, 90, 'edit');
+  const sameTab = [92, 93, 94].map(item => connect(item, 90, 'edit', { socket: first.configuration.websocketProvider }));
+  const second = connect(95, 90, 'edit');
+  await until(() => [first, ...sameTab, second].every(provider => provider.synced));
+  const reasons = [];
+  const third = connect(96, 90, 'edit', { provider: { onAuthenticationFailed: ({ reason }) => reasons.push(reason) } });
+  await until(() => reasons.length === 1);
+  expect(reasons).toEqual(['limit']);
+  sameTab.forEach(provider => provider.destroy());
+  close(first, second, third);
+}, 30000);
+
+test('rejected authentication tells the client why', async () => {
+  const reasons = [];
+  const provider = connect(8, 80, 'edit', { provider: { token: token(9, 80, 'edit'), onAuthenticationFailed: ({ reason }) => reasons.push(reason) } });
+  await until(() => reasons.length === 1);
+  expect(reasons).toEqual(['forbidden']);
   close(provider);
 }, 30000);
 

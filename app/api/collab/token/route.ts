@@ -15,6 +15,6 @@ export async function POST(request: NextRequest) {
   });
   return new NextResponse(await response.text(), {
     status: response.status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...(response.headers.get('Retry-After') ? { 'Retry-After': response.headers.get('Retry-After')! } : {}) },
   });
 }

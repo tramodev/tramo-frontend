@@ -10,10 +10,11 @@ import { $getRoot, $getSelection, $isElementNode, $isParagraphNode, $isRangeSele
 import { serializeNoteContent } from '@/app/editor/note-content';
 import { HocuspocusProvider, type HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import * as Y from 'yjs';
-import { cursorColor, fetchCollabToken } from '@/lib/collab-client';
+import { COLLAB_ACCESS_DENIED, cursorColor, fetchCollabToken, forgetCollabToken } from '@/lib/collab-client';
 
 export type CollabStatus = 'syncing' | 'synced' | 'offline';
 export type CollabClosedReason = 'reload' | 'revoked';
+export type CollabWaiting = 'connecting' | 'limit' | null;
 export type CollabHandoff = { base: string; content: string };
 type LexicalProvider = ComponentProps<typeof CollaborationPluginV2__EXPERIMENTAL>['provider'];
 type Caret = { path: number[]; offset: number };
@@ -62,13 +63,14 @@ function applyHandoff(editor: LexicalEditor, handoff: CollabHandoff): boolean {
   return true;
 }
 
-export default function CollaborationNotePlugin({ itemId, socket, username, userId, handoff, onHandoff, onStatus, onClosed }: {
+export default function CollaborationNotePlugin({ itemId, socket, username, userId, handoff, onHandoff, onWaiting, onStatus, onClosed }: {
   itemId: string;
   socket: HocuspocusProviderWebsocket;
   username: string;
   userId: string;
   handoff?: CollabHandoff | null;
   onHandoff?: (applied: boolean) => void;
+  onWaiting?: (waiting: CollabWaiting) => void;
   onStatus: (itemId: string, status: CollabStatus | null) => void;
   onClosed: (reason: CollabClosedReason) => void;
 }) {
@@ -85,25 +87,44 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     } as unknown as LexicalProvider;
     return { doc, provider, lexicalProvider };
   }, [itemId, socket]);
-  const callbacks = useRef({ onStatus, onClosed, onHandoff, handoff });
-  useEffect(() => { callbacks.current = { onStatus, onClosed, onHandoff, handoff }; });
+  const callbacks = useRef({ onStatus, onClosed, onHandoff, onWaiting, handoff });
+  useEffect(() => { callbacks.current = { onStatus, onClosed, onHandoff, onWaiting, handoff }; });
 
   useEffect(() => {
     const { provider } = connection;
     let online = true;
     const report = () => callbacks.current.onStatus(itemId, !online ? 'offline'
       : provider.isSynced && provider.unsyncedChanges === 0 ? 'synced' : 'syncing');
-    const onStatusChange = ({ status }: { status: string }) => { online = status === 'connected'; report(); };
+    let offlineTimer: ReturnType<typeof setTimeout> | undefined;
+    const onStatusChange = ({ status }: { status: string }) => {
+      if (status === 'connected') { clearTimeout(offlineTimer); offlineTimer = undefined; online = true; report(); }
+      else if (status === 'disconnected' && !offlineTimer) offlineTimer = setTimeout(() => { online = false; report(); }, 1500);
+    };
     const onClose = ({ event }: { event: { reason?: string } }) => {
       if (event.reason === 'reload' || event.reason === 'revoked') callbacks.current.onClosed(event.reason);
     };
-    const onDenied = () => callbacks.current.onClosed('revoked');
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let attempt = 0;
+    const onDenied = ({ reason }: { reason: string }) => {
+      if (reason !== 'limit') forgetCollabToken(itemId);
+      if (reason === 'reload') { callbacks.current.onClosed('reload'); return; }
+      if (reason === 'forbidden' || reason.includes(COLLAB_ACCESS_DENIED)) { callbacks.current.onClosed('revoked'); return; }
+      online = false;
+      report();
+      if (reason === 'limit' && !settled) { clearTimeout(waitingTimer); callbacks.current.onWaiting?.('limit'); }
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => { provider.detach(); provider.attach(); }, Math.min(1000 * 2 ** attempt++, 30000));
+    };
     let settled = false;
     let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    const waitingTimer = setTimeout(() => { if (!settled) callbacks.current.onWaiting?.('connecting'); }, 1500);
     const onSynced = () => {
+      if (provider.isSynced) { attempt = 0; online = true; }
       report();
       if (settled || !provider.isSynced) return;
       settled = true;
+      clearTimeout(waitingTimer);
+      callbacks.current.onWaiting?.(null);
       settleTimer = setTimeout(() => {
         const { handoff, onHandoff } = callbacks.current;
         if (handoff) {
@@ -124,6 +145,9 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     return () => {
       provider.off('status', onStatusChange);
       clearTimeout(settleTimer);
+      clearTimeout(retryTimer);
+      clearTimeout(offlineTimer);
+      clearTimeout(waitingTimer);
       provider.off('synced', onSynced);
       provider.off('unsyncedChanges', report);
       provider.off('close', onClose);

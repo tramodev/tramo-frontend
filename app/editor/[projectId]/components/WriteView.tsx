@@ -46,7 +46,7 @@ import ItemMentionPlugin from '../../plugins/ItemMentionPlugin';
 import ExtractSelectionPlugin, { type ExtractionActions } from '../../plugins/ExtractSelectionPlugin';
 import WikiLinkPlugin from '../../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
-import CollaborationNotePlugin, { rememberCaret, type CollabClosedReason, type CollabHandoff, type CollabStatus } from '../../plugins/CollaborationNotePlugin';
+import CollaborationNotePlugin, { rememberCaret, type CollabClosedReason, type CollabHandoff, type CollabStatus, type CollabWaiting } from '../../plugins/CollaborationNotePlugin';
 import { HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useMounted } from '@/hooks/use-mounted';
@@ -62,6 +62,7 @@ import { NextTrailButton } from '@/components/editor/next-trail-button';
 import type { ReorderNotice } from '../hooks/useProjectEditorState';
 import { Trail, Item, TitleAlign } from '../../types';
 import type { MapPreviews } from '@/lib/projects-store';
+import { LexicalReadOnly } from '@/components/project/lexical-read-only';
 
 interface WriteViewProps {
   hint?: ReactNode;
@@ -228,6 +229,8 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
   const [history] = useState(() => restoreItemHistory(session, editor));
   const lastContentRef = useRef(JSON.stringify(editor.getEditorState().toJSON()));
+  const [live, setLive] = useState(!collaborative);
+  const [waiting, setWaiting] = useState<CollabWaiting>(null);
   useEffect(() => {
     const unregister = editor.registerUpdateListener(({ editorState }) => {
       session.state = editorState;
@@ -249,7 +252,13 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           <p>Used in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length} trails. Edits appear in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length === 2 ? 'both' : 'all of them'}.</p>
           <div className="mt-1 flex flex-wrap gap-3">{props.trails.filter(trail => trail.itemIds.includes(item.id)).map(trail => <button type="button" key={trail.id} onClick={() => props.onSelectItem(item, trail.id)} className="underline">{trail.title}</button>)}</div>
         </div>}
-        <div className="relative">
+        {!live && <div aria-busy="true">
+          {waiting && <p role="status" className="px-7 pt-2 text-xs text-muted-foreground">
+            {waiting === 'limit' ? 'Too many open tabs. Close one to keep editing.' : 'Connecting…'}
+          </p>}
+          <LexicalReadOnly content={item.content ?? ''} />
+        </div>}
+        <div className={live ? 'relative' : 'hidden'}>
           <RichTextPlugin contentEditable={
             <ContentEditable className="editor-input" aria-label={`Content of ${item.title || 'Untitled note'}`} aria-placeholder={placeholder}
               onFocus={() => { setTitleFocused(false); onFocus(item.id); }}
@@ -258,8 +267,8 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         </div>
         {collaborative
           ? socket && props.collab && <CollaborationNotePlugin itemId={item.id} socket={socket} username={props.collab.username} userId={props.collab.userId}
-            handoff={props.collabHandoff?.itemId === item.id ? props.collabHandoff : null} onHandoff={props.onCollabHandoff}
-            onStatus={(id, status) => props.onCollabStatus?.(id, status)} onClosed={onCollabClosed} />
+            handoff={props.collabHandoff?.itemId === item.id ? props.collabHandoff : null} onHandoff={props.onCollabHandoff} onWaiting={setWaiting}
+            onStatus={(id, status) => { if (status === 'synced') setLive(true); props.onCollabStatus?.(id, status); }} onClosed={onCollabClosed} />
           : <HistoryPlugin externalHistoryState={history} />}
         <ListPlugin />
         <CheckListPlugin />
