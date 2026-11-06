@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { HocuspocusProvider, type HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import * as Y from 'yjs';
-import { fetchProjectToken, forgetCollabToken, presenceDocument } from '@/lib/collab-client';
+import { COLLAB_ACCESS_DENIED, fetchProjectToken, forgetCollabToken, presenceDocument } from '@/lib/collab-client';
 import { presencePeers, type Peer, type PresenceState } from '@/app/editor/presence';
 
 type Local = Pick<PresenceState, 'user' | 'role' | 'itemId' | 'trailId'>;
@@ -50,9 +50,10 @@ export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, p
     let attempt = 0;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     const recompute = () => store.set(provider ? presencePeers(provider.awareness?.getStates().values() ?? [], selfId, Date.now()) : NO_PEERS);
+    let leaving = false;
     const publish = () => {
       const current = localRef.current;
-      if (provider && current) provider.awareness?.setLocalState({ ...current, ...activity, typingAt: current.role === 'VIEWER' ? null : activity.typingAt });
+      if (provider && current && !leaving) provider.awareness?.setLocalState({ ...current, ...activity, typingAt: current.role === 'VIEWER' ? null : activity.typingAt });
     };
     publishRef.current = publish;
     const teardown = () => {
@@ -66,6 +67,7 @@ export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, p
       if (reason !== 'limit') forgetCollabToken(key);
       teardown();
       clearTimeout(retryTimer);
+      if (reason === COLLAB_ACCESS_DENIED) return;
       retryTimer = setTimeout(connect, Math.min(1000 * 2 ** attempt++, 60_000));
     };
     const connect = () => {
@@ -81,7 +83,7 @@ export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, p
         provider.attach();
         publish();
         recompute();
-      }).catch(() => fail());
+      }).catch((error: Error) => fail(error.name));
     };
 
     const touch = (typing: boolean) => {
@@ -99,6 +101,13 @@ export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, p
       if (!activity.hidden) activity.activeAt = Date.now();
       publish();
     };
+    const onPageHide = () => { leaving = true; };
+    const onPageShow = () => {
+      leaving = false;
+      publish();
+    };
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
     window.addEventListener('keydown', onKey, true);
     window.addEventListener('pointerdown', onActivity, true);
     window.addEventListener('scroll', onActivity, true);
@@ -110,6 +119,8 @@ export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, p
       cancelled = true;
       clearTimeout(retryTimer);
       clearInterval(tick);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
       window.removeEventListener('keydown', onKey, true);
       window.removeEventListener('pointerdown', onActivity, true);
       window.removeEventListener('scroll', onActivity, true);
