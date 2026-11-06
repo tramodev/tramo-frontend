@@ -21,7 +21,7 @@ export class EmbedNode extends DecoratorBlockNode {
     return new EmbedNode({ provider: node.__provider, id: node.__id }, node.__format, node.__key);
   }
 
-  constructor(embed: Embed, format?: ElementFormatType, key?: NodeKey) {
+  constructor(embed: Embed = { provider: 'youtube', id: '' }, format?: ElementFormatType, key?: NodeKey) {
     super(format, key);
     const valid = validateEmbed(embed.provider, embed.id);
     this.__provider = valid?.provider ?? 'youtube';

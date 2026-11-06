@@ -50,6 +50,26 @@ function setup({ commit, save, metadata, storageFails = false, local = storage(s
   return { api: exports, localStorage, sessionStorage, requests, saves, titles, DraftRequestError, get seed() { return seed; } };
 }
 
+test('a note opened live elsewhere hands the unsynced text to the collaborative editor and keeps the backup', async () => {
+  let confirm;
+  const s = setup({ commit: () => new Promise(resolve => { confirm = resolve; }), save: async () => {
+    const error = new Error('live'); error.name = 'CollabActive'; throw error;
+  } });
+  const draft = s.api.newDraft('user');
+  draft.update({ item: { title: '', titleAlign: 'left', content: content('a') } });
+  const opening = draft.commit();
+  draft.update({ item: { title: '', titleAlign: 'left', content: content('abc') } });
+  confirm(result);
+  await opening;
+  expect(s.saves).toHaveLength(1);
+  expect(draft.getSnapshot().status).toBe('saved');
+  expect(draft.handoff).toEqual({ base: content('a'), content: content('abc') });
+  expect(Object.keys(s.localStorage)).toHaveLength(1);
+  draft.completeHandoff();
+  expect(draft.handoff).toBeNull();
+  expect(Object.keys(s.localStorage)).toHaveLength(0);
+});
+
 test('blank editor states, spaces and formatting do not create or persist a project', async () => {
   const s = setup(), draft = s.api.newDraft('user');
   draft.start();

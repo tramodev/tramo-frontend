@@ -1,5 +1,5 @@
 import { parseResponse } from '@/lib/http';
-import type { Project, ProjectVisibility } from '@/lib/projects-store';
+import type { Project, ProjectRole, ProjectVisibility } from '@/lib/projects-store';
 import type { Item, Trail, TitleAlign } from '@/app/editor/types';
 
 interface EditorBootstrapDTO {
@@ -18,6 +18,7 @@ interface EditorBootstrapDTO {
   contents: { id: number; content: string; extractionEpoch: number }[];
   username: string;
   imageUrl: string | null;
+  role: ProjectRole | null;
 }
 
 export async function getEditorBootstrap(id: string, noteId?: string | null, trailId?: string | null) {
@@ -45,5 +46,6 @@ export async function getEditorBootstrap(id: string, noteId?: string | null, tra
     selectedTrailId: dto.selectedTrailId == null ? undefined : String(dto.selectedTrailId),
     contents: dto.contents,
     profile: { username: dto.username, imageUrl: dto.imageUrl },
+    role: dto.role ?? 'OWNER',
   };
 }

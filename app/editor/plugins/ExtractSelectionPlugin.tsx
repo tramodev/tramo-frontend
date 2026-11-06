@@ -3,27 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import type { EditorState } from 'lexical';
-import type { HistoryState } from '@lexical/react/LexicalHistoryPlugin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { extractSelection, getExtractionTrailCount, type ExtractionRequest, type ExtractionResult } from '@/lib/extract-selection-client';
-import { acceptExtractionEpoch, getExtractionEpoch } from '@/lib/item-content-client';
-import { applyExtractedContent, captureSelection, prepareExtraction, type CapturedSelection } from './extract-selection';
+import { captureSelection, prepareExtraction, replaceExtractedSelection, type CapturedSelection } from './extract-selection';
 import type { Trail } from '../types';
 
 export interface ExtractionActions {
   restoreEpoch?: number;
-  beforeExtract: (id: string, state: EditorState) => Promise<void>;
-  pauseItem: (id: string) => void;
-  resumeItem: (id: string) => void;
-  acceptPersistedItem: (id: string) => void;
-  onExtracted: (sourceId: string, expectedContent: string, result: ExtractionResult, applySource: boolean) => void;
+  beforeExtract: () => Promise<void>;
+  onExtracted: (result: ExtractionResult) => void;
 }
 
-export default function ExtractSelectionPlugin({ projectId, itemId, trail, sharedCount, history, actions, onOpen }: {
-  projectId: string; itemId: string; trail?: Trail; sharedCount: number; history: HistoryState; actions: ExtractionActions; onOpen: (result: ExtractionResult) => void;
+export default function ExtractSelectionPlugin({ projectId, itemId, trail, sharedCount, actions, onOpen }: {
+  projectId: string; itemId: string; trail?: Trail; sharedCount: number; actions: ExtractionActions; onOpen: (result: ExtractionResult) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const [available, setAvailable] = useState<{ local: boolean; reason?: string; top: number; left: number; above: boolean; container: HTMLElement } | null>(null);
@@ -33,7 +27,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
   const [placement, setPlacement] = useState<'next' | 'last' | 'outside'>('outside');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
-  const [created, setCreated] = useState<ExtractionResult | null>(null);
+  const [created, setCreated] = useState<{ result: ExtractionResult; replaced: boolean } | null>(null);
   const [dialogTrail, setDialogTrail] = useState<Trail | undefined>();
   const [submitted, setSubmitted] = useState(false);
   const [usage, setUsage] = useState<number | null>(sharedCount);
@@ -80,33 +74,23 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
     if (busy.current || !capture || usage === null) return;
     busy.current = true; setPending(true); setError('');
     const editable = editor.isEditable(); editor.setEditable(false);
-    let paused = false;
     try {
-      if (JSON.stringify(editor.getEditorState().toJSON()) !== capture.content) throw new Error('The note changed. Close this dialog and select again.');
-      if (!request.current) await actions.beforeExtract(itemId, capture.state);
-      actions.pauseItem(itemId); paused = true;
       if (!request.current) {
-        const operationId = crypto.randomUUID();
-        const noteTitle = title.trim() || 'Untitled';
-        request.current = { ...prepareExtraction(editor, capture, noteTitle, operationId, leaveLink), operationId, title: noteTitle, leaveLink, extractionEpoch: getExtractionEpoch(itemId),
+        await actions.beforeExtract();
+        request.current = { operationId: crypto.randomUUID(), title: title.trim() || 'Untitled', extractedContent: prepareExtraction(editor, capture),
           trailId: placement !== 'outside' && dialogTrail ? Number(dialogTrail.id) : null,
           appendToTrail: placement === 'last',
           expectedOrder: placement !== 'outside' && dialogTrail ? dialogTrail.itemIds.map(Number) : null };
         setSubmitted(true);
       }
       const result = await extractSelection(projectId, itemId, request.current, actions.restoreEpoch ?? 0);
-      const unchanged = JSON.stringify(editor.getEditorState().toJSON()) === capture.content;
-      actions.onExtracted(itemId, capture.content, result, unchanged);
-      if (!unchanged) throw new Error('Extraction completed, but this editor changed while saving. Your local text was kept. Reload the project before editing further.');
-      applyExtractedContent(editor, history, result.sourceContent);
-      acceptExtractionEpoch(itemId, result.extractionEpoch, result.sourceContent);
-      acceptExtractionEpoch(result.item.id, 0, result.item.content ?? '');
-      actions.acceptPersistedItem(itemId);
-      setCreated(result); setCapture(null); setAvailable(null); opened.current = false; request.current = null;
+      actions.onExtracted(result);
+      editor.setEditable(editable);
+      const replaced = replaceExtractedSelection(editor, capture, result.item.id, request.current.title, leaveLink);
+      setCreated({ result, replaced }); setCapture(null); setAvailable(null); opened.current = false; request.current = null;
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Could not extract this selection. Your content is unchanged.');
     } finally {
-      if (paused) actions.resumeItem(itemId);
       editor.setEditable(editable); busy.current = false; setPending(false);
     }
   };
@@ -126,7 +110,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
     </div>, available.container)}
     <Dialog open={!!capture} onOpenChange={open => { if (!open) close(); }}>
       <DialogContent showCloseButton={!pending} onEscapeKeyDown={event => { if (pending) event.preventDefault(); }} onInteractOutside={event => { if (pending) event.preventDefault(); }}>
-        <DialogHeader><DialogTitle>Extract to new note</DialogTitle><DialogDescription>The selected content will move to a new note. You can leave a link here in its place. After extraction, Undo applies only to subsequent edits; it cannot undo note creation.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>Extract to new note</DialogTitle><DialogDescription>The selected content will move to a new note. You can leave a link here in its place. Undo restores the selected text but does not delete the new note.</DialogDescription></DialogHeader>
         {usage === null ? <p role="status" className="text-sm text-muted-foreground">Checking where this note is used…</p> : usage > 1 && <p className="text-sm">This note is used in {usage} trails. Changes to this note will appear in all of them. A new step is added only to the current trail.</p>}
         <label className="text-sm">Note title (optional)<Input autoFocus placeholder="Untitled" maxLength={300} value={title} disabled={pending || submitted} onChange={event => setTitle(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void confirm(); } }} /></label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={leaveLink} disabled={pending || submitted} onChange={event => setLeaveLink(event.target.checked)} className="accent-primary" />Leave a link in the original note</label>
@@ -141,6 +125,6 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
         <div className="flex justify-end gap-2"><Button variant="ghost" disabled={pending} onClick={close}>Cancel</Button><Button disabled={pending || usage === null} onClick={() => { void confirm(); }}>{pending ? 'Extracting…' : submitted ? 'Try again' : 'Extract'}</Button></div>
       </DialogContent>
     </Dialog>
-    {created && <div role="status" className="flex items-center gap-2 pl-7 text-sm text-muted-foreground">Created “{created.item.title}”.<Button variant="ghost" size="sm" onClick={() => onOpen(created)}>Open note</Button><Button variant="ghost" size="sm" onClick={() => setCreated(null)}>Dismiss</Button></div>}
+    {created && <div role="status" className="flex items-center gap-2 pl-7 text-sm text-muted-foreground">Created “{created.result.item.title}”.{!created.replaced && ' The selection changed while extracting, so it was left in place.'}<Button variant="ghost" size="sm" onClick={() => onOpen(created.result)}>Open note</Button><Button variant="ghost" size="sm" onClick={() => setCreated(null)}>Dismiss</Button></div>}
   </>;
 }

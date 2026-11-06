@@ -170,6 +170,7 @@ export function editorDraftForRoute(userId: string, projectId: string): EditorDr
 export class EditorDraft {
   readonly editorKey: string;
   onCreated?: (result: DraftCommitResult) => void;
+  handoff: { base: string; content: string } | null = null;
   private listeners = new Set<() => void>();
   private snapshot: { status: 'draft' | 'committing' | 'syncing' | 'saved' | 'error'; error: string } = { status: 'draft', error: '' };
   private inFlight: Promise<string> | null = null;
@@ -276,6 +277,10 @@ export class EditorDraft {
     this.finishTitle?.();
     this.finishTitle = undefined;
   }
+  completeHandoff() {
+    this.handoff = null;
+    try { discardDraft(this.backup.userId, this.backup.clientRequestId); } catch {}
+  }
   setPendingImages(pending: boolean) { this.pendingImages = pending; }
   needsUnloadWarning = () => this.pendingImages || this.pendingFiles > 0 || (this.snapshot.status !== 'saved' && !!this.storageError);
   resolveProjectId = async (): Promise<string | undefined> => {
@@ -364,17 +369,20 @@ export class EditorDraft {
           await this.metadata('item', String(result.itemId), { titleAlign: latest.item.titleAlign });
           base.item.titleAlign = latest.item.titleAlign; this.persist();
         }
-        if (base.item.content !== latest.item.content) {
-          try { await saveItemContent(String(result.itemId), latest.item.content, epoch, result.projectId); }
-          catch (error) {
-            if (!(error instanceof Error) || error.name !== 'ContentConflict' || await getItemContent(String(result.itemId)) !== latest.item.content) throw error;
-            acceptExtractionEpoch(String(result.itemId), 0, latest.item.content);
+        if (!this.handoff && base.item.content !== latest.item.content) {
+          try {
+            await saveItemContent(String(result.itemId), latest.item.content, epoch, result.projectId);
+            base.item.content = latest.item.content; this.persist();
+          } catch (error) {
+            if (error instanceof Error && error.name === 'CollabActive') this.handoff = { base: base.item.content, content: latest.item.content };
+            else if (!(error instanceof Error) || error.name !== 'ContentConflict' || await getItemContent(String(result.itemId)) !== latest.item.content) throw error;
+            else { acceptExtractionEpoch(String(result.itemId), 0, latest.item.content); base.item.content = latest.item.content; this.persist(); }
           }
-          base.item.content = latest.item.content; this.persist();
         }
         if (!this.titleReady && JSON.stringify(latest) === JSON.stringify(this.backup.latest)) break;
       }
-      try { discardDraft(this.backup.userId, this.backup.clientRequestId); } catch {}
+      if (this.handoff) this.handoff.content = this.backup.latest.item.content;
+      else try { discardDraft(this.backup.userId, this.backup.clientRequestId); } catch {}
       this.storageError = '';
       this.emit('saved');
       return result.projectId;

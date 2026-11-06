@@ -8,6 +8,7 @@ import { MockGuard } from "@/components/landing/mock-guard";
 import { Hero } from "@/components/landing/hero";
 import { Navbar } from "@/components/layout/navbar";
 import { FeaturesSection } from "@/components/landing/features-section";
+import { CollaborationSection } from "@/components/landing/collaboration-section";
 import { ExplorePublishSection } from "@/components/landing/explore-publish-section";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { Footer } from "@/components/layout/footer";
@@ -36,6 +37,8 @@ export default async function Home() {
           </FadeUp>
           <hr className="border-t border-border" />
           <FeaturesSection />
+          <hr className="border-t border-border" />
+          <CollaborationSection />
           <hr className="border-t border-border" />
           <ExplorePublishSection />
           <hr className="border-t border-border" />

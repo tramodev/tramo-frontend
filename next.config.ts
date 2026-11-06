@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
     })),
     formats: ["image/avif", "image/webp"],
   },
+  async redirects() {
+    return [{ source: "/projects/:projectId/share", destination: "/projects/:projectId/publish", permanent: true }];
+  },
   async headers() {
     return [
       {

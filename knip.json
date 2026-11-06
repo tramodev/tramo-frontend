@@ -6,6 +6,7 @@
     "public/gif.worker.js"
   ],
   "entry": [
-    "tests/**/*.test.mjs"
+    "tests/**/*.test.mjs",
+    "collab/server.ts"
   ]
 }

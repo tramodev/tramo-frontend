@@ -6,7 +6,7 @@ import { API_BASE_URL } from "@/lib/config";
 import { authenticatedFetch } from "@/lib/api";
 import { expectOk } from "@/lib/http";
 
-export type NotificationType = "UPVOTE" | "FORK" | "FOLLOW" | "BADGE" | "FEATURED" | "PUBLISH" | "SHARE" | "COMMENT" | "MODERATION";
+export type NotificationType = "UPVOTE" | "FORK" | "FOLLOW" | "BADGE" | "FEATURED" | "PUBLISH" | "SHARE" | "COMMENT" | "MODERATION" | "MEMBER_ADDED" | "MEMBER_JOINED" | "SHARE_LINK";
 
 interface NotificationDTO {
   id: number;

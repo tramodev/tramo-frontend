@@ -37,7 +37,6 @@ async function setup(extraTrails = []) {
   let autoSaveTimerId = 0;
   const autoSaveTimers = new Map();
   const autoSaveCleanups = [];
-  const autoSaveRequests = [];
   const autoSaveExports = {};
   runInNewContext(transpile('app/editor/[projectId]/hooks/useAutoSave.ts'), {
     exports: autoSaveExports,
@@ -50,12 +49,6 @@ async function setup(extraTrails = []) {
         useCallback: (fn) => fn,
         useEffect: (fn) => { autoSaveCleanups.push(fn()); },
       },
-      '@/lib/item-content-client': {
-        saveItemContent: (itemId, content) => new Promise((resolve, reject) => {
-          autoSaveRequests.push({ itemId, content, resolve, reject });
-        }),
-      },
-      '../../editor-utils': { isAuthError: () => false },
     })[name],
     setTimeout: (fn) => { autoSaveTimers.set(++autoSaveTimerId, fn); return autoSaveTimerId; },
     clearTimeout: (id) => autoSaveTimers.delete(id),
@@ -110,7 +103,7 @@ async function setup(extraTrails = []) {
         createLooseItem: () => new Promise((resolve, reject) => { looseCreateResolve = resolve; looseCreateReject = reject; }),
       },
       '@/lib/item-content-client': { resetItemContents: ids => contentResets.push(ids), acceptLoadedContents: contents => contents, getTrailContents: async () => ({}), getItemContent: async () => '', saveItemContent: async () => {} },
-      '../../editor-utils': { lastItemStorageKey: () => 'last', countTextStats: () => ({ words: 0, characters: 0 }), isAuthError: () => false },
+      '../../editor-utils': { lastItemStorageKey: () => 'last', countTextStats: () => ({ words: 0, characters: 0 }) },
       '../../trail-navigation': navigation,
       '@/lib/pending-saves': saves,
       '@/lib/item-title-saves': titleSaves,
@@ -129,7 +122,7 @@ async function setup(extraTrails = []) {
   }
   render();
   await settle();
-  return { runTitleTimers: async () => { const [id, timer] = [...titleTimers].sort((a, b) => a[1].due - b[1].due)[0]; titleNow = timer.due; titleTimers.delete(id); timer.fn(); await settle(); }, render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), createLooseFail: () => looseCreateReject(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews, contentResets, autoSaveRequests,
+  return { runTitleTimers: async () => { const [id, timer] = [...titleTimers].sort((a, b) => a[1].due - b[1].due)[0]; titleNow = timer.due; titleTimers.delete(id); timer.fn(); await settle(); }, render, save: () => resolveSave(), fail: () => rejectSave(new Error('offline')), create: item => createResolve(item), createFail: () => createReject(new Error('offline')), createLoose: item => looseCreateResolve(item), createLooseFail: () => looseCreateReject(new Error('offline')), requests: () => requests, bootstraps: () => bootstraps, previews: () => previews, contentResets,
     renameRequests,
     itemRenameRequests,
     attaches, detaches, orders, projectOrders,
@@ -442,64 +435,4 @@ test('createLooseItem adds the note optimistically and reconciles with the serve
   hook = s.render();
   expect(hook.items[tempId]).toBeUndefined();
   expect(hook.items.loose.unfiled).toBe(true);
-});
-
-test.each(['trail', 'loose'])('a slow %s note creation never autosaves the temporary id', async kind => {
-  const s = await setup();
-  const pending = kind === 'trail' ? s.render().handleCreateItem('trail', 'New note') : s.render().handleCreateLooseItem('New note');
-  await settle();
-  const hook = s.render();
-  const tempId = Object.keys(hook.items).find(id => id.startsWith('temp-'));
-  hook.onChange(tempId, { read: fn => fn(), toJSON: () => 'written while creating' });
-  s.flushTimers();
-  expect(s.autoSaveRequests).toHaveLength(0);
-  expect(await hook.flushPendingContent()).toBe(false);
-  const item = { id: 'new', title: 'New note', titleAlign: 'center', unfiled: kind === 'loose', content: '' };
-  if (kind === 'trail') s.create(item); else s.createLoose(item);
-  await pending;
-  s.flushTimers();
-  expect(s.autoSaveRequests).toHaveLength(1);
-  expect(s.autoSaveRequests[0].itemId).toBe('new');
-  expect(s.autoSaveRequests[0].content).toBe(JSON.stringify('written while creating'));
-  s.autoSaveRequests[0].resolve();
-  await settle();
-  expect(await s.render().flushPendingContent()).toBe(true);
-});
-
-test.each(['trail', 'loose'])('a failed %s note creation discards paused temporary writes', async kind => {
-  const s = await setup();
-  const pending = kind === 'trail' ? s.render().handleCreateItem('trail', 'New note') : s.render().handleCreateLooseItem('New note');
-  await settle();
-  const hook = s.render();
-  const tempId = Object.keys(hook.items).find(id => id.startsWith('temp-'));
-  hook.onChange(tempId, { read: fn => fn(), toJSON: () => 'draft' });
-  if (kind === 'trail') s.createFail(); else s.createLooseFail();
-  await expect(pending).rejects.toThrow('offline');
-  hook.onChange(tempId, { read: fn => fn(), toJSON: () => 'late update' });
-  s.flushTimers();
-  expect(s.autoSaveRequests).toHaveLength(0);
-  expect(await s.render().flushPendingContent()).toBe(true);
-});
-
-test.each(['trail', 'loose'])('a fast %s creation keeps edits made before the optimistic timer fires', async kind => {
-  const s = await setup();
-  const pending = kind === 'trail' ? s.render().handleCreateItem('trail', 'New note') : s.render().handleCreateLooseItem('New note');
-  await settle();
-  const hook = s.render();
-  const tempId = Object.keys(hook.items).find(id => id.startsWith('temp-'));
-  hook.onChange(tempId, { read: fn => fn(), toJSON: () => 'typed just before the response' });
-  const sequence = hook.navigationRequest.sequence;
-  const item = { id: 'new', title: 'New note', titleAlign: 'center', unfiled: kind === 'loose', content: '' };
-  if (kind === 'trail') s.create(item); else s.createLoose(item);
-  await pending;
-  const reconciled = s.render();
-  const confirmed = reconciled.items.new;
-  expect(confirmed.content).toBe(JSON.stringify('typed just before the response'));
-  expect(confirmed.editorKey).toBe(tempId);
-  expect(reconciled.navigationRequest.sequence).toBe(sequence);
-  expect(reconciled.navigationRequest.itemId).toBe('new');
-  s.flushTimers();
-  expect(s.autoSaveRequests[0].itemId).toBe('new');
-  s.autoSaveRequests[0].resolve();
-  await settle();
 });

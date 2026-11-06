@@ -1,5 +1,4 @@
 import { serializeNoteContent } from '@/app/editor/note-content';
-import { readItemContentBackup, removeItemContentBackup, type ItemContentBackup } from '@/lib/item-content-backup';
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -7,7 +6,7 @@ import { createPendingSaves } from '@/lib/pending-saves';
 import { assertProjectText } from '@/lib/project-validation';
 import { useRouter } from 'next/navigation';
 import { Trail, Item, TitleAlign } from '../../types';
-import { countTextStats, lastItemStorageKey } from '../../editor-utils';
+import { collectPlainText, countTextStats, lastItemStorageKey } from '../../editor-utils';
 import {
   getMapPreviews,
   setProjectGraphColors,
@@ -28,10 +27,12 @@ import {
 } from '@/lib/projects-store';
 import { resolveItemTrail } from '../../trail-navigation';
 import { getEditorBootstrap } from '@/lib/editor-bootstrap-client';
+import type { ProjectRole } from '@/lib/projects-store';
 import { acceptLoadedContents, getItemContent, getTrailContents, resetItemContents } from '@/lib/item-content-client';
 import type { ExtractionResult } from '@/lib/extract-selection-client';
 import { useAutoSave } from '@/app/editor/[projectId]/hooks/useAutoSave';
 import { clearLocalDrafts, editorDraftForRoute, type DraftCommitResult } from '@/lib/editor-draft';
+import type { CollabHandoff } from '@/app/editor/plugins/CollaborationNotePlugin';
 import type { UserProfile } from '@/lib/profile';
 import { ItemTitleSaves } from '@/lib/item-title-saves';
 
@@ -49,6 +50,8 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const isDraft = !!draft && draftState.status !== 'saved';
   const [projectId, setProjectId] = useState(() => draft?.backup.result?.projectId ?? draft?.editorKey ?? routeProjectId);
   const draftInitialized = useRef(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refreshProject = useCallback(() => setRefreshKey(key => key + 1), []);
   useEffect(() => { if (user?.userId) clearLocalDrafts(user.userId); }, [user?.userId]);
   const router = useRouter();
   const pendingSaves = useRef(createPendingSaves());
@@ -114,38 +117,18 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     });
   }, []);
 
-  const autoSave = useAutoSave({
-    projectId,
-    userId: user?.userId,
-    restoreEpoch,
-    contextId: activeTrailId,
-    onOptimisticUpdate: updateItemContentLocally,
-    redirectToLogin,
-  });
-
-  const { recoverItemContent } = autoSave;
-  const recoveredContents = useRef(new Map<string, { backup: ItemContentBackup; serverContent: string }>());
-  const recoverContents = useCallback((projectId: string, contents: Record<string, string>) => {
-    if (!user?.userId) return contents;
-    const recovered = { ...contents };
-    for (const [itemId, serverContent] of Object.entries(contents)) {
-      try {
-        const backup = readItemContentBackup(user.userId, projectId, itemId);
-        if (!backup) continue;
-        if (backup.content === serverContent) { removeItemContentBackup(user.userId, projectId, itemId, serverContent); continue; }
-        recovered[itemId] = backup.content;
-        recoveredContents.current.set(itemId, { backup, serverContent });
-      } catch {}
-    }
-    return recovered;
-  }, [user]);
-  useEffect(() => {
-    if (!loaded) return;
-    for (const [itemId, { backup, serverContent }] of recoveredContents.current) recoverItemContent(itemId, backup, serverContent);
-    recoveredContents.current.clear();
-  }, [loaded, items, recoverItemContent]);
+  const autoSave = useAutoSave({ onOptimisticUpdate: updateItemContentLocally });
+  const [collabHandoff, setCollabHandoff] = useState<CollabHandoff & { itemId: string } | null>(null);
+  const [unsyncedText, setUnsyncedText] = useState<string | null>(null);
+  const onCollabHandoff = useCallback((applied: boolean) => {
+    if (applied) draft?.completeHandoff();
+    else if (collabHandoff) setUnsyncedText(collectPlainText(collabHandoff.content).join('\n'));
+    setCollabHandoff(null);
+  }, [draft, collabHandoff]);
   const [view, setView] = useState<'write' | 'graph'>('write');
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
+  const [role, setRole] = useState<ProjectRole>('OWNER');
+  const [accessLost, setAccessLost] = useState(false);
 
   useEffect(() => {
     if (!draft) return;
@@ -185,13 +168,14 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       setProjectTitle(title => title.trim() || 'Untitled project');
       setTrails(previous => previous.map(trail => ({ ...trail, title: trail.title.trim() || 'My first trail' })));
       setItems(previous => Object.fromEntries(Object.entries(previous).map(([id, item]) => [id, { ...item,
-        title: item.title.trim() || 'Untitled note' }])));
+        title: item.title.trim() || 'Untitled note', editorKey: item.editorKey === draft.editorKey ? undefined : item.editorKey }])));
+      if (draft.handoff && draft.backup.result) setCollabHandoff({ itemId: String(draft.backup.result.itemId), ...draft.handoff });
     });
   }, [draft, draftState.status]);
 
   useEffect(() => {
     let cancelled = false;
-    if (draft && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId)) {
+    if (draft && !refreshKey && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId)) {
       if (!draftInitialized.current) {
         void draft.claim().then(() => {
           if (cancelled || draftInitialized.current) return;
@@ -218,14 +202,15 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     getEditorBootstrap(routeProjectId, preferredItemId, entry.get('trail')).then((result) => {
       if (cancelled) return;
       if (!result) {
-        router.replace('/projects');
+        if (refreshKey) setAccessLost(true);
+        else router.replace('/projects');
         return;
       }
       const { project } = result;
       setProjectId(routeProjectId);
       setRestoreEpoch(result.restoreEpoch);
       resetItemContents(Object.keys(project.items));
-      const contents = recoverContents(routeProjectId, acceptLoadedContents(result.contents));
+      const contents = acceptLoadedContents(result.contents);
       for (const [itemId, content] of Object.entries(contents)) {
         const item = project.items[itemId];
         if (item) project.items[itemId] = { ...item, content, textStats: countTextStats(content) };
@@ -240,6 +225,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       setTrails(project.trails);
       setItems(project.items);
       setProfile(result.profile);
+      setRole(result.role);
       setLoaded(true);
       const itemId = result.selectedItemId;
       setNavigation({ trailId: result.selectedTrailId, itemId,
@@ -252,7 +238,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     return () => {
       cancelled = true;
     };
-  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves, recoverContents]);
+  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves, refreshKey]);
 
   useEffect(() => {
     if (isDraft || !loaded || (!connectionsPanelOpen && view !== 'graph') || mapPreviews !== undefined) return;
@@ -319,10 +305,9 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       .then((byId) => {
         if (cancelled) return;
         setContentLoadError(false);
-        const contents = recoverContents(projectId, byId);
         setItems((prev) => {
           const next = { ...prev };
-          for (const [itemId, content] of Object.entries(contents)) {
+          for (const [itemId, content] of Object.entries(byId)) {
             if (next[itemId] && next[itemId].content == null) next[itemId] = { ...next[itemId], content, textStats: countTextStats(content) };
           }
           return next;
@@ -330,7 +315,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       })
       .catch(() => { if (!cancelled) setContentLoadError(true); });
     return () => { cancelled = true; };
-  }, [activeTrailId, trailContentIds, contentRetry, activeTrail, items, projectId, recoverContents]);
+  }, [activeTrailId, trailContentIds, contentRetry, activeTrail, items]);
 
   useEffect(() => {
     let cancelled = false;
@@ -338,12 +323,11 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     getItemContent(selectedItemId).then((content) => {
       if (cancelled) return;
       setContentLoadError(false);
-      content = recoverContents(projectId, { [selectedItemId]: content })[selectedItemId];
       setItems((prev) => prev[selectedItemId] && prev[selectedItemId].content == null
         ? { ...prev, [selectedItemId]: { ...prev[selectedItemId], content, textStats: countTextStats(content) } } : prev);
     }).catch(() => { if (!cancelled) setContentLoadError(true); });
     return () => { cancelled = true; };
-  }, [activeTrailId, selectedItemId, contentRetry, items, projectId, recoverContents]);
+  }, [activeTrailId, selectedItemId, contentRetry, items]);
 
   const handleVisibleItem = useCallback((itemId: string) => {
     setNavigation((prev) => prev.itemId === itemId ? prev : { ...prev, itemId });
@@ -494,7 +478,6 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
 
   const handleCreateItem = (trailId: string, title: string) => pendingSaves.current.track(`create-item:${trailId}:${title}`, async () => {
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    autoSave.pauseItem(tempId);
     const optimisticItem: Item = { id: tempId, editorKey: tempId, title, titleAlign: 'center', unfiled: false, content: '', textStats: { words: 0, characters: 0 } };
     setItems(prevItems => ({ ...prevItems, [tempId]: optimisticItem }));
     setTrails(prevTrails => prevTrails.map(trail =>
@@ -512,14 +495,11 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     try {
       newItem = await createItem(trailId, title, restoreEpoch);
     } catch (err) {
-      autoSave.discardItem(tempId);
       setItems(prev => { const next = { ...prev }; delete next[tempId]; return next; });
       setTrails(prev => prev.map(t => t.id === trailId ? { ...t, itemIds: t.itemIds.filter(id => id !== tempId), steps: t.steps.filter(s => s.itemId !== tempId) } : t));
       setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: undefined, request: undefined } : prev);
       throw err;
     }
-    autoSave.renameItemId(tempId, newItem.id);
-    autoSave.resumeItem(newItem.id);
     setItems(prev => {
       const next = { ...prev };
       const tempItem = next[tempId];
@@ -574,7 +554,6 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
 
   const handleCreateLooseItem = (title: string) => pendingSaves.current.track(`create-loose:${title}`, async () => {
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    autoSave.pauseItem(tempId);
     const optimisticItem: Item = { id: tempId, editorKey: tempId, title, titleAlign: 'center', unfiled: true, content: '', textStats: { words: 0, characters: 0 } };
     setItems(prevItems => ({ ...prevItems, [tempId]: optimisticItem }));
     setView('write');
@@ -583,13 +562,10 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     try {
       newItem = await createLooseItem(projectId, title, restoreEpoch);
     } catch (err) {
-      autoSave.discardItem(tempId);
       setItems(prev => { const next = { ...prev }; delete next[tempId]; return next; });
       setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: undefined, request: undefined } : prev);
       throw err;
     }
-    autoSave.renameItemId(tempId, newItem.id);
-    autoSave.resumeItem(newItem.id);
     setItems(prev => {
       const next = { ...prev };
       const tempItem = next[tempId];
@@ -715,6 +691,8 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     tags,
     setTags,
     profile,
+    role,
+    accessLost,
     trails,
     items,
     mapPreviews,
@@ -733,10 +711,9 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     handleSelectTrail,
     redirectToLogin,
     flushProjectChanges: async () => { await Promise.all([titleSaves.flush(), pendingSaves.current.flush()]); },
-    applyExtraction: (sourceId: string, expectedContent: string, result: ExtractionResult, applySource: boolean) => {
+    applyExtraction: (result: ExtractionResult) => {
       setItems(previous => ({ ...previous,
         [result.item.id]: { ...result.item, textStats: countTextStats(result.item.content ?? '') },
-        ...(applySource && previous[sourceId]?.content === expectedContent ? { [sourceId]: { ...previous[sourceId], content: result.sourceContent, textStats: countTextStats(result.sourceContent) } } : {}),
       }));
       if (result.trailId) setTrails(previous => previous.map(trail => trail.id === result.trailId
         ? { ...trail, steps: result.steps, itemIds: result.steps.map(step => step.itemId) } : trail));
@@ -766,9 +743,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     ...autoSave,
     ...(isDraft ? { saveStatus: draftState.status === 'error' ? 'error' as const : draftState.status === 'draft' ? 'idle' as const : 'saving' as const,
       saveError: draftState.error } : {}),
-    ...(!isDraft && titleState.status === 'error' ? { saveStatus: 'error' as const }
-      : !isDraft && titleState.status === 'saving' && autoSave.saveStatus !== 'error' ? { saveStatus: 'saving' as const }
-      : !isDraft && titleState.status === 'saved' && autoSave.saveStatus === 'idle' ? { saveStatus: 'saved' as const } : {}),
+    ...(!isDraft && titleState.status === 'error' ? { saveStatus: 'error' as const } : {}),
     onChange: (itemId: string, editorState: import('lexical').EditorState, pendingCommand = false) => {
       const state = draft ? editorState.toJSON() : undefined;
       draft?.setPendingImages(JSON.stringify(state).includes('"imageId":""'));
@@ -777,7 +752,17 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
         const id = draft.backup.result ? String(draft.backup.result.itemId) : itemId;
         updateItemContentLocally(id, content);
         draft.update({ item: { ...draft.backup.latest.item, content } }, false, pendingCommand);
-      } else autoSave.onChange(itemId, editorState);
+      }
     },
+    collabHandoff,
+    onCollabHandoff,
+    refreshProject,
+    onCopyUnsyncedText: unsyncedText === null ? undefined : async () => {
+      await navigator.clipboard.writeText(unsyncedText);
+      setUnsyncedText(null);
+      draft?.completeHandoff();
+    },
+    ...(unsyncedText !== null ? { saveStatus: 'error' as const,
+      saveError: 'This note changed in another tab before your last edits synced. Copy your text to add it back.' } : {}),
   };
 }

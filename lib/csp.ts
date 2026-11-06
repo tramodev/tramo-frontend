@@ -6,6 +6,10 @@ const privateOrigin = process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN
   ? new URL(process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN).origin
   : "";
 
+const collabOrigin = process.env.NEXT_PUBLIC_COLLAB_URL
+  ? new URL(process.env.NEXT_PUBLIC_COLLAB_URL).origin
+  : "";
+
 export function contentSecurityPolicy(nonce: string): string {
   return [
     "default-src 'self'",
@@ -15,7 +19,7 @@ export function contentSecurityPolicy(nonce: string): string {
     "object-src 'none'",
     "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
     "font-src 'self' data:",
-    `connect-src 'self' https://accounts.google.com https://www.google.com/recaptcha/ ${privateOrigin} https://*.r2.cloudflarestorage.com`,
+    `connect-src 'self' https://accounts.google.com https://www.google.com/recaptcha/ ${privateOrigin} https://*.r2.cloudflarestorage.com ${collabOrigin}`,
     "frame-src https://accounts.google.com https://www.google.com https://recaptcha.google.com/recaptcha/ https://www.youtube-nocookie.com https://platform.twitter.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",

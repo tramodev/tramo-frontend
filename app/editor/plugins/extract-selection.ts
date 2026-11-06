@@ -1,18 +1,10 @@
-import { $getSelection, $isRangeSelection, $setSelection, $getRoot, $createTextNode, createEditor, CLEAR_HISTORY_COMMAND, type EditorState, type LexicalEditor, type RangeSelection } from 'lexical';
-import type { HistoryState } from '@lexical/react/LexicalHistoryPlugin';
+import { $getSelection, $isRangeSelection, $setSelection, $getRoot, $createTextNode, createEditor, type EditorState, type LexicalEditor, type RangeSelection } from 'lexical';
 import { $createLinkNode } from '@lexical/link';
 import { $generateJSONFromSelectedNodes, $generateNodesFromSerializedNodes, $insertGeneratedNodes } from '@lexical/clipboard';
-import { sanitizeNoteContent } from '@/app/editor/note-content';
 import { editorConfig } from '../lexical-config';
 
 const supported = new Set(['root', 'paragraph', 'heading', 'quote', 'list', 'listitem', 'text', 'link', 'autolink', 'linebreak', 'tab']);
-export type CapturedSelection = { state: EditorState; selection: RangeSelection; content: string };
-
-export function applyExtractedContent(editor: LexicalEditor, history: HistoryState, content: string) {
-  editor.setEditorState(editor.parseEditorState(sanitizeNoteContent(content)), { tag: 'extraction' });
-  editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
-  history.current = { editor, editorState: editor.getEditorState() };
-}
+export type CapturedSelection = { state: EditorState; selection: RangeSelection; text: string };
 
 export function captureSelection(editor: LexicalEditor): { capture?: CapturedSelection; reason?: string } {
   return editor.getEditorState().read(() => {
@@ -29,26 +21,29 @@ export function captureSelection(editor: LexicalEditor): { capture?: CapturedSel
     }
     if (!selection.getTextContent().trim()) return { reason: 'Select some text to extract.' };
     const state = editor.getEditorState();
-    return { capture: { state, selection: selection.clone(), content: JSON.stringify(state.toJSON()) } };
+    return { capture: { state, selection: selection.clone(), text: selection.getTextContent() } };
   }, { editor });
 }
 
-export function prepareExtraction(editor: LexicalEditor, capture: CapturedSelection, title: string, operationId: string, leaveLink = true) {
-  if (JSON.stringify(editor.getEditorState().toJSON()) !== capture.content) throw new Error('The note changed. Close this dialog and select again.');
+export function prepareExtraction(editor: LexicalEditor, capture: CapturedSelection): string {
   const selected = capture.state.read(() => $generateJSONFromSelectedNodes(editor, capture.selection), { editor });
-  const config = { ...editorConfig, onError: (error: Error) => { throw error; } };
-  const destination = createEditor(config);
+  const destination = createEditor({ ...editorConfig, onError: (error: Error) => { throw error; } });
   destination.update(() => {
     const selection = $getRoot().selectStart();
     $insertGeneratedNodes(destination, $generateNodesFromSerializedNodes(selected.nodes), selection);
   }, { discrete: true });
-  const source = createEditor(config);
-  source.setEditorState(capture.state.clone(capture.selection.clone()));
-  source.update(() => {
+  return JSON.stringify(destination.getEditorState().toJSON());
+}
+
+export function replaceExtractedSelection(editor: LexicalEditor, capture: CapturedSelection, itemId: string, title: string, leaveLink: boolean): boolean {
+  let replaced = false;
+  editor.update(() => {
     const selection = capture.selection.clone();
+    if (!selection.getNodes().every(node => node.isAttached()) || selection.getTextContent() !== capture.text) return;
     $setSelection(selection);
-    if (leaveLink) selection.insertNodes([$createLinkNode('#', { rel: `tramo-extraction:${operationId}` }).append($createTextNode(title))]);
+    if (leaveLink) selection.insertNodes([$createLinkNode('#', { rel: `tramo-idea:${itemId}` }).append($createTextNode(title))]);
     else selection.removeText();
+    replaced = true;
   }, { discrete: true });
-  return { expectedContent: capture.content, extractedContent: JSON.stringify(destination.getEditorState().toJSON()), sourceContent: JSON.stringify(source.getEditorState().toJSON()) };
+  return replaced;
 }

@@ -50,7 +50,3 @@ export function countProjectTextStats(items: Record<string, { content: string | 
   }
   return total;
 }
-
-export function isAuthError(err: unknown): boolean {
-  return err instanceof Error && err.message.includes('401');
-}

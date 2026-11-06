@@ -12,7 +12,6 @@ import {
   Globe,
   Loader2,
   Lock,
-  Users,
 } from "lucide-react"
 
 import { projectEmbedErrors, embedReviewUrl, type ProjectEmbedError } from '@/lib/project-embed-errors'
@@ -46,8 +45,7 @@ const VISIBILITY_OPTIONS: {
   description: string;
   icon: typeof Lock;
 }[] = [
-  { value: "private", label: "Private", description: "Only you can access this project", icon: Lock },
-  { value: "unlisted", label: "Unlisted", description: "Anyone with the link can view it", icon: Users },
+  { value: "private", label: "Private", description: "Only you and the people you share it with", icon: Lock },
   { value: "published", label: "Published", description: "Listed on Explore for everyone", icon: Globe },
 ];
 
@@ -78,6 +76,10 @@ export default function PublishPage() {
     getProject(projectId).then((p) => {
       if (cancelled) return;
       if (!p) return;
+      if (p.role !== "OWNER") {
+        router.replace(`/editor/${projectId}`);
+        return;
+      }
       setProject(p);
       setDescription(p.description);
       setTags(p.tags);
@@ -90,7 +92,7 @@ export default function PublishPage() {
       if (!cancelled && p) setProfile({ username: p.username, imageUrl: p.imageUrl, selectedBadge: p.selectedBadge });
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [projectId]);
+  }, [projectId, router]);
 
   if (!project) return <main id="main-content" tabIndex={-1} className="flex min-h-svh flex-col items-center justify-center gap-4 p-6">
     {loading ? <p role="status">Loading project…</p> : <>
@@ -228,7 +230,7 @@ export default function PublishPage() {
           <ChevronLeft className="h-4 w-4" />
           <span className="leading-none">Editor</span>
         </button>
-        <h1 className="text-[1.0625rem] font-semibold leading-none">Share</h1>
+        <h1 className="text-[1.0625rem] font-semibold leading-none">Publish</h1>
       </div>
 
       <div tabIndex={0} role="region" aria-label="Explore preview" className="min-w-0 flex-1 overflow-y-auto bg-muted focus-visible:outline-2 focus-visible:outline-ring lg:col-start-1 lg:row-start-2 lg:min-h-0">

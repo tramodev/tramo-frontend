@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useSelectedLayoutSegments } from 'next/navigation';
+import { useRouter, useSelectedLayoutSegments } from 'next/navigation';
 import type { UserProfile } from '@/lib/profile';
 import { FolderPlus, Loader2, Type } from 'lucide-react';
 import { ProjectShell } from '@/components/editor/project-shell';
@@ -8,12 +8,18 @@ import { SidebarCustom } from '@/components/editor/sidebar-custom';
 import { Sidebar, SidebarContent, SidebarProvider } from '@/components/ui/sidebar';
 import { countProjectTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORAGE_KEY } from '@/app/editor/editor-utils';
 import { useProjectEditorState } from '@/app/editor/[projectId]/hooks/useProjectEditorState';
+import { useCollabSocket } from '@/app/editor/[projectId]/hooks/useCollabSocket';
+import { useProjectPresence } from '@/app/editor/[projectId]/hooks/useProjectPresence';
+import { PresenceAvatars } from '@/app/editor/[projectId]/components/PresenceAvatars';
+import { peersByItem, premountedItems, type Peer } from '@/app/editor/presence';
 import { EditorTitleSlot, EditorActions } from '@/app/editor/[projectId]/components/EditorHeader';
 import { WriteView } from '@/app/editor/[projectId]/components/WriteView';
 import { startExistingProject } from '@/lib/projects-store';
 import { TaskHint } from '@/components/editor/task-hint';
 import { GraphView } from '@/components/editor/graph-view';
 import { hasPendingEmbedDrafts, subscribeEmbedDrafts } from '@/app/editor/embed-draft-status';
+import { subscribeNotificationCount } from '@/lib/notification-stream';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export function EditorWorkspace({ user }: { user: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'> }) {
   const segments = useSelectedLayoutSegments();
@@ -55,6 +61,31 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   const project = useProjectEditorState(routeProjectId, connectionsPanelOpen, user);
   const hasPendingEmbedDraft = useSyncExternalStore(subscribeEmbedDrafts, hasPendingEmbedDrafts, () => false);
   const projectId = project.projectId;
+  const { refreshProject } = project;
+  const readOnly = project.role === 'VIEWER';
+  const collabSocket = useCollabSocket(!project.isDraft && !!user.userId);
+  const peers = useProjectPresence(collabSocket, projectId, project.loaded && user.userId ? {
+    user: { id: String(user.userId), name: user.username || 'Someone', imageUrl: user.imageUrl ?? null },
+    role: project.role,
+    itemId: project.selectedItemId ?? null,
+    trailId: project.activeTrailId ?? null,
+  } : null);
+  const peersOnItems = useMemo(() => peersByItem(peers), [peers]);
+  const presenceItemIds = useMemo(() => premountedItems(peersOnItems), [peersOnItems]);
+  const selectPeer = (peer: Peer) => {
+    const item = peer.itemId && Object.hasOwn(project.items, peer.itemId) ? project.items[peer.itemId] : null;
+    if (item) project.handleSelectItem(item, peer.trailId ?? undefined);
+  };
+  const router = useRouter();
+  const [accessRevoked, setAccessRevoked] = useState(false);
+  useEffect(() => {
+    if (!user.userId) return;
+    return subscribeNotificationCount(String(user.userId), () => {}, (type, eventProjectId) => {
+      if (eventProjectId !== projectId) return;
+      if (type === 'access-revoked') setAccessRevoked(true);
+      else refreshProject();
+    });
+  }, [user.userId, projectId, refreshProject]);
   useEffect(() => {
     if (project.loaded) document.title = `${project.projectTitle} | Tramo`;
   }, [project.loaded, project.projectTitle]);
@@ -87,7 +118,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
       <FolderPlus className="h-12 w-12 opacity-40" />
       <p className="text-lg font-medium">{project.activeTrail ? project.activeTrail.title : 'Start with a note'}</p>
       <p className="max-w-sm text-sm">Write first. A trail is an ordered sequence of notes; you can organize and reuse them as you go.</p>
-      <button type="button" disabled={starting} onClick={startWriting} className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground disabled:opacity-50">{starting ? 'Opening…' : 'Start writing'}</button>
+      {!readOnly && <button type="button" disabled={starting} onClick={startWriting} className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground disabled:opacity-50">{starting ? 'Opening…' : 'Start writing'}</button>}
       {startError && <p role="alert" className="text-sm text-destructive">{startError}</p>}
     </div>
   );
@@ -113,14 +144,14 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
         showLogo={false}
         titleSlot={
           project.loaded ? <EditorTitleSlot
+            readOnly={readOnly}
             projectTitle={project.projectTitle}
             draft={project.isDraft}
             onDraftTitleChange={project.onDraftProjectTitle}
             onRenameProject={project.handleRenameProject}
             saveStatus={project.saveStatus === 'error' ? 'error' : hasPendingEmbedDraft ? 'unsaved' : project.saveStatus}
             saveError={project.saveError}
-            onDiscardRecoveredChanges={project.onDiscardRecoveredChanges}
-            onKeepRecoveredChanges={project.onKeepRecoveredChanges}
+            onCopyUnsyncedText={project.onCopyUnsyncedText}
           /> : <div className="h-5 w-36 animate-pulse rounded bg-muted" />
         }
         actions={
@@ -138,18 +169,22 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             restoreEpoch={project.restoreEpoch}
             textStats={textStats}
             projectId={projectId}
+            projectTitle={project.projectTitle}
             beforeExport={async () => {
-              if (!await project.flushPendingContent()) throw new Error('Could not save note content. Wait for image uploads to finish or retry before exporting.');
+              if (!project.contentSynced) throw new Error('Some note changes are still syncing. Please try again.');
               try { await project.flushProjectChanges(); }
               catch { throw new Error('Could not save project changes. Retry the failed edit or refresh the project before exporting.'); }
-              if (!await project.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
             }}
             profile={project.profile}
+            canShare={project.role === 'OWNER'}
+            canEdit={!readOnly}
+            presence={<PresenceAvatars peers={peers} items={project.items} onSelect={selectPeer} />}
           />
           </>
         }
         sidebar={
           project.loaded ? <SidebarCustom
+            readOnly={readOnly}
             homeHref="/projects"
             draft={project.isDraft}
             onDraftTrailTitleChange={project.onDraftTrailTitle}
@@ -168,11 +203,12 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             onRenameItem={project.handleRenameItem}
             onDeleteTrail={project.handleDeleteTrail}
             onUnlinkItemFromTrail={project.handleUnlinkItemFromTrail}
-            onDeleteItem={async (itemId) => { await project.handleDeleteItem(itemId); project.discardItem(itemId); }}
+            onDeleteItem={project.handleDeleteItem}
             onReorderTrailItems={project.handleReorderTrailItems}
             onReorderTrails={project.handleReorderTrails}
             trailOrderError={project.trailOrderError}
             onMoveItemToTrail={project.handleMoveItemToTrail}
+            peersByItem={peersOnItems}
           /> : <Sidebar><SidebarContent><div className="m-6 h-5 w-32 animate-pulse rounded bg-muted" /></SidebarContent></Sidebar>
         }
         content={
@@ -186,7 +222,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
               <GraphView
                 projectId={projectId}
                 graphColors={project.graphColors}
-                onSaveColors={project.handleSetGraphColors}
+                onSaveColors={readOnly ? undefined : project.handleSetGraphColors}
                 trails={project.trails}
                 items={project.items}
                 mapPreviews={project.mapPreviews}
@@ -200,8 +236,9 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             <div className={project.view === 'graph' ? 'hidden' : 'editor-write-layout flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden'} inert={project.view === 'graph'}>
             {project.selectedItem ? (
               <WriteView
+                readOnly={readOnly}
                 toolbarOpen={toolbarOpen}
-                hint={project.profile && <TaskHint id={`${project.profile.username}:write`}>
+                hint={project.profile && !readOnly && <TaskHint id={`${project.profile.username}:write`}>
                   Start writing in the note. Your changes save automatically; you can add a title later.
                 </TaskHint>}
                 draft={project.isDraft}
@@ -230,18 +267,20 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
                 onCreateItem={project.handleCreateItem}
                 onOpenGraph={() => project.setView('graph')}
                 onChange={project.onChange}
+                collab={user.userId ? { userId: String(user.userId), username: user.username || 'Someone' } : undefined}
+                collabSocket={collabSocket}
+                presenceItemIds={presenceItemIds}
+                collabHandoff={project.collabHandoff}
+                onCollabHandoff={project.onCollabHandoff}
+                onCollabChange={project.onCollabChange}
+                onCollabStatus={project.setCollabStatus}
+                onAccessChanged={refreshProject}
                 extractionActions={{
                   restoreEpoch: project.restoreEpoch,
-                  beforeExtract: async (id, state) => {
-                    project.onChange(id, state);
-                    if (!await project.flushPendingContent()) throw new Error('Could not save note content. Your selection is kept; wait for image uploads or retry.');
+                  beforeExtract: async () => {
                     try { await project.flushProjectChanges(); }
                     catch { throw new Error('Could not save project changes. Your selection is kept; retry the failed edit before extracting.'); }
-                    if (!await project.flushPendingContent()) throw new Error('Some note changes are still unsaved. Please try again.');
                   },
-                  pauseItem: project.pauseItem,
-                  resumeItem: project.resumeItem,
-                  acceptPersistedItem: project.acceptPersistedItem,
                   onExtracted: project.applyExtraction,
                 }}
                 connectionsPanelOpen={!project.isDraft && connectionsPanelOpen}
@@ -254,6 +293,17 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
           </div>
         }
       />
+      <AlertDialog open={accessRevoked || project.accessLost}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>You no longer have access to this project</AlertDialogTitle>
+            <AlertDialogDescription>The owner removed you or revoked the link you joined with. Changes you had not saved yet were not kept.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => router.replace('/projects')}>Back to projects</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   )
 }

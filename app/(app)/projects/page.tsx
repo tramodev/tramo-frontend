@@ -16,6 +16,7 @@ import {
   List as ListIcon,
   HardDrive,
   Loader2,
+  LogOut,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,6 +39,8 @@ import { useMounted } from "@/hooks/use-mounted"
 import { useCurrentUserId } from "@/components/auth/current-user"
 import { beginDraft } from "@/lib/editor-draft"
 import { formatBytes } from "@/lib/format-bytes"
+import { PENDING_JOIN_KEY } from "@/lib/pending-join"
+import { leaveProject } from "@/lib/project-members"
 import { PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 import {
   startExampleProject,
@@ -59,6 +62,11 @@ function formatUpdatedAt(iso: string): string {
   })
 }
 
+function sharedLabel(project: Project) {
+  if (project.role === "OWNER") return null
+  return `Shared by @${project.ownerUsername} · ${project.role === "EDITOR" ? "Can edit" : "Can view"}`
+}
+
 export default function ProjectsPage() {
   const router = useRouter()
   const userId = useCurrentUserId()
@@ -75,6 +83,8 @@ export default function ProjectsPage() {
   const renamingRef = useRef(false)
   const renameAfterClose = useRef<Project | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
+  const [leaveTarget, setLeaveTarget] = useState<Project | null>(null)
+  const [leaveError, setLeaveError] = useState("")
   const [usageTarget, setUsageTarget] = useState<Project | null>(null)
   const mounted = useMounted()
   const [savedSortBy, setSortBy] = useState<SortBy>(() => {
@@ -93,6 +103,10 @@ export default function ProjectsPage() {
   useEffect(() => {
     try { localStorage.setItem("tramo:projects:view", savedViewMode) } catch {}
   }, [savedViewMode])
+
+  useEffect(() => {
+    try { if (sessionStorage.getItem(PENDING_JOIN_KEY)) router.replace("/join") } catch {}
+  }, [router])
 
   useEffect(() => {
     let cancelled = false
@@ -179,9 +193,20 @@ export default function ProjectsPage() {
     setProjects((prev) => prev.filter((p) => p.id !== project.id))
   }
 
+  const confirmLeave = async () => {
+    if (!leaveTarget) return
+    const project = leaveTarget
+    setLeaveTarget(null)
+    setLeaveError("")
+    const { error } = await leaveProject(project.id)
+    if (error) setLeaveError(error)
+    else setProjects((prev) => prev.filter((p) => p.id !== project.id))
+  }
+
   return (
     <main id="main-content" tabIndex={-1} className="w-full flex-1 pb-[84px]">
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
+      {leaveError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{leaveError}</p>}
       <section className="bg-surface-container-high pb-16">
         <div className="container-app px-5 py-11 sm:px-10 lg:px-12">
         <div className="mb-2 flex items-center justify-between">
@@ -324,7 +349,7 @@ export default function ProjectsPage() {
                             className="min-w-0 flex-1 line-clamp-2 break-words text-sm font-medium"
                             onDoubleClick={(e) => {
                               e.stopPropagation()
-                              startRename(project)
+                              if (project.role !== "VIEWER") startRename(project)
                             }}
                           >
                             {project.title}
@@ -349,32 +374,41 @@ export default function ProjectsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} onCloseAutoFocus={focusRename}>
-                          <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
+                          {project.role !== "VIEWER" && <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
                             <Pencil className="h-3.5 w-3.5" />
                             Rename
-                          </DropdownMenuItem>
+                          </DropdownMenuItem>}
                           <DropdownMenuItem onSelect={() => openInNewTab(project.id)}>
                             <ExternalLink className="h-3.5 w-3.5" />
                             Open in new tab
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
-                            <HardDrive className="h-3.5 w-3.5" />
-                            Usage breakdown
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() => setDeleteTarget(project)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
-                          </DropdownMenuItem>
+                          {project.role === "OWNER" && <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
+                              <HardDrive className="h-3.5 w-3.5" />
+                              Usage breakdown
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => setDeleteTarget(project)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Delete
+                            </DropdownMenuItem>
+                          </>}
+                          {project.role !== "OWNER" && <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" onSelect={() => setLeaveTarget(project)}>
+                              <LogOut className="h-3.5 w-3.5" />
+                              Leave project
+                            </DropdownMenuItem>
+                          </>}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                     <p className="text-xs tabular-nums mt-1 text-muted-foreground">
-                      Edited {formatUpdatedAt(project.updatedAt)} · {formatBytes(project.storageBytes)}
+                      Edited {formatUpdatedAt(project.updatedAt)} · {sharedLabel(project) ?? formatBytes(project.storageBytes)}
                     </p>
                   </CardHeader>
                 </Card>
@@ -424,7 +458,7 @@ export default function ProjectsPage() {
                           className="truncate text-sm font-medium"
                           onDoubleClick={(e) => {
                             e.stopPropagation()
-                            startRename(project)
+                            if (project.role !== "VIEWER") startRename(project)
                           }}
                         >
                           {project.title}
@@ -437,14 +471,14 @@ export default function ProjectsPage() {
                       </span>
                     )}
                     <p className="mt-1 text-xs text-muted-foreground md:hidden">
-                      <span className="capitalize">{project.visibility}</span> · {formatUpdatedAt(project.updatedAt)} · {formatBytes(project.storageBytes)}
+                      <span className="capitalize">{project.visibility}</span> · {formatUpdatedAt(project.updatedAt)} · {sharedLabel(project) ?? formatBytes(project.storageBytes)}
                     </p>
                   </div>
                   <div className="hidden w-28 shrink-0 md:block text-sm capitalize text-muted-foreground">
                     {project.visibility}
                   </div>
                   <div className="hidden w-32 shrink-0 md:block text-xs tabular-nums text-muted-foreground">
-                    {formatUpdatedAt(project.updatedAt)} · {formatBytes(project.storageBytes)}
+                    {formatUpdatedAt(project.updatedAt)} · {sharedLabel(project) ?? formatBytes(project.storageBytes)}
                   </div>
                   <div className="w-8 shrink-0">
                     <DropdownMenu>
@@ -460,27 +494,36 @@ export default function ProjectsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} onCloseAutoFocus={focusRename}>
-                        <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
+                        {project.role !== "VIEWER" && <DropdownMenuItem onSelect={() => { renameAfterClose.current = project }}>
                           <Pencil className="h-3.5 w-3.5" />
                           Rename
-                        </DropdownMenuItem>
+                        </DropdownMenuItem>}
                         <DropdownMenuItem onSelect={() => openInNewTab(project.id)}>
                           <ExternalLink className="h-3.5 w-3.5" />
                           Open in new tab
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
-                          <HardDrive className="h-3.5 w-3.5" />
-                          Usage breakdown
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onSelect={() => setDeleteTarget(project)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        {project.role === "OWNER" && <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => setUsageTarget(project)}>
+                            <HardDrive className="h-3.5 w-3.5" />
+                            Usage breakdown
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => setDeleteTarget(project)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>}
+                        {project.role !== "OWNER" && <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" onSelect={() => setLeaveTarget(project)}>
+                            <LogOut className="h-3.5 w-3.5" />
+                            Leave project
+                          </DropdownMenuItem>
+                        </>}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -500,6 +543,17 @@ export default function ProjectsPage() {
         description="This can't be undone."
         confirmLabel="Delete"
         onConfirm={confirmDelete}
+      />
+      <ConfirmDialog
+        open={leaveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setLeaveTarget(null)
+        }}
+        title={`Leave "${leaveTarget?.title ?? ""}"?`}
+        description="You lose access until the owner adds you again or you join with a new invite link."
+        confirmLabel="Leave"
+        destructive
+        onConfirm={confirmLeave}
       />
     </main>
   )

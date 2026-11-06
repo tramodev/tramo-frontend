@@ -65,7 +65,7 @@ export const SECTIONS = [
   },
   {
     id: 'publishing', title: 'Publishing and sharing', features: [
-      ['Visibility', 'Choose Private for access only by you, Unlisted for anyone with the link, or Published to list the project on Explore. Confirm with Save or Publish.'],
+      ['Visibility', 'Choose Private to keep the project to you and the people you share it with, or Published to list it on Explore. Confirm with Save or Publish.'],
       ['Project descriptions', 'Introduce the project and explain what readers will find.'],
       ['Tags', 'Add project tags with suggestions for existing topics.'],
       ['Public thumbnails', 'Upload a cover image or capture the project map as a thumbnail. Thumbnails are public.'],
@@ -74,6 +74,18 @@ export const SECTIONS = [
       ['Published snapshots and history', 'Later edits stay in the draft until you publish an update. Each publication saves a version in Publish history, with its own public link.'],
       ['Reader view', 'Read shared projects with their notes, trails and map outside the editing interface.'],
       ['Export a project', 'Download a ZIP containing an HTML reader, project JSON and images.'],
+    ],
+  },
+  {
+    id: 'collaboration', title: 'Collaboration', features: [
+      ['Invite people', 'In the editor, choose Share. Type a username under Add people by username, choose Invite, pick Can edit or Can view, then Send. The project appears in their My Projects, even while it is private.'],
+      ['Roles', 'Can edit lets someone write notes and change trails. Can view lets them read without changing anything. Only the owner can publish, delete the project or manage access. Under People with access, change a role from the menu beside a name, or remove someone with the X.'],
+      ['Share with a link', 'Under General access, choose Anyone with the link and pick a role for it. With Can view, anyone with the link can read the project without signing in. With Can edit, anyone signed in who opens it joins as an editor. Choose Copy link to share it, or Restricted to turn it off; people who joined through the link lose access.'],
+      ['Edit together in real time', 'Everyone with edit access can work in the same note at once. Changes appear for the others as they type, and each person’s cursor shows their name and color. Edits save automatically.'],
+      ['See who is here', 'Avatars at the top of the editor show who has the project open and whether they are viewing, writing or idle. Select an avatar to jump to that person’s note. A colored dot in the sidebar marks the notes where others are. With more than five people, or on a phone, select +N or the avatars to see everyone.'],
+      ['Working offline', 'If the connection drops, the editor shows Offline. Reconnecting and keeps your edits in the tab. They are sent when the connection returns. Closing the tab while edits are still unsent asks for confirmation.'],
+      ['Restoring a version', 'Restoring an earlier version from Version history updates the project for everyone who has it open. A note removed by the restore closes for anyone viewing it.'],
+      ['Losing access or leaving', 'If the owner removes you or turns off the link you joined with, a message explains it and takes you back to your projects. If your role changes to Can view while you edit, the note becomes read-only. To leave a shared project, open its menu on My Projects and choose Leave project.'],
     ],
   },
   {
@@ -117,6 +129,6 @@ export const SECTIONS = [
 export const GROUPS = [
   { title: 'Getting started', sections: SECTIONS.slice(0, 3) },
   { title: 'Writing and connecting ideas', sections: SECTIONS.slice(3, 7) },
-  { title: 'Sharing and community', sections: SECTIONS.slice(7, 9) },
-  { title: 'Account and settings', sections: SECTIONS.slice(9) },
+  { title: 'Sharing and community', sections: SECTIONS.slice(7, 10) },
+  { title: 'Account and settings', sections: SECTIONS.slice(10) },
 ];

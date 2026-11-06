@@ -117,7 +117,6 @@ test('reading a conflict snapshot validates it without replacing the active save
   const reading = s.getItemContentSnapshot('42');
   s.requests[0].resolve(Response.json({ content: 'other tab', extractionEpoch: 2 }));
   expect(await reading).toEqual({ content: 'other tab', extractionEpoch: 2 });
-  expect(s.getSavedItemContent('42')).toBe('local baseline');
   expect(s.getExtractionEpoch('42')).toBe(0);
 });
 

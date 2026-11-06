@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Globe, Lock, Users } from 'lucide-react';
+import { ArrowRight, Check, Globe, Lock } from 'lucide-react';
 import { ExploreCard } from '@/components/feed/explore-card';
 import { Button } from '@/components/ui/button';
 import { FadeUp } from '@/components/landing/landing-motion';
@@ -55,26 +55,31 @@ export function ExplorePublishSection() {
       </FadeUp>
       <FadeUp delay={0.1} className="h-full">
         <div className="flex h-full flex-col overflow-hidden rounded-t-[28px] rounded-b-sm bg-card">
-          <div className="flex flex-1 flex-col p-6 sm:p-9">
+          <div className="flex flex-col p-6 sm:p-9">
           <h3 className="mb-3 font-display text-2xl font-medium">Publish when you’re ready.</h3>
           <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">Share a snapshot readers can follow, note by note. Keep working privately and publish an update when it’s ready.</p>
           </div>
-          <div aria-hidden="true" inert className="mx-6 h-[320px] overflow-hidden rounded-t-xl border border-b-0 border-border bg-background p-5 sm:mx-9 sm:p-6">
-            <p className="mb-4 text-[1.0625rem] font-semibold">Share</p>
-            <p className="mb-2 text-sm font-medium">Visibility</p>
-            <div className="flex flex-col gap-2">
+          <div aria-hidden="true" inert className="mx-6 flex min-h-[320px] flex-1 flex-col gap-4 overflow-hidden rounded-t-xl border border-b-0 border-border bg-background p-5 sm:mx-9">
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium">Visibility</p>
               <div className="flex items-center gap-3 rounded-md border border-border px-3.5 py-2.5">
                 <Lock className="h-4 w-4 shrink-0" />
-                <span className="min-w-0"><span className="block text-[0.8125rem] font-medium">Private</span><span className="block text-xs text-muted-foreground">Only you can access this project</span></span>
-              </div>
-              <div className="flex items-center gap-3 rounded-md border border-border px-3.5 py-2.5">
-                <Users className="h-4 w-4 shrink-0" />
-                <span className="min-w-0"><span className="block text-[0.8125rem] font-medium">Unlisted</span><span className="block text-xs text-muted-foreground">Anyone with the link can view it</span></span>
+                <span className="min-w-0 flex-1"><span className="block text-[0.8125rem] font-medium">Private</span><span className="block truncate text-xs text-muted-foreground">Only you and the people you share it with</span></span>
               </div>
               <div className="flex items-center gap-3 rounded-md border border-foreground bg-foreground/5 px-3.5 py-2.5">
                 <Globe className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 flex-1"><span className="block text-[0.8125rem] font-medium">Published</span><span className="block text-xs text-muted-foreground">Listed on Explore for everyone</span></span>
+                <span className="min-w-0 flex-1"><span className="block text-[0.8125rem] font-medium">Published</span><span className="block truncate text-xs text-muted-foreground">Listed on Explore for everyone</span></span>
                 <Check className="h-4 w-4 shrink-0" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium">Description</p>
+              <p className="rounded-xs border border-input px-4 py-2.5 text-sm">{PREVIEW_PROJECT.description}</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium">Tags</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PREVIEW_PROJECT.tags.map(tag => <span key={tag} className="rounded-sm border border-border px-2 py-0.5 text-[0.6875rem] font-medium text-muted-foreground">{tag}</span>)}
               </div>
             </div>
           </div>

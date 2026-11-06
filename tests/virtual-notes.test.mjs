@@ -33,6 +33,7 @@ test('confirming a temporary note keeps the same editor key and session includin
     react: { ...react, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
+    '@/hooks/use-mounted': { useMounted: () => false },
     '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds: new Set(), selectionIds: new Set(), heights: new Map() }) },
   }, {
     window: { addEventListener() {}, removeEventListener() {} },
@@ -117,6 +118,7 @@ test('scrolling through 100 notes does not accumulate editors; focus and uploads
     react: { ...react, useEffect: () => {} },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     '@/hooks/use-scroll-spy': { useScrollSpy: () => {} },
+    '@/hooks/use-mounted': { useMounted: () => false },
     '@/app/editor/[projectId]/hooks/useVirtualNotes': { useVirtualNotes: () => ({ visibleIds, selectionIds: new Set(), heights }) },
   });
   const items = Object.fromEntries(Array.from({ length: 100 }, (_, i) => [String(i), { id: String(i), title: `Note ${i}`, content: '' }]));

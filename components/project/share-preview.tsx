@@ -3,7 +3,7 @@
 "use client"
 
 import { ExploreCard } from "@/components/feed/explore-card"
-import { Link2, Lock } from "lucide-react"
+import { Lock } from "lucide-react"
 import type { ProjectFeedItem } from "@/lib/public-project"
 import type { ProjectVisibility } from "@/lib/projects-store"
 import { cn } from "@/lib/utils"
@@ -72,9 +72,8 @@ export function SharePreview({ card, visibility }: { card: ProjectFeedItem; visi
       </div>
       <div className={cn("relative mx-auto w-full max-w-[47rem] rounded-[14px] ring-2 transition-shadow", isPublished ? "ring-foreground" : "ring-border")}>
         <span className={cn("absolute -top-3 left-4 z-10 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.6875rem] font-medium uppercase", isPublished ? "bg-foreground text-background" : "border border-border bg-background text-muted-foreground")}>
-          {visibility === "private" && <Lock className="h-3 w-3" aria-hidden="true" />}
-          {visibility === "unlisted" && <Link2 className="h-3 w-3" aria-hidden="true" />}
-          {isPublished ? 'Your project' : visibility === "private" ? 'Private · Only you' : 'Unlisted · Link only'}
+          {!isPublished && <Lock className="h-3 w-3" aria-hidden="true" />}
+          {isPublished ? 'Your project' : 'Private · Only you'}
         </span>
         <div className={cn("transition-[filter,opacity]", !isPublished && "grayscale")}>
           <ExploreCard project={card} loggedIn={false} username={null} interactive={false} />

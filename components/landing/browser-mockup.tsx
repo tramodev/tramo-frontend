@@ -19,7 +19,8 @@ import {
   Baseline,
   Link as LinkIcon,
   Plus,
-  Share2,
+  UserPlus,
+  Globe,
   Check,
   Download,
   History,
@@ -218,9 +219,13 @@ export const BrowserMockup: React.FC = () => {
         <span className="hidden xl:inline text-[0.6875rem] text-muted-foreground">123 words · 645 characters</span>
         <Download className="hidden w-3.5 h-3.5 text-muted-foreground sm:block" />
         <History className="hidden w-3.5 h-3.5 text-muted-foreground sm:block" />
-        <Button variant="secondary" size="lg" aria-label="Publish & Share" className="h-8 gap-[6.4px] px-[12.8px] text-[0.7rem] has-[>svg]:px-[12.8px]">
-          <Share2 className="size-3" />
-          <span className="hidden sm:inline">Publish &amp; Share</span>
+        <Button variant="secondary" size="lg" aria-label="Share project" className="h-8 gap-[6.4px] px-[12.8px] text-[0.7rem] has-[>svg]:px-[12.8px]">
+          <UserPlus className="size-3" />
+          <span className="hidden sm:inline">Share</span>
+        </Button>
+        <Button variant="secondary" size="lg" aria-label="Publish project" className="h-8 gap-[6.4px] px-[12.8px] text-[0.7rem] has-[>svg]:px-[12.8px]">
+          <Globe className="size-3" />
+          <span className="hidden sm:inline">Publish</span>
         </Button>
         <span className="w-[26px] h-[26px] shrink-0 rounded-full flex items-center justify-center text-[0.6875rem] font-medium bg-primary text-primary-foreground">
           A
@@ -229,14 +234,15 @@ export const BrowserMockup: React.FC = () => {
       </div>
 
       <div className="flex flex-1 min-h-0 gap-3 p-3">
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background" data-mock-editor>
-          <div className="mx-auto flex w-fit max-w-full flex-nowrap items-center justify-center gap-2 rounded-[24px] bg-muted px-3 py-2 shrink-0 text-muted-foreground md:flex-wrap [&>svg]:shrink-0" data-mock-toolbar>
+        <div className="@container/editor flex-1 flex flex-col min-w-0 overflow-hidden bg-background" data-mock-editor>
+          <div className="mx-auto flex w-fit max-w-full flex-nowrap items-center justify-center gap-2 rounded-[24px] bg-muted px-3 py-2 shrink-0 text-muted-foreground [&>svg]:shrink-0" data-mock-toolbar>
             <Undo className="w-3.5 h-3.5" />
             <Redo className="w-3.5 h-3.5" />
             <Ellipsis className="w-3.5 h-3.5 md:hidden" />
             <div className="hidden md:contents" data-mock-formatting>
             <span className="h-3.5 w-px shrink-0 bg-border" />
             <span className="flex items-center gap-1 text-[0.6875rem] shrink-0"><Type className="w-3.5 h-3.5" />Normal<ChevronDown className="w-3 h-3" /></span>
+            <span className="contents @max-[37rem]/editor:hidden">
             <span className="h-3.5 w-px shrink-0 bg-border" />
             <span className="flex items-center gap-1 text-[0.6875rem] font-medium shrink-0">
               Arial
@@ -247,6 +253,7 @@ export const BrowserMockup: React.FC = () => {
               15
               <ChevronUp className="w-3 h-3" />
             </span>
+            </span>
             <span className="h-3.5 w-px shrink-0 bg-border" />
             <Baseline className="w-3.5 h-3.5" />
             <span className="h-3.5 w-px shrink-0 bg-border" />
@@ -256,9 +263,11 @@ export const BrowserMockup: React.FC = () => {
             <Bold className="w-3.5 h-3.5" />
             <Italic className="w-3.5 h-3.5" />
             <Underline className="w-3.5 h-3.5" />
+            <span className="contents @max-[31rem]/editor:hidden">
             <Strikethrough className="w-3.5 h-3.5" />
             <Highlighter className="w-3.5 h-3.5" />
             <Code className="w-3.5 h-3.5" />
+            </span>
             <span className="h-3.5 w-px shrink-0 bg-border" />
             </div>
             <LinkIcon className="w-3.5 h-3.5" />

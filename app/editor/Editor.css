@@ -1251,12 +1251,12 @@ pre::-webkit-scrollbar-thumb {
     gap: 2px;
   }
 
-  .project-shell-actions [aria-label="Publish & Share project"] > span,
+  .project-shell-actions .project-share-button > span,
   .editor-word-count {
     display: none;
   }
 
-  .project-shell-actions [aria-label="Publish & Share project"] {
+  .project-shell-actions .project-share-button {
     padding-inline: 10px;
   }
 

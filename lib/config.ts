@@ -6,6 +6,8 @@ export const EXPLORE_PAGE_SIZE = 10;
 export const PAGE_SIZE = 10;
 export const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30;
 
+export const COLLAB_URL = process.env.NEXT_PUBLIC_COLLAB_URL ?? "";
+
 export const R2_PRIVATE_ORIGIN = process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN
   ? new URL(process.env.NEXT_PUBLIC_R2_PRIVATE_ORIGIN).origin
   : "";

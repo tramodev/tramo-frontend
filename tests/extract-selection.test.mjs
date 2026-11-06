@@ -27,15 +27,18 @@ runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/extract-sele
 function make(build) { const editor = lexical.createEditor(config); editor.update(build, { discrete: true }); return editor; }
 const text = json => json.text ?? json.children?.map(text).join('') ?? '';
 
-test('partial text extraction preserves format and replaces only the selected characters without changing the editor', () => {
+const editorText = editor => text(editor.getEditorState().toJSON().root);
+
+test('partial text extraction preserves format and replaces only the selected characters', () => {
   const editor = make(() => { const node = lexical.$createTextNode('abcdef').setFormat(3); lexical.$getRoot().append(lexical.$createParagraphNode().append(node)); node.select(2, 5); });
   const { capture } = exports.captureSelection(editor);
-  const draft = exports.prepareExtraction(editor, capture, 'New note', 'uuid');
-  expect(text(JSON.parse(draft.extractedContent).root)).toBe('cde');
-  expect(JSON.parse(draft.extractedContent).root.children[0].children[0].format).toBe(3);
-  expect(text(JSON.parse(draft.sourceContent).root)).toBe('abNew notef');
-  expect(draft.sourceContent).toContain('tramo-extraction:uuid');
-  expect(JSON.stringify(editor.getEditorState().toJSON())).toBe(capture.content);
+  const extracted = JSON.parse(exports.prepareExtraction(editor, capture));
+  expect(text(extracted.root)).toBe('cde');
+  expect(extracted.root.children[0].children[0].format).toBe(3);
+  expect(editorText(editor)).toBe('abcdef');
+  expect(exports.replaceExtractedSelection(editor, capture, '42', 'New note', true)).toBe(true);
+  expect(editorText(editor)).toBe('abNew notef');
+  expect(JSON.stringify(editor.getEditorState().toJSON())).toContain('tramo-idea:42');
 });
 
 test('selection across paragraphs preserves blocks and existing links', () => {
@@ -44,12 +47,13 @@ test('selection across paragraphs preserves blocks and existing links', () => {
     lexical.$getRoot().append(lexical.$createParagraphNode().append(a), lexical.$createParagraphNode().append(links.$createLinkNode('https://example.com').append(b)));
     const selection = a.select(2, 2); selection.focus.set(b.getKey(), 3, 'text');
   });
-  const draft = exports.prepareExtraction(editor, exports.captureSelection(editor).capture, 'Parts', 'uuid');
-  const extracted = JSON.parse(draft.extractedContent).root;
+  const { capture } = exports.captureSelection(editor);
+  const extracted = JSON.parse(exports.prepareExtraction(editor, capture)).root;
   expect(extracted.children).toHaveLength(2);
   expect(text(extracted)).toBe('rstsec');
-  expect(draft.extractedContent).toContain('https://example.com');
-  expect(text(JSON.parse(draft.sourceContent).root)).toBe('fiPartsond');
+  expect(JSON.stringify(extracted)).toContain('https://example.com');
+  exports.replaceExtractedSelection(editor, capture, '7', 'Parts', true);
+  expect(editorText(editor)).toBe('fiPartsond');
 });
 
 test.each([false, true])('extraction without a link removes only the selection, whole note: %s', whole => {
@@ -59,12 +63,10 @@ test.each([false, true])('extraction without a link removes only the selection, 
     node.select(whole ? 0 : 7, whole ? 21 : 15);
   });
   const capture = exports.captureSelection(editor).capture;
-  const draft = exports.prepareExtraction(editor, capture, 'Untitled', 'uuid', false);
-  expect(text(JSON.parse(draft.extractedContent).root)).toBe(whole ? 'before selected after' : 'selected');
-  expect(text(JSON.parse(draft.sourceContent).root)).toBe(whole ? '' : 'before  after');
-  expect(draft.sourceContent).not.toContain('tramo-extraction');
-  expect(draft.sourceContent).not.toContain('Untitled');
-  expect(JSON.stringify(editor.getEditorState().toJSON())).toBe(capture.content);
+  expect(text(JSON.parse(exports.prepareExtraction(editor, capture)).root)).toBe(whole ? 'before selected after' : 'selected');
+  exports.replaceExtractedSelection(editor, capture, '7', 'Untitled', false);
+  expect(editorText(editor)).toBe(whole ? '' : 'before  after');
+  expect(JSON.stringify(editor.getEditorState().toJSON())).not.toContain('tramo-idea');
 });
 
 test('list extraction preserves list nesting and checkbox state', () => {
@@ -74,24 +76,36 @@ test('list extraction preserves list nesting and checkbox state', () => {
     lexical.$getRoot().append(lists.$createListNode('check').append(first, second));
     const selection = a.select(0, 0); selection.focus.set(b.getKey(), 6, 'text');
   });
-  const draft = exports.prepareExtraction(editor, exports.captureSelection(editor).capture, 'List', 'uuid');
-  const list = JSON.parse(draft.extractedContent).root.children[0];
+  const list = JSON.parse(exports.prepareExtraction(editor, exports.captureSelection(editor).capture)).root.children[0];
   expect(list.type).toBe('list'); expect(list.listType).toBe('check'); expect(list.children[0].checked).toBe(true); expect(list.children[1].checked).toBe(false);
 });
 
-test('unsupported block selections are rejected explicitly and changed snapshots cannot be extracted', () => {
+test('unsupported block selections are rejected and a selection changed meanwhile is left in place', () => {
   const codeEditor = make(() => { const node = lexical.$createTextNode('code'); lexical.$getRoot().append(code.$createCodeNode().append(node)); node.select(0, 4); });
   expect(exports.captureSelection(codeEditor).reason).toContain('code');
   const editor = make(() => { const node = lexical.$createTextNode('text'); lexical.$getRoot().append(lexical.$createParagraphNode().append(node)); node.select(0, 4); });
   const capture = exports.captureSelection(editor).capture;
   editor.update(() => lexical.$getRoot().getFirstChild().getFirstChild().setTextContent('changed'), { discrete: true });
-  expect(() => exports.prepareExtraction(editor, capture, 'Title', 'uuid')).toThrow('note changed');
+  expect(exports.replaceExtractedSelection(editor, capture, '7', 'Title', true)).toBe(false);
+  expect(editorText(editor)).toBe('changed');
+});
+
+test('edits elsewhere in the note do not block replacing the selection', () => {
+  const editor = make(() => {
+    const node = lexical.$createTextNode('before selected after');
+    lexical.$getRoot().append(lexical.$createParagraphNode().append(node), lexical.$createParagraphNode().append(lexical.$createTextNode('peer')));
+    node.select(7, 15);
+  });
+  const capture = exports.captureSelection(editor).capture;
+  editor.update(() => lexical.$getRoot().getLastChild().getFirstChild().setTextContent('peer edit'), { discrete: true });
+  expect(exports.replaceExtractedSelection(editor, capture, '7', 'New', true)).toBe(true);
+  expect(editorText(editor)).toBe('before New afterpeer edit');
 });
 
 test('partial extraction inside a link preserves the surrounding link and never nests links', () => {
   const editor = make(() => { const node = lexical.$createTextNode('abcdef'); lexical.$getRoot().append(lexical.$createParagraphNode().append(links.$createLinkNode('https://example.com').append(node))); node.select(2, 4); });
-  const draft = exports.prepareExtraction(editor, exports.captureSelection(editor).capture, 'New', 'uuid');
-  const result = JSON.parse(draft.sourceContent).root;
+  exports.replaceExtractedSelection(editor, exports.captureSelection(editor).capture, '7', 'New', true);
+  const result = editor.getEditorState().toJSON().root;
   expect(text(result)).toBe('abNewef');
   const walk = (node, insideLink = false) => {
     if (node.type === 'link') expect(insideLink).toBe(false);
@@ -106,32 +120,8 @@ test('captures and extracts from an unfocused editor when multiple editors exist
   first.setEditable(false);
   expect(first.getRootElement()).toBeNull(); expect(second.getRootElement()).toBeNull();
   const { capture } = exports.captureSelection(first);
-  const draft = exports.prepareExtraction(first, capture, 'New note', 'uuid');
-  expect(text(JSON.parse(draft.extractedContent).root)).toBe('selected');
-  expect(text(JSON.parse(draft.sourceContent).root)).toBe('before New note after');
-  expect(JSON.stringify(first.getEditorState().toJSON())).toBe(capture.content);
-  expect(text(second.getEditorState().toJSON().root)).toBe('other note');
-});
-
-test('invalid extracted content leaves the current note and history untouched', () => {
-  const editor = make(() => lexical.$getRoot().append(lexical.$createParagraphNode().append(lexical.$createTextNode('original'))));
-  const state = editor.getEditorState();
-  const current = { editor, editorState: state };
-  const history = { current, undoStack: [current], redoStack: [] };
-  const invalid = JSON.stringify({ root: { type: 'root', version: 1, children: [{ type: 'heading', version: 1, tag: 'script', children: [] }] } });
-  expect(() => exports.applyExtractedContent(editor, history, invalid)).toThrow('Invalid heading tag');
-  expect(editor.getEditorState()).toBe(state);
-  expect(history.current).toBe(current);
-  expect(history.undoStack).toEqual([current]);
-});
-
-test('extracted content passes through the same style filter as a loaded note', () => {
-  const editor = make(() => lexical.$getRoot().append(lexical.$createParagraphNode().append(lexical.$createTextNode('original'))));
-  const history = { current: null, undoStack: [], redoStack: [] };
-  const incoming = editor.getEditorState().toJSON();
-  incoming.root.children[0].children[0].style = 'position:fixed;color:rgb(1, 2, 3)';
-  exports.applyExtractedContent(editor, history, JSON.stringify(incoming));
-  editor.getEditorState().read(() => {
-    expect(lexical.$getRoot().getFirstChild().getFirstChild().getStyle()).toBe('color: rgb(1, 2, 3);');
-  });
+  expect(text(JSON.parse(exports.prepareExtraction(first, capture)).root)).toBe('selected');
+  exports.replaceExtractedSelection(first, capture, '7', 'New note', true);
+  expect(editorText(first)).toBe('before New note after');
+  expect(editorText(second)).toBe('other note');
 });

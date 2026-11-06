@@ -43,6 +43,13 @@ test('Google sign-in styles and reCAPTCHA connections and frames are allowed', (
   expect(rules.find(rule => rule.startsWith('frame-src '))).toContain('https://recaptcha.google.com/recaptcha/');
 });
 
+test('the collaboration socket is allowed only when a separate origin is configured', () => {
+  const connect = policy => policy.split('; ').find(rule => rule.startsWith('connect-src '));
+  expect(connect(csp.contentSecurityPolicy('nonce'))).not.toMatch(/wss?:/);
+  const separate = load('lib/csp.ts', {}, { NODE_ENV: 'development', NEXT_PUBLIC_COLLAB_URL: 'ws://localhost:1234/' });
+  expect(connect(separate.contentSecurityPolicy('nonce'))).toContain('ws://localhost:1234');
+});
+
 test('every HTML request gets a fresh nonce, overwrites spoofed headers and cannot be cached as shared HTML', async () => {
   const values = [];
   for (const path of ['/about', '/login', '/p/project', '/wiki/notes', '/editor/project']) {

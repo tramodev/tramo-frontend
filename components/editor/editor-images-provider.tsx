@@ -6,7 +6,7 @@ import { createContext, useContext, useEffect, useMemo, useSyncExternalStore, ty
 import { R2_PRIVATE_ORIGIN } from '@/lib/config';
 
 type Image = { imageId: string; url: string; expiresAt: string };
-type Context = { projectId: string; publicRead?: boolean; snapshotId?: number; versionId?: number };
+type Context = { projectId: string; publicRead?: boolean; shareToken?: string; snapshotId?: number; versionId?: number };
 
 class ImageStore {
   private listeners = new Map<string, Set<() => void>>();
@@ -75,8 +75,8 @@ class ImageStore {
 
 const ImagesContext = createContext<ImageStore | null>(null);
 
-export function EditorImagesProvider({ projectId, publicRead = false, snapshotId, versionId, children }: Context & { children: ReactNode }) {
-  const store = useMemo(() => new ImageStore({ projectId, publicRead, snapshotId, versionId }), [projectId, publicRead, snapshotId, versionId]);
+export function EditorImagesProvider({ projectId, publicRead = false, shareToken, snapshotId, versionId, children }: Context & { children: ReactNode }) {
+  const store = useMemo(() => new ImageStore({ projectId, publicRead, shareToken, snapshotId, versionId }), [projectId, publicRead, shareToken, snapshotId, versionId]);
   useEffect(() => {
     const interval = setInterval(store.schedule, 240000);
     document.addEventListener('visibilitychange', store.schedule);

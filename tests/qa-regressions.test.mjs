@@ -144,8 +144,9 @@ test('the editor header marks pending embed text and rejected drafts as not save
 
 function shareSetup(getProject, saveDescription = async () => {}, validateEmbeds = async () => []) {
   const published = [], savedTags = [], copied = [];
-  const page = load('app/projects/[projectId]/share/page.tsx', {
-    'next/navigation': { useParams: () => ({ projectId: 'project' }), useRouter: () => ({}) },
+  const router = {};
+  const page = load('app/projects/[projectId]/publish/page.tsx', {
+    'next/navigation': { useParams: () => ({ projectId: 'project' }), useRouter: () => router },
     '@/lib/projects-store': {
       getProject, setProjectDescription: saveDescription,
       setProjectVisibility: async () => ({ error: null }),
@@ -171,7 +172,7 @@ test.each([null, new Error('Unavailable')])('share load failures render a visibl
   expect(nodes.some(node => node.props.href === '/projects')).toBe(true);
 });
 
-const project = { items: {}, id: 'project', title: 'Project', description: '', tags: '', visibility: 'private', restoreEpoch: 0 };
+const project = { items: {}, id: 'project', title: 'Project', description: '', tags: '', visibility: 'private', restoreEpoch: 0, role: 'OWNER' };
 const confirmButton = nodes => nodes.find(node => node.type === 'button' && node.props.children === 'Publish');
 
 test('a failed description save is reported and prevents publishing stale metadata', async () => {
@@ -182,7 +183,7 @@ test('a failed description save is reported and prevents publishing stale metada
   nodes.find(node => node.props.type === 'button' && node.props.className?.includes('text-left')).props.onClick();
   nodes = s.render();
   const visibility = nodes.filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'));
-  visibility[2].props.onClick();
+  visibility[1].props.onClick();
   await confirmButton(s.render()).props.onClick();
   expect(s.published).toHaveLength(0);
   expect(s.render().find(node => node.props.role === 'alert').props.children).toBe('Could not save description');
@@ -193,7 +194,7 @@ test('publishing waits for a description save started on blur', async () => {
   const s = shareSetup(async () => project, () => new Promise(resolve => writes.push(resolve)));
   s.render(); await settle();
   s.render().find(node => node.props.id === 'publish-description').props.onChange({ target: { value: 'Description' } });
-  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[2].props.onClick();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
   s.render().find(node => node.props.id === 'publish-description').props.onBlur();
   const publishing = confirmButton(s.render()).props.onClick();
   await settle();
@@ -244,12 +245,14 @@ test('mismatched passwords show one inline error and never submit', async () => 
 });
 
 
-test('saving Share exposes a working public link and copy button next to Save', async () => {
+test('publishing exposes a working public link and copy button next to Publish', async () => {
   const s = shareSetup(async () => project);
   s.render(); await settle();
+  s.render().find(node => node.props.id === 'publish-description').props.onChange({ target: { value: 'Description' } });
   s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
   expect(s.render().some(node => node.props['aria-label'] === 'Copy public link')).toBe(false);
-  await s.render().find(node => node.type === 'button' && node.props.children === 'Save').props.onClick();
+  await confirmButton(s.render()).props.onClick();
+  await settle();
   const sticky = s.render().find(node => node.props.className?.includes('sticky bottom-0'));
   const children = flatten(sticky);
   expect(children.some(node => node.type === 'a' && node.props.href === 'http://localhost:3000/p/project')).toBe(true);
@@ -333,8 +336,11 @@ test.each([false, true])('My Projects falls back safely when storage is invalid 
 test('Escape closes compact formatting and restores its trigger without closing nested menus', () => {
   const frames = [], focused = [];
   const workspace = load('app/editor/editor-workspace.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/lib/notification-stream': { subscribeNotificationCount: () => () => {} },
     '@/app/editor/editor-utils': { countProjectTextStats: () => null },
     '@/app/editor/embed-draft-status': { subscribeEmbedDrafts: () => () => {}, hasPendingEmbedDrafts: () => false },
+    '@/app/editor/[projectId]/hooks/useCollabSocket': { useCollabSocket: () => null }, '@/app/editor/[projectId]/hooks/useProjectPresence': { useProjectPresence: () => [] }, '@/app/editor/presence': { peersByItem: () => new Map(), premountedItems: () => new Set() },
     '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => ({
       loaded: true, view: 'write', items: {}, selectedItem: { id: 'note' }, projectTitle: 'Test',
     }) },
@@ -345,7 +351,7 @@ test('Escape closes compact formatting and restores its trigger without closing 
   const render = () => workspace.render('ProjectEditor', { routeProjectId: 'project', user: { userId: '1' } });
   let root = render();
   root.props.ref.current = { dataset: { shortViewport: 'true' } };
-  const trigger = () => flatten(root.props.children.props.actions).find(node => node.props['aria-controls'] === 'editor-formatting-toolbar');
+  const trigger = () => flatten(flatten(root.props.children).find(node => node.props?.actions).props.actions).find(node => node.props['aria-controls'] === 'editor-formatting-toolbar');
   trigger().props.ref.current = { focus: () => focused.push('formatting') };
   trigger().props.onClick();
   root = render();
@@ -372,7 +378,7 @@ test('publishing waits for embed validation and only proceeds after confirming t
   let complete;
   const s = shareSetup(async () => project, async () => {}, () => new Promise(resolve => { complete = resolve; }));
   s.render(); await settle();
-  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[2].props.onClick();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
   const publishing = confirmButton(s.render()).props.onClick();
   await settle();
   expect(s.published).toHaveLength(0);
@@ -387,7 +393,7 @@ test('publishing waits for embed validation and only proceeds after confirming t
 test('a validation loading failure is shown instead of treating the project as error-free', async () => {
   const s = shareSetup(async () => project, async () => {}, async () => { throw new Error('Renderer unavailable'); });
   s.render(); await settle();
-  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[2].props.onClick();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
   await confirmButton(s.render()).props.onClick();
   expect(s.published).toHaveLength(0);
   expect(s.render().find(node => node.props.role === 'alert').props.children).toBe('Renderer unavailable');
