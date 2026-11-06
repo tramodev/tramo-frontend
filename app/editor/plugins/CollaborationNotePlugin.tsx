@@ -103,6 +103,8 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       if (status === 'connected') { clearTimeout(offlineTimer); offlineTimer = undefined; online = true; report(); }
       else if (status === 'disconnected' && !offlineTimer) offlineTimer = setTimeout(() => { online = false; report(); }, 1500);
     };
+    const onBrowserOffline = () => onStatusChange({ status: 'disconnected' });
+    const onBrowserOnline = () => { if (socket.status === 'connected') onStatusChange({ status: 'connected' }); };
     const onClose = ({ event }: { event: { reason?: string } }) => {
       if (event.reason === 'reload') callbacks.current.onClosed('reload');
       else if (event.reason === 'revoked') {
@@ -153,6 +155,8 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', warnUnsynced);
+    window.addEventListener('offline', onBrowserOffline);
+    window.addEventListener('online', onBrowserOnline);
     provider.on('status', onStatusChange);
     provider.on('synced', onSynced);
     provider.on('unsyncedChanges', report);
@@ -168,13 +172,15 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       clearTimeout(offlineTimer);
       clearTimeout(waitingTimer);
       window.removeEventListener('beforeunload', warnUnsynced);
+      window.removeEventListener('offline', onBrowserOffline);
+      window.removeEventListener('online', onBrowserOnline);
       provider.off('synced', onSynced);
       provider.off('unsyncedChanges', report);
       provider.off('close', onClose);
       provider.off('authenticationFailed', onDenied);
       callbacks.current.onStatus(itemId, null);
     };
-  }, [connection, itemId, editor]);
+  }, [connection, itemId, editor, socket]);
 
   const destroyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
