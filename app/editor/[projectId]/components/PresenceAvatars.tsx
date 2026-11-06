@@ -58,7 +58,7 @@ export function PresenceAvatars({ peers, items, onSelect }: {
     })}
     {rest.length > 0 && <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" aria-label={`${rest.length} more people`}
+        <button type="button" aria-label={`${rest.length} more ${rest.length === 1 ? 'person' : 'people'}`}
           className="inline-flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
           +{rest.length}
         </button>
