@@ -6,8 +6,9 @@ import type { IncomingMessage } from 'node:http';
 import * as Y from 'yjs';
 import { replaceContent, toLexical, toYjs } from './lexical';
 
-type Context = { userId: number; perm: 'edit' | 'view'; sv: string | null };
-type Claims = { iss?: string; aud?: string | string[]; sub?: string; item?: string; perm?: string; sv?: string | null; exp?: number };
+type Role = 'OWNER' | 'EDITOR' | 'VIEWER';
+type Context = { userId: number; perm: 'edit' | 'view'; role: Role; sv: string | null };
+type Claims = { iss?: string; aud?: string | string[]; sub?: string; item?: string; project?: string; perm?: string; role?: string; sv?: string | null; exp?: number };
 type DocState = {
   epoch: number; author: number | null; bootstrapHash: string | null; poisoned: boolean;
   unsaved: boolean; attempts: number; retry?: ReturnType<typeof setTimeout>;
@@ -58,6 +59,7 @@ function metrics(instance: Hocuspocus) {
     '# TYPE collab_connections gauge', `collab_connections ${open.length}`,
     '# TYPE collab_sockets gauge', `collab_sockets ${new Set(open.map(([, connection]) => connection.socketId)).size}`,
     '# TYPE collab_documents gauge', `collab_documents ${instance.documents.size}`,
+    '# TYPE collab_presence_documents gauge', `collab_presence_documents ${[...instance.documents.keys()].filter(isPresence).length}`,
     '# TYPE collab_store_duration_seconds summary',
     `collab_store_duration_seconds_sum ${storeSeconds.sum}`, `collab_store_duration_seconds_count ${storeSeconds.count}`,
   ];
@@ -67,6 +69,8 @@ function metrics(instance: Hocuspocus) {
   }
   return `${lines.join('\n')}\n`;
 }
+
+const isPresence = (name: string) => name.startsWith('project-');
 
 const log = (event: string, fields: Record<string, unknown> = {}) =>
   console.log([`event=${event}`, ...Object.entries(fields).map(([key, value]) => `${key}=${value}`)].join(' '));
@@ -246,7 +250,8 @@ const server = new Server<Context>({
   async onAuthenticate({ token, documentName, connectionConfig, requestHeaders, socketId, instance }) {
     const origin = requestHeaders.get('origin');
     const claims = verify(token);
-    if ((origin && !origins.has(origin)) || !claims || claims.item !== documentName || !claims.sub) throw reject('forbidden');
+    const target = isPresence(documentName) ? claims?.project && `project-${claims.project}` : claims?.item;
+    if ((origin && !origins.has(origin)) || !claims || target !== documentName || !claims.sub) throw reject('forbidden');
     if (documents.get(documentName)?.poisoned) throw reject('reload');
     const userId = Number(claims.sub);
     const mine = connections(instance).filter(([, connection]) => connection.context.userId === userId).map(([, connection]) => connection.socketId);
@@ -258,11 +263,14 @@ const server = new Server<Context>({
       log('collab_rejected_limit', { item: documentName, user: userId });
       throw reject('limit');
     }
-    connectionConfig.readOnly = claims.perm !== 'edit';
-    return { userId, perm: claims.perm === 'edit' ? 'edit' : 'view', sv: claims.sv ?? null };
+    const perm = claims.perm === 'edit' ? 'edit' : 'view';
+    connectionConfig.readOnly = isPresence(documentName) || perm !== 'edit';
+    const role = perm === 'edit' && (claims.role === 'OWNER' || claims.role === 'EDITOR') ? claims.role : perm === 'edit' ? 'EDITOR' : 'VIEWER';
+    return { userId, perm, role, sv: claims.sv ?? null };
   },
 
   async onLoadDocument({ documentName, document, context }) {
+    if (isPresence(documentName)) return;
     const response = await api(`/items/${documentName}`);
     if (!response.ok) throw new Error(`load failed with ${response.status}`);
     const loaded = await response.json() as { state: string | null; content: string; extractionEpoch: number };
@@ -294,6 +302,15 @@ const server = new Server<Context>({
       throw Object.assign(new Error('rate'), { code: 1008, reason: 'rate-limited' });
     }
     bucket.tokens -= 1;
+  },
+
+  async beforeHandleAwareness({ documentName, context, states }) {
+    if (!isPresence(documentName) || !context) return;
+    for (const state of states.values()) {
+      state.user = { ...state.user, id: String(context.userId) };
+      state.role = context.role;
+      if (context.perm !== 'edit') state.typingAt = null;
+    }
   },
 
   async onChange({ documentName, context, connection }) {
@@ -368,7 +385,9 @@ setInterval(async () => {
     const response = await api('/check', {
       method: 'POST',
       body: JSON.stringify(open.map(([document, connection]) => ({
-        userId: connection.context.userId, itemId: Number(document.name), sv: connection.context.sv, perm: connection.context.perm,
+        userId: connection.context.userId,
+        ...(isPresence(document.name) ? { projectId: Number(document.name.slice('project-'.length)) } : { itemId: Number(document.name) }),
+        sv: connection.context.sv, perm: connection.context.perm,
       }))),
     });
     if (!response.ok) throw new Error(`check failed with ${response.status}`);

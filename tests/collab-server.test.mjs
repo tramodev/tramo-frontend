@@ -39,6 +39,7 @@ const items = new Map();
 const stores = [];
 const deleted = new Set();
 const failures = new Map();
+const apiRequests = [];
 const SAFE = JSON.stringify({ root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'label' }] }] } });
 
 function freePort() {
@@ -50,10 +51,19 @@ function freePort() {
   });
 }
 
-function token(item, user, perm, expiresIn = 120) {
+function sign(claims, expiresIn = 120) {
   const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
-  const body = `${encode({ alg: 'HS256' })}.${encode({ iss: 'tramo-api', aud: ['tramo-collab'], sub: String(user), item: String(item), perm, sv: null, exp: Math.floor(Date.now() / 1000) + expiresIn })}`;
+  const body = `${encode({ alg: 'HS256' })}.${encode({ iss: 'tramo-api', aud: ['tramo-collab'], sv: null, exp: Math.floor(Date.now() / 1000) + expiresIn, ...claims })}`;
   return `${body}.${createHmac('sha256', TOKEN_KEY).update(body).digest('base64url')}`;
+}
+
+function token(item, user, perm, expiresIn = 120) {
+  return sign({ sub: String(user), item: String(item), perm }, expiresIn);
+}
+
+function presence(project, user, role, options = {}) {
+  const perm = role === 'VIEWER' ? 'view' : 'edit';
+  return connect(`project-${project}`, user, perm, { ...options, provider: { token: sign({ sub: String(user), project: String(project), perm, role }), ...options.provider } });
 }
 
 function connect(item, user, perm, options = {}) {
@@ -94,6 +104,7 @@ beforeAll(async () => {
     let body = '';
     request.on('data', chunk => { body += chunk; });
     request.on('end', () => {
+      apiRequests.push(request.url);
       const id = request.url.match(/items\/(\d+)/)?.[1];
       if (request.headers['x-collab-secret'] !== SECRET) return response.writeHead(403).end();
       if (request.method === 'GET' && id && deleted.has(id)) return response.writeHead(404).end();
@@ -306,6 +317,50 @@ test('an image left uploading by a closed tab is dropped so the rest of the note
   const stored = await until(() => stores.find(store => store.id === '32' && store.content.includes('kept text')), 25000);
   expect(stored.content).not.toContain('"imageId":""');
 }, 40000);
+
+test('project members see each other through presence with identity taken from the token', async () => {
+  const owner = presence(41, 410, 'OWNER');
+  const viewer = presence(41, 411, 'VIEWER');
+  await until(() => owner.synced && viewer.synced);
+  owner.setAwarenessField('user', { id: '999', name: 'Owner' });
+  owner.setAwarenessField('typingAt', 1);
+  viewer.setAwarenessField('user', { id: '410', name: 'Viewer' });
+  viewer.setAwarenessField('role', 'OWNER');
+  viewer.setAwarenessField('typingAt', 1);
+  const peer = (provider, name) => [...provider.awareness.getStates().values()].find(state => state.user?.name === name);
+  const seenOwner = await until(() => peer(viewer, 'Owner'));
+  const seenViewer = await until(() => peer(owner, 'Viewer')?.typingAt === null && peer(owner, 'Viewer'));
+  expect(seenOwner).toMatchObject({ user: { id: '410' }, role: 'OWNER', typingAt: 1 });
+  expect(seenViewer).toMatchObject({ user: { id: '411' }, role: 'VIEWER', typingAt: null });
+  owner.document.getMap('probe').set('from', 'owner');
+  await new Promise(resolve => setTimeout(resolve, 300));
+  expect(viewer.document.getMap('probe').get('from')).toBeUndefined();
+  expect(apiRequests.filter(url => url.includes('/items/41') || url.includes('project-'))).toEqual([]);
+  const metrics = await (await fetch(`http://127.0.0.1:${port}/metrics`, { headers: { 'X-Metrics-Secret': 'test-metrics-secret' } })).text();
+  expect(metrics).toMatch(/^collab_presence_documents 1$/m);
+  close(owner, viewer);
+}, 30000);
+
+test('presence rejects tokens for another project or for a note', async () => {
+  const reasons = [];
+  const onAuthenticationFailed = ({ reason }) => reasons.push(reason);
+  const otherProject = presence(42, 420, 'EDITOR', { provider: { token: sign({ sub: '420', project: '43', perm: 'edit', role: 'EDITOR' }), onAuthenticationFailed } });
+  const noteToken = presence(42, 421, 'EDITOR', { provider: { token: token(42, 421, 'edit'), onAuthenticationFailed } });
+  await until(() => reasons.length === 2);
+  expect(reasons).toEqual(['forbidden', 'forbidden']);
+  close(otherProject, noteToken);
+}, 30000);
+
+test('revoke closes presence too', async () => {
+  const member = presence(44, 440, 'EDITOR');
+  await until(() => member.synced);
+  const reasons = [];
+  member.on('close', ({ event }) => reasons.push(event.reason));
+  expect((await internal('/internal/revoke', { userId: 440 })).status).toBe(204);
+  await until(() => reasons.length === 1);
+  expect(reasons).toEqual(['revoked']);
+  close(member);
+}, 30000);
 
 test('metrics are served in Prometheus format only with the metrics secret', async () => {
   expect((await fetch(`http://127.0.0.1:${port}/metrics`)).status).toBe(404);
