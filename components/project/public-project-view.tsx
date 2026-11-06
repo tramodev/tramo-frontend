@@ -72,6 +72,7 @@ export function PublicProjectView({
   imageUrl,
   snapshot,
   historyVersion,
+  shareToken,
 }: {
   project: ReaderProject | PublicProject
   homeHref: string
@@ -81,8 +82,10 @@ export function PublicProjectView({
   imageUrl: string | null
   snapshot?: ProjectSnapshotSummary
   historyVersion?: HistoryVersion & { restoreEpoch: number }
+  shareToken?: string
 }) {
-  const publicProject = historyVersion ? null : project as PublicProject
+  const source = historyVersion ? null : project as PublicProject
+  const publicProject = shareToken ? null : source
   const historical = Boolean(snapshot || historyVersion)
   const mounted = useMounted()
   const sections = useMemo(() => [
@@ -167,12 +170,12 @@ export function PublicProjectView({
   const emptyState = (
     <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
       <FolderPlus className="h-12 w-12 opacity-40" />
-      <p className="text-lg font-medium">{historyVersion ? 'This version has no notes' : 'This project has no published notes yet'}</p>
+      <p className="text-lg font-medium">{historyVersion ? 'This version has no notes' : shareToken ? 'This project has no notes yet' : 'This project has no published notes yet'}</p>
     </div>
   )
 
   return (
-    <EditorImagesProvider projectId={project.id} publicRead={!historyVersion} snapshotId={snapshot ? Number(snapshot.id) : undefined} versionId={historyVersion?.id}>
+    <EditorImagesProvider projectId={project.id} publicRead={!historyVersion} shareToken={shareToken} snapshotId={snapshot ? Number(snapshot.id) : undefined} versionId={historyVersion?.id}>
     <ProjectShell
       homeHref={homeHref}
       showLogo={false}
@@ -191,30 +194,30 @@ export function PublicProjectView({
                 {project.ownerUsername}
               </Link>
             </ProfileHoverCard>
-            {publicProject?.forkedFromProjectId && (
+            {source?.forkedFromProjectId && (
               <>
                 {" "}
                 forked from{" "}
                 <Link
-                  href={`/p/${encodeURIComponent(publicProject.forkedFromProjectId)}`}
+                  href={`/p/${encodeURIComponent(source.forkedFromProjectId)}`}
                   className="touch-target inline-flex min-h-6 items-center font-medium hover:text-primary"
                 >
-                  {publicProject.forkedFromTitle ?? "Original project"}
+                  {source.forkedFromTitle ?? "Original project"}
                 </Link>
-                {publicProject.forkedFromOwnerUsername && (
+                {source.forkedFromOwnerUsername && (
                   <>
                     {" by "}
                     <ProfileHoverCard
-                      username={publicProject.forkedFromOwnerUsername}
+                      username={source.forkedFromOwnerUsername}
                       avatar={null}
                       isLoggedIn={isLoggedIn}
                       viewerUsername={username}
                     >
                       <Link
-                        href={`/u/${encodeURIComponent(publicProject.forkedFromOwnerUsername)}`}
+                        href={`/u/${encodeURIComponent(source.forkedFromOwnerUsername)}`}
                         className="touch-target inline-flex min-h-6 items-center font-medium hover:text-primary"
                       >
-                        @{publicProject.forkedFromOwnerUsername}
+                        @{source.forkedFromOwnerUsername}
                       </Link>
                     </ProfileHoverCard>
                   </>

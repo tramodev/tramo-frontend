@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage() {
         <section className="space-y-4">
           <h2 className="font-display text-2xl font-medium text-foreground">Private and shared content</h2>
           <p>Projects are private by default. Private notes are not publicly displayed, but they are not end-to-end encrypted: necessary processing by the operator and hosting providers can occur to operate, secure, support, or comply with legal obligations for the service.</p>
-          <p>Unlisted projects can be accessed by anyone who obtains their link. Public projects can be viewed by others and may be indexed by search engines. Profile information and activity can be visible according to your settings; age may appear if age visibility is enabled. Review profile settings separately from project visibility.</p>
+          <p>Private projects shared with a view link can be read by anyone who obtains that link. Public projects can be viewed by others and may be indexed by search engines. Profile information and activity can be visible according to your settings; age may appear if age visibility is enabled. Review profile settings separately from project visibility.</p>
           <p>Sharing can allow others to read, fork, or export your work through available features. Making the original private or deleting it does not automatically remove independent forks, downloads, screenshots, or search-engine copies. Applicable privacy and other legal rights still apply.</p>
         </section>
         <section className="space-y-4">

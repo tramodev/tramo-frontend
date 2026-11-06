@@ -286,7 +286,7 @@ export const WIKI_SCREENSHOTS: Record<string, Record<string, Screenshot[]>> = {
     'Visibility': [{
       src: '/wiki/publishing/private.webp',
       alt: 'Private is selected in the visibility settings, with the description Only you can access this project.',
-      caption: 'Choose Private, Unlisted or Published to control who can read the project, then confirm with Save or Publish.',
+      caption: 'Choose Private or Published to control who can read the project, then confirm with Save or Publish.',
       width: 347, height: 285,
     }],
     'Project descriptions': [{
@@ -316,7 +316,7 @@ export const WIKI_SCREENSHOTS: Record<string, Record<string, Screenshot[]>> = {
     'Copy a sharing link': [{
       src: '/wiki/publishing/copy-link.webp',
       alt: 'The sharing controls show Open public link, a checked Copied button and Update.',
-      caption: 'After saving an unlisted project or publishing it, choose Copy to copy the reader-facing link. Open public link opens the same reading view.',
+      caption: 'After publishing, choose Copy to copy the reader-facing link. Open public link opens the same reading view.',
       width: 347, height: 64,
     }],
     'Published snapshots and history': [{

@@ -65,7 +65,7 @@ export const SECTIONS = [
   },
   {
     id: 'publishing', title: 'Publishing and sharing', features: [
-      ['Visibility', 'Choose Private for access only by you, Unlisted for anyone with the link, or Published to list the project on Explore. Confirm with Save or Publish.'],
+      ['Visibility', 'Choose Private to keep the project to you and the people you share it with, or Published to list it on Explore. Confirm with Save or Publish.'],
       ['Project descriptions', 'Introduce the project and explain what readers will find.'],
       ['Tags', 'Add project tags with suggestions for existing topics.'],
       ['Public thumbnails', 'Upload a cover image or capture the project map as a thumbnail. Thumbnails are public.'],

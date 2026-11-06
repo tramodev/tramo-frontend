@@ -165,9 +165,22 @@ export async function getPublicProject(projectId: string): Promise<PublicProject
   });
 
   if (!response.ok) return null;
+  return toPublicProject(await response.json());
+}
 
-  const data: PublicProjectDTO = await response.json();
+export async function getSharedProject(token: string): Promise<PublicProject | null> {
+  const response = await backendFetch(`${API_BASE_URL}/api/public/share-links/project`, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ token }),
+  });
 
+  if (!response.ok) return null;
+  return toPublicProject(await response.json());
+}
+
+function toPublicProject(data: PublicProjectDTO): PublicProject {
   return {
     id: String(data.id),
     title: data.title,

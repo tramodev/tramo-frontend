@@ -36,7 +36,7 @@ const ROLE_OPTIONS = [
 
 const ACCESS_OPTIONS = [
   { value: "RESTRICTED", label: "Restricted", description: "Only people with access can open it", icon: Lock },
-  { value: "LINK", label: "Anyone with the link", description: "Anyone signed in with the link can join", icon: Globe },
+  { value: "LINK", label: "Anyone with the link", description: "Anyone with the link can read it, no sign-in needed", icon: Globe },
 ] as const satisfies readonly MenuOption<"RESTRICTED" | "LINK">[]
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "Owner", EDITOR: "Can edit", VIEWER: "Can view" }
@@ -300,7 +300,8 @@ export function CollaboratorsSection({ projectId, owner, onLinkChange, inviting,
             />
             <span className="px-2 text-[0.6875rem] text-muted-foreground">
               {!loaded ? "Loading…" : link
-                ? `Anyone signed in with the link can join${link.useCount ? ` · used ${link.useCount} ${link.useCount === 1 ? "time" : "times"}` : ""}`
+                ? link.role === "VIEWER" ? "Anyone with the link can read it, no sign-in needed"
+                  : `Anyone signed in with the link can join${link.useCount ? ` · used ${link.useCount} ${link.useCount === 1 ? "time" : "times"}` : ""}`
                 : "Only people with access can open it with the link"}
             </span>
           </div>

@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Globe, Lock, Users } from 'lucide-react';
+import { ArrowRight, Check, Globe, Lock } from 'lucide-react';
 import { ExploreCard } from '@/components/feed/explore-card';
 import { Button } from '@/components/ui/button';
 import { FadeUp } from '@/components/landing/landing-motion';
@@ -66,10 +66,6 @@ export function ExplorePublishSection() {
               <div className="flex items-center gap-3 rounded-md border border-border px-3.5 py-2.5">
                 <Lock className="h-4 w-4 shrink-0" />
                 <span className="min-w-0"><span className="block text-[0.8125rem] font-medium">Private</span><span className="block text-xs text-muted-foreground">Only you can access this project</span></span>
-              </div>
-              <div className="flex items-center gap-3 rounded-md border border-border px-3.5 py-2.5">
-                <Users className="h-4 w-4 shrink-0" />
-                <span className="min-w-0"><span className="block text-[0.8125rem] font-medium">Unlisted</span><span className="block text-xs text-muted-foreground">Anyone with the link can view it</span></span>
               </div>
               <div className="flex items-center gap-3 rounded-md border border-foreground bg-foreground/5 px-3.5 py-2.5">
                 <Globe className="h-4 w-4 shrink-0" />

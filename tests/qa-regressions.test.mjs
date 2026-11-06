@@ -183,7 +183,7 @@ test('a failed description save is reported and prevents publishing stale metada
   nodes.find(node => node.props.type === 'button' && node.props.className?.includes('text-left')).props.onClick();
   nodes = s.render();
   const visibility = nodes.filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'));
-  visibility[2].props.onClick();
+  visibility[1].props.onClick();
   await confirmButton(s.render()).props.onClick();
   expect(s.published).toHaveLength(0);
   expect(s.render().find(node => node.props.role === 'alert').props.children).toBe('Could not save description');
@@ -194,7 +194,7 @@ test('publishing waits for a description save started on blur', async () => {
   const s = shareSetup(async () => project, () => new Promise(resolve => writes.push(resolve)));
   s.render(); await settle();
   s.render().find(node => node.props.id === 'publish-description').props.onChange({ target: { value: 'Description' } });
-  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[2].props.onClick();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
   s.render().find(node => node.props.id === 'publish-description').props.onBlur();
   const publishing = confirmButton(s.render()).props.onClick();
   await settle();
@@ -245,12 +245,14 @@ test('mismatched passwords show one inline error and never submit', async () => 
 });
 
 
-test('saving Share exposes a working public link and copy button next to Save', async () => {
+test('publishing exposes a working public link and copy button next to Publish', async () => {
   const s = shareSetup(async () => project);
   s.render(); await settle();
+  s.render().find(node => node.props.id === 'publish-description').props.onChange({ target: { value: 'Description' } });
   s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
   expect(s.render().some(node => node.props['aria-label'] === 'Copy public link')).toBe(false);
-  await s.render().find(node => node.type === 'button' && node.props.children === 'Save').props.onClick();
+  await confirmButton(s.render()).props.onClick();
+  await settle();
   const sticky = s.render().find(node => node.props.className?.includes('sticky bottom-0'));
   const children = flatten(sticky);
   expect(children.some(node => node.type === 'a' && node.props.href === 'http://localhost:3000/p/project')).toBe(true);
@@ -375,7 +377,7 @@ test('publishing waits for embed validation and only proceeds after confirming t
   let complete;
   const s = shareSetup(async () => project, async () => {}, () => new Promise(resolve => { complete = resolve; }));
   s.render(); await settle();
-  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[2].props.onClick();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
   const publishing = confirmButton(s.render()).props.onClick();
   await settle();
   expect(s.published).toHaveLength(0);
@@ -390,7 +392,7 @@ test('publishing waits for embed validation and only proceeds after confirming t
 test('a validation loading failure is shown instead of treating the project as error-free', async () => {
   const s = shareSetup(async () => project, async () => {}, async () => { throw new Error('Renderer unavailable'); });
   s.render(); await settle();
-  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[2].props.onClick();
+  s.render().filter(node => node.props.type === 'button' && node.props.className?.includes('text-left'))[1].props.onClick();
   await confirmButton(s.render()).props.onClick();
   expect(s.published).toHaveLength(0);
   expect(s.render().find(node => node.props.role === 'alert').props.children).toBe('Renderer unavailable');

@@ -1,54 +1,45 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-"use client"
+import type { Metadata } from "next"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { PublicProjectView } from "@/components/project/public-project-view"
+import { getSharedProject } from "@/lib/public-project"
+import { getHomeHref } from "@/lib/nav"
+import { isLoggedIn, getUsername } from "@/lib/auth"
+import { getMyProfile } from "@/lib/profile"
+import { JoinClient } from "./join-client"
 
-import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
+export const metadata: Metadata = { title: "Shared project", robots: { index: false, follow: false } }
 
-import { acceptShareLink } from "@/lib/project-members"
-import { PENDING_JOIN_KEY } from "@/lib/pending-join"
+export default async function JoinPage({
+  params,
+}: {
+  params: Promise<{ token?: string[] }>
+}) {
+  const { token } = await params
+  const shareToken = token?.[0]
+  const project = shareToken ? await getSharedProject(shareToken) : null
+  if (!shareToken || !project) return <JoinClient />
 
-export default function JoinPage() {
-  const { token: segments } = useParams<{ token?: string[] }>()
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const started = useRef(false)
-
-  useEffect(() => {
-    if (started.current) return
-    started.current = true
-    const fromUrl = segments?.[0]
-    if (fromUrl) {
-      sessionStorage.setItem(PENDING_JOIN_KEY, fromUrl)
-      window.history.replaceState(null, "", "/join")
-    }
-    const token = fromUrl ?? sessionStorage.getItem(PENDING_JOIN_KEY)
-    if (!token) {
-      router.replace("/projects")
-      return
-    }
-    acceptShareLink(token).then((result) => {
-      if (result.status === 401) {
-        router.replace("/login")
-        return
-      }
-      sessionStorage.removeItem(PENDING_JOIN_KEY)
-      if (result.data) router.replace(`/editor/${result.data.projectId}`)
-      else setError(result.status === 404 ? "This invite link is invalid, expired or was revoked." : result.error)
-    }).catch(() => setError("Could not open this invite. Try again."))
-  }, [segments, router])
+  const [homeHref, loggedIn, username] = await Promise.all([getHomeHref(), isLoggedIn(), getUsername()])
+  const profile = loggedIn ? await getMyProfile() : null
 
   return (
-    <main id="main-content" tabIndex={-1} className="flex min-h-svh flex-col items-center justify-center gap-4 p-6">
-      {error ? <>
-        <p role="alert">{error}</p>
-        <Link href="/projects" className="text-primary underline">Back to projects</Link>
-      </> : <p role="status" className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-        Joining project…
-      </p>}
-    </main>
+    <div className="contents">
+      <SidebarProvider
+        style={{ "--sidebar-width": "18rem" } as React.CSSProperties}
+        className="h-dvh min-h-0"
+      >
+        <PublicProjectView
+          project={project}
+          homeHref={homeHref}
+          isLoggedIn={loggedIn}
+          isOwnProject={!!username && username === project.ownerUsername}
+          username={profile?.username ?? null}
+          imageUrl={profile?.imageUrl ?? null}
+          shareToken={shareToken}
+        />
+      </SidebarProvider>
+    </div>
   )
 }

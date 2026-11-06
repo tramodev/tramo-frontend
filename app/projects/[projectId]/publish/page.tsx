@@ -12,7 +12,6 @@ import {
   Globe,
   Loader2,
   Lock,
-  Users,
 } from "lucide-react"
 
 import { projectEmbedErrors, embedReviewUrl, type ProjectEmbedError } from '@/lib/project-embed-errors'
@@ -47,7 +46,6 @@ const VISIBILITY_OPTIONS: {
   icon: typeof Lock;
 }[] = [
   { value: "private", label: "Private", description: "Only you and the people you share it with", icon: Lock },
-  { value: "unlisted", label: "Unlisted", description: "Anyone with the link can view it", icon: Users },
   { value: "published", label: "Published", description: "Listed on Explore for everyone", icon: Globe },
 ];
 

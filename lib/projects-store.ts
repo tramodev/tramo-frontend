@@ -9,7 +9,7 @@ import { parseResponse, expectOk } from "./http";
 import { anonIdHeader } from "./public-project";
 import { assertProjectText, PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation";
 
-export type ProjectVisibility = "private" | "unlisted" | "published";
+export type ProjectVisibility = "private" | "published";
 export type ProjectRole = "OWNER" | "EDITOR" | "VIEWER";
 export type MapPreviews = Record<string, { text: string; linkedItemIds: string[] }>;
 
