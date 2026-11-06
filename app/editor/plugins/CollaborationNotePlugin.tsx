@@ -66,8 +66,9 @@ function applyHandoff(editor: LexicalEditor, handoff: CollabHandoff): boolean {
   return true;
 }
 
-export default function CollaborationNotePlugin({ itemId, socket, username, userId, handoff, onHandoff, onWaiting, onStatus, onClosed }: {
+export default function CollaborationNotePlugin({ itemId, socket, username, userId, cursorsContainer, handoff, onHandoff, onWaiting, onStatus, onClosed }: {
   itemId: string;
+  cursorsContainer: HTMLElement | null;
   socket: HocuspocusProviderWebsocket;
   username: string;
   userId: string;
@@ -168,7 +169,6 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     };
     window.addEventListener('beforeunload', warnUnsynced);
     window.addEventListener('offline', onBrowserOffline);
-    window.addEventListener('scroll', redrawCursors, true);
     window.addEventListener('online', onBrowserOnline);
     provider.on('status', onStatusChange);
     provider.on('synced', onSynced);
@@ -183,7 +183,6 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       if (cursorFrame !== undefined) cancelAnimationFrame(cursorFrame);
       unregisterRoot();
       resize.disconnect();
-      window.removeEventListener('scroll', redrawCursors, true);
       clearTimeout(retryTimer);
       clearTimeout(offlineTimer);
       clearTimeout(waitingTimer);
@@ -198,6 +197,8 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     };
   }, [connection, itemId, editor, socket]);
 
+  const cursorsContainerRef = useMemo(() => ({ current: cursorsContainer }), [cursorsContainer]);
+
   const destroyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     clearTimeout(destroyTimer.current);
@@ -206,6 +207,6 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
 
   return <LexicalCollaboration>
     <CollaborationPluginV2__EXPERIMENTAL id={itemId} doc={connection.doc} provider={connection.lexicalProvider}
-      username={username} cursorColor={cursorColor(userId)} excludedProperties={LOCAL_PROPERTIES} />
+      username={username} cursorColor={cursorColor(userId)} excludedProperties={LOCAL_PROPERTIES} cursorsContainerRef={cursorsContainerRef} />
   </LexicalCollaboration>;
 }
