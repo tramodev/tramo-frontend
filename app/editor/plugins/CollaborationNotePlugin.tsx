@@ -118,6 +118,7 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     };
     let settled = false;
     let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    let cursorFrame: number | undefined;
     const waitingTimer = setTimeout(() => { if (!settled) callbacks.current.onWaiting?.('connecting'); }, 1500);
     const onSynced = () => {
       if (provider.isSynced) { attempt = 0; online = true; }
@@ -134,6 +135,7 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
           onHandoff?.(applied);
         }
         restoreCaret(editor, itemId);
+        cursorFrame = requestAnimationFrame(() => provider.awareness?.emit('update', [{ added: [], updated: [], removed: [] }, 'local']));
       }, 0);
     };
     const warnUnsynced = (event: BeforeUnloadEvent) => {
@@ -152,6 +154,7 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     return () => {
       provider.off('status', onStatusChange);
       clearTimeout(settleTimer);
+      if (cursorFrame !== undefined) cancelAnimationFrame(cursorFrame);
       clearTimeout(retryTimer);
       clearTimeout(offlineTimer);
       clearTimeout(waitingTimer);
