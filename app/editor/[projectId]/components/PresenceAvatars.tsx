@@ -3,13 +3,15 @@
 'use client';
 
 import { AuthorAvatar } from '@/components/shared/author-avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cursorColor } from '@/lib/collab-client';
 import type { Item } from '@/app/editor/types';
 import type { Peer } from '@/app/editor/presence';
 
 const VISIBLE = 5;
+const STACKED = 2;
 const ROLE_LABELS = { OWNER: 'Owner', EDITOR: 'Editor', VIEWER: 'Viewer' } as const;
 
 export function presenceLabel(peer: Peer, items: Record<string, Item>) {
@@ -35,45 +37,60 @@ export function PresenceAvatars({ peers, items, onSelect }: {
   items: Record<string, Item>;
   onSelect: (peer: Peer) => void;
 }) {
+  const [open, setOpen] = useState(false);
   if (peers.length === 0) return null;
   const visible = peers.slice(0, VISIBLE);
   const rest = peers.slice(VISIBLE);
-  return <div className="flex items-center gap-1.5" role="group" aria-label="People in this project">
-    {visible.map(peer => {
-      const name = peer.self ? 'You' : peer.user.name;
-      const status = presenceLabel(peer, items);
-      return <Tooltip key={peer.user.id}>
-        <TooltipTrigger asChild>
-          <button type="button" aria-label={`${name}, ${status}`} aria-disabled={peer.self || undefined}
-            className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-default"
-            onClick={peer.self ? undefined : () => onSelect(peer)}>
-            <PeerAvatar peer={peer} size={28} />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="font-medium">{name} · {ROLE_LABELS[peer.role]}</p>
-          <p>{status}</p>
-        </TooltipContent>
-      </Tooltip>;
-    })}
-    {rest.length > 0 && <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button type="button" aria-label={`${rest.length} more ${rest.length === 1 ? 'person' : 'people'}`}
-          className="inline-flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          +{rest.length}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {rest.map(peer => <DropdownMenuItem key={peer.user.id} onSelect={() => onSelect(peer)}>
-          <PeerAvatar peer={peer} size={22} />
-          <span className="flex flex-col">
-            <span>{peer.user.name} · {ROLE_LABELS[peer.role]}</span>
-            <span className="text-xs text-muted-foreground">{presenceLabel(peer, items)}</span>
-          </span>
-        </DropdownMenuItem>)}
-      </DropdownMenuContent>
-    </DropdownMenu>}
-  </div>;
+  return <>
+    <button type="button" aria-label={`${peers.length} ${peers.length === 1 ? 'person' : 'people'} in this project, show everyone`} aria-haspopup="dialog" onClick={() => setOpen(true)}
+      className="flex items-center justify-center -space-x-1.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden">
+      {peers.slice(0, STACKED).map(peer => <span key={peer.user.id} className="flex rounded-full ring-2 ring-background"><PeerAvatar peer={peer} size={24} /></span>)}
+      {peers.length > STACKED && <span className="relative flex size-6 items-center justify-center rounded-full bg-muted text-[0.6875rem] font-medium text-muted-foreground ring-2 ring-background">+{peers.length - STACKED}</span>}
+    </button>
+    <div className="hidden items-center gap-1.5 md:flex" role="group" aria-label="People in this project">
+      {visible.map(peer => {
+        const name = peer.self ? 'You' : peer.user.name;
+        const status = presenceLabel(peer, items);
+        return <Tooltip key={peer.user.id}>
+          <TooltipTrigger asChild>
+            <button type="button" aria-label={`${name}, ${status}`} aria-disabled={peer.self || undefined}
+              className="flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-disabled:cursor-default"
+              onClick={peer.self ? undefined : () => onSelect(peer)}>
+              <PeerAvatar peer={peer} size={28} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="font-medium">{name} · {ROLE_LABELS[peer.role]}</p>
+            <p>{status}</p>
+          </TooltipContent>
+        </Tooltip>;
+      })}
+      {rest.length > 0 && <button type="button" aria-label={`${rest.length} more ${rest.length === 1 ? 'person' : 'people'}, show everyone`} aria-haspopup="dialog" onClick={() => setOpen(true)}
+        className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+        +{rest.length}
+      </button>}
+    </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>People in this project</DialogTitle>
+          <DialogDescription>{peers.length} {peers.length === 1 ? 'person' : 'people'} here now</DialogDescription>
+        </DialogHeader>
+        <ul className="-mx-2 flex max-h-[60vh] flex-col gap-0.5 overflow-y-auto">
+          {peers.map(peer => <li key={peer.user.id}>
+            <button type="button" disabled={peer.self} onClick={() => { setOpen(false); onSelect(peer); }}
+              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-[0.8125rem] transition-colors hover:bg-muted disabled:hover:bg-transparent">
+              <PeerAvatar peer={peer} size={32} />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate font-medium">{peer.self ? 'You' : peer.user.name} · {ROLE_LABELS[peer.role]}</span>
+                <span className="truncate text-xs text-muted-foreground">{presenceLabel(peer, items)}</span>
+              </span>
+            </button>
+          </li>)}
+        </ul>
+      </DialogContent>
+    </Dialog>
+  </>;
 }
 
 export function PeerDots({ peers }: { peers?: Peer[] }) {
