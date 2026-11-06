@@ -6,19 +6,19 @@ import { projectEmbedErrors, type ProjectEmbedError } from '@/lib/project-embed-
 
 export function EmbedErrorsStatus({ items, onReview }: { items: Record<string, Item>; onReview: (error: ProjectEmbedError) => void }) {
   const contents = useRef(new Map<string, Promise<string>>());
-  const [result, setResult] = useState<{ items: Record<string, Item>; errors: ProjectEmbedError[]; failed?: boolean } | null>(null);
+  const [result, setResult] = useState<{ errors: ProjectEmbedError[]; failed?: boolean } | null>(null);
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
       void projectEmbedErrors(items, contents.current).then(errors => {
-        if (!cancelled) setResult({ items, errors });
+        if (!cancelled) setResult({ errors });
       }).catch(() => {
-        if (!cancelled) setResult({ items, errors: [], failed: true });
+        if (!cancelled) setResult({ errors: [], failed: true });
       });
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [items]);
-  if (!result || result.items !== items) return <span role="status" className="text-xs text-muted-foreground">Checking equations and music scores…</span>;
+  if (!result) return null;
   if (result.failed) return <span role="status" className="text-xs text-muted-foreground">Could not check equations and music scores</span>;
   if (!result.errors.length) return null;
   const equations = result.errors.filter(error => error.type === 'equation').length;
