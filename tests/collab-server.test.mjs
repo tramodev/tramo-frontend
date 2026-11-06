@@ -37,6 +37,8 @@ let port;
 let lexical;
 const items = new Map();
 const stores = [];
+const deleted = new Set();
+const SAFE = JSON.stringify({ root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'label' }] }] } });
 
 function freePort() {
   return new Promise(resolve => {
@@ -93,6 +95,7 @@ beforeAll(async () => {
     request.on('end', () => {
       const id = request.url.match(/items\/(\d+)/)?.[1];
       if (request.headers['x-collab-secret'] !== SECRET) return response.writeHead(403).end();
+      if (request.method === 'GET' && id && deleted.has(id)) return response.writeHead(404).end();
       if (request.method === 'GET' && id) {
         const item = items.get(id) ?? { state: null, content: '', extractionEpoch: 0 };
         return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(item));
@@ -100,6 +103,10 @@ beforeAll(async () => {
       if (request.method === 'PUT' && id) {
         const stored = JSON.parse(body);
         stores.push({ id, ...stored });
+        if (stored.content.includes('javascript:')) {
+          items.set(id, { state: stored.state, content: SAFE, extractionEpoch: stored.extractionEpoch });
+          return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ content: SAFE }));
+        }
         items.set(id, { state: stored.state, content: stored.content, extractionEpoch: stored.extractionEpoch });
         return response.writeHead(204).end();
       }
@@ -118,6 +125,7 @@ beforeAll(async () => {
       COLLAB_PORT: String(port),
       COLLAB_MAX_MESSAGE_BYTES: String(64 * 1024),
       COLLAB_MAX_SOCKETS_PER_USER: '2',
+      COLLAB_METRICS_SECRET: 'test-metrics-secret',
     },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
@@ -216,17 +224,59 @@ test('rejected authentication tells the client why', async () => {
   close(provider);
 }, 30000);
 
-test('revoke and reset close connections with the reason the client acts on', async () => {
+test('revoke closes connections with the reason the client acts on', async () => {
   const revoked = connect(6, 60, 'edit');
-  const reset = connect(7, 70, 'edit');
-  await until(() => revoked.synced && reset.synced);
+  await until(() => revoked.synced);
   const reasons = [];
   revoked.on('close', ({ event }) => reasons.push(event.reason));
-  reset.on('close', ({ event }) => reasons.push(event.reason));
   expect((await fetch(`http://127.0.0.1:${port}/internal/revoke`, { method: 'POST', body: '{"userId":60}' })).status).toBe(403);
   expect((await internal('/internal/revoke', { userId: 60 })).status).toBe(204);
-  expect((await internal('/internal/reset', { itemIds: [7] })).status).toBe(204);
-  await until(() => reasons.length === 2);
-  expect(reasons.sort()).toEqual(['reload', 'revoked']);
-  close(revoked, reset);
+  await until(() => reasons.length === 1);
+  expect(reasons).toEqual(['revoked']);
+  close(revoked);
 }, 30000);
+
+test('a restore reaches open editors as a live update and closes notes it deleted', async () => {
+  items.set('7', { state: null, content: NOTE, extractionEpoch: 0 });
+  const kept = connect(7, 70, 'edit');
+  const removed = connect(17, 70, 'edit');
+  await until(() => kept.synced && removed.synced);
+  const closes = [];
+  kept.on('close', ({ event }) => closes.push(['kept', event.reason]));
+  removed.on('close', ({ event }) => closes.push(['removed', event.reason]));
+  items.set('7', { state: null, content: SAFE, extractionEpoch: 1 });
+  deleted.add('17');
+  expect((await internal('/internal/reset', { itemIds: [7, 17] })).status).toBe(204);
+  await until(() => lexical.toLexical(kept.document).includes('"label"') && closes.length === 1);
+  expect(closes).toEqual([['removed', 'deleted']]);
+  kept.document.getMap('probe').set('after', 'restore');
+  const stored = await until(() => stores.find(store => store.id === '7' && store.extractionEpoch === 1), 15000);
+  expect(stored.bootstrapHash).toBeTruthy();
+  expect(stored.content).toContain('"label"');
+  close(kept, removed);
+}, 30000);
+
+test('links the API strips are removed from the live document too', async () => {
+  items.set('18', { state: null, content: SAFE, extractionEpoch: 0 });
+  const author = connect(18, 81, 'edit');
+  await until(() => author.synced);
+  const unsafe = JSON.stringify({ root: { type: 'root', children: [{ type: 'paragraph', children: [
+    { type: 'link', url: 'javascript:alert(1)', children: [{ type: 'text', text: 'label' }] },
+  ] }] } });
+  lexical.replaceContent(author.document, unsafe);
+  await until(() => stores.some(store => store.id === '18' && store.content.includes('javascript:')), 15000);
+  await until(() => !lexical.toLexical(author.document).includes('javascript:'), 15000);
+  close(author);
+}, 30000);
+
+test('metrics are served in Prometheus format only with the metrics secret', async () => {
+  expect((await fetch(`http://127.0.0.1:${port}/metrics`)).status).toBe(404);
+  expect((await fetch(`http://127.0.0.1:${port}/metrics`, { headers: { 'X-Metrics-Secret': SECRET } })).status).toBe(404);
+  const response = await fetch(`http://127.0.0.1:${port}/metrics`, { headers: { 'X-Metrics-Secret': 'test-metrics-secret' } });
+  const body = await response.text();
+  expect(response.status).toBe(200);
+  expect(body).toMatch(/^collab_connections \d+$/m);
+  expect(body).toContain('collab_rejections_total{reason="forbidden"}');
+  expect(body).toContain('collab_restores_total{result="applied"} 1');
+  expect(body).toMatch(/^collab_stores_total\{status="204"\} \d+$/m);
+});

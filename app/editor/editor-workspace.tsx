@@ -57,15 +57,18 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   const project = useProjectEditorState(routeProjectId, connectionsPanelOpen, user);
   const hasPendingEmbedDraft = useSyncExternalStore(subscribeEmbedDrafts, hasPendingEmbedDrafts, () => false);
   const projectId = project.projectId;
+  const { refreshProject } = project;
   const readOnly = project.role === 'VIEWER';
   const router = useRouter();
   const [accessRevoked, setAccessRevoked] = useState(false);
   useEffect(() => {
     if (!user.userId) return;
-    return subscribeNotificationCount(String(user.userId), () => {}, revokedId => {
-      if (revokedId === projectId) setAccessRevoked(true);
+    return subscribeNotificationCount(String(user.userId), () => {}, (type, eventProjectId) => {
+      if (eventProjectId !== projectId) return;
+      if (type === 'access-revoked') setAccessRevoked(true);
+      else refreshProject();
     });
-  }, [user.userId, projectId]);
+  }, [user.userId, projectId, refreshProject]);
   useEffect(() => {
     if (project.loaded) document.title = `${project.projectTitle} | Tramo`;
   }, [project.loaded, project.projectTitle]);

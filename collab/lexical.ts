@@ -6,7 +6,7 @@ import {
   syncLexicalUpdateToYjsV2__EXPERIMENTAL,
   syncYjsStateToLexicalV2__EXPERIMENTAL,
 } from '@lexical/yjs';
-import { $getRoot, type LexicalEditor } from 'lexical';
+import { $createParagraphNode, $getRoot, $parseSerializedNode, type LexicalEditor, type SerializedLexicalNode } from 'lexical';
 import * as Y from 'yjs';
 import { editorConfig } from '@/app/editor/lexical-config';
 
@@ -82,4 +82,18 @@ export function toLexical(doc: Y.Doc): string {
   const editor = headless();
   syncYjsStateToLexicalV2__EXPERIMENTAL(bind(editor, doc), provider);
   return JSON.stringify(editor.getEditorState().toJSON());
+}
+
+export function replaceContent(doc: Y.Doc, content: string) {
+  const editor = headless();
+  const binding = bind(editor, doc);
+  syncYjsStateToLexicalV2__EXPERIMENTAL(binding, provider);
+  editor.registerUpdateListener(({ prevEditorState, editorState, dirtyElements, normalizedNodes, tags }) =>
+    syncLexicalUpdateToYjsV2__EXPERIMENTAL(binding, provider, prevEditorState, editorState, dirtyElements, normalizedNodes, tags));
+  const children = content.trim() ? JSON.parse(canonicalize(content)).root.children as SerializedLexicalNode[] : [];
+  editor.update(() => {
+    const root = $getRoot().clear();
+    if (children.length) root.append(...children.map($parseSerializedNode));
+    else root.append($createParagraphNode());
+  }, { discrete: true });
 }

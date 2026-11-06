@@ -4,7 +4,7 @@ import { Server, type Connection, type Document, type Hocuspocus } from '@hocusp
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import * as Y from 'yjs';
-import { toLexical, toYjs } from './lexical';
+import { replaceContent, toLexical, toYjs } from './lexical';
 
 type Context = { userId: number; perm: 'edit' | 'view'; sv: string | null };
 type Claims = { iss?: string; aud?: string | string[]; sub?: string; item?: string; perm?: string; sv?: string | null; exp?: number };
@@ -18,6 +18,7 @@ function setting(name: string, fallback?: string): string {
 }
 
 const apiUrl = setting('COLLAB_API_URL', 'http://127.0.0.1:8080');
+const metricsSecret = process.env.COLLAB_METRICS_SECRET ?? '';
 const secret = setting('COLLAB_INTERNAL_SECRET');
 const tokenKey = Buffer.from(setting('COLLAB_TOKEN_SECRET'), 'base64');
 const origins = new Set(setting('COLLAB_ALLOWED_ORIGINS', 'http://localhost:3000').split(','));
@@ -33,6 +34,35 @@ const limits = {
 
 const documents = new Map<string, DocState>();
 const buckets = new WeakMap<Connection, Bucket>();
+const counters = new Map<string, number>();
+const storeSeconds = { sum: 0, count: 0 };
+
+function count(name: string, labels: Record<string, string | number> = {}) {
+  const key = `${name}{${Object.entries(labels).map(([label, value]) => `${label}="${value}"`).join(',')}}`;
+  counters.set(key, (counters.get(key) ?? 0) + 1);
+}
+
+function secretMatches(supplied: unknown, expected: string) {
+  const given = Buffer.from(String(supplied ?? ''));
+  const wanted = Buffer.from(expected);
+  return wanted.length > 0 && given.length === wanted.length && timingSafeEqual(given, wanted);
+}
+
+function metrics(instance: Hocuspocus) {
+  const open = connections(instance);
+  const lines = [
+    '# TYPE collab_connections gauge', `collab_connections ${open.length}`,
+    '# TYPE collab_sockets gauge', `collab_sockets ${new Set(open.map(([, connection]) => connection.socketId)).size}`,
+    '# TYPE collab_documents gauge', `collab_documents ${instance.documents.size}`,
+    '# TYPE collab_store_duration_seconds summary',
+    `collab_store_duration_seconds_sum ${storeSeconds.sum}`, `collab_store_duration_seconds_count ${storeSeconds.count}`,
+  ];
+  for (const name of new Set([...counters.keys()].map(key => key.slice(0, key.indexOf('{'))))) {
+    lines.push(`# TYPE ${name} counter`);
+    for (const [key, value] of counters) if (key.startsWith(`${name}{`)) lines.push(`${key.replace('{}', '')} ${value}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
 
 const log = (event: string, fields: Record<string, unknown> = {}) =>
   console.log([`event=${event}`, ...Object.entries(fields).map(([key, value]) => `${key}=${value}`)].join(' '));
@@ -67,6 +97,7 @@ function api(path: string, init: RequestInit = {}) {
 }
 
 function reject(reason: string) {
+  count('collab_rejections_total', { reason });
   return Object.assign(new Error(reason), { reason });
 }
 
@@ -112,10 +143,33 @@ function readBody(request: IncomingMessage): Promise<unknown> {
   });
 }
 
+async function restore(instance: Hocuspocus, name: string) {
+  const document = instance.documents.get(name);
+  const state = documents.get(name);
+  if (!document || !state || state.poisoned) return;
+  const response = await api(`/items/${name}`);
+  if (response.status === 404) {
+    count('collab_restores_total', { result: 'deleted' });
+    state.poisoned = true;
+    document.connections.forEach((_, connection) => connection.close({ code: 4002, reason: 'deleted' }));
+    if (document.getConnectionsCount() === 0) void instance.unloadDocument(document);
+    return;
+  }
+  if (!response.ok) throw new Error(`restore load failed with ${response.status}`);
+  const loaded = await response.json() as { content: string; extractionEpoch: number };
+  state.epoch = loaded.extractionEpoch;
+  state.bootstrapHash = sha256(loaded.content);
+  state.author = null;
+  replaceContent(document, loaded.content);
+  count('collab_restores_total', { result: 'applied' });
+  log('collab_document_restored', { item: name, epoch: state.epoch });
+}
+
 async function store(document: Document, state: DocState, content = toLexical(document)) {
   if (state.poisoned || state.author === null) return true;
   if (hasPendingImage(content)) return true;
   const started = Date.now();
+  const epoch = state.epoch;
   const response = await api(`/items/${document.name}`, {
     method: 'PUT',
     body: JSON.stringify({
@@ -127,7 +181,15 @@ async function store(document: Document, state: DocState, content = toLexical(do
     }),
   });
   log('collab_store', { item: document.name, status: response.status, ms: Date.now() - started });
+  count('collab_stores_total', { status: response.status });
+  storeSeconds.sum += (Date.now() - started) / 1000;
+  storeSeconds.count += 1;
+  if (state.epoch !== epoch) return true;
   if (response.ok) state.bootstrapHash = null;
+  if (response.status === 200) {
+    const sanitized = (await response.json() as { content?: unknown }).content;
+    if (typeof sanitized === 'string') replaceContent(document, sanitized);
+  }
   return response.ok || response.status >= 500;
 }
 
@@ -188,6 +250,7 @@ const server = new Server<Context>({
     buckets.set(connection, bucket);
     if (bucket.tokens < 1) {
       log('collab_rejected_limit', { reason: 'rate', user: connection.context.userId });
+      count('collab_rejections_total', { reason: 'rate' });
       throw Object.assign(new Error('rate'), { code: 1008, reason: 'rate-limited' });
     }
     bucket.tokens -= 1;
@@ -214,10 +277,13 @@ const server = new Server<Context>({
 
   async onRequest({ request, response, instance }) {
     const path = new URL(request.url ?? '/', 'http://collab').pathname;
+    if (request.method === 'GET' && path === '/metrics') {
+      if (!secretMatches(request.headers['x-metrics-secret'], metricsSecret)) response.writeHead(404).end();
+      else response.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' }).end(metrics(instance));
+      return Promise.reject();
+    }
     if (request.method !== 'POST' || !['/internal/revoke', '/internal/reset'].includes(path)) return;
-    const supplied = Buffer.from(String(request.headers['x-collab-secret'] ?? ''));
-    const expected = Buffer.from(secret);
-    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+    if (!secretMatches(request.headers['x-collab-secret'], secret)) {
       response.writeHead(403).end();
       return Promise.reject();
     }
@@ -225,7 +291,11 @@ const server = new Server<Context>({
     if (path === '/internal/revoke' && typeof body?.userId === 'number') {
       revoke(instance, connection => connection.context.userId === body.userId);
     } else if (path === '/internal/reset' && Array.isArray(body?.itemIds)) {
-      body.itemIds.forEach(id => poison(instance, String(id)));
+      await Promise.all(body.itemIds.map(id => restore(instance, String(id)).catch(error => {
+        log('collab_restore_failed', { item: id, error: (error as Error).message });
+        count('collab_restores_total', { result: 'failed' });
+        poison(instance, String(id));
+      })));
     } else {
       response.writeHead(400).end();
       return Promise.reject();

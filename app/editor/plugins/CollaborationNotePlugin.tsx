@@ -102,6 +102,7 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
     };
     const onClose = ({ event }: { event: { reason?: string } }) => {
       if (event.reason === 'reload' || event.reason === 'revoked') callbacks.current.onClosed(event.reason);
+      else if (event.reason === 'deleted') provider.detach();
     };
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let attempt = 0;

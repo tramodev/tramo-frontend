@@ -50,6 +50,8 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const isDraft = !!draft && draftState.status !== 'saved';
   const [projectId, setProjectId] = useState(() => draft?.backup.result?.projectId ?? draft?.editorKey ?? routeProjectId);
   const draftInitialized = useRef(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refreshProject = useCallback(() => setRefreshKey(key => key + 1), []);
   useEffect(() => { if (user?.userId) clearLocalDrafts(user.userId); }, [user?.userId]);
   const router = useRouter();
   const pendingSaves = useRef(createPendingSaves());
@@ -172,7 +174,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
 
   useEffect(() => {
     let cancelled = false;
-    if (draft && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId)) {
+    if (draft && !refreshKey && (routeProjectId === 'new' || routeProjectId === draft.backup.result?.projectId)) {
       if (!draftInitialized.current) {
         void draft.claim().then(() => {
           if (cancelled || draftInitialized.current) return;
@@ -234,7 +236,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     return () => {
       cancelled = true;
     };
-  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves]);
+  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves, refreshKey]);
 
   useEffect(() => {
     if (isDraft || !loaded || (!connectionsPanelOpen && view !== 'graph') || mapPreviews !== undefined) return;
@@ -753,6 +755,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     },
     collabHandoff,
     onCollabHandoff,
+    refreshProject,
     onCopyUnsyncedText: unsyncedText === null ? undefined : async () => {
       await navigator.clipboard.writeText(unsyncedText);
       setUnsyncedText(null);
