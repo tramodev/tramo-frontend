@@ -740,9 +740,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     ...autoSave,
     ...(isDraft ? { saveStatus: draftState.status === 'error' ? 'error' as const : draftState.status === 'draft' ? 'idle' as const : 'saving' as const,
       saveError: draftState.error } : {}),
-    ...(!isDraft && titleState.status === 'error' ? { saveStatus: 'error' as const }
-      : !isDraft && titleState.status === 'saving' && autoSave.saveStatus !== 'error' ? { saveStatus: 'saving' as const }
-      : !isDraft && titleState.status === 'saved' && autoSave.saveStatus === 'idle' ? { saveStatus: 'saved' as const } : {}),
+    ...(!isDraft && titleState.status === 'error' ? { saveStatus: 'error' as const } : {}),
     onChange: (itemId: string, editorState: import('lexical').EditorState, pendingCommand = false) => {
       const state = draft ? editorState.toJSON() : undefined;
       draft?.setPendingImages(JSON.stringify(state).includes('"imageId":""'));

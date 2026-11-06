@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Check, Globe, Loader2, UserPlus } from 'lucide-react';
+import { AlertCircle, Globe, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserMenu } from '@/components/layout/user-menu';
@@ -110,12 +110,6 @@ export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveS
           <>
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Saving
-          </>
-        )}
-        {saveStatus === 'saved' && (
-          <>
-            <Check className="h-3.5 w-3.5 text-primary" />
-            Saved
           </>
         )}
         {(saveStatus === 'error' || saveStatus === 'unsaved') && (
