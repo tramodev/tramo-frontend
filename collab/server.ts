@@ -206,15 +206,15 @@ function otherEditor(document: Document, tried: Set<number>) {
   return null;
 }
 
-async function store(document: Document, state: DocState, content = toLexical(document), tried = new Set<number>()): Promise<boolean> {
+async function store(document: Document, state: DocState, content = toLexical(document), tried = new Set<number>(), snapshot: Y.Doc = document): Promise<boolean> {
   if (state.poisoned || state.author === null) return true;
   if (hasPendingImage(content)) {
     if (document.getConnectionsCount() > 0) {
-      state.unsaved = true;
-      return true;
+      snapshot = new Y.Doc();
+      Y.applyUpdate(snapshot, Y.encodeStateAsUpdate(document));
     }
-    replaceContent(document, withoutPendingImages(content));
-    content = toLexical(document);
+    replaceContent(snapshot, withoutPendingImages(content));
+    content = toLexical(snapshot);
   }
   const started = Date.now();
   const epoch = state.epoch;
@@ -222,7 +222,7 @@ async function store(document: Document, state: DocState, content = toLexical(do
   const response = await api(`/items/${document.name}`, {
     method: 'PUT',
     body: JSON.stringify({
-      state: Buffer.from(Y.encodeStateAsUpdate(document)).toString('base64'),
+      state: Buffer.from(Y.encodeStateAsUpdate(snapshot)).toString('base64'),
       content,
       extractionEpoch: state.epoch,
       authorId: state.author,
@@ -239,7 +239,7 @@ async function store(document: Document, state: DocState, content = toLexical(do
   if (next !== null) {
     log('collab_store_reassigned', { item: document.name, from: state.author, to: next });
     state.author = next;
-    return store(document, state, content, tried);
+    return store(document, state, content, tried, snapshot);
   }
   if (response.ok) {
     state.bootstrapHash = null;
@@ -247,7 +247,7 @@ async function store(document: Document, state: DocState, content = toLexical(do
   }
   if (response.status === 200) {
     const sanitized = (await response.json() as { content?: unknown }).content;
-    if (typeof sanitized === 'string') replaceContent(document, sanitized);
+    if (typeof sanitized === 'string' && snapshot === document) replaceContent(document, sanitized);
   }
   return response.ok;
 }

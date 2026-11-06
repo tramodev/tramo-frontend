@@ -320,6 +320,24 @@ test('an image left uploading by a closed tab is dropped so the rest of the note
   expect(stored.content).not.toContain('"imageId":""');
 }, 40000);
 
+test('an image still uploading does not keep the rest of the note from saving while others stay', async () => {
+  items.set('33', { state: null, content: SAFE, extractionEpoch: 0 });
+  const author = connect(33, 330, 'edit');
+  const other = connect(33, 331, 'edit');
+  await until(() => author.synced && other.synced);
+  const withUpload = JSON.stringify({ root: { type: 'root', children: [
+    { type: 'paragraph', children: [{ type: 'text', text: 'saved meanwhile' }] },
+    { type: 'image', imageId: '', altText: 'uploading' },
+  ] } });
+  lexical.replaceContent(author.document, withUpload);
+  await until(() => author.unsyncedChanges === 0);
+  close(author);
+  const stored = await until(() => stores.find(store => store.id === '33' && store.content.includes('saved meanwhile')), 15000);
+  expect(stored.content).not.toContain('"imageId":""');
+  expect(lexical.toLexical(other.document)).toContain('"imageId":""');
+  close(other);
+}, 30000);
+
 test('project members see each other through presence with identity taken from the token', async () => {
   const owner = presence(41, 410, 'OWNER');
   const viewer = presence(41, 411, 'VIEWER');

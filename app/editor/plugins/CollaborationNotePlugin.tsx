@@ -11,6 +11,7 @@ import { serializeNoteContent } from '@/app/editor/note-content';
 import { HocuspocusProvider, type HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 import { COLLAB_ACCESS_DENIED, cursorColor, fetchCollabToken, forgetCollabToken } from '@/lib/collab-client';
+import { ImageNode } from '@/app/editor/nodes/ImageNode';
 
 export type CollabStatus = 'syncing' | 'synced' | 'offline';
 export type CollabClosedReason = 'reload' | 'revoked';
@@ -18,6 +19,8 @@ export type CollabWaiting = 'connecting' | 'limit' | null;
 export type CollabHandoff = { base: string; content: string };
 type LexicalProvider = ComponentProps<typeof CollaborationPluginV2__EXPERIMENTAL>['provider'];
 type Caret = { path: number[]; offset: number };
+
+const LOCAL_PROPERTIES: ComponentProps<typeof CollaborationPluginV2__EXPERIMENTAL>['excludedProperties'] = new Map([[ImageNode, new Set(['__src'])]]);
 
 const carets = new Map<string, Caret>();
 
@@ -175,6 +178,6 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
 
   return <LexicalCollaboration>
     <CollaborationPluginV2__EXPERIMENTAL id={itemId} doc={connection.doc} provider={connection.lexicalProvider}
-      username={username} cursorColor={cursorColor(userId)} />
+      username={username} cursorColor={cursorColor(userId)} excludedProperties={LOCAL_PROPERTIES} />
   </LexicalCollaboration>;
 }
