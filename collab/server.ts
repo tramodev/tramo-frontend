@@ -7,8 +7,8 @@ import * as Y from 'yjs';
 import { replaceContent, toLexical, toYjs } from './lexical';
 
 type Role = 'OWNER' | 'EDITOR' | 'VIEWER';
-type Context = { userId: number; perm: 'edit' | 'view'; role: Role; sv: string | null };
-type Claims = { iss?: string; aud?: string | string[]; sub?: string; item?: string; project?: string; perm?: string; role?: string; sv?: string | null; exp?: number };
+type Context = { userId: number; name: string; picture: string | null; perm: 'edit' | 'view'; role: Role; sv: string | null };
+type Claims = { iss?: string; aud?: string | string[]; sub?: string; item?: string; project?: string; perm?: string; role?: string; sv?: string | null; name?: string; picture?: string; exp?: number };
 type DocState = {
   epoch: number; author: number | null; bootstrapHash: string | null; poisoned: boolean;
   unsaved: boolean; attempts: number; retry?: ReturnType<typeof setTimeout>;
@@ -281,7 +281,7 @@ const server = new Server<Context>({
     const perm = claims.perm === 'edit' ? 'edit' : 'view';
     connectionConfig.readOnly = isPresence(documentName) || perm !== 'edit';
     const role = perm === 'edit' && (claims.role === 'OWNER' || claims.role === 'EDITOR') ? claims.role : perm === 'edit' ? 'EDITOR' : 'VIEWER';
-    return { userId, perm, role, sv: claims.sv ?? null };
+    return { userId, name: claims.name || 'Someone', picture: claims.picture ?? null, perm, role, sv: claims.sv ?? null };
   },
 
   async onLoadDocument({ documentName, document, context }) {
@@ -322,7 +322,7 @@ const server = new Server<Context>({
   async beforeHandleAwareness({ documentName, context, states }) {
     if (!isPresence(documentName) || !context) return;
     for (const state of states.values()) {
-      state.user = { ...state.user, id: String(context.userId) };
+      state.user = { id: String(context.userId), name: context.name, imageUrl: context.picture };
       state.role = context.role;
       if (context.perm !== 'edit') state.typingAt = null;
     }

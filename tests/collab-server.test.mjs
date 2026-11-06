@@ -64,7 +64,7 @@ function token(item, user, perm, expiresIn = 120) {
 
 function presence(project, user, role, options = {}) {
   const perm = role === 'VIEWER' ? 'view' : 'edit';
-  return connect(`project-${project}`, user, perm, { ...options, provider: { token: sign({ sub: String(user), project: String(project), perm, role }), ...options.provider } });
+  return connect(`project-${project}`, user, perm, { ...options, provider: { token: sign({ sub: String(user), project: String(project), perm, role, name: `user${user}` }), ...options.provider } });
 }
 
 function connect(item, user, perm, options = {}) {
@@ -324,16 +324,17 @@ test('project members see each other through presence with identity taken from t
   const owner = presence(41, 410, 'OWNER');
   const viewer = presence(41, 411, 'VIEWER');
   await until(() => owner.synced && viewer.synced);
-  owner.setAwarenessField('user', { id: '999', name: 'Owner' });
+  owner.setAwarenessField('user', { id: '999', name: 'Owner', imageUrl: 'https://evil.example/x.png' });
   owner.setAwarenessField('typingAt', 1);
-  viewer.setAwarenessField('user', { id: '410', name: 'Viewer' });
+  viewer.setAwarenessField('user', { id: '410', name: 'user410' });
   viewer.setAwarenessField('role', 'OWNER');
   viewer.setAwarenessField('typingAt', 1);
-  const peer = (provider, name) => [...provider.awareness.getStates().values()].find(state => state.user?.name === name);
-  const seenOwner = await until(() => peer(viewer, 'Owner'));
-  const seenViewer = await until(() => peer(owner, 'Viewer')?.typingAt === null && peer(owner, 'Viewer'));
-  expect(seenOwner).toMatchObject({ user: { id: '410' }, role: 'OWNER', typingAt: 1 });
-  expect(seenViewer).toMatchObject({ user: { id: '411' }, role: 'VIEWER', typingAt: null });
+  const peer = (provider, id) => [...provider.awareness.getStates().values()].find(state => state.user?.id === id);
+  const seenOwner = await until(() => peer(viewer, '410')?.typingAt === 1 && peer(viewer, '410'));
+  const seenViewer = await until(() => peer(owner, '411')?.typingAt === null && peer(owner, '411'));
+  expect(seenOwner).toMatchObject({ user: { id: '410', name: 'user410' }, role: 'OWNER', typingAt: 1 });
+  expect(seenOwner.user.imageUrl).toBeFalsy();
+  expect(seenViewer).toMatchObject({ user: { id: '411', name: 'user411' }, role: 'VIEWER', typingAt: null });
   owner.document.getMap('probe').set('from', 'owner');
   await new Promise(resolve => setTimeout(resolve, 300));
   expect(viewer.document.getMap('probe').get('from')).toBeUndefined();
