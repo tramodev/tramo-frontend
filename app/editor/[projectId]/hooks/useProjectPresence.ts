@@ -73,7 +73,7 @@ export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, p
         const name = presenceDocument(token);
         if (cancelled) return;
         if (!name) return fail();
-        provider = new HocuspocusProvider({ websocketProvider: socket, name, document: new Y.Doc(), token: () => fetchProjectToken(projectId) });
+        provider = new HocuspocusProvider({ websocketProvider: socket, name, document: new Y.Doc(), token: () => fetchProjectToken(projectId), sessionAwareness: true });
         provider.on('synced', () => { attempt = 0; });
         provider.on('authenticationFailed', ({ reason }: { reason: string }) => fail(reason));
         provider.on('close', ({ event }: { event: { reason?: string } }) => { if (event.reason === 'revoked') fail(); });

@@ -77,7 +77,7 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
   const [editor] = useLexicalComposerContext();
   const connection = useMemo(() => {
     const doc = new Y.Doc();
-    const provider = new HocuspocusProvider({ websocketProvider: socket, name: itemId, document: doc, token: () => fetchCollabToken(itemId) });
+    const provider = new HocuspocusProvider({ websocketProvider: socket, name: itemId, document: doc, token: () => fetchCollabToken(itemId), sessionAwareness: true });
     const lexicalProvider = {
       awareness: provider.awareness,
       connect() {},
@@ -163,7 +163,6 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       provider.off('unsyncedChanges', report);
       provider.off('close', onClose);
       provider.off('authenticationFailed', onDenied);
-      provider.detach();
       callbacks.current.onStatus(itemId, null);
     };
   }, [connection, itemId, editor]);

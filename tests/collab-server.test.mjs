@@ -374,3 +374,15 @@ test('metrics are served in Prometheus format only with the metrics secret', asy
   expect(body).toMatch(/^collab_stores_total\{status="204"\} \d+$/m);
   expect(body).toMatch(/^collab_store_retries_total \d+$/m);
 });
+
+test('a note remounted with a new provider while the old one was still authenticating syncs', async () => {
+  items.set('52', { state: null, content: SAFE, extractionEpoch: 0 });
+  const websocketProvider = new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
+  const first = new HocuspocusProvider({ websocketProvider, name: '52', document: new Y.Doc(), token: token(52, 520, 'edit'), sessionAwareness: true });
+  first.attach();
+  first.destroy();
+  const second = new HocuspocusProvider({ websocketProvider, name: '52', document: new Y.Doc(), token: token(52, 520, 'edit'), sessionAwareness: true });
+  second.attach();
+  await until(() => second.synced && second.unsyncedChanges === 0);
+  close(second);
+}, 30000);
