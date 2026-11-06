@@ -56,3 +56,24 @@ test('awareness from other clients is validated', () => {
   expect(parsePresence({ ...state('1', 'A'), user: { id: '1', name: 'A', imageUrl: 'https://evil.example/a.png' } }).user.imageUrl).toBeNull();
   expect(parsePresence({ ...state('1', 'A'), user: { id: '1', name: 'A', imageUrl: 'https://img.example/a.png' } }).user.imageUrl).toBe('https://img.example/a.png');
 });
+
+test('notes with other people are grouped and premounted up to the limit', () => {
+  const peers = presencePeers([
+    state('1', 'Me', { itemId: '100' }),
+    state('2', 'Bea', { itemId: '100' }),
+    state('3', 'Cy', { itemId: '100' }),
+    ...Array.from({ length: 12 }, (_, index) => state(String(10 + index), `P${index}`, { itemId: String(200 + index) })),
+    state('40', 'Nowhere', { itemId: null }),
+  ], '1', NOW);
+  const byItem = exports.peersByItem(peers);
+  expect(byItem.get('100').map(peer => peer.user.name)).toEqual(['Bea', 'Cy']);
+  expect(byItem.has(null)).toBe(false);
+  const premounted = exports.premountedItems(byItem);
+  expect(premounted.size).toBe(exports.PREMOUNT_LIMIT);
+  expect(premounted.has('100')).toBe(true);
+});
+
+test('the write view mounts notes where other people are', () => {
+  const source = readFileSync('app/editor/[projectId]/components/WriteView.tsx', 'utf8');
+  expect(source).toMatch(/const mounted = [^;]*props\.presenceItemIds\?\.has\(stepItem\.id\)/);
+});

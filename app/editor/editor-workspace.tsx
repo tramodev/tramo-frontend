@@ -11,7 +11,7 @@ import { useProjectEditorState } from '@/app/editor/[projectId]/hooks/useProject
 import { useCollabSocket } from '@/app/editor/[projectId]/hooks/useCollabSocket';
 import { useProjectPresence } from '@/app/editor/[projectId]/hooks/useProjectPresence';
 import { PresenceAvatars } from '@/app/editor/[projectId]/components/PresenceAvatars';
-import type { Peer } from '@/app/editor/presence';
+import { peersByItem, premountedItems, type Peer } from '@/app/editor/presence';
 import { EditorTitleSlot, EditorActions } from '@/app/editor/[projectId]/components/EditorHeader';
 import { WriteView } from '@/app/editor/[projectId]/components/WriteView';
 import { startExistingProject } from '@/lib/projects-store';
@@ -70,6 +70,8 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
     itemId: project.selectedItemId ?? null,
     trailId: project.activeTrailId ?? null,
   } : null);
+  const peersOnItems = useMemo(() => peersByItem(peers), [peers]);
+  const presenceItemIds = useMemo(() => premountedItems(peersOnItems), [peersOnItems]);
   const selectPeer = (peer: Peer) => {
     const item = peer.itemId && Object.hasOwn(project.items, peer.itemId) ? project.items[peer.itemId] : null;
     if (item) project.handleSelectItem(item, peer.trailId ?? undefined);
@@ -206,6 +208,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             onReorderTrails={project.handleReorderTrails}
             trailOrderError={project.trailOrderError}
             onMoveItemToTrail={project.handleMoveItemToTrail}
+            peersByItem={peersOnItems}
           /> : <Sidebar><SidebarContent><div className="m-6 h-5 w-32 animate-pulse rounded bg-muted" /></SidebarContent></Sidebar>
         }
         content={
@@ -266,6 +269,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
                 onChange={project.onChange}
                 collab={user.userId ? { userId: String(user.userId), username: user.username || 'Someone' } : undefined}
                 collabSocket={collabSocket}
+                presenceItemIds={presenceItemIds}
                 collabHandoff={project.collabHandoff}
                 onCollabHandoff={project.onCollabHandoff}
                 onCollabChange={project.onCollabChange}

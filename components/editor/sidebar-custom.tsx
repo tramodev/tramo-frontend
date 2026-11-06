@@ -22,6 +22,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SharedNoteIndicator } from "@/components/editor/shared-note-indicator"
+import { PeerDots } from "@/app/editor/[projectId]/components/PresenceAvatars"
+import type { Peer } from "@/app/editor/presence"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Trail, Item } from "@/app/editor/types"
 import { MIN_SEARCH_LENGTH } from "@/app/editor/editor-utils"
@@ -55,6 +57,7 @@ interface SidebarCustomProps {
   trailOrderError?: string | null;
   onMoveItemToTrail: (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => Promise<void>;
   readOnly?: boolean;
+  peersByItem?: Map<string, Peer[]>;
 }
 
 function InlineInput({
@@ -148,6 +151,7 @@ export function SidebarCustom({
   trailOrderError,
   onMoveItemToTrail,
   readOnly = false,
+  peersByItem,
 }: SidebarCustomProps) {
   const { state: sidebarState, setOpen, isMobile, setOpenMobile } = useSidebar();
   const state = isMobile ? "expanded" : sidebarState;
@@ -713,6 +717,7 @@ export function SidebarCustom({
                                                 {index + 1}
                                               </span>
                                               <span className={`truncate ${!item.title ? "text-muted-foreground" : ""}`}>{item.title || "Untitled note"}</span>
+                                              <PeerDots peers={peersByItem?.get(item.id)} />
                                               <SharedNoteIndicator trails={trailsForItem(item.id)} />
                                               </button>
                                             </SidebarMenuSubButton>
@@ -884,6 +889,7 @@ export function SidebarCustom({
                                   }
                                 />
                                 <span className={`truncate ${!item.title ? "text-muted-foreground" : ""}`}>{item.title || "Untitled note"}</span>
+                                <PeerDots peers={peersByItem?.get(item.id)} />
                                 <SharedNoteIndicator trails={memberTrails} />
                               </SidebarMenuButton>
                               {!readOnly && <DropdownMenu>

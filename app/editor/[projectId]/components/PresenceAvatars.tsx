@@ -75,3 +75,14 @@ export function PresenceAvatars({ peers, items, onSelect }: {
     </DropdownMenu>}
   </div>;
 }
+
+export function PeerDots({ peers }: { peers?: Peer[] }) {
+  if (!peers?.length) return null;
+  const names = peers.map(peer => peer.user.name).join(', ');
+  return <span className="ml-auto flex shrink-0 items-center gap-0.5" title={names}>
+    {peers.map(peer => <span key={peer.user.id} aria-hidden="true"
+      className={`size-1.5 rounded-full ${peer.status === 'idle' ? 'opacity-50' : ''}`}
+      style={{ backgroundColor: cursorColor(peer.user.id) }} />)}
+    <span className="sr-only">{names} here</span>
+  </span>;
+}

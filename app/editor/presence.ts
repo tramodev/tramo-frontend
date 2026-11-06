@@ -70,3 +70,15 @@ export function presencePeers(states: Iterable<unknown>, selfId: string, now: nu
   return [...byUser.values()].sort((a, b) =>
     Number(b.self) - Number(a.self) || a.user.name.localeCompare(b.user.name) || a.user.id.localeCompare(b.user.id));
 }
+
+export const PREMOUNT_LIMIT = 10;
+
+export function peersByItem(peers: Peer[]) {
+  const byItem = new Map<string, Peer[]>();
+  for (const peer of peers) if (!peer.self && peer.itemId) byItem.set(peer.itemId, [...byItem.get(peer.itemId) ?? [], peer]);
+  return byItem;
+}
+
+export function premountedItems(byItem: Map<string, Peer[]>) {
+  return new Set([...byItem.keys()].slice(0, PREMOUNT_LIMIT));
+}

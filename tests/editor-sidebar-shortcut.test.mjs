@@ -24,7 +24,7 @@ function setup(project = { items: {}, loaded: false }) {
       'next/navigation': { useParams: () => ({ projectId: 'project' }), useRouter: () => ({}) },
       '@/lib/notification-stream': { subscribeNotificationCount: () => () => {} },
       '@/app/editor/editor-utils': { countProjectTextStats: () => null },
-      '@/app/editor/[projectId]/hooks/useCollabSocket': { useCollabSocket: () => null }, '@/app/editor/[projectId]/hooks/useProjectPresence': { useProjectPresence: () => [] },
+      '@/app/editor/[projectId]/hooks/useCollabSocket': { useCollabSocket: () => null }, '@/app/editor/[projectId]/hooks/useProjectPresence': { useProjectPresence: () => [] }, '@/app/editor/presence': { peersByItem: () => new Map(), premountedItems: () => new Set() },
       '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => project },
     })[name] ?? {},
   });

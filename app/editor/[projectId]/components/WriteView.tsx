@@ -94,6 +94,7 @@ interface WriteViewProps {
   onChange: (itemId: string, editorState: EditorState, pendingCommand?: boolean) => void;
   collab?: { userId: string; username: string };
   collabSocket?: HocuspocusProviderWebsocket | null;
+  presenceItemIds?: Set<string>;
   collabHandoff?: CollabHandoff & { itemId: string } | null;
   onCollabHandoff?: (applied: boolean) => void;
   onCollabChange?: (itemId: string, editorState: EditorState) => void;
@@ -532,7 +533,7 @@ export function WriteView(props: WriteViewProps) {
               const stepItem = items[step.itemId];
               if (!stepItem) return null;
               const editorKey = stepItem.editorKey ?? stepItem.id;
-              const mounted = visibleIds.has(stepItem.id) || selectionIds.has(stepItem.id) || stepItem.id === item.id || stepItem.id === focusedId || stepItem.id === moveTarget?.itemId || busyItems.has(editorKey);
+              const mounted = visibleIds.has(stepItem.id) || selectionIds.has(stepItem.id) || stepItem.id === item.id || stepItem.id === focusedId || stepItem.id === moveTarget?.itemId || busyItems.has(editorKey) || !!props.presenceItemIds?.has(stepItem.id);
               let session = sessions.get(editorKey);
               if (!session) {
                 session = { undo: [], redo: [], previewUrls: new Set() };
