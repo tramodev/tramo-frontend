@@ -627,6 +627,30 @@ div.editor-equation {
   outline: 2px solid var(--primary);
 }
 
+.collab-embed-mark {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 3px;
+  outline: 2px solid var(--collab-color);
+  outline-offset: 2px;
+}
+
+.collab-embed-mark::after {
+  content: attr(data-name);
+  position: absolute;
+  bottom: 100%;
+  left: -4px;
+  margin-bottom: 4px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--collab-color);
+  color: var(--background);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
 .editor-music-rendered svg,
 .editor-music-preview svg {
   max-width: 100%;

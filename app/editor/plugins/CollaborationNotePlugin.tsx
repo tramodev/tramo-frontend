@@ -6,7 +6,8 @@ import { useEffect, useMemo, useRef, type ComponentProps } from 'react';
 import { CollaborationPluginV2__EXPERIMENTAL } from '@lexical/react/LexicalCollaborationPlugin';
 import { LexicalCollaboration } from '@lexical/react/LexicalCollaborationContext';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $getSelection, $isElementNode, $isParagraphNode, $isRangeSelection, $isRootNode, $isTextNode, $parseSerializedNode, type LexicalEditor, type LexicalNode } from 'lexical';
+import { mergeRegister } from '@lexical/utils';
+import { $getNearestNodeFromDOMNode, $getRoot, $getSelection, $isDecoratorNode, $isElementNode, $isParagraphNode, $isRangeSelection, $isRootNode, $isTextNode, $parseSerializedNode, type LexicalEditor, type LexicalNode } from 'lexical';
 import { serializeNoteContent } from '@/app/editor/note-content';
 import { HocuspocusProvider, type HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import * as Y from 'yjs';
@@ -34,6 +35,20 @@ export function rememberCaret(editor: LexicalEditor, itemId: string) {
     for (let node: LexicalNode | null = selection.focus.getNode(); node && !$isRootNode(node); node = node.getParent()) path.unshift(node.getIndexWithinParent());
     carets.set(itemId, { path, offset: selection.focus.offset });
   });
+}
+
+function $embedPath(element: Element | null): number[] | null {
+  const node = element instanceof HTMLTextAreaElement ? $getNearestNodeFromDOMNode(element) : null;
+  if (!$isDecoratorNode(node)) return null;
+  const path: number[] = [];
+  for (let current: LexicalNode | null = node; current && !$isRootNode(current); current = current.getParent()) path.unshift(current.getIndexWithinParent());
+  return path;
+}
+
+function $nodeAtPath(path: number[]): LexicalNode | null {
+  let node: LexicalNode | null = $getRoot();
+  for (const index of path) node = $isElementNode(node) ? node.getChildAtIndex(index) : null;
+  return node;
 }
 
 function restoreCaret(editor: LexicalEditor, itemId: string) {
@@ -196,6 +211,71 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
       callbacks.current.onStatus(itemId, null);
     };
   }, [connection, itemId, editor, socket]);
+
+  useEffect(() => {
+    const { awareness } = connection.provider;
+    if (!awareness || !cursorsContainer) return;
+    const marks: HTMLElement[] = [];
+    let published = 'null';
+    let frame: number | undefined;
+    const publish = () => {
+      const root = editor.getRootElement();
+      const active = root?.contains(document.activeElement) ? document.activeElement : null;
+      const path = editor.read(() => $embedPath(active));
+      const state = awareness.getLocalState();
+      if (!state || JSON.stringify(path) === published) return;
+      published = JSON.stringify(path);
+      awareness.setLocalState({ ...state, awarenessData: { ...state.awarenessData, embed: path } });
+    };
+    const paint = () => {
+      marks.splice(0).forEach(mark => mark.remove());
+      awareness.getStates().forEach((state, id) => {
+        const path = state.awarenessData?.embed;
+        if (id === awareness.clientID || !Array.isArray(path)) return;
+        const key = editor.read(() => $nodeAtPath(path)?.getKey());
+        const host = key ? editor.getElementByKey(key) : null;
+        const target = host?.querySelector('[data-embed-key]') ?? host;
+        if (!target) return;
+        const mark = document.createElement('span');
+        mark.className = 'collab-embed-mark';
+        mark.dataset.name = state.name;
+        cursorsContainer.appendChild(mark);
+        marks.push(mark);
+        const rect = target.getBoundingClientRect();
+        const base = mark.offsetParent?.getBoundingClientRect() ?? { top: 0, left: 0 };
+        mark.style.cssText = `top:${rect.top - base.top}px;left:${rect.left - base.left}px;width:${rect.width}px;height:${rect.height}px;--collab-color:${state.color}`;
+      });
+    };
+    const sync = () => {
+      if (frame !== undefined) return;
+      frame = requestAnimationFrame(() => { frame = undefined; publish(); paint(); });
+    };
+    const resize = new ResizeObserver(sync);
+    let current: HTMLElement | null = null;
+    const listen = (root: HTMLElement | null, on: boolean) => ['focusin', 'focusout'].forEach(type => on
+      ? root?.addEventListener(type, sync)
+      : root?.removeEventListener(type, sync));
+    awareness.on('change', sync);
+    return mergeRegister(
+      editor.registerUpdateListener(sync),
+      editor.registerRootListener(root => {
+        listen(current, false);
+        resize.disconnect();
+        current = root;
+        listen(current, true);
+        if (root) resize.observe(root);
+      }),
+      () => {
+        listen(current, false);
+        resize.disconnect();
+        awareness.off('change', sync);
+        if (frame !== undefined) cancelAnimationFrame(frame);
+        marks.forEach(mark => mark.remove());
+        const state = awareness.getLocalState();
+        if (state) awareness.setLocalState({ ...state, awarenessData: { ...state.awarenessData, embed: null } });
+      },
+    );
+  }, [connection, cursorsContainer, editor]);
 
   const cursorsContainerRef = useMemo(() => ({ current: cursorsContainer }), [cursorsContainer]);
 
