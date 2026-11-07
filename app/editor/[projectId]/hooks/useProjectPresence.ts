@@ -28,14 +28,16 @@ function createPeerStore() {
   };
 }
 
-export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, projectId: string, local: Local | null): Peer[] {
+export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, projectId: string, local: Local | null, onStructure?: (raw: unknown) => void): Peer[] {
   const [store] = useState(createPeerStore);
   const localRef = useRef(local);
+  const structureRef = useRef(onStructure);
   const publishRef = useRef<() => void>(() => {});
   const selfId = local?.user.id;
 
   useEffect(() => {
     localRef.current = local;
+    structureRef.current = onStructure;
   });
   useEffect(() => {
     publishRef.current();
@@ -75,7 +77,10 @@ export function useProjectPresence(socket: HocuspocusProviderWebsocket | null, p
         const name = presenceDocument(token);
         if (cancelled) return;
         if (!name) return fail();
-        provider = new HocuspocusProvider({ websocketProvider: socket, name, document: new Y.Doc(), token: () => fetchProjectToken(projectId), sessionAwareness: true });
+        const document = new Y.Doc();
+        const structure = document.getMap('structure');
+        structure.observe(() => structureRef.current?.(structure.get('snapshot')));
+        provider = new HocuspocusProvider({ websocketProvider: socket, name, document, token: () => fetchProjectToken(projectId), sessionAwareness: true });
         provider.on('synced', () => { attempt = 0; });
         provider.on('authenticationFailed', ({ reason }: { reason: string }) => fail(reason));
         provider.on('close', ({ event }: { event: { reason?: string } }) => { if (event.reason === 'revoked') fail(); });

@@ -4,6 +4,10 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
 const noteContent = {};
+const structure = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/structure.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: structure });
 runInNewContext(ts.transpileModule(readFileSync('app/editor/note-content.ts', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText, { exports: noteContent, require: () => ({}) });
@@ -36,7 +40,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   runInNewContext(ts.transpileModule(readFileSync('app/editor/[projectId]/hooks/useProjectEditorState.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText, {
-    exports, URLSearchParams,
+    exports, URLSearchParams, setTimeout: () => 0,
     window: { location: { pathname: '/editor/new', search: '' }, addEventListener() {}, removeEventListener() {} },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     require: name => ({
@@ -54,6 +58,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
       '@/lib/editor-draft': { editorDraftForRoute: () => draft, clearLocalDrafts() {} },
       '@/lib/pending-saves': { createPendingSaves: () => ({ track: (_key, action) => action(), flush: async () => {} }) },
       '@/lib/item-title-saves': titleSaves,
+      '@/app/editor/structure': structure,
       '@/lib/project-validation': { assertProjectText() {} },
       '../../editor-utils': { countTextStats: () => ({ words: 0, characters: 0 }), lastItemStorageKey: id => id },
       '@/lib/editor-bootstrap-client': { getEditorBootstrap: () => { bootstraps++; throw new Error('Drafts must not bootstrap'); } },

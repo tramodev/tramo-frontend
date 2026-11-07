@@ -36,7 +36,13 @@ const limits = {
   burst: Number(setting('COLLAB_UPDATES_BURST', '60')),
 };
 
+const structure = {
+  reconcileMs: Number(setting('COLLAB_STRUCTURE_RECONCILE_MS', '15000')),
+  retryMs: Number(setting('COLLAB_STRUCTURE_RETRY_MS', '500')),
+};
+
 const documents = new Map<string, DocState>();
+const structureRuns = new Map<string, boolean>();
 const buckets = new WeakMap<Connection, Bucket>();
 const counters = new Map<string, number>();
 const storeSeconds = { sum: 0, count: 0 };
@@ -198,6 +204,60 @@ async function restore(instance: Hocuspocus, name: string) {
   log('collab_document_restored', { item: name, epoch: state.epoch });
 }
 
+const projectOf = (name: string) => Number(name.slice('project-'.length));
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+function snapshotVersion(snapshot: string) {
+  try {
+    const version = (JSON.parse(snapshot) as { version?: unknown }).version;
+    return typeof version === 'number' && Number.isSafeInteger(version) ? version : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchStructure(name: string): Promise<string | null> {
+  let failure: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await wait(structure.retryMs * 2 ** (attempt - 1));
+    try {
+      const response = await api(`/projects/${projectOf(name)}/structure`);
+      if (response.status === 404) return null;
+      if (response.ok) return await response.text();
+      failure = new Error(`structure load failed with ${response.status}`);
+    } catch (error) {
+      failure = error;
+    }
+  }
+  throw failure;
+}
+
+function refreshStructure(instance: Hocuspocus, name: string) {
+  if (structureRuns.has(name)) {
+    structureRuns.set(name, true);
+    return;
+  }
+  structureRuns.set(name, false);
+  void (async () => {
+    do {
+      structureRuns.set(name, false);
+      const snapshot = await fetchStructure(name);
+      const version = snapshot === null ? null : snapshotVersion(snapshot);
+      const map = instance.documents.get(name)?.getMap('structure');
+      const current = map?.get('version');
+      if (!map || snapshot === null || version === null || (typeof current === 'number' && current >= version)) continue;
+      map.doc?.transact(() => {
+        map.set('version', version);
+        map.set('snapshot', snapshot);
+      });
+      count('collab_structure_updates_total');
+    } while (structureRuns.get(name));
+  })().catch(error => {
+    log('collab_structure_failed', { project: name, error: (error as Error).message });
+    count('collab_structure_failures_total');
+  }).finally(() => structureRuns.delete(name));
+}
+
 function otherEditor(document: Document, tried: Set<number>) {
   for (const connection of document.connections.keys()) {
     const { userId, perm } = (connection as Connection<Context>).context;
@@ -282,6 +342,10 @@ const server = new Server<Context>({
     connectionConfig.readOnly = isPresence(documentName) || perm !== 'edit';
     const role = perm === 'edit' && (claims.role === 'OWNER' || claims.role === 'EDITOR') ? claims.role : perm === 'edit' ? 'EDITOR' : 'VIEWER';
     return { userId, name: claims.name || 'Someone', picture: claims.picture ?? null, perm, role, sv: claims.sv ?? null };
+  },
+
+  async afterLoadDocument({ documentName, instance }) {
+    if (isPresence(documentName)) refreshStructure(instance, documentName);
   },
 
   async onLoadDocument({ documentName, document, context }) {
@@ -370,13 +434,16 @@ const server = new Server<Context>({
       else response.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' }).end(metrics(instance));
       return Promise.reject();
     }
-    if (request.method !== 'POST' || !['/internal/revoke', '/internal/reset'].includes(path)) return;
+    if (request.method !== 'POST' || !['/internal/revoke', '/internal/reset', '/internal/structure'].includes(path)) return;
     if (!secretMatches(request.headers['x-collab-secret'], secret)) {
       response.writeHead(403).end();
       return Promise.reject();
     }
-    const body = await readBody(request).catch(() => null) as { userId?: number; itemIds?: number[] } | null;
-    if (path === '/internal/revoke' && typeof body?.userId === 'number') {
+    const body = await readBody(request).catch(() => null) as { userId?: number; itemIds?: number[]; projectId?: number } | null;
+    if (path === '/internal/structure' && Number.isSafeInteger(body?.projectId)) {
+      const name = `project-${body?.projectId}`;
+      if (instance.documents.has(name)) refreshStructure(instance, name);
+    } else if (path === '/internal/revoke' && typeof body?.userId === 'number') {
       revoke(instance, connection => connection.context.userId === body.userId);
     } else if (path === '/internal/reset' && Array.isArray(body?.itemIds)) {
       await Promise.all(body.itemIds.map(id => restore(instance, String(id)).catch(error => {
@@ -392,6 +459,23 @@ const server = new Server<Context>({
     return Promise.reject();
   },
 });
+
+setInterval(async () => {
+  const names = [...server.hocuspocus.documents.keys()].filter(isPresence);
+  if (!names.length) return;
+  try {
+    const response = await api('/projects/structure-versions', { method: 'POST', body: JSON.stringify(names.map(projectOf)) });
+    if (!response.ok) throw new Error(`structure versions failed with ${response.status}`);
+    const versions = await response.json() as Record<string, unknown>;
+    for (const name of names) {
+      const latest = versions[String(projectOf(name))];
+      const current = server.hocuspocus.documents.get(name)?.getMap('structure').get('version');
+      if (typeof latest === 'number' && (typeof current !== 'number' || current < latest)) refreshStructure(server.hocuspocus, name);
+    }
+  } catch (error) {
+    log('collab_structure_reconcile_failed', { error: (error as Error).message });
+  }
+}, structure.reconcileMs).unref();
 
 setInterval(async () => {
   const open = connections(server.hocuspocus);

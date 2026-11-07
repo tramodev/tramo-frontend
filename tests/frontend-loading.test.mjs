@@ -13,6 +13,8 @@ function load(path, require, globals = {}) {
   return exports;
 }
 const http = load('lib/http.ts', () => ({}));
+const structure = load('app/editor/structure.ts', () => ({}));
+const bootstrapRequire = name => name === '@/app/editor/structure' ? structure : http;
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 function projectsSetup() {
@@ -122,8 +124,9 @@ test('bootstrap GET preserves preferred note, trail, contents and profile', asyn
   const dto = { id: 'project', title: 'Project', description: null, graphColors: null, visibility: 'private', tags: [],
     items: [{ id: 7, title: 'Note', titleAlign: 'left', unfiled: false, words: 2, characters: 9 }],
     trails: [{ id: 3, title: 'Trail', description: null, version: 1, forkedFromId: null, itemIds: [7] }],
-    selectedItemId: 7, selectedTrailId: 3, contents: [{ id: 7, content: 'saved JSON', extractionEpoch: 2 }], username: 'owner', imageUrl: null };
-  const client = load('lib/editor-bootstrap-client.ts', () => http, {
+    selectedItemId: 7, selectedTrailId: 3, contents: [{ id: 7, content: 'saved JSON', extractionEpoch: 2 }], username: 'owner', imageUrl: null,
+    restoreEpoch: 4, structureVersion: 9 };
+  const client = load('lib/editor-bootstrap-client.ts', bootstrapRequire, {
     fetch: async (...args) => { requests.push(args); return Response.json(dto); },
   });
   const result = await client.getEditorBootstrap('project', '7', '3');
@@ -132,12 +135,15 @@ test('bootstrap GET preserves preferred note, trail, contents and profile', asyn
   expect(result.project.trails[0].itemIds).toEqual(['7']);
   expect(result.project.items['7'].textStats).toEqual({ words: 2, characters: 9 });
   expect(result.contents).toEqual(dto.contents); expect(result.profile.username).toBe('owner');
+  expect(result.structure.version).toBe(9);
+  expect(result.structure.restoreEpoch).toBe(4);
+  expect(result.structure.items['7']).toEqual({ id: '7', title: 'Note', titleAlign: 'left', unfiled: false, textStats: { words: 2, characters: 9 } });
 });
 
 test('bootstrap client distinguishes missing projects from authentication failures', async () => {
   const urls = [];
   let status = 404;
-  const client = load('lib/editor-bootstrap-client.ts', () => http, {
+  const client = load('lib/editor-bootstrap-client.ts', bootstrapRequire, {
     fetch: async url => { urls.push(url); return new Response(null, { status }); },
   });
   expect(await client.getEditorBootstrap('project', '../7', 'invalid')).toBeNull();

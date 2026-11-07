@@ -40,6 +40,8 @@ const stores = [];
 const deleted = new Set();
 const failures = new Map();
 const apiRequests = [];
+const structures = new Map();
+const structureFailures = new Map();
 const forbiddenAuthors = new Set();
 const SAFE = JSON.stringify({ root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'label' }] }] } });
 
@@ -108,6 +110,19 @@ beforeAll(async () => {
       apiRequests.push(request.url);
       const id = request.url.match(/items\/(\d+)/)?.[1];
       if (request.headers['x-collab-secret'] !== SECRET) return response.writeHead(403).end();
+      const project = request.url.match(/\/projects\/(\d+)\/structure$/)?.[1];
+      if (request.method === 'GET' && project) {
+        if (structureFailures.get(project) > 0) {
+          structureFailures.set(project, structureFailures.get(project) - 1);
+          return response.writeHead(503).end();
+        }
+        if (!structures.has(project)) return response.writeHead(404).end();
+        return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(structures.get(project)));
+      }
+      if (request.method === 'POST' && request.url.endsWith('/projects/structure-versions')) {
+        const versions = Object.fromEntries(JSON.parse(body).filter(id => structures.has(String(id))).map(id => [id, structures.get(String(id)).version]));
+        return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(versions));
+      }
       if (request.method === 'GET' && id && deleted.has(id)) return response.writeHead(404).end();
       if (request.method === 'GET' && id) {
         const item = items.get(id) ?? { state: null, content: '', extractionEpoch: 0 };
@@ -144,6 +159,8 @@ beforeAll(async () => {
       COLLAB_MAX_MESSAGE_BYTES: String(64 * 1024),
       COLLAB_MAX_SOCKETS_PER_USER: '2',
       COLLAB_METRICS_SECRET: 'test-metrics-secret',
+      COLLAB_STRUCTURE_RECONCILE_MS: '300',
+      COLLAB_STRUCTURE_RETRY_MS: '20',
     },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
@@ -439,3 +456,60 @@ test('with no other editor left a rejected edit still asks to reload', async () 
   await until(() => closes.includes('reload'), 15000);
   close(demoted);
 }, 30000);
+
+const structure = (version, title) => ({ version, restoreEpoch: 0, trails: [{ id: 1, title: 'Trail', description: '', version: 1, forkedFromId: null, itemIds: [7] }], items: [{ id: 7, title, titleAlign: 'center', unfiled: false, words: 0, characters: 0 }] });
+const structureOf = provider => {
+  const map = provider.document.getMap('structure');
+  return { version: map.get('version'), title: map.get('snapshot') && JSON.parse(map.get('snapshot')).items[0].title };
+};
+
+test('the server writes project structure, follows notices and reconciles lost ones', async () => {
+  structures.set('51', structure(1, 'One'));
+  const owner = presence(51, 510, 'OWNER');
+  const viewer = presence(51, 511, 'VIEWER');
+  await until(() => structureOf(owner).version === 1 && structureOf(viewer).version === 1);
+  expect(structureOf(viewer).title).toBe('One');
+
+  structures.set('51', structure(2, 'Two'));
+  expect((await internal('/internal/structure', { projectId: 51 })).status).toBe(204);
+  await until(() => structureOf(viewer).version === 2);
+  expect(structureOf(viewer).title).toBe('Two');
+
+  structures.set('51', structure(3, 'Three'));
+  await until(() => structureOf(viewer).version === 3 && structureOf(owner).version === 3);
+
+  owner.document.getMap('structure').set('version', 99);
+  await new Promise(resolve => setTimeout(resolve, 400));
+  expect(structureOf(viewer).version).toBe(3);
+  close(owner, viewer);
+}, 20000);
+
+test('structure loads retry failures, never go back to an older version and converge after outages', async () => {
+  structures.set('52', structure(5, 'Five'));
+  structureFailures.set('52', 2);
+  const member = presence(52, 520, 'EDITOR');
+  await until(() => structureOf(member).version === 5);
+
+  structures.set('52', structure(4, 'Stale'));
+  await internal('/internal/structure', { projectId: 52 });
+  await new Promise(resolve => setTimeout(resolve, 400));
+  expect(structureOf(member)).toEqual({ version: 5, title: 'Five' });
+
+  structures.set('52', structure(6, 'Six'));
+  structureFailures.set('52', 20);
+  await internal('/internal/structure', { projectId: 52 });
+  await new Promise(resolve => setTimeout(resolve, 400));
+  expect(structureOf(member).version).toBe(5);
+  structureFailures.set('52', 0);
+  await until(() => structureOf(member).version === 6);
+  expect(structureOf(member).title).toBe('Six');
+  close(member);
+}, 20000);
+
+test('structure notices require the secret and a numeric project', async () => {
+  const forbidden = await fetch(`http://127.0.0.1:${port}/internal/structure`, { method: 'POST', headers: { 'X-Collab-Secret': 'wrong' }, body: JSON.stringify({ projectId: 51 }) });
+  expect(forbidden.status).toBe(403);
+  expect((await internal('/internal/structure', { projectId: 'x' })).status).toBe(400);
+  expect((await internal('/internal/structure', { projectId: 999 })).status).toBe(204);
+});
+

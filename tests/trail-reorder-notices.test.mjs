@@ -14,7 +14,7 @@ const transpile = path => ts.transpileModule(readFileSync(path, 'utf8'), {
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 async function setup(extraTrails = []) {
-  const states = [], refs = [], effects = [];
+  const states = [], refs = [], effects = [], opTimers = [];
   let stateIndex = 0, refIndex = 0, initial = true;
   let resolveSave, rejectSave, requests = 0, bootstraps = 0, previews = 0;
   let createResolve, createReject, looseCreateResolve, looseCreateReject;
@@ -29,6 +29,8 @@ async function setup(extraTrails = []) {
   const trail = { id: 'trail', itemIds: ['a', 'b', 'c'], steps };
   const navigation = {};
   runInNewContext(transpile('app/editor/trail-navigation.ts'), { exports: navigation });
+  const structure = {};
+  runInNewContext(transpile('app/editor/structure.ts'), { exports: structure });
   const saves = {};
   runInNewContext(transpile('lib/pending-saves.ts'), { exports: saves });
   const autoSaveRefs = [];
@@ -90,7 +92,7 @@ async function setup(extraTrails = []) {
       },
       'next/navigation': { useRouter: () => router },
       '@/lib/editor-bootstrap-client': {
-        getEditorBootstrap: async () => { bootstraps++; return { project: { title: 'Project', visibility: 'private', description: '', graphColors: null, tags: '', items, trails: [trail, ...extraTrails] }, contents: [], profile: { username: 'owner', imageUrl: null }, selectedItemId: 'a', selectedTrailId: 'trail' }; },
+        getEditorBootstrap: async () => { bootstraps++; return { structure: { version: 0, restoreEpoch: 0, items: Object.fromEntries(Object.entries(items).map(([id, item]) => [id, { id: item.id, title: item.title }])), trails: [trail, ...extraTrails] }, project: { title: 'Project', visibility: 'private', description: '', graphColors: null, tags: '', items, trails: [trail, ...extraTrails] }, contents: Object.fromEntries(Object.entries(items).map(([id, item]) => [id, item.content])), profile: { username: 'owner', imageUrl: null }, selectedItemId: 'a', selectedTrailId: 'trail' }; },
       },
       '@/lib/projects-store': {
         reorderProjectTrails: (projectId, trailIds) => new Promise((resolve, reject) => projectOrders.push({ projectId, trailIds, resolve, reject })),
@@ -108,10 +110,12 @@ async function setup(extraTrails = []) {
       '@/lib/pending-saves': saves,
       '@/lib/item-title-saves': titleSaves,
       '@/app/editor/[projectId]/hooks/useAutoSave': autoSaveExports,
+      '@/app/editor/structure': structure,
     })[name],
     window: { location: { search: '', pathname: '/editor/project' }, addEventListener() {}, removeEventListener() {} },
     localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
     URLSearchParams, console: { error: () => {} },
+    setTimeout: fn => { opTimers.push(fn); return opTimers.length; },
   });
   function render() {
     stateIndex = refIndex = 0;
@@ -127,6 +131,7 @@ async function setup(extraTrails = []) {
     itemRenameRequests,
     attaches, detaches, orders, projectOrders,
     flushTimers: () => { for (const [id, fn] of autoSaveTimers) { autoSaveTimers.delete(id); fn(); } },
+    expireOps: () => opTimers.splice(0).forEach(fn => fn()),
   };
 }
 

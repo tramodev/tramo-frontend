@@ -81,6 +81,7 @@ export class ItemTitleSaves {
   start() { this.stopped = false; this.schedule(); }
   dispose() { this.stopped = true; if (this.timer) clearTimeout(this.timer); this.timer = null; }
   needsUnloadWarning = () => !!this.storageError && this.pending.size > 0;
+  has = (itemId: string) => [...this.pending.values()].some(value => value.itemId === itemId);
   retry = () => { this.permanent = false; this.schedule(0); };
   discard(projectId: string, itemId: string) {
     const key = this.key({ projectId, itemId, title: '', restoreEpoch: 0 });

@@ -69,7 +69,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
     role: project.role,
     itemId: project.selectedItemId ?? null,
     trailId: project.activeTrailId ?? null,
-  } : null);
+  } : null, project.receiveStructure);
   const peersOnItems = useMemo(() => peersByItem(peers), [peers]);
   const presenceItemIds = useMemo(() => premountedItems(peersOnItems), [peersOnItems]);
   const selectPeer = (peer: Peer) => {
