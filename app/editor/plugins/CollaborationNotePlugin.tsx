@@ -199,10 +199,10 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
 
   const cursorsContainerRef = useMemo(() => ({ current: cursorsContainer }), [cursorsContainer]);
 
-  const destroyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const destroyTimer = useRef<{ connection: typeof connection; timer: ReturnType<typeof setTimeout> } | undefined>(undefined);
   useEffect(() => {
-    clearTimeout(destroyTimer.current);
-    return () => { destroyTimer.current = setTimeout(() => connection.provider.destroy(), 0); };
+    if (destroyTimer.current?.connection === connection) clearTimeout(destroyTimer.current.timer);
+    return () => { destroyTimer.current = { connection, timer: setTimeout(() => connection.provider.destroy(), 0) }; };
   }, [connection]);
 
   return <LexicalCollaboration>
