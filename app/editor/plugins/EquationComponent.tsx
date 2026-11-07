@@ -26,6 +26,7 @@ import {
   KEY_DELETE_COMMAND,
   KEY_ENTER_COMMAND,
   HISTORIC_TAG,
+  HISTORY_MERGE_TAG,
   HISTORY_PUSH_TAG,
   SKIP_DOM_SELECTION_TAG,
   LexicalEditor,
@@ -123,6 +124,9 @@ export default function EquationComponent({
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const [isEditing, setIsEditing] = useState(() => editingDecorators.get(editor)?.has(nodeKey) === true);
   const [draft, setDraft] = useState(equation);
+  const [original, setOriginal] = useState(equation);
+  const pushedRef = useRef(false);
+  const pushedDraft = useRef(draft);
   const lengthError = draft.length > 10000 ? 'Equations must not exceed 10,000 characters. Shorten this equation to save it.' : null;
   const [error, setError] = useState<string | null>(() => equationError(equation, inline));
   const [templateIndex, setTemplateIndex] = useState(0);
@@ -220,6 +224,20 @@ export default function EquationComponent({
     returnFocusTo(editor, nodeKey, edge);
   }, [editor, isEditing, nodeKey]);
 
+  useEffect(() => {
+    if (!isEditing || !draft.trim() || draft.length > 10000 || draft === pushedDraft.current) return;
+    const timer = setTimeout(() => {
+      if (!editingRef.current) return;
+      editor.update(() => {
+        const node = $getNodeByKey(nodeKey);
+        if ($isEquationNode(node) && node.getEquation() !== draft) node.setEquation(draft);
+      }, { tag: [pushedRef.current ? HISTORY_MERGE_TAG : HISTORY_PUSH_TAG, SKIP_DOM_SELECTION_TAG] });
+      pushedRef.current = true;
+      pushedDraft.current = draft;
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [draft, editor, isEditing, nodeKey]);
+
   const commit = useCallback(
     (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return true;
@@ -235,12 +253,20 @@ export default function EquationComponent({
           return;
         }
         if (next !== node.getEquation()) node.setEquation(next);
-      }, { discrete: true, tag: HISTORY_PUSH_TAG });
+      }, { discrete: true, tag: pushedRef.current ? HISTORY_MERGE_TAG : HISTORY_PUSH_TAG });
       setIsEditing(false);
       return true;
     },
     [draft, editor, equation, nodeKey],
   );
+
+  const discard = useCallback(() => {
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isEquationNode(node) && node.getEquation() !== original) node.setEquation(original);
+    }, { discrete: true, tag: HISTORY_MERGE_TAG });
+    commit('after', false);
+  }, [commit, editor, nodeKey, original]);
 
   const { attachRoot, onBlur, leave } = useEmbedDraftExit({ enabled: isEditing, localOnly: !!lengthError && !!draft.trim(), dirty: draft !== equation, commit }, editingRef, textareaRef);
 
@@ -252,7 +278,10 @@ export default function EquationComponent({
         if ($isNodeSelection($getSelection())) $setSelection(null);
       }, { tag: SKIP_DOM_SELECTION_TAG });
       editingRef.current = true;
+      pushedRef.current = false;
+      pushedDraft.current = equation;
       setDraft(equation);
+      setOriginal(equation);
       setIsEditing(true);
     },
     [editor, equation, isEditable],
@@ -416,7 +445,7 @@ export default function EquationComponent({
         </span>
         <span className="editor-equation-preview" ref={previewRef} aria-hidden />
         <span role="status" className={lengthError ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>{draft.length.toLocaleString()}/10,000 characters</span>
-        {draft !== equation && <button type="button" className="text-xs text-destructive underline" onClick={() => commit('after', false)}>Discard changes</button>}
+        {draft !== original && <button type="button" className="ml-2 text-xs text-destructive underline" onClick={discard}>Discard changes</button>}
         {(lengthError || error) && <span id={`equation-error-${nodeKey}`} role="alert" className="editor-equation-error">{lengthError || error}</span>}
       </span>
     );

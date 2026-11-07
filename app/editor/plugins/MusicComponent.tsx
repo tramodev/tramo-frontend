@@ -24,6 +24,7 @@ import {
   KEY_DELETE_COMMAND,
   KEY_ENTER_COMMAND,
   HISTORIC_TAG,
+  HISTORY_MERGE_TAG,
   HISTORY_PUSH_TAG,
   SKIP_DOM_SELECTION_TAG,
   LexicalEditor,
@@ -98,8 +99,11 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const [isEditing, setIsEditing] = useState(() => editingDecorators.get(editor)?.has(nodeKey) === true);
   const [draft, setDraft] = useState(() => (abc === '' ? DEFAULT_ABC : abc));
+  const pushedRef = useRef(false);
+  const pushedDraft = useRef(draft);
   const lengthError = draft.length > 10000 ? 'Music scores must not exceed 10,000 characters. Shorten this score to save it.' : null;
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [original, setOriginal] = useState(abc);
   const scoreRef = useRef<HTMLDivElement | null>(null);
   const scoreBoxRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -198,6 +202,20 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
     returnFocusTo(editor, nodeKey, edge);
   }, [editor, isEditing, nodeKey]);
 
+  useEffect(() => {
+    if (!isEditing || !draft.trim() || draft.trim() === DEFAULT_ABC.trim() || draft.length > 10000 || draft === pushedDraft.current) return;
+    const timer = setTimeout(() => {
+      if (!editingRef.current) return;
+      editor.update(() => {
+        const node = $getNodeByKey(nodeKey);
+        if ($isMusicNode(node) && node.getAbc() !== draft) node.setAbc(draft);
+      }, { tag: [pushedRef.current ? HISTORY_MERGE_TAG : HISTORY_PUSH_TAG, SKIP_DOM_SELECTION_TAG] });
+      pushedRef.current = true;
+      pushedDraft.current = draft;
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [draft, editor, isEditing, nodeKey]);
+
   const commit = useCallback(
     (exitTo: Edge | null = 'after', save = true) => {
       if (!editingRef.current) return true;
@@ -213,12 +231,20 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
           return;
         }
         if (next !== node.getAbc()) node.setAbc(next);
-      }, { discrete: true, tag: HISTORY_PUSH_TAG });
+      }, { discrete: true, tag: pushedRef.current ? HISTORY_MERGE_TAG : HISTORY_PUSH_TAG });
       setIsEditing(false);
       return true;
     },
     [draft, editor, abc, nodeKey],
   );
+
+  const discard = useCallback(() => {
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isMusicNode(node) && node.getAbc() !== original) node.setAbc(original);
+    }, { discrete: true, tag: HISTORY_MERGE_TAG });
+    commit('after', false);
+  }, [commit, editor, nodeKey, original]);
 
   const { attachRoot, onBlur, leave } = useEmbedDraftExit({ enabled: isEditing, localOnly: !!lengthError && !!draft.trim(), dirty: draft !== (abc === '' ? DEFAULT_ABC : abc), commit }, editingRef, textareaRef);
 
@@ -230,7 +256,10 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
         if ($isNodeSelection($getSelection())) $setSelection(null);
       }, { tag: SKIP_DOM_SELECTION_TAG });
       editingRef.current = true;
+      pushedRef.current = false;
+      pushedDraft.current = abc === '' ? DEFAULT_ABC : abc;
       setDraft(abc === '' ? DEFAULT_ABC : abc);
+      setOriginal(abc);
       setIsEditing(true);
     },
     [abc, editor, isEditable],
@@ -364,7 +393,7 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
           <div ref={previewRef} />
         </div>
         <div role="status" className={lengthError ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>{draft.length.toLocaleString()}/10,000 characters</div>
-        {draft !== (abc === '' ? DEFAULT_ABC : abc) && <button type="button" className="text-xs text-destructive underline" onClick={() => commit('after', false)}>Discard changes</button>}
+        {draft !== (original === '' ? DEFAULT_ABC : original) && <button type="button" className="text-xs text-destructive underline" onClick={discard}>Discard changes</button>}
         {(lengthError || warnings.length > 0) && (
           <div id={`music-error-${nodeKey}`} role="alert" className="editor-music-error">{lengthError || warnings.join('\n')}</div>
         )}

@@ -431,15 +431,20 @@ test('two undo and redo steps retain the equation and its serialized text', () =
 });
 
 
-test.each(['Equation', 'Music'])('%s automatically commits the whole draft on blur as one undo step', async kind => {
+test.each(['Equation', 'Music'])('%s streams the draft to the node while typing as one undo step', async kind => {
   const s = setup(kind);
   const value = kind === 'Equation' ? 'k=1' : 'X:1\nK:C\nCDEF|';
-  s.type('k'); s.type('k='); s.type(value);
-  expect(s.updates).toEqual([]);
+  s.type('k'); s.type('k='); s.type(value); s.render();
+  expect(s.content).toBe(value);
+  expect(s.updates.map(update => update.tag)).toEqual([
+    ['history-push', 'skip-dom-selection'],
+    ['history-merge', 'skip-dom-selection'],
+    ['history-merge', 'skip-dom-selection'],
+  ]);
   await s.blur();
   if (kind === 'Music') expect(s.warnings).toEqual([]);
   expect(s.content).toBe(value);
-  expect(s.updates.map(update => update.tag)).toEqual(['history-push']);
+  expect(s.updates.at(-1).tag).toBe('history-merge');
 });
 
 
@@ -597,7 +602,7 @@ test('a score saves without waiting for its renderer to load', async () => {
   s.type(source);
   await s.blur();
   expect(s.content).toBe(source);
-  expect(s.updates).toHaveLength(1);
+  expect(s.updates).toHaveLength(2);
   expect(s.input()).toBeUndefined();
 });
 
