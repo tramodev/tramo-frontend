@@ -14,6 +14,7 @@ class ImageStore {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private request: AbortController | undefined;
   private generation = 0;
+  private retries = 0;
   constructor(private context: Context) {}
 
   subscribe = (id: string, listener: () => void) => {
@@ -50,6 +51,7 @@ class ImageStore {
         if (!response.ok) throw new Error('Image is unavailable');
         const data: { images: Image[] } = await response.json();
         if (generation !== this.generation) return;
+        this.retries = 0;
         batch.forEach(id => this.images.delete(id));
         for (const image of data.images) {
           const url = new URL(image.url);
@@ -60,6 +62,7 @@ class ImageStore {
       } catch {
         if (generation !== this.generation) return;
         batch.forEach(id => this.images.delete(id));
+        if (this.retries < 5) this.timer = setTimeout(() => { void this.load(); }, 1000 * 2 ** this.retries++);
       }
       batch.forEach(id => this.listeners.get(id)?.forEach(listener => listener()));
     }
