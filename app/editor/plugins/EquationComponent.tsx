@@ -37,7 +37,7 @@ import katex from 'katex';
 import { equationError, KATEX_OPTS } from '@/app/editor/embed-validity';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { $isEquationNode } from '@/app/editor/nodes/EquationNode';
-import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@/app/editor/plugins/decoratorCaret';
+import { $caretOnEdgeLine, $caretTouches, editingDecorators, textareaCaretRows, type Edge } from '@/app/editor/plugins/decoratorCaret';
 import { useEmbedDraftExit } from '@/app/editor/plugins/useEmbedDraftExit';
 import { setPendingEmbedDraft } from '@/app/editor/embed-draft-status';
 
@@ -382,8 +382,6 @@ export default function EquationComponent({
             event.stopPropagation();
             const textarea = event.currentTarget;
             const collapsed = textarea.selectionStart === textarea.selectionEnd;
-            const onFirstLine = !textarea.value.slice(0, textarea.selectionStart).includes('\n');
-            const onLastLine = !textarea.value.slice(textarea.selectionEnd).includes('\n');
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
               void leave();
@@ -400,13 +398,13 @@ export default function EquationComponent({
             ) {
               event.preventDefault();
               void leave('after');
-            } else if (event.key === 'ArrowUp' && collapsed && onFirstLine) {
+            } else if (event.key === 'ArrowUp' && collapsed && textareaCaretRows(textarea).first) {
               event.preventDefault();
               void leave('before');
             } else if (
               event.key === 'ArrowDown' &&
               collapsed &&
-              onLastLine
+              textareaCaretRows(textarea).last
             ) {
               event.preventDefault();
               void leave('after');

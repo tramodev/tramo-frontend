@@ -79,3 +79,20 @@ export function $caretTouches(node: LexicalNode, edge: Edge): boolean {
   const empty = anchorNode.getChildrenSize() === 0;
   return empty && anchorNode[sibling]() === node;
 }
+
+export function textareaCaretRows(textarea: HTMLTextAreaElement) {
+  const probe = textarea.cloneNode() as HTMLTextAreaElement;
+  probe.removeAttribute('id');
+  probe.style.position = 'absolute';
+  probe.style.visibility = 'hidden';
+  probe.style.height = '0';
+  probe.style.width = `${textarea.offsetWidth}px`;
+  textarea.after(probe);
+  const height = (text: string) => { probe.value = text; return probe.scrollHeight; };
+  const { selectionStart: from, selectionEnd: to, value } = textarea;
+  const before = value.slice(0, from) + value.slice(from).split(/\s/, 1)[0];
+  const through = value.slice(0, to) + value.slice(to).split(/\s/, 1)[0];
+  const rows = { first: height(before) <= height(''), last: height(through) >= height(value) };
+  probe.remove();
+  return rows;
+}

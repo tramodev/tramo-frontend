@@ -58,7 +58,7 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
     katex: { default: require('katex') },
     lexical: { $getNodeByKey: () => node, $getSelection: () => null, $isNodeSelection: () => false, SKIP_DOM_SELECTION_TAG: 'skip-dom-selection', HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
     [`@/app/editor/nodes/${kind}Node`]: { [`$is${kind}Node`]: value => value === node },
-    '@/app/editor/plugins/decoratorCaret': { editingDecorators },
+    '@/app/editor/plugins/decoratorCaret': { editingDecorators, textareaCaretRows: ({ value, selectionStart, selectionEnd }) => ({ first: !value.slice(0, selectionStart).includes('\n'), last: !value.slice(selectionEnd).includes('\n') }) },
     '@/app/editor/plugins/music-audio': { loadAbcjs: () => scoreLoad ?? Promise.resolve(require('abcjs')) },
     '@/app/editor/plugins/MusicPlugin': { DEFAULT_ABC: 'X:1\nK:C\n' },
   }, '', { setTimeout: fn => { fn(); return 0; }, clearTimeout() {}, window: { addEventListener() {}, removeEventListener() {} } }).default;

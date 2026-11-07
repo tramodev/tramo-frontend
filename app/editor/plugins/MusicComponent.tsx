@@ -32,7 +32,7 @@ import {
   NodeKey,
 } from 'lexical';
 import { $isMusicNode } from '@/app/editor/nodes/MusicNode';
-import { $caretOnEdgeLine, $caretTouches, editingDecorators, type Edge } from '@/app/editor/plugins/decoratorCaret';
+import { $caretOnEdgeLine, $caretTouches, editingDecorators, textareaCaretRows, type Edge } from '@/app/editor/plugins/decoratorCaret';
 import MusicPlayback from '@/app/editor/plugins/MusicPlayback';
 import { loadAbcjs } from '@/app/editor/plugins/music-audio';
 import { DEFAULT_ABC } from '@/app/editor/plugins/MusicPlugin';
@@ -357,8 +357,6 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
             event.stopPropagation();
             const { selectionStart: from, selectionEnd: to, value } = event.currentTarget;
             const collapsed = from === to;
-            const onFirstLine = !value.slice(0, from).includes('\n');
-            const onLastLine = value.indexOf('\n', to) === -1;
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
               event.preventDefault();
               void leave();
@@ -371,10 +369,10 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
             } else if (event.key === 'ArrowRight' && collapsed && to === value.length) {
               event.preventDefault();
               void leave('after');
-            } else if (event.key === 'ArrowUp' && collapsed && onFirstLine) {
+            } else if (event.key === 'ArrowUp' && collapsed && textareaCaretRows(event.currentTarget).first) {
               event.preventDefault();
               void leave('before');
-            } else if (event.key === 'ArrowDown' && collapsed && onLastLine) {
+            } else if (event.key === 'ArrowDown' && collapsed && textareaCaretRows(event.currentTarget).last) {
               event.preventDefault();
               void leave('after');
             }
