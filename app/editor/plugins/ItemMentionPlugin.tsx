@@ -11,7 +11,7 @@ import {
   MenuOption,
   useBasicTypeaheadTriggerMatch,
 } from '@lexical/react/LexicalTypeaheadMenuPlugin';
-import { $createTextNode, $getSelection, $isRangeSelection, TextNode } from 'lexical';
+import { $createTextNode, $getSelection, $isRangeSelection, COMMAND_PRIORITY_HIGH, TextNode } from 'lexical';
 import { $createLinkNode } from '@lexical/link';
 import { Item } from '../types';
 import { itemLinkRel } from './itemLink';
@@ -66,6 +66,7 @@ export default function ItemMentionPlugin({
   return (
     <LexicalTypeaheadMenuPlugin<ItemMentionOption>
       anchorClassName="editor-typeahead-anchor"
+      commandPriority={COMMAND_PRIORITY_HIGH}
       onQueryChange={setQueryString}
       onSelectOption={onSelectOption}
       triggerFn={checkForTriggerMatch}
