@@ -357,7 +357,7 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
         />
         <div className="text-xs text-muted-foreground">
           Ctrl/⌘+Enter to finish · Example: CDEF GABc | cBAG FEDC | ·{' '}
-          <a className="underline" href="https://abcnotation.com/learn" target="_blank" rel="noopener noreferrer">ABC notation guide</a>
+          <a className="underline" href="https://en.wikipedia.org/wiki/ABC_notation" target="_blank" rel="noopener noreferrer">ABC notation guide</a>
         </div>
         {validation?.source === draft && !renderError && <MusicPlayback key={draft} abc={draft} />}
         <div className="editor-music-preview" aria-hidden>
