@@ -50,8 +50,9 @@ export function $caretOnEdgeLine(
   if (blockDom === null || domSelection === null || domSelection.rangeCount === 0) return false;
 
   const caret = domSelection.getRangeAt(0).getBoundingClientRect();
+  if (caret.height === 0) return block.getTextContentSize() === 0;
   const box = blockDom.getBoundingClientRect();
-  const slack = caret.height > 0 ? caret.height / 2 : 4;
+  const slack = caret.height / 2;
   return edge === 'after' ? caret.top - box.top <= slack : box.bottom - caret.bottom <= slack;
 }
 
