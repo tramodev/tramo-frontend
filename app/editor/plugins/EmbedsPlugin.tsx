@@ -3,16 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $insertNodeToNearestRoot, mergeRegister } from '@lexical/utils';
-import { $createParagraphNode, $getSelection, $setSelection, COMMAND_PRIORITY_EDITOR, createCommand, type BaseSelection } from 'lexical';
+import { $createParagraphNode, $getSelection, $setSelection, COMMAND_PRIORITY_EDITOR, type BaseSelection } from 'lexical';
+import { INSERT_EMBED_COMMAND, OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/commands';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { $createEmbedNode, EmbedNode } from '@/app/editor/nodes/EmbedNode';
-import { parseEmbedUrl, validateEmbed, type Embed } from '@/app/editor/plugins/embed';
+import { parseEmbedUrl, validateEmbed } from '@/app/editor/plugins/embed';
 import { $isSelectionInCode } from '@/app/editor/plugins/codeBlockGuard';
 
-export const OPEN_EMBED_DIALOG_COMMAND = createCommand<void>('OPEN_EMBED_DIALOG_COMMAND');
-export const INSERT_EMBED_COMMAND = createCommand<Embed>('INSERT_EMBED_COMMAND');
 
 export default function EmbedsPlugin() {
   const [editor] = useLexicalComposerContext();

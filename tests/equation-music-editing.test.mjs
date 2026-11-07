@@ -13,6 +13,7 @@ function load(path, overrides, suffix = '', globals = {}) {
   }).outputText, { exports, require: name => overrides[name] ?? modules[name] ?? (name.startsWith('@/') ? {} : require(name)), ...globals });
   return exports;
 }
+modules['@/app/editor/commands'] = load('app/editor/commands.ts', {});
 modules['@/app/editor/embed-validity'] = load('app/editor/embed-validity.ts', { '@/app/editor/plugins/music-audio': { loadAbcjs: () => Promise.resolve(require('abcjs')) } });
 function find(element, type) {
   if (!element || typeof element !== 'object') return;
@@ -254,8 +255,7 @@ test.each(['Inline equation', 'Equation', 'Music score'])('toolbar waits for men
     '@/components/ui/dropdown-menu': ui,
     '@/components/ui/tooltip': { Tooltip: 'Tooltip', TooltipContent: 'TooltipContent', TooltipTrigger: 'TooltipTrigger' },
     './ImagesPlugin': {}, './FloatingLinkEditorPlugin': {}, './FindReplacePlugin': {},
-    './EquationsPlugin': { INSERT_EQUATION_COMMAND: 'equation' }, './MusicPlugin': { INSERT_MUSIC_COMMAND: 'music' },
-    '@/app/editor/plugins/EmbedsPlugin': {},
+    '@/app/editor/commands': { INSERT_EQUATION_COMMAND: 'equation', INSERT_MUSIC_COMMAND: 'music' },
   }, '', { requestAnimationFrame: fn => frames.push(fn) }).default;
   const tree = Toolbar({});
   function elements(element) {

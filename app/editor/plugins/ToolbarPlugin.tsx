@@ -103,11 +103,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { insertImageWithUpload } from './ImagesPlugin';
-import { OPEN_LINK_EDITOR_COMMAND } from './FloatingLinkEditorPlugin';
-import { OPEN_FIND_REPLACE_COMMAND } from './FindReplacePlugin';
-import { INSERT_EQUATION_COMMAND } from './EquationsPlugin';
-import { INSERT_MUSIC_COMMAND } from './MusicPlugin';
-import { OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/plugins/EmbedsPlugin';
+import { INSERT_EQUATION_COMMAND, INSERT_MUSIC_COMMAND, OPEN_EMBED_DIALOG_COMMAND, OPEN_FIND_REPLACE_COMMAND, OPEN_LINK_EDITOR_COMMAND } from '@/app/editor/commands';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
 import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
 

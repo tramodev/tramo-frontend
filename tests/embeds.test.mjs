@@ -15,6 +15,7 @@ function load(path, overrides = {}, globals = {}) {
   }).outputText, { exports, URL, require: name => overrides[name] ?? modules[name] ?? require(name), ...globals });
   return exports;
 }
+modules['@/app/editor/commands'] = load('app/editor/commands.ts');
 modules['@/app/editor/plugins/TypeaheadMenu'] = { TypeaheadMenu: 'TypeaheadMenu' };
 modules['@/app/editor/plugins/embed'] = load('app/editor/plugins/embed.ts');
 modules['@/app/editor/nodes/EmbedNode'] = load('app/editor/nodes/EmbedNode.tsx', {}, {
@@ -140,7 +141,7 @@ function pluginSetup(inCode = false) {
   }
   render();
   function command(command, payload) { editor.update(() => editor.dispatchCommand(command, payload), { discrete: true }); }
-  return { editor, plugin, render, frames, command, open: () => command(plugin.OPEN_EMBED_DIALOG_COMMAND),
+  return { editor, plugin, render, frames, command, open: () => command(modules['@/app/editor/commands'].OPEN_EMBED_DIALOG_COMMAND),
     enter: url => render().find(node => node.type === 'Input').props.onChange({ target: { value: url } }),
     submit: () => render().find(node => node.type === 'form').props.onSubmit({ preventDefault() {} }) };
 }
@@ -171,11 +172,11 @@ test('cancel and invalid URLs preserve the document', () => {
 test('insertion at the end creates a trailing paragraph and invalid command payloads are ignored', () => {
   const s = pluginSetup();
   s.editor.update(() => lexical.$getRoot().selectEnd(), { discrete: true });
-  s.command(s.plugin.INSERT_EMBED_COMMAND, { provider: 'tweet', id: '123456789' });
+  s.command(modules['@/app/editor/commands'].INSERT_EMBED_COMMAND, { provider: 'tweet', id: '123456789' });
   const before = s.editor.getEditorState().toJSON();
   expect(before.root.children.at(-1).type).toBe('paragraph');
   expect(before.root.children.at(-1).children).toEqual([]);
-  s.command(s.plugin.INSERT_EMBED_COMMAND, { provider: 'youtube', id: '../anything' });
+  s.command(modules['@/app/editor/commands'].INSERT_EMBED_COMMAND, { provider: 'youtube', id: '../anything' });
   expect(s.editor.getEditorState().toJSON()).toEqual(before);
 });
 
@@ -186,14 +187,14 @@ test('code blocks and read-only editors reject embed insertion', () => {
     const before = s.editor.getEditorState().toJSON();
     s.open();
     expect(s.render().find(node => node.type === 'Dialog').props.open).toBe(false);
-    s.command(s.plugin.INSERT_EMBED_COMMAND, { provider: 'tweet', id: '123456789' });
+    s.command(modules['@/app/editor/commands'].INSERT_EMBED_COMMAND, { provider: 'tweet', id: '123456789' });
     expect(s.editor.getEditorState().toJSON()).toEqual(before);
   }
 });
 
 test('selected embeds can be deleted without deleting surrounding text', () => {
   const s = pluginSetup();
-  s.command(s.plugin.INSERT_EMBED_COMMAND, { provider: 'tweet', id: '123456789' });
+  s.command(modules['@/app/editor/commands'].INSERT_EMBED_COMMAND, { provider: 'tweet', id: '123456789' });
   const unregister = require('@lexical/rich-text').registerRichText(s.editor);
   s.editor.update(() => {
     const node = lexical.$getRoot().getChildren().find(node => node.getType() === 'embed');

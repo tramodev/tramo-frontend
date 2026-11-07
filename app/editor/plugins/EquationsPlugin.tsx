@@ -10,20 +10,11 @@ import {
   $isRangeSelection,
   $isRootOrShadowRoot,
   COMMAND_PRIORITY_EDITOR,
-  createCommand,
-  LexicalCommand,
 } from 'lexical';
+import { INSERT_EQUATION_COMMAND, type InsertEquationPayload } from '@/app/editor/commands';
 import { $createEquationNode, EquationNode } from '../nodes/EquationNode';
 import { $isSelectionInCode } from './codeBlockGuard';
 import { $insertDecoratorNode, markDecoratorForEditing } from '@/app/editor/plugins/decoratorCaret';
-
-export type InsertEquationPayload = Readonly<{
-  equation: string;
-  inline: boolean;
-}>;
-
-export const INSERT_EQUATION_COMMAND: LexicalCommand<InsertEquationPayload> =
-  createCommand('INSERT_EQUATION_COMMAND');
 
 export default function EquationsPlugin(): null {
   const [editor] = useLexicalComposerContext();

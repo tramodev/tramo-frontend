@@ -11,15 +11,13 @@ import {
   $getSelection,
   $isRangeSelection,
   COMMAND_PRIORITY_LOW,
-  createCommand,
-  LexicalCommand,
 } from 'lexical';
+import { OPEN_LINK_EDITOR_COMMAND } from '@/app/editor/commands';
 import { $findMatchingParent } from '@lexical/utils';
 import { Check, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { itemIdFromRel } from './itemLink';
 
-export const OPEN_LINK_EDITOR_COMMAND: LexicalCommand<void> = createCommand('OPEN_LINK_EDITOR_COMMAND');
 
 export const PLACEHOLDER_URL = 'https://';
 

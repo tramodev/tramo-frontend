@@ -10,14 +10,11 @@ import {
   $isRangeSelection,
   $isRootOrShadowRoot,
   COMMAND_PRIORITY_EDITOR,
-  createCommand,
-  LexicalCommand,
 } from 'lexical';
+import { INSERT_MUSIC_COMMAND } from '@/app/editor/commands';
 import { $createMusicNode, MusicNode } from '../nodes/MusicNode';
 import { $isSelectionInCode } from './codeBlockGuard';
 import { $insertDecoratorNode, markDecoratorForEditing } from '@/app/editor/plugins/decoratorCaret';
-
-export const INSERT_MUSIC_COMMAND: LexicalCommand<void> = createCommand('INSERT_MUSIC_COMMAND');
 
 export const DEFAULT_ABC = 'X:1\nT:\nM:4/4\nL:1/8\nK:C\n';
 

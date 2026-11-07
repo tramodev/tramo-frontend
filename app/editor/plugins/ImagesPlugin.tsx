@@ -14,22 +14,16 @@ import {
   $insertNodes,
   $isElementNode,
   COMMAND_PRIORITY_HIGH,
-  createCommand,
   DRAGOVER_COMMAND,
   DROP_COMMAND,
-  LexicalCommand,
   NodeKey,
   PASTE_COMMAND,
 } from 'lexical';
-import { $createImageNode, $isImageNode, ImageNode, ImagePayload } from '../nodes/ImageNode';
+import { INSERT_IMAGE_COMMAND, type InsertImagePayload } from '@/app/editor/commands';
+import { $createImageNode, $isImageNode, ImageNode } from '../nodes/ImageNode';
 import { resizeImageToBlob } from '@/lib/image-resize';
 import { uploadEditorImage } from '@/lib/upload-image';
 import { $isSelectionInCode } from './codeBlockGuard';
-
-export type InsertImagePayload = Readonly<ImagePayload>;
-
-export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> =
-  createCommand('INSERT_IMAGE_COMMAND');
 
 export const EDITOR_IMAGE_MAX_DIMENSION = 1600;
 export const EDITOR_IMAGE_QUALITY = 0.85;

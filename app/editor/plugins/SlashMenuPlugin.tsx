@@ -40,9 +40,7 @@ import {
   Video,
 } from 'lucide-react';
 import { insertImageWithUpload } from './ImagesPlugin';
-import { INSERT_EQUATION_COMMAND } from './EquationsPlugin';
-import { INSERT_MUSIC_COMMAND } from './MusicPlugin';
-import { OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/plugins/EmbedsPlugin';
+import { INSERT_EQUATION_COMMAND, INSERT_MUSIC_COMMAND, OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/commands';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
 
 class SlashOption extends MenuOption {

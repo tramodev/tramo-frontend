@@ -12,15 +12,13 @@ import {
   $isTextNode,
   $setSelection,
   COMMAND_PRIORITY_LOW,
-  createCommand,
-  LexicalCommand,
   RootNode,
   TextNode,
 } from 'lexical';
+import { OPEN_FIND_REPLACE_COMMAND } from '@/app/editor/commands';
 import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-export const OPEN_FIND_REPLACE_COMMAND: LexicalCommand<void> = createCommand('OPEN_FIND_REPLACE_COMMAND');
 
 interface TextSegment {
   node: TextNode;

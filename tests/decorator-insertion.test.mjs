@@ -19,6 +19,7 @@ function load(path, overrides = {}) {
 const equations = load('app/editor/nodes/EquationNode.tsx', { '../plugins/EquationComponent': {} });
 const music = load('app/editor/nodes/MusicNode.tsx', { '../plugins/MusicComponent': {} });
 const caret = load('app/editor/plugins/decoratorCaret.ts');
+const commands = load('app/editor/commands.ts');
 const { serializeNoteContent } = load('app/editor/note-content.ts', { '@/app/editor/styleConfig': {} });
 
 function setup(kind, inline = false, previousSelection = false) {
@@ -36,11 +37,12 @@ function setup(kind, inline = false, previousSelection = false) {
     '../nodes/EquationNode': equations, '../nodes/MusicNode': music,
     './codeBlockGuard': { $isSelectionInCode: () => false },
     '@/app/editor/plugins/decoratorCaret': caret,
+    '@/app/editor/commands': commands,
   });
   plugin.default();
   const insert = () => editor.update(() => {
     if (previousSelection) lexical.$setSelection(null);
-    editor.dispatchCommand(kind === 'Music' ? plugin.INSERT_MUSIC_COMMAND : plugin.INSERT_EQUATION_COMMAND,
+    editor.dispatchCommand(kind === 'Music' ? commands.INSERT_MUSIC_COMMAND : commands.INSERT_EQUATION_COMMAND,
       kind === 'Music' ? undefined : { equation: '', inline });
   }, { discrete: true });
   const select = () => editor.update(() => {
