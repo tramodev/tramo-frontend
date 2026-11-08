@@ -47,7 +47,7 @@ export function NavMobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
             <>
               <SheetClose asChild>
                 <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-medium text-primary hover:bg-muted">
-                  Log In
+                  Log in
                 </Link>
               </SheetClose>
               <SheetClose asChild>

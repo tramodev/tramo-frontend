@@ -293,9 +293,9 @@ export const BrowserMockup: React.FC = () => {
             }}
           >
             <p className="mb-3 text-[0.625rem] font-medium uppercase tracking-widest text-foreground">Step 3</p>
-            <h1 contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" aria-label="Demo note title" className="font-display font-medium text-[1.75rem] mb-2.5 cursor-text text-center outline-none">
+            <p contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" aria-label="Demo note title" className="font-display font-medium text-[1.75rem] mb-2.5 cursor-text text-center outline-none">
               Memex
-            </h1>
+            </p>
             <div className="mb-5 text-[0.6875rem] text-muted-foreground">
               <p>Used in 2 trails. Edits appear in both.</p>
               <div className="mt-1 flex flex-wrap gap-3">
@@ -340,7 +340,7 @@ export const BrowserMockup: React.FC = () => {
             <p className="text-[0.625rem] text-muted-foreground">Connections involving “Memex”.</p>
             {CONNECTIONS.map(title => <div key={title} className="space-y-1 rounded-lg border border-border p-2.5">
               <p className="text-[0.6875rem]">{title}</p>
-              <p className="text-[0.5625rem] text-muted-foreground">@ mention in Memex</p>
+              <p className="text-[0.625rem] text-muted-foreground">@ mention in Memex</p>
             </div>)}
           </div>
           <div className="flex h-36 shrink-0 flex-col border-t border-border pt-2">

@@ -31,7 +31,10 @@ const NOTES = {
 
 type NoteId = keyof typeof NOTES;
 
-const INITIAL_SELECTION: { note: NoteId; trail: number } = { note: 'memex', trail: 0 };
+const INITIAL_SELECTION: Record<'connections' | 'shared', { note: NoteId; trail: number }> = {
+  connections: { note: 'memex', trail: 0 },
+  shared: { note: 'essay', trail: 0 },
+};
 
 const DEMO_ITEMS: Record<string, Item> = Object.fromEntries(Object.entries(NOTES).map(([id, note]) => [id, {
   id, title: note.title, titleAlign: 'center', unfiled: false, content: null,
@@ -42,9 +45,9 @@ const TRAILS: { title: string; notes: NoteId[] }[] = [
   { title: 'Thinking in trails', notes: ['memex', 'trails', 'sharing'] },
 ];
 
-function DemoToolbar({ variant }: { variant: 'connections' | 'shared' }) {
+function DemoToolbar() {
   const [editor] = useLexicalComposerContext();
-  return <div className={cn(variant === 'connections' && 'shrink-0 lg:flex lg:justify-center lg:pr-[calc(100cqw/11+1.5rem)] lg:pl-6')}><div className={cn('mx-auto mt-3 flex w-[90%] shrink-0 items-center gap-1 overflow-hidden rounded-[24px] bg-muted px-3 py-2 [&>*]:shrink-0 [&>button:hover]:bg-accent', variant === 'connections' && 'lg:w-fit lg:max-w-full')}>
+  return <div><div className="mx-auto mt-3 flex w-[90%] shrink-0 items-center gap-1 overflow-hidden rounded-[24px] bg-muted px-3 py-2 [&>*]:shrink-0 [&>button:hover]:bg-accent">
     <Button type="button" variant="ghost" size="icon-sm" aria-label="Undo" onMouseDown={event => event.preventDefault()} onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}><Undo className="size-4" /></Button>
     <Button type="button" variant="ghost" size="icon-sm" aria-label="Redo" onMouseDown={event => event.preventDefault()} onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}><Redo className="size-4" /></Button>
     <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
@@ -55,7 +58,7 @@ function DemoToolbar({ variant }: { variant: 'connections' | 'shared' }) {
 }
 
 export function ProductEditorDemo({ variant }: { variant: 'connections' | 'shared' }) {
-  const [selected, setSelected] = useState<{ note: NoteId; trail: number }>(INITIAL_SELECTION);
+  const [selected, setSelected] = useState<{ note: NoteId; trail: number }>(INITIAL_SELECTION[variant]);
   const [contents, setContents] = useState<Partial<Record<NoteId, string>>>({});
   const [revision, setRevision] = useState(0);
   const [query, setQuery] = useState('');
@@ -100,7 +103,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
       <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
         <div className={cn('flex shrink-0 items-center justify-between gap-2 px-4 py-2', variant === 'connections' && 'lg:pr-[calc(100cqw/11+1rem)]')}>
           <span className="min-w-0 flex-1 truncate text-sm font-medium">Memex and Vannevar Bush</span>
-          <Button type="button" variant="ghost" size="icon-sm" aria-label="Reset demo" className={cn(variant === 'shared' && 'absolute top-2 right-3 z-10')} onClick={() => { setContents({}); setSelected(INITIAL_SELECTION); setQuery(''); setRevision(value => value + 1); }}><RotateCcw className="size-4" /></Button>
+          <Button type="button" variant="ghost" size="icon-sm" aria-label="Reset demo" className={cn(variant === 'shared' && 'absolute top-2 right-3 z-10')} onClick={() => { setContents({}); setSelected(INITIAL_SELECTION[variant]); setQuery(''); setRevision(value => value + 1); }}><RotateCcw className="size-4" /></Button>
         </div>
         <LexicalComposer key={`${selected.note}-${revision}`} initialConfig={{
           namespace: `landing-${variant}`,
@@ -113,10 +116,10 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
             if (variant === 'shared') root.append($createParagraphNode().append($createLinkNode(`#${note.related}`).append($createTextNode(NOTES[note.related].title))));
           }),
         }}>
-          <DemoToolbar variant={variant} />
+          {variant === 'shared' && <DemoToolbar />}
           <div className={cn('min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-5 sm:px-6', variant === 'connections' && 'pb-10 sm:pb-[3.25rem] lg:pr-[calc(100cqw/11+1.5rem)]')}>
             <div className={cn(variant === 'connections' && 'lg:mx-auto lg:max-w-[68%]')}>
-            <h4 className="mb-3 text-center font-display text-2xl font-medium">{note.title}</h4>
+            <p className="mb-3 text-center font-display text-2xl font-medium">{note.title}</p>
             {memberTrails.length > 1 && <div className="mb-5 text-xs leading-relaxed text-muted-foreground">
               <p>Used in 2 trails. Edits appear in both.</p>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">{TRAILS.map((trail, index) => <button key={trail.title} type="button" className="underline underline-offset-2 hover:text-foreground" onClick={() => openNote('memex', index)}>{trail.title}</button>)}</div>
@@ -141,7 +144,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
         </LexicalComposer>
       </div>
       {variant === 'shared' && <aside aria-label="Demo connections" className="m-3 @min-[28rem]:mt-15 max-h-48 min-h-0 min-w-0 space-y-3 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden rounded-2xl border border-border bg-popover p-3 @min-[28rem]:max-h-none">
-        <div className="flex items-center justify-between gap-2"><h5 className="text-sm font-medium">Connections ({connectedNotes.length})</h5><X aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" /></div>
+        <div className="flex items-center justify-between gap-2"><p className="text-sm font-medium">Connections ({connectedNotes.length})</p><X aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" /></div>
         <p className="text-xs leading-relaxed text-muted-foreground">Connections involving “{note.title}”.</p>
         {connectedNotes.map(id => <button key={id} type="button" aria-label={`Open ${NOTES[id].title}`} className="block w-full cursor-pointer space-y-2 rounded-lg border border-border p-3 text-left hover:bg-muted" onClick={() => openNote(id)}>
           <span className="block text-sm">{id === note.related ? `${note.title} — ${NOTES[id].title}` : `${NOTES[id].title} — ${note.title}`}</span>

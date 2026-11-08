@@ -25,10 +25,10 @@ function NoteMock() {
   return <div className="p-6 sm:p-8">
     <p className="mb-1 text-[0.6875rem] font-medium uppercase tracking-[0.1em] text-muted-foreground">Step 2</p>
     <p className="mb-4 font-display text-2xl font-medium">How the Memex links ideas</p>
-    <p className="mb-3 text-[0.9375rem] leading-[1.9]">
+    <p className="mb-3 text-[0.9375rem] leading-[2.3]">
       Bush imagined a desk that stores every book and letter, so a reader can <span style={{ backgroundColor: `color-mix(in srgb, ${ana.color} 30%, transparent)` }}>tie two items together</span><Caret {...ana} /> and come back to them later.
     </p>
-    <p className="text-[0.9375rem] leading-[1.9]">
+    <p className="text-[0.9375rem] leading-[2.3]">
       Those links form a trail that someone else can follow step by step<Caret {...ezequiel} />
     </p>
   </div>;
@@ -69,7 +69,7 @@ function PresenceMock() {
     {notes.map(([title, here], index) => <p key={title} className="flex items-center gap-2 py-1.5 pl-1 text-[0.875rem]">
       <span className="w-4 shrink-0 text-right text-[0.625rem] tabular-nums text-muted-foreground">{index + 1}</span>
       <span className="min-w-0 flex-1 truncate">{title}</span>
-      {here.map(({ name, color }) => <span key={name} className="size-1.5 rounded-full" style={{ backgroundColor: color }} />)}
+      {here.map(({ name, color }) => <span key={name} className="size-2 rounded-full" style={{ backgroundColor: color }} />)}
     </p>)}
   </div>;
 }
@@ -91,7 +91,7 @@ export function CollaborationSection() {
       </p>
       <div className="-mx-4 flex flex-col gap-1">
         {FEATURES.map(({ icon: Icon, lead, rest }, index) => <button key={lead} type="button" aria-pressed={active === index}
-          onClick={() => setActive(index)} onMouseEnter={() => setActive(index)} onFocus={() => setActive(index)}
+          onClick={() => setActive(index)} onFocus={() => setActive(index)}
           className={cn('flex gap-3 rounded-lg p-4 text-left text-[0.9375rem] leading-relaxed text-muted-foreground transition-colors', active === index ? 'bg-muted' : 'hover:bg-muted/50')}>
           <Icon className="mt-1 h-4 w-4 shrink-0 text-primary" />
           <span><strong className="font-medium text-foreground">{lead}</strong> {rest}</span>
@@ -99,7 +99,7 @@ export function CollaborationSection() {
       </div>
     </div>
     <FadeUp>
-      <div aria-hidden="true" inert className="relative isolate h-[26rem] overflow-hidden rounded-[28px] sm:h-[32rem]">
+      <div aria-hidden="true" inert className="relative isolate h-[22rem] overflow-hidden rounded-[28px] sm:h-[26rem]">
         <Image src={productBg2} alt="" fill placeholder="blur" sizes="(min-width: 1024px) 50vw, 100vw" className="-z-10 object-cover" />
         <div className="absolute bottom-0 left-8 right-0 top-8 overflow-hidden rounded-tl-xl border-l border-t border-border bg-background sm:left-12 sm:top-12">
           <Mock />
