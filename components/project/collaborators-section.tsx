@@ -235,6 +235,9 @@ export function CollaboratorsSection({ projectId, owner, onLinkChange, inviting,
             maxLength={20}
             disabled={busy}
             autoComplete="off"
+            data-bwignore
+            data-1p-ignore
+            data-lpignore="true"
             aria-describedby={query ? "collaborator-suggestion" : undefined}
             onChange={(e) => setUsername(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") startInvite() }}
