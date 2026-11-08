@@ -8,7 +8,10 @@ import { R2_PRIVATE_ORIGIN } from '@/lib/config';
 type Image = { imageId: string; url: string; expiresAt: string };
 type Context = { projectId: string; publicRead?: boolean; shareToken?: string; snapshotId?: number; versionId?: number };
 
-class ImageStore {
+const RETRY_CAP_MS = 15_000;
+const FAILED_AFTER = 3;
+
+export class ImageStore {
   private listeners = new Map<string, Set<() => void>>();
   private images = new Map<string, Image>();
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -29,6 +32,8 @@ class ImageStore {
   };
 
   get = (id: string) => this.images.get(id)?.url ?? '';
+
+  failed = (id: string) => !this.images.has(id) && this.retries >= FAILED_AFTER;
 
   schedule = () => {
     if (this.timer) clearTimeout(this.timer);
@@ -62,7 +67,7 @@ class ImageStore {
       } catch {
         if (generation !== this.generation) return;
         batch.forEach(id => this.images.delete(id));
-        if (this.retries < 5) this.timer = setTimeout(() => { void this.load(); }, 1000 * 2 ** this.retries++);
+        this.timer = setTimeout(() => { void this.load(); }, Math.min(1000 * 2 ** this.retries++, RETRY_CAP_MS));
       }
       batch.forEach(id => this.listeners.get(id)?.forEach(listener => listener()));
     }
@@ -92,6 +97,12 @@ export function EditorImagesProvider({ projectId, publicRead = false, shareToken
     };
   }, [store]);
   return <ImagesContext.Provider value={store}>{children}</ImagesContext.Provider>;
+}
+
+export function useEditorImageFailed(imageId: string): boolean {
+  const store = useContext(ImagesContext);
+  const subscribe = useMemo(() => (listener: () => void) => imageId && store ? store.subscribe(imageId, listener) : () => {}, [store, imageId]);
+  return useSyncExternalStore(subscribe, () => !!imageId && !!store?.failed(imageId), () => false);
 }
 
 export function useEditorImage(imageId: string): string {

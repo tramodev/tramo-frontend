@@ -17,7 +17,7 @@ import {
   KEY_DELETE_COMMAND,
   NodeKey,
 } from 'lexical';
-import { useEditorImage } from '@/components/editor/editor-images-provider';
+import { useEditorImage, useEditorImageFailed } from '@/components/editor/editor-images-provider';
 import { $isImageNode } from '../nodes/ImageNode';
 
 interface ImageComponentProps {
@@ -43,6 +43,7 @@ export default function ImageComponent({
 }: ImageComponentProps) {
   const [editor] = useLexicalComposerContext();
   const resolvedSrc = useEditorImage(src ? '' : imageId) || src;
+  const failed = useEditorImageFailed(src ? '' : imageId);
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -187,7 +188,7 @@ export default function ImageComponent({
       className={`editor-image-wrapper${isSelected ? ' selected' : ''}`}
       draggable={false}
     >
-      {!resolvedSrc && <span role="status">Image unavailable</span>}
+      {!resolvedSrc && <span role="status" className="editor-image-pending">{!imageId ? 'Uploading image…' : failed ? 'Image unavailable' : 'Loading image…'}</span>}
       {resolvedSrc && <img
         ref={imageRef}
         src={resolvedSrc}

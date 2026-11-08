@@ -755,6 +755,18 @@ div.editor-equation {
   white-space: pre-wrap;
 }
 
+.editor-image-pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
 .editor-image-wrapper {
   display: inline-block;
   position: relative;
