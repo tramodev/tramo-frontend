@@ -9,6 +9,8 @@ import { API_BASE_URL, REFRESH_TOKEN_MAX_AGE } from '@/lib/config';
 import { invalidateRefreshTokens, refreshTokens } from '@/lib/refresh';
 
 const ANON_ID_COOKIE = 'tramo_anon_id';
+const RETURN_TO_COOKIE = 'tramo_return_to';
+const RETURN_TO_PATH = /^\/editor\/[A-Za-z0-9]+$/;
 
 const ACCESS_TOKEN_MAX_AGE = 60 * 15;
 const REFRESH_MARGIN_SECONDS = 60;
@@ -95,6 +97,15 @@ async function routeRequest(request: NextRequest) {
     res.cookies.delete('accessToken');
     res.cookies.delete('refreshToken');
     res.cookies.delete('username');
+    if (!isServerAction && RETURN_TO_PATH.test(path)) {
+      res.cookies.set(RETURN_TO_COOKIE, path, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 10,
+        path: '/',
+      });
+    }
     return res;
   }
 
@@ -125,6 +136,11 @@ async function routeRequest(request: NextRequest) {
     redirectTo = admin ? '/explore' : '/projects';
   }
 
+  const returnTo = request.cookies.get(RETURN_TO_COOKIE)?.value;
+  const resumes = !!returnTo && isLoggedIn && !pendingBirthDate && !isServerAction && !request.headers.has('next-router-prefetch')
+    && (redirectTo === '/projects' || (!redirectTo && path === '/projects'));
+  if (resumes && RETURN_TO_PATH.test(returnTo)) redirectTo = returnTo;
+
   const needsAnonId = path.startsWith('/p/') && !request.cookies.get(ANON_ID_COOKIE);
   const anonId = needsAnonId ? crypto.randomUUID() : null;
 
@@ -143,6 +159,8 @@ async function routeRequest(request: NextRequest) {
     response.cookies.delete('refreshToken');
     response.cookies.delete('username');
   }
+
+  if (resumes) response.cookies.delete(RETURN_TO_COOKIE);
 
   if (anonId) {
     response.cookies.set(ANON_ID_COOKIE, anonId, {

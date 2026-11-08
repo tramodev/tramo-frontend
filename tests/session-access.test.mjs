@@ -142,3 +142,25 @@ test.each([401, 403, 404])('a profile rejection (%s) cannot revive a cached sess
   for (const name of ['accessToken', 'refreshToken', 'username']) expect(response.cookies.get(name)?.value).toBe('');
   expect(s.requests).toHaveLength(3);
 });
+
+test('an anonymous visit to a project returns there after login and only once', async () => {
+  const s = setup([new Response('{}', { status: 200 }), new Response('{}', { status: 200 })]);
+  const login = await s.run('/editor/abc123', '');
+  expect(login.headers.get('location')).toBe('http://frontend/login');
+  expect(login.cookies.get('tramo_return_to')?.value).toBe('/editor/abc123');
+
+  const resumed = await s.run('/projects', `accessToken=${token}; tramo_return_to=/editor/abc123`);
+  expect(resumed.headers.get('location')).toBe('http://frontend/editor/abc123');
+  expect(resumed.cookies.get('tramo_return_to')?.value).toBe('');
+
+  const plain = await s.run('/projects', `accessToken=${token}`);
+  expect(plain.headers.get('location')).toBeNull();
+});
+
+test.each(['/projects', '/editor/a/b', '/editor/..%2Fx', '//evil.example'])('only an editor path is remembered or resumed (%s)', async (returnTo) => {
+  const s = setup([new Response('{}', { status: 200 })]);
+  const response = await s.run('/projects', `accessToken=${token}; tramo_return_to=${encodeURIComponent(returnTo)}`);
+  expect(response.headers.get('location')).toBeNull();
+  expect(response.cookies.get('tramo_return_to')?.value).toBe('');
+  expect((await s.run('/editor/a/b', '')).cookies.get('tramo_return_to')).toBeUndefined();
+});
