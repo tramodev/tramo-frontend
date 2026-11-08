@@ -686,6 +686,10 @@ div.editor-equation {
   outline-offset: 2px;
 }
 
+.dark .trail-item-editor > span > span > span {
+  color: var(--collab-cursor-foreground) !important;
+}
+
 .collab-embed-mark::after {
   content: attr(data-name);
   position: absolute;
