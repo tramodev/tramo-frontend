@@ -35,6 +35,7 @@ import { clearLocalDrafts, editorDraftForRoute, type DraftCommitResult } from '@
 import type { CollabHandoff } from '@/app/editor/plugins/CollaborationNotePlugin';
 import type { UserProfile } from '@/lib/profile';
 import { ItemTitleSaves } from '@/lib/item-title-saves';
+import { $noteTitle } from '@/app/editor/nodes/TitleNode';
 import { EMPTY_STRUCTURE, absorbed, addItem, addTrail, alignItem, compose, followNavigation, linkItem, orderTrailItems, orderTrails,
   parseStructure, removeItem, removeTrail, renameItem, renameTrail as renameTrailOp, unlinkItem, view as structureView,
   type ItemMeta, type PendingOp, type Structure, type StructureOp } from '@/app/editor/structure';
@@ -674,6 +675,13 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     updateItemContentLocally,
     handleRenameProject,
     ...autoSave,
+    onCollabChange: (itemId: string, editorState: import('lexical').EditorState) => {
+      autoSave.onCollabChange?.(itemId, editorState);
+      const title = editorState.read($noteTitle)?.trim();
+      if (title === undefined) return;
+      if (!title || title === remoteRef.current.items[itemId]?.title) drop(`live-title:${itemId}`);
+      else settle(`live-title:${itemId}`, renameItem(itemId, title));
+    },
     ...(isDraft ? { saveStatus: draftState.status === 'error' ? 'error' as const : draftState.status === 'draft' ? 'idle' as const : 'saving' as const,
       saveError: draftState.error } : {}),
     ...(!isDraft && titleState.status === 'error' ? { saveStatus: 'error' as const } : {}),

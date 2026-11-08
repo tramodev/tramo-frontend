@@ -4,14 +4,14 @@ import { Server, type Connection, type Document, type Hocuspocus } from '@hocusp
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import * as Y from 'yjs';
-import { replaceContent, toLexical, toYjs } from './lexical';
+import { replaceContent, setTitle, toLexical, toYjs } from './lexical';
 
 type Role = 'OWNER' | 'EDITOR' | 'VIEWER';
 type Context = { userId: number; name: string; picture: string | null; perm: 'edit' | 'view'; role: Role; sv: string | null };
 type Claims = { iss?: string; aud?: string | string[]; sub?: string; item?: string; project?: string; perm?: string; role?: string; sv?: string | null; name?: string; picture?: string; exp?: number };
 type DocState = {
   epoch: number; author: number | null; bootstrapHash: string | null; poisoned: boolean;
-  unsaved: boolean; attempts: number; retry?: ReturnType<typeof setTimeout>;
+  unsaved: boolean; attempts: number; title: string; retry?: ReturnType<typeof setTimeout>;
 };
 type Bucket = { tokens: number; at: number };
 
@@ -77,6 +77,8 @@ function metrics(instance: Hocuspocus) {
 }
 
 const isPresence = (name: string) => name.startsWith('project-');
+const SCHEMA = '2';
+const TITLE_MAX = 255;
 
 const log = (event: string, fields: Record<string, unknown> = {}) =>
   console.log([`event=${event}`, ...Object.entries(fields).map(([key, value]) => `${key}=${value}`)].join(' '));
@@ -195,11 +197,13 @@ async function restore(instance: Hocuspocus, name: string) {
     return;
   }
   if (!response.ok) throw new Error(`restore load failed with ${response.status}`);
-  const loaded = await response.json() as { content: string; extractionEpoch: number };
+  const loaded = await response.json() as { content: string; extractionEpoch: number; title?: string };
   state.epoch = loaded.extractionEpoch;
   state.bootstrapHash = sha256(loaded.content);
   state.author = null;
+  state.title = loaded.title ?? '';
   replaceContent(document, loaded.content);
+  setTitle(document, state.title);
   count('collab_restores_total', { result: 'applied' });
   log('collab_document_restored', { item: name, epoch: state.epoch });
 }
@@ -232,6 +236,26 @@ async function fetchStructure(name: string): Promise<string | null> {
   throw failure;
 }
 
+function titlesOf(snapshot: unknown): Map<string, string> {
+  try {
+    const items = (JSON.parse(String(snapshot)) as { items?: { id?: unknown; title?: unknown }[] }).items ?? [];
+    return new Map(items.filter(item => typeof item.title === 'string').map(item => [String(item.id), item.title as string]));
+  } catch {
+    return new Map();
+  }
+}
+
+function syncTitles(instance: Hocuspocus, previous: unknown, next: string) {
+  const before = titlesOf(previous);
+  for (const [id, title] of titlesOf(next)) {
+    const document = instance.documents.get(id);
+    const state = documents.get(id);
+    if (before.get(id) === title || !document || !state || state.poisoned || state.title === title) continue;
+    state.title = title;
+    setTitle(document, title);
+  }
+}
+
 function refreshStructure(instance: Hocuspocus, name: string) {
   if (structureRuns.has(name)) {
     structureRuns.set(name, true);
@@ -246,10 +270,12 @@ function refreshStructure(instance: Hocuspocus, name: string) {
       const map = instance.documents.get(name)?.getMap('structure');
       const current = map?.get('version');
       if (!map || snapshot === null || version === null || (typeof current === 'number' && current >= version)) continue;
+      const previous = map.get('snapshot');
       map.doc?.transact(() => {
         map.set('version', version);
         map.set('snapshot', snapshot);
       });
+      syncTitles(instance, previous, snapshot);
       count('collab_structure_updates_total');
     } while (structureRuns.get(name));
   })().catch(error => {
@@ -266,15 +292,18 @@ function otherEditor(document: Document, tried: Set<number>) {
   return null;
 }
 
-async function store(document: Document, state: DocState, content = toLexical(document), tried = new Set<number>(), snapshot: Y.Doc = document): Promise<boolean> {
+async function store(document: Document, state: DocState, current = toLexical(document), tried = new Set<number>(), snapshot: Y.Doc = document): Promise<boolean> {
   if (state.poisoned || state.author === null) return true;
+  let { content } = current;
+  const title = current.title.trim().slice(0, TITLE_MAX);
+  const renamed = title && title !== state.title ? title : undefined;
   if (hasPendingImage(content)) {
     if (document.getConnectionsCount() > 0) {
       snapshot = new Y.Doc();
       Y.applyUpdate(snapshot, Y.encodeStateAsUpdate(document));
     }
     replaceContent(snapshot, withoutPendingImages(content));
-    content = toLexical(snapshot);
+    content = toLexical(snapshot).content;
   }
   const started = Date.now();
   const epoch = state.epoch;
@@ -287,6 +316,7 @@ async function store(document: Document, state: DocState, content = toLexical(do
       extractionEpoch: state.epoch,
       authorId: state.author,
       bootstrapHash: state.bootstrapHash,
+      title: renamed,
     }),
   });
   log('collab_store', { item: document.name, status: response.status, ms: Date.now() - started });
@@ -299,11 +329,12 @@ async function store(document: Document, state: DocState, content = toLexical(do
   if (next !== null) {
     log('collab_store_reassigned', { item: document.name, from: state.author, to: next });
     state.author = next;
-    return store(document, state, content, tried, snapshot);
+    return store(document, state, { content, title: current.title }, tried, snapshot);
   }
   if (response.ok) {
     state.bootstrapHash = null;
     state.unsaved = false;
+    if (renamed) state.title = renamed;
   }
   if (response.status === 200) {
     const sanitized = (await response.json() as { content?: unknown }).content;
@@ -322,7 +353,8 @@ const server = new Server<Context>({
   unloadImmediately: false,
   websocketOptions: { maxPayload: limits.messageBytes },
 
-  async onAuthenticate({ token, documentName, connectionConfig, requestHeaders, socketId, instance }) {
+  async onAuthenticate({ token, documentName, connectionConfig, requestHeaders, requestParameters, socketId, instance }) {
+    if (requestParameters.get('schema') !== SCHEMA) throw reject('reload');
     const origin = requestHeaders.get('origin');
     const claims = verify(token);
     const target = isPresence(documentName) ? claims?.project && `project-${claims.project}` : claims?.item;
@@ -352,16 +384,17 @@ const server = new Server<Context>({
     if (isPresence(documentName)) return;
     const response = await api(`/items/${documentName}`);
     if (!response.ok) throw new Error(`load failed with ${response.status}`);
-    const loaded = await response.json() as { state: string | null; content: string; extractionEpoch: number };
-    const state: DocState = { epoch: loaded.extractionEpoch, author: null, bootstrapHash: null, poisoned: false, unsaved: false, attempts: 0 };
+    const loaded = await response.json() as { state: string | null; content: string; extractionEpoch: number; title?: string };
+    const state: DocState = { epoch: loaded.extractionEpoch, author: null, bootstrapHash: null, poisoned: false, unsaved: false, attempts: 0, title: loaded.title ?? '' };
     if (loaded.state) {
       Y.applyUpdate(document, Buffer.from(loaded.state, 'base64'));
+      if (toLexical(document).title !== state.title) setTitle(document, state.title);
     } else {
-      Y.applyUpdate(document, toYjs(loaded.content));
+      Y.applyUpdate(document, toYjs(loaded.content, state.title));
       state.bootstrapHash = sha256(loaded.content);
       if (context.perm === 'edit') {
         state.author = context.userId;
-        if (!await store(document, state, loaded.content)) throw new Error('bootstrap rejected');
+        if (!await store(document, state, { content: loaded.content, title: state.title })) throw new Error('bootstrap rejected');
         state.author = null;
       }
     }

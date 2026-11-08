@@ -42,6 +42,7 @@ import {
 import { insertImageWithUpload } from './ImagesPlugin';
 import { INSERT_EQUATION_COMMAND, INSERT_MUSIC_COMMAND, OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/commands';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
+import { $inTitle } from '@/app/editor/nodes/TitleNode';
 
 class SlashOption extends MenuOption {
   label: string;
@@ -83,7 +84,7 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
   const checkForTriggerMatch = useBasicTypeaheadTriggerMatch('/', { minLength: 0 });
   const trigger = useCallback((text: string, editor: LexicalEditor) => {
     triggerText.current = text;
-    if (dismissed.current === text) return null;
+    if ($inTitle() || dismissed.current === text) return null;
     dismissed.current = null;
     return checkForTriggerMatch(text, editor);
   }, [checkForTriggerMatch]);

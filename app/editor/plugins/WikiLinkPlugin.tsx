@@ -15,6 +15,7 @@ import { $createTextNode, $getSelection, $isRangeSelection, TextNode } from 'lex
 import { $createLinkNode } from '@lexical/link';
 import { Item } from '../types';
 import { itemLinkRel } from './itemLink';
+import { $inTitle } from '@/app/editor/nodes/TitleNode';
 
 const WIKI_LINK_TRIGGER_REGEX = /(^|\s|\()(\[\[([^[\]]{0,75}))$/;
 
@@ -79,7 +80,7 @@ export default function WikiLinkPlugin({
       anchorClassName="editor-typeahead-anchor"
       onQueryChange={setQueryString}
       onSelectOption={onSelectOption}
-      triggerFn={checkForWikiLinkTriggerMatch}
+      triggerFn={text => $inTitle() ? null : checkForWikiLinkTriggerMatch(text)}
       options={options}
       menuRenderFn={(anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) =>
         anchorElementRef.current && options.length > 0

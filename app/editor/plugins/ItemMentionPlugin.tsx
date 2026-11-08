@@ -15,6 +15,7 @@ import { $createTextNode, $getSelection, $isRangeSelection, COMMAND_PRIORITY_HIG
 import { $createLinkNode } from '@lexical/link';
 import { Item } from '../types';
 import { itemLinkRel } from './itemLink';
+import { $inTitle } from '@/app/editor/nodes/TitleNode';
 
 class ItemMentionOption extends MenuOption {
   item: Item;
@@ -69,7 +70,7 @@ export default function ItemMentionPlugin({
       commandPriority={COMMAND_PRIORITY_HIGH}
       onQueryChange={setQueryString}
       onSelectOption={onSelectOption}
-      triggerFn={checkForTriggerMatch}
+      triggerFn={(text, editor) => $inTitle() ? null : checkForTriggerMatch(text, editor)}
       options={options}
       menuRenderFn={(anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) =>
         anchorElementRef.current && options.length > 0

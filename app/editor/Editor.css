@@ -121,6 +121,29 @@
   outline: 0;
 }
 
+.note-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--foreground);
+  text-align: var(--title-align, left);
+}
+
+.note-title:has(> br:only-child)::before,
+.pending-note-title:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.editor-input > .note-title + p:last-child:has(> br:only-child)::before {
+  content: 'Start writing...';
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
 .editor-placeholder {
   color: var(--muted-foreground);
   overflow: hidden;

@@ -591,7 +591,8 @@ export default function ToolbarPlugin({
     };
   };
 
-  const activeAlign = titleFocused ? titleAlign ?? 'left' : elementFormat;
+  const inTitle = !!titleFocused || blockType === 'note-title';
+  const activeAlign = inTitle ? titleAlign ?? 'left' : elementFormat;
   const activeBlock = BLOCK_OPTIONS.find((option) => option.value === blockType) ?? BLOCK_OPTIONS[0];
   const ActiveBlockIcon = activeBlock.Icon;
   const ActiveAlignIcon = ALIGN_OPTIONS.find((option) => option.value === activeAlign)?.Icon ?? AlignLeft;
@@ -663,15 +664,15 @@ export default function ToolbarPlugin({
         </ToolbarMenuButton>
         <DropdownMenuContent align="start" onCloseAutoFocus={handleMenuClose}>
           {BLOCK_OPTIONS.map(({ value, label, Icon }) => (
-            <DropdownMenuItem key={value} onSelect={() => selectBlock(value)}>
+            <DropdownMenuItem key={value} disabled={inTitle} onSelect={() => selectBlock(value)}>
               <Icon className="h-4 w-4" />
               {label}
             </DropdownMenuItem>
           ))}
-          <DropdownMenuItem disabled={titleFocused} onSelect={() => moveBlock('up')}>
+          <DropdownMenuItem disabled={inTitle} onSelect={() => moveBlock('up')}>
             <ChevronUp className="h-4 w-4" />Move block up
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={titleFocused} onSelect={() => moveBlock('down')}>
+          <DropdownMenuItem disabled={inTitle} onSelect={() => moveBlock('down')}>
             <ChevronDown className="h-4 w-4" />Move block down
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -739,11 +740,11 @@ export default function ToolbarPlugin({
           <ChevronDown size="0.75rem" />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start">
-          {(titleFocused ? ALIGN_OPTIONS.filter((option) => option.value !== 'justify') : ALIGN_OPTIONS).map(({ value, label, Icon }) => (
+          {(inTitle ? ALIGN_OPTIONS.filter((option) => option.value !== 'justify') : ALIGN_OPTIONS).map(({ value, label, Icon }) => (
             <DropdownMenuItem
               key={value}
               onSelect={() =>
-                titleFocused
+                inTitle
                   ? onSetTitleAlign?.(value as 'left' | 'center' | 'right')
                   : editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value)
               }
@@ -822,7 +823,7 @@ export default function ToolbarPlugin({
         tooltip="Link (⌘K / Ctrl+K)"
         Icon={LinkIcon}
         active={isLink}
-        disabled={blockType === 'code'}
+        disabled={blockType === 'code' || inTitle}
         onClick={insertLink}
       />
       <DropdownMenu open={insertMenuOpen} onOpenChange={open => {
@@ -850,14 +851,14 @@ export default function ToolbarPlugin({
             </DropdownMenuSubContent>
           </DropdownMenuSub>}
           <DropdownMenuItem
-            disabled={blockType === 'code'}
+            disabled={blockType === 'code' || inTitle}
             onSelect={() => fileInputRef.current?.click()}
           >
             <ImageIcon className="h-4 w-4" />
             Image
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={blockType === 'code'}
+            disabled={blockType === 'code' || inTitle}
             onSelect={() => { afterMenuCloseRef.current = () => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: true }); }}
           >
             <Radical className="h-4 w-4" />
@@ -865,7 +866,7 @@ export default function ToolbarPlugin({
             <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={blockType === 'code'}
+            disabled={blockType === 'code' || inTitle}
             onSelect={() => { afterMenuCloseRef.current = () => editor.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: false }); }}
           >
             <Sigma className="h-4 w-4" />
@@ -873,21 +874,21 @@ export default function ToolbarPlugin({
             <DropdownMenuShortcut>⌘⇧E</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={blockType === 'code'}
+            disabled={blockType === 'code' || inTitle}
             onSelect={() => { afterMenuCloseRef.current = () => editor.dispatchCommand(INSERT_MUSIC_COMMAND, undefined); }}
           >
             <Music className="h-4 w-4" />
             Music score
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={blockType === 'code'}
+            disabled={blockType === 'code' || inTitle}
             onSelect={() => editor.dispatchCommand(OPEN_EMBED_DIALOG_COMMAND, undefined)}
           >
             <Video className="h-4 w-4" />
             Tweet or YouTube video
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={blockType === 'code'}
+            disabled={blockType === 'code' || inTitle}
             onSelect={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
           >
             <Minus className="h-4 w-4" />

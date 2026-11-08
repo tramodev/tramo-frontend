@@ -70,7 +70,7 @@ function presence(project, user, role, options = {}) {
 }
 
 function connect(item, user, perm, options = {}) {
-  const websocketProvider = options.socket ?? new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
+  const websocketProvider = options.socket ?? new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}?schema=2`, maxAttempts: 1 });
   const provider = new HocuspocusProvider({ websocketProvider, name: String(item), document: new Y.Doc(), token: token(item, user, perm, options.expiresIn), ...options.provider });
   provider.attach();
   return provider;
@@ -137,10 +137,10 @@ beforeAll(async () => {
         const stored = JSON.parse(body);
         stores.push({ id, ...stored });
         if (stored.content.includes('javascript:')) {
-          items.set(id, { state: stored.state, content: SAFE, extractionEpoch: stored.extractionEpoch });
+          items.set(id, { state: stored.state, content: SAFE, extractionEpoch: stored.extractionEpoch, title: stored.title ?? items.get(id)?.title });
           return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ content: SAFE }));
         }
-        items.set(id, { state: stored.state, content: stored.content, extractionEpoch: stored.extractionEpoch });
+        items.set(id, { state: stored.state, content: stored.content, extractionEpoch: stored.extractionEpoch, title: stored.title ?? items.get(id)?.title });
         return response.writeHead(204).end();
       }
       if (request.url.endsWith('/check')) return response.writeHead(200, { 'Content-Type': 'application/json' }).end('[]');
@@ -179,8 +179,11 @@ afterAll(async () => {
 
 test('every editor node survives the JSON to Yjs round trip', () => {
   const doc = new Y.Doc();
-  Y.applyUpdate(doc, lexical.toYjs(NOTE));
-  expect(isDeepStrictEqual(JSON.parse(lexical.toLexical(doc)), JSON.parse(lexical.canonicalize(NOTE)))).toBe(true);
+  Y.applyUpdate(doc, lexical.toYjs(NOTE, 'Title'));
+  const { content, title } = lexical.toLexical(doc);
+  expect(isDeepStrictEqual(JSON.parse(content), JSON.parse(lexical.canonicalize(NOTE)))).toBe(true);
+  expect(title).toBe('Title');
+  expect(content).not.toContain('note-title');
 });
 
 test('legacy notes missing default keys are canonicalized, never overwritten', () => {
@@ -199,7 +202,7 @@ test('editors converge, the server bootstraps from JSON and persists as the edit
   const bootstrap = await until(() => stores.find(store => store.id === '1' && store.bootstrapHash));
   expect(bootstrap.content).toBe(NOTE);
   expect(bootstrap.extractionEpoch).toBe(3);
-  expect(isDeepStrictEqual(JSON.parse(lexical.toLexical(second.document)), JSON.parse(lexical.canonicalize(NOTE)))).toBe(true);
+  expect(isDeepStrictEqual(JSON.parse(lexical.toLexical(second.document).content), JSON.parse(lexical.canonicalize(NOTE)))).toBe(true);
   first.document.getMap('probe').set('from', 'first');
   await until(() => second.document.getMap('probe').get('from') === 'first');
   const stored = await until(() => stores.find(store => store.id === '1' && !store.bootstrapHash && store.authorId === 10), 15000);
@@ -281,10 +284,11 @@ test('a restore reaches open editors as a live update and closes notes it delete
   const closes = [];
   kept.on('close', ({ event }) => closes.push(['kept', event.reason]));
   removed.on('close', ({ event }) => closes.push(['removed', event.reason]));
-  items.set('7', { state: null, content: SAFE, extractionEpoch: 1 });
+  items.set('7', { state: null, content: SAFE, extractionEpoch: 1, title: 'Restored title' });
   deleted.add('17');
   expect((await internal('/internal/reset', { itemIds: [7, 17] })).status).toBe(204);
-  await until(() => lexical.toLexical(kept.document).includes('"label"') && closes.length === 1);
+  await until(() => lexical.toLexical(kept.document).content.includes('"label"') && closes.length === 1);
+  expect(lexical.toLexical(kept.document).title).toBe('Restored title');
   expect(closes).toEqual([['removed', 'deleted']]);
   kept.document.getMap('probe').set('after', 'restore');
   const stored = await until(() => stores.find(store => store.id === '7' && store.extractionEpoch === 1), 15000);
@@ -302,7 +306,7 @@ test('links the API strips are removed from the live document too', async () => 
   ] }] } });
   lexical.replaceContent(author.document, unsafe);
   await until(() => stores.some(store => store.id === '18' && store.content.includes('javascript:')), 15000);
-  await until(() => !lexical.toLexical(author.document).includes('javascript:'), 15000);
+  await until(() => !lexical.toLexical(author.document).content.includes('javascript:'), 15000);
   close(author);
 }, 30000);
 
@@ -351,7 +355,7 @@ test('an image still uploading does not keep the rest of the note from saving wh
   close(author);
   const stored = await until(() => stores.find(store => store.id === '33' && store.content.includes('saved meanwhile')), 15000);
   expect(stored.content).not.toContain('"imageId":""');
-  expect(lexical.toLexical(other.document)).toContain('"imageId":""');
+  expect(lexical.toLexical(other.document).content).toContain('"imageId":""');
   close(other);
 }, 30000);
 
@@ -415,7 +419,7 @@ test('metrics are served in Prometheus format only with the metrics secret', asy
 
 test('a note remounted with a new provider while the old one was still authenticating syncs', async () => {
   items.set('52', { state: null, content: SAFE, extractionEpoch: 0 });
-  const websocketProvider = new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
+  const websocketProvider = new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}?schema=2`, maxAttempts: 1 });
   const first = new HocuspocusProvider({ websocketProvider, name: '52', document: new Y.Doc(), token: token(52, 520, 'edit'), sessionAwareness: true });
   first.attach();
   first.destroy();
@@ -513,3 +517,55 @@ test('structure notices require the secret and a numeric project', async () => {
   expect((await internal('/internal/structure', { projectId: 999 })).status).toBe(204);
 });
 
+
+test('note titles travel live, are stored once per change and never enter stored content', async () => {
+  items.set('61', { state: null, content: SAFE, extractionEpoch: 0, title: 'Start' });
+  const author = connect(61, 610, 'edit');
+  const reader = connect(61, 611, 'edit');
+  await until(() => author.synced && reader.synced && lexical.toLexical(reader.document).title === 'Start');
+  const bootstrap = await until(() => stores.find(store => store.id === '61' && store.bootstrapHash));
+  expect(bootstrap.title).toBeUndefined();
+  lexical.setTitle(author.document, 'Renamed live');
+  await until(() => lexical.toLexical(reader.document).title === 'Renamed live');
+  const renamed = await until(() => stores.find(store => store.id === '61' && store.title === 'Renamed live'), 15000);
+  expect(renamed.content).not.toContain('note-title');
+  const after = stores.length;
+  lexical.replaceContent(author.document, NOTE);
+  const contentOnly = await until(() => stores.slice(after).find(store => store.id === '61' && store.content.includes('quoted')), 15000);
+  expect(contentOnly.title).toBeUndefined();
+  expect(lexical.toLexical(reader.document).title).toBe('Renamed live');
+  close(author, reader);
+}, 40000);
+
+test('a stale title in a stored document is corrected from the API when it loads', async () => {
+  const stale = new Y.Doc();
+  Y.applyUpdate(stale, lexical.toYjs(SAFE, 'Old title'));
+  items.set('62', { state: Buffer.from(Y.encodeStateAsUpdate(stale)).toString('base64'), content: SAFE, extractionEpoch: 0, title: 'Fresh title' });
+  const editor = connect(62, 620, 'edit');
+  await until(() => editor.synced && lexical.toLexical(editor.document).title === 'Fresh title');
+  expect(lexical.toLexical(editor.document).content).toContain('"label"');
+  close(editor);
+}, 20000);
+
+test('renames that reach the project structure are pushed into open notes', async () => {
+  const snapshot = (version, title) => ({ version, restoreEpoch: 0, trails: [{ id: 1, title: 'Trail', description: '', version: 1, forkedFromId: null, itemIds: [64] }],
+    items: [{ id: 64, title, titleAlign: 'center', unfiled: false, words: 0, characters: 0 }] });
+  items.set('64', { state: null, content: SAFE, extractionEpoch: 0, title: 'Before' });
+  structures.set('63', snapshot(1, 'Before'));
+  const note = connect(64, 640, 'edit');
+  const member = presence(63, 640, 'EDITOR');
+  await until(() => note.synced && member.document.getMap('structure').get('version') === 1);
+  structures.set('63', snapshot(2, 'Renamed elsewhere'));
+  expect((await internal('/internal/structure', { projectId: 63 })).status).toBe(204);
+  await until(() => lexical.toLexical(note.document).title === 'Renamed elsewhere');
+  close(note, member);
+}, 20000);
+
+test('clients without the current editor schema are told to reload', async () => {
+  const reasons = [];
+  const websocketProvider = new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
+  const provider = connect(65, 650, 'edit', { socket: websocketProvider, provider: { onAuthenticationFailed: ({ reason }) => reasons.push(reason) } });
+  await until(() => reasons.length === 1);
+  expect(reasons).toEqual(['reload']);
+  close(provider);
+}, 20000);

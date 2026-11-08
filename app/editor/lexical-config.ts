@@ -24,6 +24,7 @@ import { ImageNode } from './nodes/ImageNode';
 import { EquationNode } from './nodes/EquationNode';
 import { MusicNode } from './nodes/MusicNode';
 import { EmbedNode } from '@/app/editor/nodes/EmbedNode';
+import { TitleNode } from '@/app/editor/nodes/TitleNode';
 import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
 import { parseAllowedColor, parseAllowedFontSize } from './styleConfig';
 
@@ -140,6 +141,7 @@ export const editorConfig = {
     TableRowNode,
     TableCellNode,
     HorizontalRuleNode,
+    TitleNode,
   ],
   onError(error: Error) {
     console.error(error);

@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import type { EditorState } from 'lexical';
 import { createPortal } from 'react-dom';
@@ -33,6 +33,8 @@ import EmbedsPlugin from '@/app/editor/plugins/EmbedsPlugin';
 import EmbedErrorsPlugin from '@/app/editor/plugins/EmbedErrorsPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { CodeBlockGuardPlugin } from '../../plugins/CodeBlockGuardPlugin';
+import TitlePlugin from '../../plugins/TitlePlugin';
+import { $isTitleNode } from '@/app/editor/nodes/TitleNode';
 import ListTabPlugin from '../../plugins/ListTabPlugin';
 import PastePlugin from '../../plugins/PastePlugin';
 import CodeHighlightPlugin from '../../plugins/CodeHighlightPlugin';
@@ -109,13 +111,29 @@ function focusEditor(editor: LexicalEditor, edge: 'start' | 'end' = 'start') {
   editor.getRootElement()?.focus({ preventScroll: true });
   editor.update(() => {
     const root = $getRoot();
-    if (edge === 'start') root.selectStart();
-    else root.selectEnd();
+    const first = root.getFirstChild();
+    const body = $isTitleNode(first) ? first.getNextSibling() : null;
+    if (edge === 'end') root.selectEnd();
+    else if (body) body.selectStart();
+    else root.selectStart();
   }, { discrete: true });
 }
 
 function focusTitle(editor: LexicalEditor) {
-  const title = editor.getRootElement()?.closest('.trail-item-editor')?.querySelector<HTMLInputElement>('[data-note-title]');
+  const key = editor.getEditorState().read(() => {
+    const first = $getRoot().getFirstChild();
+    return $isTitleNode(first) ? first.getKey() : null;
+  });
+  if (key) {
+    editor.getRootElement()?.focus({ preventScroll: true });
+    editor.update(() => {
+      const first = $getRoot().getFirstChild();
+      if ($isTitleNode(first)) first.selectStart();
+    }, { discrete: true });
+    editor.getElementByKey(key)?.scrollIntoView({ block: 'nearest' });
+    return;
+  }
+  const title = editor.getRootElement()?.closest('.trail-item-editor')?.querySelector<HTMLInputElement>('input[data-note-title]');
   if (!title) return;
   title.focus({ preventScroll: true });
   title.setSelectionRange(0, 0);
@@ -180,7 +198,9 @@ function ItemNavigationPlugin({ itemId, register, move }: {
       const offset = direction === -1 ? 0 : node.getTextContentSize();
       const atBoundary = root.getTextContentSize() === 0 || (boundary?.is(node) && selection.anchor.offset === offset);
       if (!(isOnBoundaryLine(editor, direction) ?? atBoundary)) return false;
-      if (direction === -1) requestAnimationFrame(() => focusTitle(editor));
+      if (direction === -1 && $isTitleNode(block)) {
+        if (!move(itemId, -1)) return false;
+      } else if (direction === -1) requestAnimationFrame(() => focusTitle(editor));
       else if (!move(itemId, direction, true)) return false;
       event.preventDefault();
       return true;
@@ -242,13 +262,13 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
   useEffect(() => () => { if (!collaborative) rememberCaret(editor, item.id); }, [editor, collaborative, item.id]);
   useEffect(() => { editor.setEditable(!props.readOnly); }, [editor, props.readOnly]);
   return (
-      <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor} onFocusCapture={event => {
+      <div className="trail-item-editor" data-item-id={item.id} ref={setAnchor} style={{ '--title-align': item.titleAlign } as CSSProperties} onFocusCapture={event => {
         if (event.currentTarget.contains(event.target)) onFocus(item.id);
       }}>
-        <ItemTitle item={item} readOnly={props.readOnly} onDraftTitleChange={props.onDraftTitleChange} move={move} onCommitTitle={props.onCommitTitle} onFocus={() => {
+        {!collaborative && <ItemTitle item={item} readOnly={props.readOnly} onDraftTitleChange={props.onDraftTitleChange} move={move} onCommitTitle={props.onCommitTitle} onFocus={() => {
           setTitleFocused(true);
           onFocus(item.id);
-        }} />
+        }} />}
         {legacyContent && <p role="status" className="pl-7 py-2 text-sm text-destructive">This saved note uses content that no longer meets the current limits. Unchanged legacy embeds are preserved while you edit the rest of the note. Fix them before publishing.</p>}
         {props.trails.filter(trail => trail.itemIds.includes(item.id)).length > 1 && <div className="pl-7 py-2 text-xs text-muted-foreground">
           <p>Used in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length} trails. Edits appear in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length === 2 ? 'both' : 'all of them'}.</p>
@@ -258,6 +278,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           {waiting && <p role="status" className="px-7 pt-2 text-xs text-muted-foreground">
             {waiting === 'limit' ? 'Too many open tabs. Close one to keep editing.' : 'Connecting…'}
           </p>}
+          {collaborative && <h1 className="note-title pending-note-title" data-placeholder="Untitled note">{item.title}</h1>}
           <LexicalReadOnly content={item.content ?? ''} />
         </div>}
         <div className={live ? 'relative' : 'hidden'}>
@@ -300,6 +321,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         <WikiLinkPlugin items={props.items} currentItemId={item.id} />
         <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         <ItemNavigationPlugin itemId={item.id} register={register} move={move} />
+        {collaborative && live && <TitlePlugin />}
         <OnChangePlugin onChange={(state, editor, tags) => {
           const json = JSON.stringify(state.toJSON());
           if (json === lastContentRef.current) return;

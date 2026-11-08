@@ -13,6 +13,7 @@ import { HocuspocusProvider, type HocuspocusProviderWebsocket } from '@hocuspocu
 import * as Y from 'yjs';
 import { COLLAB_ACCESS_DENIED, cursorColor, fetchCollabToken, forgetCollabToken } from '@/lib/collab-client';
 import { ImageNode } from '@/app/editor/nodes/ImageNode';
+import { $isTitleNode } from '@/app/editor/nodes/TitleNode';
 
 export type CollabStatus = 'syncing' | 'synced' | 'offline';
 export type CollabClosedReason = 'reload' | 'revoked';
@@ -69,14 +70,19 @@ function restoreCaret(editor: LexicalEditor, itemId: string) {
 
 function applyHandoff(editor: LexicalEditor, handoff: CollabHandoff): boolean {
   const current = editor.getEditorState();
-  const blank = current.read(() => $getRoot().getTextContent().trim() === '' && $getRoot().getChildren().every($isParagraphNode));
+  const blank = current.read(() => $getRoot().getChildren().filter(child => !$isTitleNode(child))
+    .every(child => $isParagraphNode(child) && child.getTextContent().trim() === ''));
   const unchanged = handoff.base
     ? serializeNoteContent(editor.parseEditorState(handoff.base).toJSON()) === serializeNoteContent(current.toJSON())
     : blank;
   if (!unchanged) return false;
   if (handoff.content !== handoff.base) {
     const children = handoff.content ? JSON.parse(handoff.content).root.children : [];
-    editor.update(() => { $getRoot().clear().append(...children.map($parseSerializedNode)); }, { discrete: true });
+    editor.update(() => {
+      const root = $getRoot();
+      root.getChildren().forEach(child => { if (!$isTitleNode(child)) child.remove(); });
+      root.append(...children.map($parseSerializedNode));
+    }, { discrete: true });
   }
   return true;
 }
