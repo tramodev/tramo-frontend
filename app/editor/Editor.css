@@ -64,6 +64,10 @@
   left: 28px;
 }
 
+.editor-content-column .pending-note-title {
+  padding-left: 28px;
+}
+
 .draggable-block-menu {
   position: absolute;
   left: 0;
@@ -129,6 +133,14 @@
   line-height: 1.5;
   color: var(--foreground);
   text-align: var(--title-align, left);
+}
+
+.pending-note-title {
+  padding-top: 36px;
+}
+
+.pending-note-title + .editor-input {
+  padding-top: 0;
 }
 
 .note-title:has(> br:only-child)::before,
