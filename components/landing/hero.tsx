@@ -13,12 +13,12 @@ export const Hero: React.FC = () => {
         <StaggerItem>
           <h1 className="font-display font-normal leading-[1.12] text-[clamp(40px,5.6vw,64px)]">
             <span className="block">Turn connected, reusable notes</span>
-            <span className="block text-primary font-medium">into trails for learning and explaining.</span>
+            <span className="block">into <strong className="font-semibold">trails</strong> for learning and explaining.</span>
           </h1>
         </StaggerItem>
         <StaggerItem>
           <p className="text-[1.0625rem] leading-7 max-w-[58ch] mx-auto mt-8 text-muted-foreground">
-            Start writing now. Organize your notes as you go, reuse them in different trails, and share a clear explanation.
+            A trail is an ordered path through your notes. Write a note once, reuse it in as many trails as you need, and share a clear explanation.
           </p>
         </StaggerItem>
         <StaggerItem>
