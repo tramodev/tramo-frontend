@@ -176,6 +176,10 @@ export class ImageNode extends DecoratorNode<React.ReactElement> {
     return false;
   }
 
+  getImageId(): string {
+    return this.__imageId;
+  }
+
   getAltText(): string {
     return this.__altText;
   }
