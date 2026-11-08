@@ -126,6 +126,7 @@
 }
 
 .note-title {
+  position: relative;
   margin: 0 0 0.75rem;
   font-family: var(--font-display);
   font-size: 1.75rem;
@@ -148,12 +149,26 @@
   content: attr(data-placeholder);
   color: var(--muted-foreground);
   pointer-events: none;
+  user-select: none;
+}
+
+.editor-input > .note-title:has(> br:only-child)::before {
+  position: absolute;
+  inset-inline: 0;
+  text-align: inherit;
+}
+
+.editor-input > .note-title + p:last-child:has(> br:only-child) {
+  position: relative;
 }
 
 .editor-input > .note-title + p:last-child:has(> br:only-child)::before {
   content: 'Start writing...';
+  position: absolute;
+  left: 0;
   color: var(--muted-foreground);
   pointer-events: none;
+  user-select: none;
 }
 
 .editor-placeholder {
