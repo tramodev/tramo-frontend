@@ -686,7 +686,7 @@ div.editor-equation {
   outline-offset: 2px;
 }
 
-.dark .trail-item-editor > span > span > span {
+.dark .trail-item-editor span[style*="font-family: Arial"][style*="top: -16px"] {
   color: var(--collab-cursor-foreground) !important;
 }
 
