@@ -49,7 +49,7 @@ export default async function Home() {
             <Image src={ctaBg} alt="" fill placeholder="blur" sizes="(min-width: 1396px) 1300px, 100vw" className="-z-20 object-cover object-bottom" />
             <div aria-hidden="true" className="absolute inset-0 -z-10 bg-card/60" />
             <div className="flex flex-col items-center text-center">
-              <h2 className="max-w-[16ch] font-display text-5xl font-medium leading-[1.05] tracking-tight sm:text-6xl">Start your first trail.</h2>
+              <h2 className="landing-display max-w-[16ch] font-display text-5xl font-medium leading-[1.05] sm:text-6xl">Start your first trail.</h2>
               <p className="mt-4 text-[1.0625rem] font-medium text-foreground">Free, open source, no card required.</p>
               <Button asChild size="xl" className="mt-8">
                 <a href="/signup">Start for free<ArrowRight className="size-4" /></a>

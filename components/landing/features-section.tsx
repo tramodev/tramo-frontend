@@ -29,7 +29,7 @@ const STEPS = [
 export function FeaturesSection() {
   return <section id="product" className="scroll-mt-20 pt-16 pb-[84px]">
     <div className="mb-10 max-w-[60ch] sm:mb-12">
-      <h2 className="mb-4 max-w-[24ch] font-display text-[2.5rem] font-medium leading-[1.1] sm:text-[3rem]">Write once. Explain in different ways.</h2>
+      <h2 className="landing-display mb-4 max-w-[24ch] font-display text-[2.5rem] font-medium leading-[1.1] sm:text-[3rem]">Write once. Explain in different ways.</h2>
       <p className="text-[1.0625rem] leading-relaxed text-muted-foreground">Keep your notes connected and reusable. Build trails for the things you want to learn or explain.</p>
     </div>
     <div className="space-y-4">

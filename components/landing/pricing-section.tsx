@@ -33,7 +33,7 @@ export const PricingSection: React.FC = () => {
             <span className="mb-[22px] self-start rounded-full bg-secondary px-3 py-[5px] text-xs font-semibold text-secondary-foreground">
               Free forever · no card required
             </span>
-            <h2 className="mb-2.5 font-display text-4xl font-medium leading-[1.08] tracking-[-.02em]">
+            <h2 className="landing-display mb-2.5 font-display text-4xl font-medium leading-[1.08]">
               Tramo is free.
             </h2>
             <p className="mb-7 max-w-[46ch] text-base leading-[1.6] text-muted-foreground text-pretty">

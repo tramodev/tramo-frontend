@@ -19,6 +19,12 @@
   }
 }
 
+@utility landing-display {
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
 @utility container-read {
   width: 100%;
   max-width: 72ch;

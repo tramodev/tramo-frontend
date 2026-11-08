@@ -85,7 +85,7 @@ export function CollaborationSection() {
   const Mock = FEATURES[active].mock;
   return <section id="collaboration" className="scroll-mt-20 grid items-center gap-10 pt-16 pb-[84px] lg:grid-cols-2 lg:gap-16">
     <div>
-      <h2 className="mb-4 font-display text-[2.5rem] font-medium leading-[1.1] sm:text-[3rem]">Write together.</h2>
+      <h2 className="landing-display mb-4 font-display text-[2.5rem] font-medium leading-[1.1] sm:text-[3rem]">Write together.</h2>
       <p className="mb-8 max-w-[44ch] text-[1.0625rem] leading-relaxed text-muted-foreground">
         Invite people to your project and build trails side by side. <Link href="/wiki/collaboration" className="font-medium text-primary underline-offset-4 hover:underline">Learn more.</Link>
       </p>

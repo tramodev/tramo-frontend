@@ -4,7 +4,7 @@ import { Roboto, Roboto_Flex, Roboto_Mono } from "next/font/google";
 
 export const robotoFlex = Roboto_Flex({
   subsets: ["latin"],
-  axes: ["opsz"],
+  axes: ["opsz", "wdth"],
   variable: "--font-roboto-flex",
 });
 

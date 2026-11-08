@@ -31,7 +31,7 @@ const PREVIEW_PROJECT: ProjectFeedItem = {
 
 export function ExplorePublishSection() {
   return <section id="community" className="pt-16 pb-[84px]">
-    <h2 className="mb-3.5 max-w-[25ch] font-display text-[2.5rem] font-medium leading-[1.1]">Your thinking doesn’t have to end with you.</h2>
+    <h2 className="landing-display mb-3.5 max-w-[25ch] font-display text-[2.5rem] font-medium leading-[1.1]">Your thinking doesn’t have to end with you.</h2>
     <p className="mb-10 max-w-[60ch] text-[1.0625rem] leading-relaxed text-muted-foreground">Follow someone else’s trail. Share a path of your own. Build on ideas instead of starting from a blank page.</p>
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
       <FadeUp className="h-full">
