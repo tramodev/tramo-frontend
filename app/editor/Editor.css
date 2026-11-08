@@ -689,15 +689,15 @@ div.editor-equation {
 .collab-embed-mark::after {
   content: attr(data-name);
   position: absolute;
-  bottom: 100%;
-  left: -4px;
-  margin-bottom: 4px;
-  padding: 0 4px;
-  border-radius: 3px;
+  top: -18px;
+  left: -2px;
+  padding: 2px;
   background: var(--collab-color);
-  color: var(--background);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--collab-cursor-foreground);
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 12px;
   white-space: nowrap;
 }
 
