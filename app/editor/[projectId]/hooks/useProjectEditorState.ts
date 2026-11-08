@@ -194,6 +194,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
   const [role, setRole] = useState<ProjectRole>('OWNER');
   const [accessLost, setAccessLost] = useState(false);
+  const [noAccessProjectId, setNoAccessProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!draft) return;
@@ -271,7 +272,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       if (cancelled) return;
       if (!result) {
         if (refreshKey) setAccessLost(true);
-        else router.replace('/projects');
+        else setNoAccessProjectId(routeProjectId);
         return;
       }
       const { project } = result;
@@ -628,6 +629,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     profile,
     role,
     accessLost,
+    noAccess: noAccessProjectId === routeProjectId,
     trails,
     items,
     mapPreviews,

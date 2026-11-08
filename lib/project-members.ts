@@ -15,6 +15,12 @@ export interface ProjectMember {
   viaLink: boolean;
 }
 
+export interface AccessRequest {
+  username: string;
+  imageUrl: string | null;
+  createdAt: string;
+}
+
 export interface ShareLink {
   role: MemberRole;
   createdAt: string;
@@ -29,7 +35,7 @@ const jsonHeaders = { "Content-Type": "application/json" };
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<Result<T>> {
   const response = await authenticatedFetch(`${API_BASE_URL}${path}`, init);
-  if (response.ok) return { data: (response.status === 204 ? null : await response.json()) as T, error: null, status: response.status };
+  if (response.ok) return { data: (response.status === 204 || response.status === 202 ? null : await response.json()) as T, error: null, status: response.status };
   const message = await response.json().then((body) => body?.message).catch(() => null);
   return { data: null, error: message ?? `Request failed with status ${response.status}`, status: response.status };
 }
@@ -79,4 +85,24 @@ export async function clearShareLink(projectId: string): Promise<Result<null>> {
 
 export async function acceptShareLink(token: string): Promise<Result<{ projectId: string }>> {
   return request(`/api/share-links/accept`, { method: "POST", headers: jsonHeaders, body: JSON.stringify({ token }) });
+}
+
+function accessRequestsPath(projectId: string) {
+  return `/api/project/${encodeURIComponent(projectId)}/access-requests`;
+}
+
+export async function requestAccess(projectId: string): Promise<Result<null>> {
+  return request(`/api/project/${encodeURIComponent(projectId)}/access-request`, { method: "POST" });
+}
+
+export async function listAccessRequests(projectId: string): Promise<Result<AccessRequest[]>> {
+  return request(accessRequestsPath(projectId));
+}
+
+export async function approveAccessRequest(projectId: string, username: string, role: MemberRole): Promise<Result<ProjectMember>> {
+  return request(`${accessRequestsPath(projectId)}/${encodeURIComponent(username)}/approve`, { method: "POST", headers: jsonHeaders, body: JSON.stringify({ role }) });
+}
+
+export async function denyAccessRequest(projectId: string, username: string): Promise<Result<null>> {
+  return request(`${accessRequestsPath(projectId)}/${encodeURIComponent(username)}`, { method: "DELETE" });
 }

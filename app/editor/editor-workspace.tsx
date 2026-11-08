@@ -19,6 +19,7 @@ import { TaskHint } from '@/components/editor/task-hint';
 import { GraphView } from '@/components/editor/graph-view';
 import { hasPendingEmbedDrafts, subscribeEmbedDrafts } from '@/app/editor/embed-draft-status';
 import { subscribeNotificationCount } from '@/lib/notification-stream';
+import { RequestAccess } from '@/components/project/request-access';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export function EditorWorkspace({ user }: { user: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'> }) {
@@ -128,6 +129,8 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
       {startError && <p role="alert" className="text-sm text-destructive">{startError}</p>}
     </div>
   );
+
+  if (project.noAccess) return <RequestAccess projectId={routeProjectId} />;
 
   return (
     <SidebarProvider
