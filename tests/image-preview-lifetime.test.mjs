@@ -26,7 +26,7 @@ function setup(selection = null) {
           nodes.set('image', node); return node;
         },
       },
-      '@/lib/image-resize': { resizeImageToBlob: async () => ({}) },
+      '@/lib/image-resize': { readImageSize: async () => ({}), resizeImageToBlob: async () => ({}) },
       '@/lib/upload-image': { uploadEditorImage: async (_blob, projectId) => { uploads.push(projectId); return 'saved-image'; } },
       './codeBlockGuard': { $isSelectionInCode: () => false },
     })[name] ?? {},

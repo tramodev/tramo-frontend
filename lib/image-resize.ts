@@ -1,14 +1,28 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+function scaledSize(bitmap: ImageBitmap, maxDimension: number) {
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  return { width: Math.round(bitmap.width * scale), height: Math.round(bitmap.height * scale) };
+}
+
+export async function readImageSize(file: File, maxDimension: number): Promise<{ width?: number; height?: number }> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const size = scaledSize(bitmap, file.type === "image/gif" ? Infinity : maxDimension);
+    bitmap.close();
+    return size;
+  } catch {
+    return {};
+  }
+}
+
 export async function resizeImageToBlob(file: File, maxDimension: number, quality: number): Promise<Blob> {
   if (file.type === "image/gif") {
     return file;
   }
 
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
-  const width = Math.round(bitmap.width * scale);
-  const height = Math.round(bitmap.height * scale);
+  const { width, height } = scaledSize(bitmap, maxDimension);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;

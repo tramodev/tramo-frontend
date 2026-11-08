@@ -21,7 +21,7 @@ import {
 } from 'lexical';
 import { INSERT_IMAGE_COMMAND, type InsertImagePayload } from '@/app/editor/commands';
 import { $createImageNode, $isImageNode, ImageNode } from '../nodes/ImageNode';
-import { resizeImageToBlob } from '@/lib/image-resize';
+import { readImageSize, resizeImageToBlob } from '@/lib/image-resize';
 import { uploadEditorImage } from '@/lib/upload-image';
 import { $isSelectionInCode } from './codeBlockGuard';
 
@@ -76,6 +76,7 @@ export async function insertImageWithUpload(
   previews.set(editor, urls);
   urls.add(previewUrl);
   let key: NodeKey | null = null;
+  const size = await readImageSize(file, EDITOR_IMAGE_MAX_DIMENSION);
 
   editor.update(() => {
     if ($isRangeSelection(selection) && $getNodeByKey(selection.anchor.key) && $getNodeByKey(selection.focus.key)) {
@@ -86,7 +87,7 @@ export async function insertImageWithUpload(
       }
       $setSelection(selection);
     }
-    const imageNode = $createImageNode({ altText: file.name, src: previewUrl });
+    const imageNode = $createImageNode({ altText: file.name, src: previewUrl, ...size });
     $insertNodes([imageNode]);
     key = imageNode.getKey();
     $placeCaretBelowImage(imageNode);
