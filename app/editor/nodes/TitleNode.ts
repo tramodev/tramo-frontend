@@ -11,6 +11,7 @@ import {
   type NodeKey,
   type ParagraphNode,
   type RangeSelection,
+  type RootNode,
   type SerializedElementNode,
 } from 'lexical';
 
@@ -71,6 +72,22 @@ export function $createTitleNode(): TitleNode {
 
 export function $isTitleNode(node: LexicalNode | null | undefined): node is TitleNode {
   return node instanceof TitleNode;
+}
+
+export function $normalizeTitles(root: RootNode): TitleNode | null {
+  const titles = root.getChildren().filter($isTitleNode);
+  const title = titles.find(candidate => candidate.getTextContent().trim()) ?? titles[0];
+  if (!title) return null;
+  const kept = title.getTextContent().trim();
+  for (const extra of titles.filter(candidate => candidate !== title)) {
+    const text = extra.getTextContent().trim();
+    if (!text || text === kept) extra.remove();
+    else extra.replace($createParagraphNode(), true);
+  }
+  const first = root.getFirstChild();
+  if (first && !first.is(title)) first.insertBefore(title);
+  if (!title.getNextSibling()) root.append($createParagraphNode());
+  return title;
 }
 
 export function $noteTitle(): string | null {

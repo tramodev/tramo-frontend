@@ -40,10 +40,27 @@ const paragraph = value => lexical.$createParagraphNode().append(text(value));
 const titleNode = value => title.$createTitleNode().append(text(value));
 
 test('the title is always the single first block, followed by a body block', () => {
-  expect(setup(() => lexical.$getRoot().append(paragraph('Body'))).blocks()).toEqual([['note-title', ''], ['paragraph', 'Body']]);
   expect(setup(() => lexical.$getRoot().append(paragraph('Body'), titleNode('Moved'))).blocks()).toEqual([['note-title', 'Moved'], ['paragraph', 'Body']]);
   expect(setup(() => lexical.$getRoot().append(titleNode('First'), titleNode('Second'))).blocks()).toEqual([['note-title', 'First'], ['paragraph', 'Second']]);
   expect(setup(() => lexical.$getRoot().append(titleNode('Alone'))).blocks()).toEqual([['note-title', 'Alone'], ['paragraph', '']]);
+});
+
+test('titles duplicated by concurrent inserts collapse into one without losing distinct text', () => {
+  expect(setup(() => lexical.$getRoot().append(titleNode('Kept'), title.$createTitleNode(), paragraph('Body'))).blocks())
+    .toEqual([['note-title', 'Kept'], ['paragraph', 'Body']]);
+  expect(setup(() => lexical.$getRoot().append(title.$createTitleNode(), titleNode('Typed'), paragraph('Body'))).blocks())
+    .toEqual([['note-title', 'Typed'], ['paragraph', 'Body']]);
+  expect(setup(() => lexical.$getRoot().append(titleNode('Same'), titleNode('Same'), paragraph('Body'))).blocks())
+    .toEqual([['note-title', 'Same'], ['paragraph', 'Body']]);
+  expect(setup(() => lexical.$getRoot().append(titleNode('Align test'), titleNode('Other note'), paragraph(''), paragraph('Body'))).blocks())
+    .toEqual([['note-title', 'Align test'], ['paragraph', 'Other note'], ['paragraph', ''], ['paragraph', 'Body']]);
+});
+
+test('the client never invents a title the server did not send, but restores one deleted locally', () => {
+  expect(setup(() => lexical.$getRoot().append(paragraph('Body'))).blocks()).toEqual([['paragraph', 'Body']]);
+  const s = setup(() => lexical.$getRoot().append(titleNode('Title'), paragraph('Body')));
+  s.editor.update(() => lexical.$getRoot().getChildren().forEach(child => child.remove()), { discrete: true });
+  expect(s.blocks()).toEqual([['note-title', ''], ['paragraph', '']]);
 });
 
 test('title text is plain, single line and capped like the API', () => {

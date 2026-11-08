@@ -569,3 +569,17 @@ test('clients without the current editor schema are told to reload', async () =>
   expect(reasons).toEqual(['reload']);
   close(provider);
 }, 20000);
+
+test('titles duplicated by mixed client versions are collapsed when the note loads', async () => {
+  const duplicated = new Y.Doc();
+  Y.applyUpdate(duplicated, lexical.toYjs('', ''));
+  Y.applyUpdate(duplicated, lexical.toYjs('', 'Typed in one tab'));
+  const titles = doc => doc.get('root-v2', Y.XmlElement).toArray().filter(child => child.nodeName === 'note-title').length;
+  expect(titles(duplicated)).toBe(2);
+  const current = lexical.toLexical(duplicated).title;
+  items.set('66', { state: Buffer.from(Y.encodeStateAsUpdate(duplicated)).toString('base64'), content: '', extractionEpoch: 0, title: current });
+  const editor = connect(66, 660, 'edit');
+  await until(() => editor.synced && titles(editor.document) > 0);
+  expect(titles(editor.document)).toBe(1);
+  close(editor);
+}, 20000);

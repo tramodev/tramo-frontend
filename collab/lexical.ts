@@ -9,7 +9,7 @@ import {
 import { $createParagraphNode, $createTextNode, $getRoot, $parseSerializedNode, type LexicalEditor, type SerializedLexicalNode } from 'lexical';
 import * as Y from 'yjs';
 import { editorConfig } from '@/app/editor/lexical-config';
-import { $createTitleNode, $isTitleNode, $noteTitle, TITLE_TYPE } from '@/app/editor/nodes/TitleNode';
+import { $createTitleNode, $isTitleNode, $normalizeTitles, $noteTitle, TITLE_TYPE } from '@/app/editor/nodes/TitleNode';
 
 type Json = { [key: string]: unknown };
 type Provider = Parameters<typeof syncYjsStateToLexicalV2__EXPERIMENTAL>[1];
@@ -78,17 +78,18 @@ function syncing(doc: Y.Doc, load?: (editor: LexicalEditor) => void): LexicalEdi
 
 function $placeTitle(title: string) {
   const root = $getRoot();
-  const first = root.getFirstChild();
-  const node = $isTitleNode(first) ? first : $createTitleNode();
-  if (node !== first) {
+  let node = $normalizeTitles(root);
+  if (!node) {
+    node = $createTitleNode();
+    const first = root.getFirstChild();
     if (first) first.insertBefore(node);
     else root.append(node);
+    $normalizeTitles(root);
   }
   if (node.getTextContent() !== title) {
     node.clear();
     if (title) node.append($createTextNode(title));
   }
-  if (!node.getNextSibling()) root.append($createParagraphNode());
 }
 
 export function toYjs(content: string, title = ''): Uint8Array {

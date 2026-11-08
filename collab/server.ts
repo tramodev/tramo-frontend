@@ -388,7 +388,7 @@ const server = new Server<Context>({
     const state: DocState = { epoch: loaded.extractionEpoch, author: null, bootstrapHash: null, poisoned: false, unsaved: false, attempts: 0, title: loaded.title ?? '' };
     if (loaded.state) {
       Y.applyUpdate(document, Buffer.from(loaded.state, 'base64'));
-      if (toLexical(document).title !== state.title) setTitle(document, state.title);
+      setTitle(document, state.title);
     } else {
       Y.applyUpdate(document, toYjs(loaded.content, state.title));
       state.bootstrapHash = sha256(loaded.content);

@@ -6,8 +6,9 @@ import { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { mergeRegister } from '@lexical/utils';
 import {
-  $createParagraphNode,
   $createTextNode,
+  $getEditor,
+  $getRoot,
   $getSelection,
   $hasUpdateTag,
   $isElementNode,
@@ -30,21 +31,19 @@ import {
   RootNode,
   type LexicalEditor,
 } from 'lexical';
-import { $createTitleNode, $inTitle, $isTitleNode, TITLE_MAX_LENGTH, TitleNode } from '@/app/editor/nodes/TitleNode';
+import { $createTitleNode, $inTitle, $isTitleNode, $normalizeTitles, TITLE_MAX_LENGTH, TitleNode } from '@/app/editor/nodes/TitleNode';
 
 const fromPeer = () => $hasUpdateTag(COLLABORATION_TAG) || $hasUpdateTag(HISTORIC_TAG);
 
 export function $enforceTitleRoot(root: RootNode) {
-  if (fromPeer()) return;
-  const titles = root.getChildren().filter($isTitleNode);
-  const title = titles[0] ?? $createTitleNode();
-  titles.slice(1).forEach(extra => extra.replace($createParagraphNode(), true));
+  if (fromPeer() || $normalizeTitles(root)) return;
+  const hadTitle = $getEditor().getEditorState().read(() => $isTitleNode($getRoot().getFirstChild()));
+  if (!hadTitle) return;
+  const title = $createTitleNode();
   const first = root.getFirstChild();
-  if (first !== title) {
-    if (first) first.insertBefore(title);
-    else root.append(title);
-  }
-  if (!title.getNextSibling()) root.append($createParagraphNode());
+  if (first) first.insertBefore(title);
+  else root.append(title);
+  $normalizeTitles(root);
 }
 
 export function $enforceTitleText(title: TitleNode) {
