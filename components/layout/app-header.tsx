@@ -45,7 +45,7 @@ export function AppHeader({
               Log in
             </Link>
             <Button asChild size="lg">
-              <Link href="/signup">Start for free</Link>
+              <Link href="/signup">Sign up</Link>
             </Button>
           </div>
         )}

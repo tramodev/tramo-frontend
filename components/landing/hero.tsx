@@ -24,10 +24,7 @@ export const Hero: React.FC = () => {
         <StaggerItem>
           <div className="flex gap-3 flex-wrap justify-center mt-8">
             <Button asChild size="xl">
-              <a href="/signup">Start for free</a>
-            </Button>
-            <Button asChild variant="outline" size="xl">
-              <a href="#product">See how it works</a>
+              <a href="/signup">Start writing</a>
             </Button>
           </div>
         </StaggerItem>

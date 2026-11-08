@@ -52,7 +52,7 @@ export function NavMobileMenu({ isLoggedIn }: { isLoggedIn: boolean }) {
               </SheetClose>
               <SheetClose asChild>
                 <Link href="/signup" className="mt-2">
-                  <Button size="lg" className="w-full">Start for free</Button>
+                  <Button size="lg" className="w-full">Sign up</Button>
                 </Link>
               </SheetClose>
             </>
