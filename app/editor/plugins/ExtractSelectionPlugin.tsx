@@ -101,7 +101,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
         const result = captureSelection(editor);
         if (!result.capture) { setAvailable(result.reason ? { ...available, reason: result.reason } : null); return; }
         opened.current = true; request.current = null; setDialogTrail(trail); setSubmitted(false);
-        setCapture(result.capture); setTitle(''); setLeaveLink(true); setPlacement(trail ? 'last' : 'outside'); setError(''); setCreated(null);
+        setCapture(result.capture); setTitle(''); setLeaveLink(true); setPlacement(trail ? 'next' : 'outside'); setError(''); setCreated(null);
         setUsage(null);
         void getExtractionTrailCount(projectId, itemId).then(count => { if (opened.current) setUsage(count); })
           .catch(failure => { if (opened.current) setError(failure instanceof Error ? failure.message : 'Could not check note usage. Close and try again.'); });
