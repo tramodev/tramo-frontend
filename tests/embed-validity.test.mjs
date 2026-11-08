@@ -30,6 +30,19 @@ test('valid and invalid syntax use shared renderer settings', async () => {
   expect(errors.KATEX_OPTS).toMatchObject({ trust: false, throwOnError: true, maxExpand: 1000, maxSize: 50 });
 });
 
+test('display line breaks render without a strict-mode warning', () => {
+  const warn = console.warn;
+  const warnings = [];
+  console.warn = (...args) => warnings.push(args);
+  try {
+    expect(errors.equationError('a \\\\ b')).toBeNull();
+    katex.renderToString('a \\\\ b', { ...errors.KATEX_OPTS, displayMode: true });
+  } finally {
+    console.warn = warn;
+  }
+  expect(warnings).toEqual([]);
+});
+
 test.each(['\\href{javascript:alert(1)}{x}', '\\url{javascript:alert(1)}', '\\htmlClass{evil}{x}', '\\def\\a{\\a\\a}\\a', 'x^{'.repeat(3000)])('unsafe or pathological math remains safe: %s', source => {
   const error = errors.equationError(source);
   if (!error) {
