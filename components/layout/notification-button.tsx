@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { subscribeNotificationCount } from "@/lib/notification-stream"
 import { useRouter } from "next/navigation"
-import { ArrowBigUp, Award, Bell, Check, CheckCheck, GitFork, Link2, MessageCircle, Rocket, Share2, UserPlus, Users, X } from "lucide-react"
+import { ArrowBigUp, Award, Bell, Check, CheckCheck, GitFork, Link2, MessageCircle, Rocket, Share2, UserPlus, Users, UserRoundPlus, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,7 @@ const ICONS: Record<AppNotification["type"], React.ComponentType<{ className?: s
   MEMBER_ADDED: Users,
   MEMBER_JOINED: Users,
   SHARE_LINK: Link2,
+  ACCESS_REQUEST: UserRoundPlus,
 }
 
 function others(count: number) {
@@ -67,6 +68,8 @@ function notificationText(n: AppNotification) {
       return <>{n.latestActorUsername}{others(n.count)} joined <strong>{n.projectTitle}</strong></>
     case "SHARE_LINK":
       return <><strong>{n.projectTitle}</strong> is no longer unlisted. Open Share to copy its new view link</>
+    case "ACCESS_REQUEST":
+      return <>{n.latestActorUsername}{others(n.count)} requested access to <strong>{n.projectTitle}</strong></>
   }
 }
 
@@ -74,6 +77,7 @@ function notificationHref(n: AppNotification): string {
   if (n.type === "FOLLOW") return n.latestActorUsername ? `/u/${encodeURIComponent(n.latestActorUsername)}` : "/explore"
   if (n.type === "BADGE") return "/profile"
   if (n.type === "PUBLISH" || n.type === "SHARE" || n.type === "COMMENT") return n.projectId ? `/p/${n.projectId}` : "/explore"
+  if (n.type === "ACCESS_REQUEST") return n.projectId ? `/editor/${n.projectId}?share=1` : "/projects"
   return n.projectId ? `/editor/${n.projectId}` : "/profile"
 }
 

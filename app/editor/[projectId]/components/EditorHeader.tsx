@@ -1,7 +1,8 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AlertCircle, Globe, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -156,7 +157,14 @@ export function EditorActions({
   canEdit = true,
   presence,
 }: EditorActionsProps) {
-  const [shareOpen, setShareOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const [shareOpen, setShareOpen] = useState(() => searchParams.get('share') === '1');
+  useEffect(() => {
+    if (searchParams.get('share') !== '1') return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('share');
+    window.history.replaceState(window.history.state, '', url);
+  }, [searchParams]);
   return (
     <>
       <EmbedErrorsStatus key={`${projectId}:${restoreEpoch}`} items={items} onReview={onReviewEmbed} />
