@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import React from 'react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StaggerGroup, StaggerItem } from '@/components/landing/landing-motion';
 
@@ -23,8 +24,8 @@ export const Hero: React.FC = () => {
         </StaggerItem>
         <StaggerItem>
           <div className="flex gap-3 flex-wrap justify-center mt-8">
-            <Button asChild size="xl">
-              <a href="/signup">Start writing</a>
+            <Button asChild size="xl" className="group h-13 px-8 text-base shadow-none hover:shadow-none active:scale-[0.98] has-[>svg]:px-8">
+              <a href="/signup">Start writing<ArrowRight aria-hidden="true" className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5" /></a>
             </Button>
           </div>
         </StaggerItem>

@@ -51,8 +51,8 @@ export default async function Home() {
             <div className="flex flex-col items-center text-center">
               <h2 className="landing-display max-w-[16ch] font-display text-5xl font-medium leading-[1.05] sm:text-6xl">Your ideas, one path at a time.</h2>
               <p className="mt-4 text-[1.0625rem] font-medium text-foreground">Free, open source, no card required.</p>
-              <Button asChild size="xl" className="mt-8">
-                <a href="/signup">Create your first trail<ArrowRight className="size-4" /></a>
+              <Button asChild size="xl" className="mt-8 group h-13 px-8 text-base shadow-none hover:shadow-none active:scale-[0.98] has-[>svg]:px-8">
+                <a href="/signup">Create your first trail<ArrowRight aria-hidden="true" className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5" /></a>
               </Button>
             </div>
           </FadeUp>
