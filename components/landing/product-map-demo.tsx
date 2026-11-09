@@ -26,7 +26,7 @@ const u = (n: number) => `calc(${n} * var(--u))`;
 function MapCard({ note, index, last }: { note: MapNote; index: number; last: boolean }) {
   return <div className="relative flex flex-col rounded-[length:var(--r)] border border-border bg-card text-card-foreground" style={{ '--r': u(22), padding: `${u(28)} ${u(26)} ${u(26)}` } as CSSProperties}>
     <div className="flex items-baseline justify-between" style={{ marginBottom: u(16) }}>
-      <h4 className="font-display font-normal" style={{ fontSize: u(42), lineHeight: 1.19 }}>{note.title}</h4>
+      <p className="font-display font-normal" style={{ fontSize: u(42), lineHeight: 1.19 }}>{note.title}</p>
       <span className="flex items-baseline font-medium uppercase tracking-wide text-muted-foreground" style={{ fontSize: u(16), gap: u(12) }}>
         {note.shared && <span>Shared</span>}
         <span>{index + 1}</span>
@@ -47,7 +47,7 @@ export function ProductMapDemo() {
     >
       <div className="grid grid-cols-[810fr_811fr] items-start gap-x-[var(--gap-x)]" style={{ '--gap-x': u(93) } as CSSProperties}>
         {TRAILS.map(trail => <section key={trail.title}>
-          <h3 className="font-display font-normal" style={{ fontSize: u(32), lineHeight: 1.31, padding: `0 ${u(25)} ${u(33)}` }}>{trail.title}</h3>
+          <p className="font-display font-normal" style={{ fontSize: u(32), lineHeight: 1.31, padding: `0 ${u(25)} ${u(33)}` }}>{trail.title}</p>
           <div className="flex flex-col rounded-[length:var(--r)] border border-border" style={{ '--r': u(24), gap: u(65), padding: `${u(45)} ${u(25)} ${u(38)}` } as CSSProperties}>
             {trail.notes.map((note, index) => <MapCard key={note.title} note={note} index={index} last={index === trail.notes.length - 1} />)}
           </div>

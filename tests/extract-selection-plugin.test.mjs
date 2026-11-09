@@ -63,7 +63,7 @@ test('double submit is blocked and ambiguous failure retries the same operation 
   expect(s.requests).toHaveLength(2); expect(s.requests[1].args[2]).toBe(s.requests[0].args[2]); expect(s.saves).toHaveLength(1);
   s.requests[1].resolve(s.result); await settle();
   expect(s.applied).toEqual([[s.result]]); expect(s.replacements).toHaveLength(1); expect(s.replacements[0].slice(2)).toEqual(['new', 'New note', true]); expect(s.editable()).toBe(true);
-  expect(s.requests[0].args[2]).toEqual({ operationId: 'fixed-operation-id', title: 'New note', extractedContent: 'extracted draft', trailId: 1, appendToTrail: true, expectedOrder: [2, 3] });
+  expect(s.requests[0].args[2]).toEqual({ operationId: 'fixed-operation-id', title: 'New note', extractedContent: 'extracted draft', trailId: 1, appendToTrail: false, expectedOrder: [2, 3] });
 });
 test('a selection changed while extracting is left in place and reported', async () => {
   const s = setup(); s.open(); await settle(); s.selectionChanged(); s.button('Extract').props.onClick(); await settle(); s.requests[0].resolve(s.result); await settle();
@@ -113,13 +113,17 @@ test('floating action is local to the editor scroller and hides when the selecti
   expect(s.button('Extract to new note')).toBeUndefined();
 });
 
-test('offers next, last and outside in order and sends last placement with the trail snapshot', async () => {
+test('offers next, last and outside in order, defaults to the next step and can still append at the end', async () => {
   const s = setup(); s.open(); await settle();
-  expect(s.render().find(node => node.type === 'select').props.value).toBe('last');
+  expect(s.render().find(node => node.type === 'select').props.value).toBe('next');
   const choices = s.render().filter(node => node.type === 'option');
   expect(choices.map(node => node.props.children)).toEqual(['Next step in this trail', 'Last step in this trail', 'Note outside trails']);
   s.button('Extract').props.onClick(); await settle();
-  expect(s.requests[0].args[2]).toMatchObject({ trailId: 1, appendToTrail: true, expectedOrder: [2, 3] });
+  expect(s.requests[0].args[2]).toMatchObject({ trailId: 1, appendToTrail: false, expectedOrder: [2, 3] });
+  const last = setup(); last.open(); await settle();
+  last.render().find(node => node.type === 'select').props.onChange({ target: { value: 'last' } });
+  last.button('Extract').props.onClick(); await settle();
+  expect(last.requests[0].args[2]).toMatchObject({ trailId: 1, appendToTrail: true, expectedOrder: [2, 3] });
 });
 
 test.each(['', '   '])('empty title %j extracts as Untitled with a link by default', async title => {
@@ -130,7 +134,7 @@ test.each(['', '   '])('empty title %j extracts as Untitled with a link by defau
   expect(s.button('Extract').props.disabled).toBe(false);
   expect(s.render().find(node => node.props.type === 'checkbox').props.checked).toBe(true);
   s.button('Extract').props.onClick(); await settle();
-  expect(s.requests[0].args[2]).toMatchObject({ title: 'Untitled', appendToTrail: true });
+  expect(s.requests[0].args[2]).toMatchObject({ title: 'Untitled', appendToTrail: false });
   s.requests[0].resolve(s.result); await settle();
   expect(s.replacements[0].slice(3)).toEqual(['Untitled', true]);
 });
@@ -139,7 +143,7 @@ test('link can be disabled independently of trail placement and stays frozen on 
   const s = setup(); s.open(); await settle();
   s.render().find(node => node.props.type === 'checkbox').props.onChange({ target: { checked: false } });
   s.button('Extract').props.onClick(); await settle();
-  expect(s.requests[0].args[2]).toMatchObject({ title: 'New note', trailId: 1, appendToTrail: true });
+  expect(s.requests[0].args[2]).toMatchObject({ title: 'New note', trailId: 1, appendToTrail: false });
   expect(s.render().find(node => node.props.type === 'checkbox').props.disabled).toBe(true);
   s.requests[0].reject(new Error('Connection lost')); await settle();
   expect(s.render().find(node => node.props.type === 'checkbox').props.disabled).toBe(true);

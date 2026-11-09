@@ -64,6 +64,10 @@
   left: 28px;
 }
 
+.editor-content-column .pending-note-title {
+  padding-left: 28px;
+}
+
 .draggable-block-menu {
   position: absolute;
   left: 0;
@@ -119,6 +123,52 @@
 .editor-input:focus,
 .editor-input:focus-visible {
   outline: 0;
+}
+
+.note-title {
+  position: relative;
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--foreground);
+  text-align: var(--title-align, left);
+}
+
+.pending-note-title {
+  padding-top: 36px;
+}
+
+.pending-note-title + .editor-input {
+  padding-top: 0;
+}
+
+.note-title:has(> br:only-child)::before,
+.pending-note-title:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+  user-select: none;
+}
+
+.editor-input > .note-title:has(> br:only-child)::before {
+  position: absolute;
+  inset-inline: 0;
+  text-align: inherit;
+}
+
+.editor-input > .note-title + p:last-child:has(> br:only-child) {
+  position: relative;
+}
+
+.editor-input > .note-title + p:last-child:has(> br:only-child)::before {
+  content: 'Start writing...';
+  position: absolute;
+  left: 0;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  user-select: none;
 }
 
 .editor-placeholder {
@@ -636,18 +686,22 @@ div.editor-equation {
   outline-offset: 2px;
 }
 
+.dark .trail-item-editor span[style*="font-family: Arial"][style*="top: -16px"] {
+  color: var(--collab-cursor-foreground) !important;
+}
+
 .collab-embed-mark::after {
   content: attr(data-name);
   position: absolute;
-  bottom: 100%;
-  left: -4px;
-  margin-bottom: 4px;
-  padding: 0 4px;
-  border-radius: 3px;
+  top: -18px;
+  left: -2px;
+  padding: 2px;
   background: var(--collab-color);
-  color: var(--background);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--collab-cursor-foreground);
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 12px;
   white-space: nowrap;
 }
 
@@ -699,6 +753,18 @@ div.editor-equation {
   line-height: 1.4;
   color: var(--destructive);
   white-space: pre-wrap;
+}
+
+.editor-image-pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
 }
 
 .editor-image-wrapper {

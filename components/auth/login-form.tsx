@@ -80,7 +80,7 @@ export function LoginForm({
       </div>
       <FieldGroup className="mt-2 gap-[22px]">
         {(captchaError || state?.error) && (
-          <div id="login-error" role="alert" className="flex flex-col items-center gap-2 text-sm text-center text-destructive">
+          <div id="login-error" role="alert" className="flex flex-col items-start gap-2 text-sm text-destructive">
             {captchaError || state?.error}
             {state?.needsVerification && (
               <ResendVerificationButton {...(username.includes("@") ? { email: username } : { username })} />
@@ -124,7 +124,7 @@ export function LoginForm({
           <GoogleAuthButton text="signin_with" />
           <FieldDescription className="text-left">
             Don&apos;t have an account?{" "}
-            <a href="signup" className="touch-target font-medium text-primary">
+            <a href="/signup" className="touch-target font-medium text-primary">
               Sign up
             </a>
           </FieldDescription>

@@ -1,10 +1,12 @@
 import { parseResponse } from '@/lib/http';
 import type { Project, ProjectRole, ProjectVisibility } from '@/lib/projects-store';
-import type { Item, Trail, TitleAlign } from '@/app/editor/types';
+import type { Item } from '@/app/editor/types';
+import { toStructure } from '@/app/editor/structure';
 
 interface EditorBootstrapDTO {
   id: string;
   restoreEpoch: number;
+  structureVersion: number;
   historyUnavailable: boolean;
   title: string;
   description: string | null;
@@ -28,16 +30,11 @@ export async function getEditorBootstrap(id: string, noteId?: string | null, tra
   const response = await fetch(`/api/projects/${encodeURIComponent(id)}/editor${params.size ? `?${params}` : ''}`, { cache: 'no-store' });
   if (response.status === 404) return null;
   const dto = await parseResponse<EditorBootstrapDTO>(response);
-  const items: Record<string, Item> = Object.fromEntries(dto.items.map((item) => [String(item.id), {
-    id: String(item.id), title: item.title, titleAlign: (item.titleAlign as TitleAlign) ?? 'center',
-    unfiled: item.unfiled, content: null, textStats: { words: item.words, characters: item.characters },
-  }]));
-  const trails: Trail[] = dto.trails.map((trail) => ({
-    id: String(trail.id), title: trail.title, description: trail.description ?? '',
-    version: trail.version, forkedFrom: trail.forkedFromId == null ? null : String(trail.forkedFromId),
-    itemIds: trail.itemIds.map(String), steps: trail.itemIds.map((itemId) => ({ itemId: String(itemId) })),
-  }));
+  const structure = toStructure({ version: dto.structureVersion, restoreEpoch: dto.restoreEpoch, trails: dto.trails, items: dto.items });
+  const items: Record<string, Item> = Object.fromEntries(Object.entries(structure.items).map(([id, item]) => [id, { ...item, content: null }]));
+  const trails = structure.trails;
   return {
+    structure,
     restoreEpoch: dto.restoreEpoch,
     historyUnavailable: dto.historyUnavailable,
     project: { id: dto.id, restoreEpoch: dto.restoreEpoch, title: dto.title, description: dto.description ?? '', graphColors: dto.graphColors,

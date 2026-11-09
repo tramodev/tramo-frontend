@@ -31,35 +31,34 @@ const PREVIEW_PROJECT: ProjectFeedItem = {
 
 export function ExplorePublishSection() {
   return <section id="community" className="pt-16 pb-[84px]">
-    <div className="mb-4 text-sm font-medium text-primary">Explore & publish</div>
-    <h2 className="mb-3.5 max-w-[25ch] font-display text-[2.5rem] font-medium leading-[1.1]">Your thinking doesn’t have to end with you.</h2>
+    <h2 className="landing-display mb-3.5 max-w-[25ch] font-display text-[2.5rem] font-medium leading-[1.1]">Your thinking doesn’t have to end with you.</h2>
     <p className="mb-10 max-w-[60ch] text-[1.0625rem] leading-relaxed text-muted-foreground">Follow someone else’s trail. Share a path of your own. Build on ideas instead of starting from a blank page.</p>
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-16 md:grid-cols-2 md:gap-12 lg:gap-16">
       <FadeUp className="h-full">
-        <div className="flex h-full flex-col overflow-hidden rounded-t-[28px] rounded-b-sm bg-card">
-          <div className="flex flex-1 flex-col p-6 sm:p-9">
+        <div className="flex h-full flex-col">
+          <div className="flex flex-1 flex-col pb-8">
           <h3 className="mb-3 font-display text-2xl font-medium">Find your next thread.</h3>
           <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">Discover published projects and follow their trails to find your next idea.</p>
           <Button asChild variant="secondary" size="lg" className="mt-auto self-start">
             <a href="/explore">Explore projects<ArrowRight className="h-4 w-4" /></a>
           </Button>
           </div>
-          <div aria-hidden="true" inert className="relative mx-6 h-[320px] overflow-hidden rounded-t-xl border border-b-0 border-border bg-background [container-type:inline-size] sm:mx-9">
+          <div aria-hidden="true" inert className="relative h-[320px] overflow-hidden rounded-xl border border-border bg-background [container-type:inline-size]">
             <div className="absolute left-0 top-0 w-[680px] origin-top-left space-y-4 p-6 [transform:scale(calc(100cqw/680px))]">
-              <p className="font-display text-3xl font-medium">Explore</p>
+              <p className="font-display text-3xl font-medium">Example projects</p>
+              <ExploreCard project={{ ...PREVIEW_PROJECT, id: 'landing-fork', title: 'New trails through the Memex', description: 'A new perspective built on a shared starting point.', ownerUsername: 'nolan', forkedFromProjectId: PREVIEW_PROJECT.id, forkedFromTitle: PREVIEW_PROJECT.title, forkedFromOwnerUsername: PREVIEW_PROJECT.ownerUsername }} loggedIn={false} username={null} interactive={false} />
               <ExploreCard project={PREVIEW_PROJECT} loggedIn={false} username={null} interactive={false} />
-              <ExploreCard project={{ ...PREVIEW_PROJECT, id: 'landing-preview-2', title: 'Mapping the origins of jazz', description: 'A short trail through the roots of jazz, from New Orleans brass bands to bebop.', ownerUsername: 'nolan', thumbnailImageUrl: null, tags: ['music', 'history'] }} loggedIn={false} username={null} interactive={false} />
             </div>
           </div>
         </div>
       </FadeUp>
       <FadeUp delay={0.1} className="h-full">
-        <div className="flex h-full flex-col overflow-hidden rounded-t-[28px] rounded-b-sm bg-card">
-          <div className="flex flex-col p-6 sm:p-9">
+        <div className="flex h-full flex-col">
+          <div className="flex flex-col pb-8">
           <h3 className="mb-3 font-display text-2xl font-medium">Publish when you’re ready.</h3>
           <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">Share a snapshot readers can follow, note by note. Keep working privately and publish an update when it’s ready.</p>
           </div>
-          <div aria-hidden="true" inert className="mx-6 flex min-h-[320px] flex-1 flex-col gap-4 overflow-hidden rounded-t-xl border border-b-0 border-border bg-background p-5 sm:mx-9">
+          <div aria-hidden="true" inert className="flex min-h-[320px] flex-1 flex-col gap-4 overflow-hidden rounded-xl border border-border bg-background p-5">
             <div className="flex flex-col gap-1.5">
               <p className="text-sm font-medium">Visibility</p>
               <div className="flex items-center gap-3 rounded-md border border-border px-3.5 py-2.5">
@@ -82,20 +81,6 @@ export function ExplorePublishSection() {
                 {PREVIEW_PROJECT.tags.map(tag => <span key={tag} className="rounded-sm border border-border px-2 py-0.5 text-[0.6875rem] font-medium text-muted-foreground">{tag}</span>)}
               </div>
             </div>
-          </div>
-        </div>
-      </FadeUp>
-      <FadeUp delay={0.2} className="md:col-span-2">
-        <div className="grid gap-8 overflow-hidden rounded-[28px] bg-card p-6 sm:p-9 xl:grid-cols-2 xl:items-center lg:gap-10">
-          <div>
-            <h3 className="mb-3 font-display text-2xl font-medium">Make it your own.</h3>
-            <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">Fork a project for free. The original author always gets credit.</p>
-            <Button asChild variant="secondary" size="lg">
-              <a href="/explore">Find a project to fork<ArrowRight className="h-4 w-4" /></a>
-            </Button>
-          </div>
-          <div aria-hidden="true" inert className="min-w-0 rounded-lg shadow-elevation-1 ring-8 ring-primary/5 sm:ring-[12px]">
-            <ExploreCard project={{ ...PREVIEW_PROJECT, id: 'landing-fork', title: 'New trails through the Memex', description: 'A new perspective built on a shared starting point.', ownerUsername: 'nolan', forkedFromProjectId: PREVIEW_PROJECT.id, forkedFromTitle: 'Memex and ...', forkedFromOwnerUsername: PREVIEW_PROJECT.ownerUsername }} loggedIn={false} username={null} interactive={false} />
           </div>
         </div>
       </FadeUp>

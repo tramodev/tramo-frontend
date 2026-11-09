@@ -71,6 +71,7 @@ test('an invalid project rename never enters the snapshot save barrier', async (
     '@/lib/project-validation': validation,
     '@/lib/pending-saves': pending,
     '@/lib/item-title-saves': load('lib/item-title-saves.ts').exports,
+    '@/app/editor/structure': load('app/editor/structure.ts').exports,
     'next/navigation': { useRouter: () => ({}) },
     '@/app/editor/[projectId]/hooks/useAutoSave': { useAutoSave: () => ({}) },
   });

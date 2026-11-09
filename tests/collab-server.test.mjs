@@ -40,6 +40,8 @@ const stores = [];
 const deleted = new Set();
 const failures = new Map();
 const apiRequests = [];
+const structures = new Map();
+const structureFailures = new Map();
 const forbiddenAuthors = new Set();
 const SAFE = JSON.stringify({ root: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', text: 'label' }] }] } });
 
@@ -68,7 +70,7 @@ function presence(project, user, role, options = {}) {
 }
 
 function connect(item, user, perm, options = {}) {
-  const websocketProvider = options.socket ?? new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
+  const websocketProvider = options.socket ?? new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}?schema=2`, maxAttempts: 1 });
   const provider = new HocuspocusProvider({ websocketProvider, name: String(item), document: new Y.Doc(), token: token(item, user, perm, options.expiresIn), ...options.provider });
   provider.attach();
   return provider;
@@ -108,6 +110,19 @@ beforeAll(async () => {
       apiRequests.push(request.url);
       const id = request.url.match(/items\/(\d+)/)?.[1];
       if (request.headers['x-collab-secret'] !== SECRET) return response.writeHead(403).end();
+      const project = request.url.match(/\/projects\/(\d+)\/structure$/)?.[1];
+      if (request.method === 'GET' && project) {
+        if (structureFailures.get(project) > 0) {
+          structureFailures.set(project, structureFailures.get(project) - 1);
+          return response.writeHead(503).end();
+        }
+        if (!structures.has(project)) return response.writeHead(404).end();
+        return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(structures.get(project)));
+      }
+      if (request.method === 'POST' && request.url.endsWith('/projects/structure-versions')) {
+        const versions = Object.fromEntries(JSON.parse(body).filter(id => structures.has(String(id))).map(id => [id, structures.get(String(id)).version]));
+        return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(versions));
+      }
       if (request.method === 'GET' && id && deleted.has(id)) return response.writeHead(404).end();
       if (request.method === 'GET' && id) {
         const item = items.get(id) ?? { state: null, content: '', extractionEpoch: 0 };
@@ -122,10 +137,10 @@ beforeAll(async () => {
         const stored = JSON.parse(body);
         stores.push({ id, ...stored });
         if (stored.content.includes('javascript:')) {
-          items.set(id, { state: stored.state, content: SAFE, extractionEpoch: stored.extractionEpoch });
+          items.set(id, { state: stored.state, content: SAFE, extractionEpoch: stored.extractionEpoch, title: stored.title ?? items.get(id)?.title });
           return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ content: SAFE }));
         }
-        items.set(id, { state: stored.state, content: stored.content, extractionEpoch: stored.extractionEpoch });
+        items.set(id, { state: stored.state, content: stored.content, extractionEpoch: stored.extractionEpoch, title: stored.title ?? items.get(id)?.title });
         return response.writeHead(204).end();
       }
       if (request.url.endsWith('/check')) return response.writeHead(200, { 'Content-Type': 'application/json' }).end('[]');
@@ -144,6 +159,8 @@ beforeAll(async () => {
       COLLAB_MAX_MESSAGE_BYTES: String(64 * 1024),
       COLLAB_MAX_SOCKETS_PER_USER: '2',
       COLLAB_METRICS_SECRET: 'test-metrics-secret',
+      COLLAB_STRUCTURE_RECONCILE_MS: '300',
+      COLLAB_STRUCTURE_RETRY_MS: '20',
     },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
@@ -162,8 +179,11 @@ afterAll(async () => {
 
 test('every editor node survives the JSON to Yjs round trip', () => {
   const doc = new Y.Doc();
-  Y.applyUpdate(doc, lexical.toYjs(NOTE));
-  expect(isDeepStrictEqual(JSON.parse(lexical.toLexical(doc)), JSON.parse(lexical.canonicalize(NOTE)))).toBe(true);
+  Y.applyUpdate(doc, lexical.toYjs(NOTE, 'Title'));
+  const { content, title } = lexical.toLexical(doc);
+  expect(isDeepStrictEqual(JSON.parse(content), JSON.parse(lexical.canonicalize(NOTE)))).toBe(true);
+  expect(title).toBe('Title');
+  expect(content).not.toContain('note-title');
 });
 
 test('legacy notes missing default keys are canonicalized, never overwritten', () => {
@@ -182,7 +202,7 @@ test('editors converge, the server bootstraps from JSON and persists as the edit
   const bootstrap = await until(() => stores.find(store => store.id === '1' && store.bootstrapHash));
   expect(bootstrap.content).toBe(NOTE);
   expect(bootstrap.extractionEpoch).toBe(3);
-  expect(isDeepStrictEqual(JSON.parse(lexical.toLexical(second.document)), JSON.parse(lexical.canonicalize(NOTE)))).toBe(true);
+  expect(isDeepStrictEqual(JSON.parse(lexical.toLexical(second.document).content), JSON.parse(lexical.canonicalize(NOTE)))).toBe(true);
   first.document.getMap('probe').set('from', 'first');
   await until(() => second.document.getMap('probe').get('from') === 'first');
   const stored = await until(() => stores.find(store => store.id === '1' && !store.bootstrapHash && store.authorId === 10), 15000);
@@ -264,10 +284,11 @@ test('a restore reaches open editors as a live update and closes notes it delete
   const closes = [];
   kept.on('close', ({ event }) => closes.push(['kept', event.reason]));
   removed.on('close', ({ event }) => closes.push(['removed', event.reason]));
-  items.set('7', { state: null, content: SAFE, extractionEpoch: 1 });
+  items.set('7', { state: null, content: SAFE, extractionEpoch: 1, title: 'Restored title' });
   deleted.add('17');
   expect((await internal('/internal/reset', { itemIds: [7, 17] })).status).toBe(204);
-  await until(() => lexical.toLexical(kept.document).includes('"label"') && closes.length === 1);
+  await until(() => lexical.toLexical(kept.document).content.includes('"label"') && closes.length === 1);
+  expect(lexical.toLexical(kept.document).title).toBe('Restored title');
   expect(closes).toEqual([['removed', 'deleted']]);
   kept.document.getMap('probe').set('after', 'restore');
   const stored = await until(() => stores.find(store => store.id === '7' && store.extractionEpoch === 1), 15000);
@@ -285,7 +306,7 @@ test('links the API strips are removed from the live document too', async () => 
   ] }] } });
   lexical.replaceContent(author.document, unsafe);
   await until(() => stores.some(store => store.id === '18' && store.content.includes('javascript:')), 15000);
-  await until(() => !lexical.toLexical(author.document).includes('javascript:'), 15000);
+  await until(() => !lexical.toLexical(author.document).content.includes('javascript:'), 15000);
   close(author);
 }, 30000);
 
@@ -334,7 +355,7 @@ test('an image still uploading does not keep the rest of the note from saving wh
   close(author);
   const stored = await until(() => stores.find(store => store.id === '33' && store.content.includes('saved meanwhile')), 15000);
   expect(stored.content).not.toContain('"imageId":""');
-  expect(lexical.toLexical(other.document)).toContain('"imageId":""');
+  expect(lexical.toLexical(other.document).content).toContain('"imageId":""');
   close(other);
 }, 30000);
 
@@ -398,7 +419,7 @@ test('metrics are served in Prometheus format only with the metrics secret', asy
 
 test('a note remounted with a new provider while the old one was still authenticating syncs', async () => {
   items.set('52', { state: null, content: SAFE, extractionEpoch: 0 });
-  const websocketProvider = new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
+  const websocketProvider = new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}?schema=2`, maxAttempts: 1 });
   const first = new HocuspocusProvider({ websocketProvider, name: '52', document: new Y.Doc(), token: token(52, 520, 'edit'), sessionAwareness: true });
   first.attach();
   first.destroy();
@@ -439,3 +460,126 @@ test('with no other editor left a rejected edit still asks to reload', async () 
   await until(() => closes.includes('reload'), 15000);
   close(demoted);
 }, 30000);
+
+const structure = (version, title) => ({ version, restoreEpoch: 0, trails: [{ id: 1, title: 'Trail', description: '', version: 1, forkedFromId: null, itemIds: [7] }], items: [{ id: 7, title, titleAlign: 'center', unfiled: false, words: 0, characters: 0 }] });
+const structureOf = provider => {
+  const map = provider.document.getMap('structure');
+  return { version: map.get('version'), title: map.get('snapshot') && JSON.parse(map.get('snapshot')).items[0].title };
+};
+
+test('the server writes project structure, follows notices and reconciles lost ones', async () => {
+  structures.set('51', structure(1, 'One'));
+  const owner = presence(51, 510, 'OWNER');
+  const viewer = presence(51, 511, 'VIEWER');
+  await until(() => structureOf(owner).version === 1 && structureOf(viewer).version === 1);
+  expect(structureOf(viewer).title).toBe('One');
+
+  structures.set('51', structure(2, 'Two'));
+  expect((await internal('/internal/structure', { projectId: 51 })).status).toBe(204);
+  await until(() => structureOf(viewer).version === 2);
+  expect(structureOf(viewer).title).toBe('Two');
+
+  structures.set('51', structure(3, 'Three'));
+  await until(() => structureOf(viewer).version === 3 && structureOf(owner).version === 3);
+
+  owner.document.getMap('structure').set('version', 99);
+  await new Promise(resolve => setTimeout(resolve, 400));
+  expect(structureOf(viewer).version).toBe(3);
+  close(owner, viewer);
+}, 20000);
+
+test('structure loads retry failures, never go back to an older version and converge after outages', async () => {
+  structures.set('52', structure(5, 'Five'));
+  structureFailures.set('52', 2);
+  const member = presence(52, 520, 'EDITOR');
+  await until(() => structureOf(member).version === 5);
+
+  structures.set('52', structure(4, 'Stale'));
+  await internal('/internal/structure', { projectId: 52 });
+  await new Promise(resolve => setTimeout(resolve, 400));
+  expect(structureOf(member)).toEqual({ version: 5, title: 'Five' });
+
+  structures.set('52', structure(6, 'Six'));
+  structureFailures.set('52', 20);
+  await internal('/internal/structure', { projectId: 52 });
+  await new Promise(resolve => setTimeout(resolve, 400));
+  expect(structureOf(member).version).toBe(5);
+  structureFailures.set('52', 0);
+  await until(() => structureOf(member).version === 6);
+  expect(structureOf(member).title).toBe('Six');
+  close(member);
+}, 20000);
+
+test('structure notices require the secret and a numeric project', async () => {
+  const forbidden = await fetch(`http://127.0.0.1:${port}/internal/structure`, { method: 'POST', headers: { 'X-Collab-Secret': 'wrong' }, body: JSON.stringify({ projectId: 51 }) });
+  expect(forbidden.status).toBe(403);
+  expect((await internal('/internal/structure', { projectId: 'x' })).status).toBe(400);
+  expect((await internal('/internal/structure', { projectId: 999 })).status).toBe(204);
+});
+
+
+test('note titles travel live, are stored once per change and never enter stored content', async () => {
+  items.set('61', { state: null, content: SAFE, extractionEpoch: 0, title: 'Start' });
+  const author = connect(61, 610, 'edit');
+  const reader = connect(61, 611, 'edit');
+  await until(() => author.synced && reader.synced && lexical.toLexical(reader.document).title === 'Start');
+  const bootstrap = await until(() => stores.find(store => store.id === '61' && store.bootstrapHash));
+  expect(bootstrap.title).toBeUndefined();
+  lexical.setTitle(author.document, 'Renamed live');
+  await until(() => lexical.toLexical(reader.document).title === 'Renamed live');
+  const renamed = await until(() => stores.find(store => store.id === '61' && store.title === 'Renamed live'), 15000);
+  expect(renamed.content).not.toContain('note-title');
+  const after = stores.length;
+  lexical.replaceContent(author.document, NOTE);
+  const contentOnly = await until(() => stores.slice(after).find(store => store.id === '61' && store.content.includes('quoted')), 15000);
+  expect(contentOnly.title).toBeUndefined();
+  expect(lexical.toLexical(reader.document).title).toBe('Renamed live');
+  close(author, reader);
+}, 40000);
+
+test('a stale title in a stored document is corrected from the API when it loads', async () => {
+  const stale = new Y.Doc();
+  Y.applyUpdate(stale, lexical.toYjs(SAFE, 'Old title'));
+  items.set('62', { state: Buffer.from(Y.encodeStateAsUpdate(stale)).toString('base64'), content: SAFE, extractionEpoch: 0, title: 'Fresh title' });
+  const editor = connect(62, 620, 'edit');
+  await until(() => editor.synced && lexical.toLexical(editor.document).title === 'Fresh title');
+  expect(lexical.toLexical(editor.document).content).toContain('"label"');
+  close(editor);
+}, 20000);
+
+test('renames that reach the project structure are pushed into open notes', async () => {
+  const snapshot = (version, title) => ({ version, restoreEpoch: 0, trails: [{ id: 1, title: 'Trail', description: '', version: 1, forkedFromId: null, itemIds: [64] }],
+    items: [{ id: 64, title, titleAlign: 'center', unfiled: false, words: 0, characters: 0 }] });
+  items.set('64', { state: null, content: SAFE, extractionEpoch: 0, title: 'Before' });
+  structures.set('63', snapshot(1, 'Before'));
+  const note = connect(64, 640, 'edit');
+  const member = presence(63, 640, 'EDITOR');
+  await until(() => note.synced && member.document.getMap('structure').get('version') === 1);
+  structures.set('63', snapshot(2, 'Renamed elsewhere'));
+  expect((await internal('/internal/structure', { projectId: 63 })).status).toBe(204);
+  await until(() => lexical.toLexical(note.document).title === 'Renamed elsewhere');
+  close(note, member);
+}, 20000);
+
+test('clients without the current editor schema are told to reload', async () => {
+  const reasons = [];
+  const websocketProvider = new HocuspocusProviderWebsocket({ url: `ws://127.0.0.1:${port}`, maxAttempts: 1 });
+  const provider = connect(65, 650, 'edit', { socket: websocketProvider, provider: { onAuthenticationFailed: ({ reason }) => reasons.push(reason) } });
+  await until(() => reasons.length === 1);
+  expect(reasons).toEqual(['reload']);
+  close(provider);
+}, 20000);
+
+test('titles duplicated by mixed client versions are collapsed when the note loads', async () => {
+  const duplicated = new Y.Doc();
+  Y.applyUpdate(duplicated, lexical.toYjs('', ''));
+  Y.applyUpdate(duplicated, lexical.toYjs('', 'Typed in one tab'));
+  const titles = doc => doc.get('root-v2', Y.XmlElement).toArray().filter(child => child.nodeName === 'note-title').length;
+  expect(titles(duplicated)).toBe(2);
+  const current = lexical.toLexical(duplicated).title;
+  items.set('66', { state: Buffer.from(Y.encodeStateAsUpdate(duplicated)).toString('base64'), content: '', extractionEpoch: 0, title: current });
+  const editor = connect(66, 660, 'edit');
+  await until(() => editor.synced && titles(editor.document) > 0);
+  expect(titles(editor.document)).toBe(1);
+  close(editor);
+}, 20000);

@@ -19,6 +19,7 @@ const nodes = [
   load('app/editor/nodes/EquationNode.tsx', { '../plugins/EquationComponent': { default: 'EquationComponent' } }).EquationNode,
   load('app/editor/nodes/MusicNode.tsx', { '../plugins/MusicComponent': { default: 'MusicComponent' } }).MusicNode,
   load('app/editor/nodes/EmbedNode.tsx', { '@/app/editor/plugins/embed': embed }).EmbedNode,
+  load('app/editor/nodes/TitleNode.ts').TitleNode,
 ];
 
 test.each(nodes.map(node => [node.getType(), node]))('%s can be constructed without arguments, as Yjs collaboration requires', (_type, Node) => {

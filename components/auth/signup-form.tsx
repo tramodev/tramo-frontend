@@ -118,7 +118,7 @@ export function SignupForm({
       </div>
       <FieldGroup className="mt-2 gap-[22px]">
         {(errors?.general || captchaError) && (
-          <div role="alert" className="text-sm text-center text-destructive">
+          <div role="alert" className="text-sm text-destructive">
             {errors?.general || captchaError}
           </div>
         )}
@@ -161,7 +161,7 @@ export function SignupForm({
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
             id="email"
-              aria-describedby="email-help"
+            aria-describedby="email-help"
             name="email"
             type="email"
             placeholder="m@example.com"
@@ -183,7 +183,7 @@ export function SignupForm({
           <FieldLabel htmlFor="birthDate">Date of birth</FieldLabel>
           <Input
             id="birthDate"
-              aria-describedby="birthDate-help"
+            aria-describedby="birthDate-help"
             name="birthDate"
             type="date"
             required
@@ -200,7 +200,7 @@ export function SignupForm({
           <FieldLabel htmlFor="password">Password</FieldLabel>
           <Input
             id="password"
-              aria-describedby="password-help"
+            aria-describedby="password-help"
             name="password"
             type="password"
             placeholder=" "
@@ -236,11 +236,11 @@ export function SignupForm({
           )}
         </Field>
         <Field floatingLabel>
-          <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
+          <FieldLabel htmlFor="confirm-password">Confirm password</FieldLabel>
           <div className="relative">
             <Input
               id="confirm-password"
-              aria-describedby="confirm-password-help"
+              aria-describedby={errors?.confirmPassword ? "confirm-password-help" : undefined}
               name="confirm-password"
               type="password"
               placeholder=" "
@@ -254,10 +254,8 @@ export function SignupForm({
               <CheckCircle2 className="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-success" />
             )}
           </div>
-          {errors?.confirmPassword ? (
+          {errors?.confirmPassword && (
             <FieldError id="confirm-password-help">{errors.confirmPassword}</FieldError>
-          ) : (
-            <FieldDescription id="confirm-password-help">Please confirm your password.</FieldDescription>
           )}
         </Field>
         <Field>
@@ -274,8 +272,8 @@ export function SignupForm({
           <GoogleAuthButton text="signup_with" />
           <FieldDescription className="text-left">
             Already have an account?{" "}
-            <a href="login" className="touch-target font-medium text-primary">
-              Sign in
+            <a href="/login" className="touch-target font-medium text-primary">
+              Log in
             </a>
           </FieldDescription>
         </Field>

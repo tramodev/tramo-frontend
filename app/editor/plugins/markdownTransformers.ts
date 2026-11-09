@@ -10,6 +10,7 @@ import {
   ElementTransformer,
   MultilineElementTransformer,
   TextMatchTransformer,
+  Transformer,
   TRANSFORMERS,
 } from '@lexical/markdown';
 import { getCodeLanguages } from '@lexical/code';
@@ -19,6 +20,7 @@ import {
   $isEquationNode,
   EquationNode,
 } from '../nodes/EquationNode';
+import { $isTitleNode } from '@/app/editor/nodes/TitleNode';
 
 export const HR: ElementTransformer = {
   dependencies: [HorizontalRuleNode],
@@ -83,10 +85,20 @@ export const CODE_WITH_KNOWN_LANGUAGE: MultilineElementTransformer = {
   },
 };
 
+const outsideTitle = (transformer: Transformer): Transformer => {
+  if (transformer.type === 'element') {
+    return { ...transformer, replace: (...args: Parameters<ElementTransformer['replace']>) => $isTitleNode(args[0]) ? false : transformer.replace(...args) };
+  }
+  if (transformer.type === 'multiline-element') {
+    return { ...transformer, replace: (...args: Parameters<MultilineElementTransformer['replace']>) => $isTitleNode(args[0]) ? false : transformer.replace(...args) };
+  }
+  return transformer;
+};
+
 export const EDITOR_TRANSFORMERS = [
   HR,
   BLOCK_EQUATION,
   INLINE_EQUATION,
   CODE_WITH_KNOWN_LANGUAGE,
   ...TRANSFORMERS.filter((transformer) => transformer !== CODE),
-];
+].map(outsideTitle);

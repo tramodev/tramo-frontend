@@ -16,12 +16,16 @@ import { cn } from "@/lib/utils"
 import { getPublicProfile } from "@/lib/public-profile"
 import {
   addMember,
+  approveAccessRequest,
   changeMemberRole,
   clearShareLink,
+  denyAccessRequest,
   getShareLink,
+  listAccessRequests,
   listMembers,
   removeMember,
   setShareLink,
+  type AccessRequest,
   type MemberRole,
   type ProjectMember,
   type ShareLink,
@@ -93,6 +97,8 @@ export function CollaboratorsSection({ projectId, owner, onLinkChange, inviting,
   const [members, setMembers] = useState<ProjectMember[]>(() => owner ? [{ ...owner, role: "OWNER", viaLink: false }] : [])
   const [loaded, setLoaded] = useState(false)
   const [link, setLink] = useState<ShareLink | null>(null)
+  const [requests, setRequests] = useState<AccessRequest[]>([])
+  const [requestRoles, setRequestRoles] = useState<Record<string, MemberRole>>({})
   const [username, setUsername] = useState("")
   const [role, setRole] = useState<MemberRole>("VIEWER")
   const setInviting = onInvitingChange
@@ -102,25 +108,31 @@ export function CollaboratorsSection({ projectId, owner, onLinkChange, inviting,
   const [lookup, setLookup] = useState<{ query: string; user: { username: string; imageUrl: string | null; self: boolean } | null } | null>(null)
   const query = username.trim()
 
-  const apply = useCallback((nextMembers: ProjectMember[], nextLink: ShareLink | null) => {
+  const apply = useCallback((nextMembers: ProjectMember[], nextLink: ShareLink | null, nextRequests: AccessRequest[]) => {
     setMembers(nextMembers)
     setLink(nextLink)
+    setRequests(nextRequests)
     setLoaded(true)
     onLinkChange?.(nextLink ? `${window.location.origin}/join/${nextLink.token}` : null)
   }, [onLinkChange])
 
+  const load = useCallback(() => Promise.all([
+    listMembers(projectId),
+    getShareLink(projectId),
+    listAccessRequests(projectId).then((result) => result.data ?? []),
+  ]), [projectId])
+
   const reload = useCallback(async () => {
-    const [nextMembers, nextLink] = await Promise.all([listMembers(projectId), getShareLink(projectId)])
-    apply(nextMembers, nextLink)
-  }, [projectId, apply])
+    apply(...await load())
+  }, [load, apply])
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([listMembers(projectId), getShareLink(projectId)]).then(([nextMembers, nextLink]) => {
-      if (!cancelled) apply(nextMembers, nextLink)
+    load().then((next) => {
+      if (!cancelled) apply(...next)
     }).catch(() => { if (!cancelled) setError("Could not load who has access.") })
     return () => { cancelled = true }
-  }, [projectId, apply])
+  }, [load, apply])
 
   useEffect(() => {
     if (!query) return
@@ -223,6 +235,9 @@ export function CollaboratorsSection({ projectId, owner, onLinkChange, inviting,
             maxLength={20}
             disabled={busy}
             autoComplete="off"
+            data-bwignore
+            data-1p-ignore
+            data-lpignore="true"
             aria-describedby={query ? "collaborator-suggestion" : undefined}
             onChange={(e) => setUsername(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") startInvite() }}
@@ -243,6 +258,37 @@ export function CollaboratorsSection({ projectId, owner, onLinkChange, inviting,
           )}
         </div>}
       </div>
+
+      {requests.length > 0 && <div className="flex flex-col gap-1">
+        <Label>Access requests</Label>
+        <ul className="flex flex-col gap-1">
+          {requests.map((request) => (
+            <li key={request.username} className="flex min-h-10 items-center gap-2 text-[0.8125rem]">
+              <AuthorAvatar username={request.username} avatar={request.imageUrl} size={28} />
+              <span className="min-w-0 flex-1 truncate">@{request.username}</span>
+              <OptionMenu
+                value={requestRoles[request.username] ?? "VIEWER"}
+                options={ROLE_OPTIONS}
+                disabled={busy}
+                onChange={(next) => setRequestRoles((roles) => ({ ...roles, [request.username]: next }))}
+                label={`Role for @${request.username}`}
+              />
+              <Button size="sm" disabled={busy} onClick={() => void run(() => approveAccessRequest(projectId, request.username, requestRoles[request.username] ?? "VIEWER"))}>
+                Approve
+              </Button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void run(() => denyAccessRequest(projectId, request.username))}
+                aria-label={`Deny @${request.username}`}
+                className="flex min-h-8 min-w-8 items-center justify-center text-muted-foreground hover:text-destructive disabled:opacity-60"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>}
 
       <div className="flex flex-col gap-1">
         <Label>People with access</Label>

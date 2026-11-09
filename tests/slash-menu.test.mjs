@@ -18,6 +18,7 @@ test('Escape keeps the slash menu closed until its text changes', () => {
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [{ registerCommand: (_command, fn) => { escape = fn; return () => {}; } }] },
+    '@/app/editor/nodes/TitleNode': { $inTitle: () => false },
     '@lexical/react/LexicalTypeaheadMenuPlugin': {
       LexicalTypeaheadMenuPlugin: 'Typeahead', MenuOption: class {},
       useBasicTypeaheadTriggerMatch: () => text => text.startsWith('/') ? { matchingString: text.slice(1) } : null,

@@ -6,11 +6,15 @@ import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
 const lexical = require('lexical');
+const title = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/nodes/TitleNode.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: title, require: name => name === 'lexical' ? lexical : {} });
 function load(modules = {}) {
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync('app/editor/plugins/DraggableBlockPlugin.tsx', 'utf8') + '\nexport { $moveBlock };', {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText, { exports, require: name => modules[name] ?? (name === 'lexical' ? lexical : {}) });
+  }).outputText, { exports, require: name => modules[name] ?? (name === 'lexical' ? lexical : name === '@/app/editor/nodes/TitleNode' ? title : {}) });
   return exports;
 }
 const exports = load();
@@ -93,4 +97,24 @@ test('Alt+Shift+Arrow moves the block before native arrow navigation', () => {
   }), { discrete: true });
   expect(prevented).toBe(true);
   expect(s.content()).toEqual(['Second', 'First', 'Third']);
+});
+
+test('the note title never moves and blocks cannot move above it', () => {
+  const editor = lexical.createEditor({ namespace: 'move-title-test', nodes: [title.TitleNode], onError: error => { throw error; } });
+  editor.update(() => {
+    const root = lexical.$getRoot();
+    root.append(title.$createTitleNode().append(lexical.$createTextNode('Title')));
+    root.append(lexical.$createParagraphNode().append(lexical.$createTextNode('Body')));
+    root.getFirstChild().selectEnd();
+  }, { discrete: true });
+  const move = direction => {
+    let result;
+    editor.update(() => { result = exports.$moveBlock(direction); }, { discrete: true });
+    return result;
+  };
+  const content = () => editor.getEditorState().read(() => lexical.$getRoot().getChildren().map(node => node.getTextContent()));
+  expect(move('down')).toBe(false);
+  editor.update(() => lexical.$getRoot().getLastChild().selectEnd(), { discrete: true });
+  expect(move('up')).toBe(false);
+  expect(content()).toEqual(['Title', 'Body']);
 });

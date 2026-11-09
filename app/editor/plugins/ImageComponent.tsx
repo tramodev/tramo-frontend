@@ -17,7 +17,7 @@ import {
   KEY_DELETE_COMMAND,
   NodeKey,
 } from 'lexical';
-import { useEditorImage } from '@/components/editor/editor-images-provider';
+import { useEditorImage, useEditorImageFailed } from '@/components/editor/editor-images-provider';
 import { $isImageNode } from '../nodes/ImageNode';
 
 interface ImageComponentProps {
@@ -43,11 +43,14 @@ export default function ImageComponent({
 }: ImageComponentProps) {
   const [editor] = useLexicalComposerContext();
   const resolvedSrc = useEditorImage(src ? '' : imageId) || src;
+  const failed = useEditorImageFailed(src ? '' : imageId);
   const isEditable = editor.isEditable();
   const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
   const [editingAlt, setEditingAlt] = useState(false);
+  const sized = width !== 'inherit' && height !== 'inherit';
+  const sizeStyle: React.CSSProperties = sized ? { width: `${width}px`, aspectRatio: `${width} / ${height}`, minHeight: 0 } : {};
 
   const commitCaption = useCallback(
     (value: string) => {
@@ -187,17 +190,14 @@ export default function ImageComponent({
       className={`editor-image-wrapper${isSelected ? ' selected' : ''}`}
       draggable={false}
     >
-      {!resolvedSrc && <span role="status">Image unavailable</span>}
+      {!resolvedSrc && <span role="status" className="editor-image-pending" style={sizeStyle}>{!imageId ? 'Uploading image…' : failed ? 'Image unavailable' : 'Loading image…'}</span>}
       {resolvedSrc && <img
         ref={imageRef}
         src={resolvedSrc}
         referrerPolicy="no-referrer"
         alt={altText}
         draggable={false}
-        style={{
-          width: width === 'inherit' ? undefined : `${width}px`,
-          height: height === 'inherit' ? undefined : `${height}px`,
-        }}
+        style={sizeStyle}
       />}
       {isEditable && isSelected && (
         editingAlt ? (

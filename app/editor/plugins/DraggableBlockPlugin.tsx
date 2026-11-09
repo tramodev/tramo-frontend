@@ -8,6 +8,7 @@ import { GripVertical } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { $addUpdateTag, $getSelection, $isRangeSelection, COMMAND_PRIORITY_LOW, HISTORY_PUSH_TAG, KEY_DOWN_COMMAND, createCommand } from 'lexical';
 import { mergeRegister } from '@lexical/utils';
+import { $isTitleNode } from '@/app/editor/nodes/TitleNode';
 
 export const MOVE_BLOCK_COMMAND = createCommand<'up' | 'down'>('MOVE_BLOCK_COMMAND');
 
@@ -16,7 +17,7 @@ function $moveBlock(direction: 'up' | 'down'): boolean {
   const node = $isRangeSelection(selection) ? selection.anchor.getNode() : selection?.getNodes()[0];
   const block = node?.getTopLevelElement();
   const sibling = direction === 'up' ? block?.getPreviousSibling() : block?.getNextSibling();
-  if (!block || !sibling) return false;
+  if (!block || !sibling || $isTitleNode(block) || $isTitleNode(sibling)) return false;
   $addUpdateTag(HISTORY_PUSH_TAG);
   if (direction === 'up') sibling.insertBefore(block);
   else sibling.insertAfter(block);

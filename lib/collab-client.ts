@@ -3,6 +3,7 @@
 import { COLLAB_URL } from '@/lib/config';
 
 export const COLLAB_ACCESS_DENIED = 'CollabAccessDenied';
+export const COLLAB_SCHEMA = '2';
 const CURSOR_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
 
 export function collabUrl(): string {

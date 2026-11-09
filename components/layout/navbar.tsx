@@ -45,15 +45,15 @@ export async function Navbar() {
           {isLoggedIn ? (
             <AvatarMenu username={username} imageUrl={imageUrl} />
           ) : (
-            <div className="hidden lg:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="text-sm font-medium text-primary px-4 py-2.5 rounded-full transition-colors hover:bg-muted"
+                className="hidden lg:inline-flex text-sm font-medium text-primary px-4 py-2.5 rounded-full transition-colors hover:bg-muted"
               >
-                Log In
+                Log in
               </Link>
-              <Button asChild size="lg">
-                <Link href="/signup">Start for free</Link>
+              <Button asChild size="lg" className="max-sm:h-9 max-sm:px-4">
+                <Link href="/signup">Sign up</Link>
               </Button>
             </div>
           )}

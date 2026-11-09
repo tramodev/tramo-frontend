@@ -1,7 +1,7 @@
 import katex from 'katex';
 import { loadAbcjs } from '@/app/editor/plugins/music-audio';
 
-export const KATEX_OPTS = { throwOnError: true, trust: false, strict: 'warn', maxExpand: 1000, maxSize: 50, output: 'html' } as const;
+export const KATEX_OPTS = { throwOnError: true, trust: false, strict: (code: string) => code === 'newLineInDisplayMode' ? 'ignore' : 'warn', maxExpand: 1000, maxSize: 50, output: 'html' } as const;
 const equations = new Map<string, string | null>();
 const scores = new Map<string, Promise<string | null>>();
 

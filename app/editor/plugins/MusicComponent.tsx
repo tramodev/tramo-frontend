@@ -282,7 +282,7 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
   const enterFrom = useCallback(
     (edge: Edge) => (event: KeyboardEvent) => {
       const node = $getNodeByKey(nodeKey);
-      if (!$isMusicNode(node) || !$caretTouches(node, edge)) return false;
+      if (event.shiftKey || !$isMusicNode(node) || !$caretTouches(node, edge)) return false;
       event.preventDefault();
       startEditing(edge);
       return true;
@@ -293,7 +293,7 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
   const enterFromLine = useCallback(
     (edge: Edge) => (event: KeyboardEvent) => {
       const node = $getNodeByKey(nodeKey);
-      if (!$isMusicNode(node) || !$caretOnEdgeLine(node, edge, editor)) return false;
+      if (event.shiftKey || !$isMusicNode(node) || !$caretOnEdgeLine(node, edge, editor)) return false;
       event.preventDefault();
       startEditing(edge);
       return true;

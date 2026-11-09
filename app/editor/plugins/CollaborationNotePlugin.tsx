@@ -7,12 +7,13 @@ import { CollaborationPluginV2__EXPERIMENTAL } from '@lexical/react/LexicalColla
 import { LexicalCollaboration } from '@lexical/react/LexicalCollaborationContext';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { mergeRegister } from '@lexical/utils';
-import { $getNearestNodeFromDOMNode, $getRoot, $getSelection, $isDecoratorNode, $isElementNode, $isParagraphNode, $isRangeSelection, $isRootNode, $isTextNode, $parseSerializedNode, type LexicalEditor, type LexicalNode } from 'lexical';
+import { $getNearestNodeFromDOMNode, $getNodeByKey, $getRoot, $getSelection, $isDecoratorNode, $isElementNode, $isParagraphNode, $isRangeSelection, $isRootNode, $isTextNode, $parseSerializedNode, COMMAND_PRIORITY_CRITICAL, HISTORIC_TAG, REDO_COMMAND, UNDO_COMMAND, type LexicalEditor, type LexicalNode } from 'lexical';
 import { serializeNoteContent } from '@/app/editor/note-content';
 import { HocuspocusProvider, type HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 import { COLLAB_ACCESS_DENIED, cursorColor, fetchCollabToken, forgetCollabToken } from '@/lib/collab-client';
-import { ImageNode } from '@/app/editor/nodes/ImageNode';
+import { $isImageNode, ImageNode } from '@/app/editor/nodes/ImageNode';
+import { $isTitleNode } from '@/app/editor/nodes/TitleNode';
 
 export type CollabStatus = 'syncing' | 'synced' | 'offline';
 export type CollabClosedReason = 'reload' | 'revoked';
@@ -69,14 +70,19 @@ function restoreCaret(editor: LexicalEditor, itemId: string) {
 
 function applyHandoff(editor: LexicalEditor, handoff: CollabHandoff): boolean {
   const current = editor.getEditorState();
-  const blank = current.read(() => $getRoot().getTextContent().trim() === '' && $getRoot().getChildren().every($isParagraphNode));
+  const blank = current.read(() => $getRoot().getChildren().filter(child => !$isTitleNode(child))
+    .every(child => $isParagraphNode(child) && child.getTextContent().trim() === ''));
   const unchanged = handoff.base
     ? serializeNoteContent(editor.parseEditorState(handoff.base).toJSON()) === serializeNoteContent(current.toJSON())
     : blank;
   if (!unchanged) return false;
   if (handoff.content !== handoff.base) {
     const children = handoff.content ? JSON.parse(handoff.content).root.children : [];
-    editor.update(() => { $getRoot().clear().append(...children.map($parseSerializedNode)); }, { discrete: true });
+    editor.update(() => {
+      const root = $getRoot();
+      root.getChildren().forEach(child => { if (!$isTitleNode(child)) child.remove(); });
+      root.append(...children.map($parseSerializedNode));
+    }, { discrete: true });
   }
   return true;
 }
@@ -108,6 +114,22 @@ export default function CollaborationNotePlugin({ itemId, socket, username, user
   }, [itemId, socket]);
   const callbacks = useRef({ onStatus, onClosed, onHandoff, onWaiting, handoff });
   useEffect(() => { callbacks.current = { onStatus, onClosed, onHandoff, onWaiting, handoff }; });
+
+  useEffect(() => {
+    let direction: typeof UNDO_COMMAND | typeof REDO_COMMAND = UNDO_COMMAND;
+    const imageId = (key: string) => { const node = $getNodeByKey(key); return $isImageNode(node) ? node.getImageId() : null; };
+    return mergeRegister(
+      editor.registerCommand(UNDO_COMMAND, () => { direction = UNDO_COMMAND; return false; }, COMMAND_PRIORITY_CRITICAL),
+      editor.registerCommand(REDO_COMMAND, () => { direction = REDO_COMMAND; return false; }, COMMAND_PRIORITY_CRITICAL),
+      editor.registerMutationListener(ImageNode, (mutations, { updateTags, prevEditorState }) => {
+        if (!updateTags.has(HISTORIC_TAG)) return;
+        const halfway = editor.read(() => [...mutations].some(([key, mutation]) => imageId(key) === '' && (direction === REDO_COMMAND
+          ? mutation === 'created'
+          : mutation === 'updated' && !!prevEditorState.read(() => imageId(key)))));
+        if (halfway) editor.dispatchCommand(direction, undefined);
+      }, { skipInitialization: true }),
+    );
+  }, [editor]);
 
   useEffect(() => {
     const { provider } = connection;

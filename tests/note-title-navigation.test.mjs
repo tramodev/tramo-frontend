@@ -7,10 +7,14 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 const lexical = require('lexical');
 const code = require('@lexical/code');
+const titleModule = {};
+runInNewContext(ts.transpileModule(readFileSync('app/editor/nodes/TitleNode.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: titleModule, require: name => name === 'lexical' ? lexical : {} });
 const source = readFileSync('app/editor/[projectId]/components/WriteView.tsx', 'utf8')
-  + '\nexport { ItemNavigationPlugin, ItemTitle, ItemEditorContent, isOnBoundaryLine, focusTitle };';
+  + '\nexport { ItemNavigationPlugin, ItemTitle, ItemEditorContent, isOnBoundaryLine, focusTitle, focusEditor };';
 
-function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, codeBlock = false, emptyListbox = false } = {}) {
+function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, codeBlock = false, emptyListbox = false, titled = false, inTitle = false } = {}) {
   const frames = [], moves = [], saves = [], focused = [];
   let menu = false, composing = false;
   const rect = top => ({ top, bottom: top + 18, height: 18 });
@@ -19,13 +23,15 @@ function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, c
     contains: () => true, firstElementChild: {}, lastElementChild: {},
     closest: () => ({ querySelector: () => title }), focus: () => focused.push('content'),
   };
-  const editor = lexical.createEditor({ namespace: 'test', nodes: [code.CodeNode], onError: error => { throw error; } });
+  const editor = lexical.createEditor({ namespace: 'test', nodes: [code.CodeNode, titleModule.TitleNode], onError: error => { throw error; } });
   editor._headless = true;
   editor.update(() => {
     const block = codeBlock ? code.$createCodeNode() : lexical.$createParagraphNode();
+    if (titled) lexical.$getRoot().append(titleModule.$createTitleNode().append(lexical.$createTextNode('Note title')));
     if (empty) block.select();
     else block.append(lexical.$createTextNode('first line\nsecond line\nlast line')).getFirstChild().select(offset, offset);
     lexical.$getRoot().append(block);
+    if (inTitle) lexical.$getRoot().getFirstChild().getFirstChild().select(2, 2);
   }, { discrete: true });
   editor.getRootElement = () => rootElement;
   editor.isComposing = () => composing;
@@ -51,6 +57,8 @@ function setup({ offset = 4, caretTop = 0, lines = [0, 24, 48], empty = false, c
       if (name === '@/app/editor/item-editor-session') return { restoreItemHistory: () => ({ current: null, undoStack: [], redoStack: [] }) };
       if (name === '@/app/editor/nodes/ImageNode') return { ImageNode: class { static getType() { return 'image'; } } };
       if (name === 'lexical' || name === '@lexical/utils') return require(name);
+      if (name === '@/app/editor/nodes/TitleNode') return titleModule;
+      if (name === '../../plugins/TitlePlugin') return { default: 'TitlePlugin' };
       return {};
     },
   });
@@ -243,4 +251,32 @@ test('opening and dirtying unchanged notes never save, while edits and undo do',
   s.editor.update(() => lexical.$getRoot().getFirstDescendant().toggleFormat('bold'), { discrete: true });
   change(s.editor.getEditorState(), s.editor, new Set());
   expect(saves).toHaveLength(3);
+});
+
+test('up from the first line of a native title moves to the previous note', () => {
+  const s = setup({ titled: true, inTitle: true });
+  expect(s.arrow(-1)).toEqual({ handled: true, prevented: true });
+  expect(s.moves).toEqual([['note', -1]]);
+  expect(s.focused).toEqual([]);
+});
+
+test('up from the first body block below a native title is left to the browser', () => {
+  const s = setup({ titled: true });
+  expect(s.arrow(-1)).toEqual({ handled: false, prevented: false });
+  expect(s.moves).toEqual([]);
+});
+
+test('native titles are focused at their start and the body start skips the title', () => {
+  const s = setup({ titled: true });
+  s.exports.focusTitle(s.editor);
+  s.editor.getEditorState().read(() => {
+    const anchor = lexical.$getSelection().anchor;
+    expect(titleModule.$isTitleNode(anchor.getNode().getTopLevelElement())).toBe(true);
+    expect(anchor.offset).toBe(0);
+  });
+  s.exports.focusEditor(s.editor, 'start');
+  s.editor.getEditorState().read(() => {
+    expect(lexical.$getSelection().anchor.getNode().getTopLevelElement().getTextContent()).toContain('first line');
+  });
+  expect(s.focused).not.toContain('title');
 });

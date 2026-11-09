@@ -38,7 +38,8 @@ function setup({ token = Promise.resolve('token'), role = 'EDITOR' } = {}) {
     attach() { this.attached = true; }
     destroy() { this.destroyed = true; }
   }
-  const effects = [];
+  const effects = [], structureObservers = [], structures = [];
+  let structureSnapshot;
   const exports = {};
   runInNewContext(transpile('app/editor/[projectId]/hooks/useProjectPresence.ts'), {
     exports, Date: { now: () => now }, Set, Map, Math, Promise,
@@ -53,7 +54,7 @@ function setup({ token = Promise.resolve('token'), role = 'EDITOR' } = {}) {
         useSyncExternalStore: (_, get) => get(),
       },
       '@hocuspocus/provider': { HocuspocusProvider },
-      yjs: { Doc: class {} },
+      yjs: { Doc: class { getMap() { return { observe: fn => { structureObservers.push(fn); }, get: () => structureSnapshot }; } } },
       '@/lib/collab-client': {
         COLLAB_ACCESS_DENIED: 'CollabAccessDenied',
         fetchProjectToken: () => token,
@@ -64,9 +65,9 @@ function setup({ token = Promise.resolve('token'), role = 'EDITOR' } = {}) {
     })[name],
   });
   const local = { user: { id: '1', name: 'Ana', imageUrl: null }, role, itemId: '10', trailId: '3' };
-  exports.useProjectPresence({}, 'abc', local);
+  exports.useProjectPresence({}, 'abc', local, raw => structures.push(raw));
   effects.forEach(fn => fn());
-  return { win, doc, timers, providers, forgotten, advance: ms => { now += ms; }, state: () => providers.at(-1)?.awareness.getStates().get(providers.at(-1).awareness.clientID) };
+  return { structureObservers, structures, setStructure: value => { structureSnapshot = value; }, win, doc, timers, providers, forgotten, advance: ms => { now += ms; }, state: () => providers.at(-1)?.awareness.getStates().get(providers.at(-1).awareness.clientID) };
 }
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -126,4 +127,12 @@ test('lost access stops retrying, other failures retry with backoff', async () =
   expect(limited.providers[0].destroyed).toBe(true);
   expect(limited.forgotten).toEqual([]);
   expect(limited.timers.map(timer => timer.ms)).toEqual([1000]);
+});
+
+test('the project structure written by the server reaches the editor', async () => {
+  const s = setup();
+  await flush();
+  s.setStructure('{"version":2}');
+  s.structureObservers.forEach(fn => fn());
+  expect(s.structures).toEqual(['{"version":2}']);
 });

@@ -19,6 +19,12 @@
   }
 }
 
+@utility landing-display {
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
 @utility container-read {
   width: 100%;
   max-width: 72ch;
@@ -116,6 +122,7 @@
   --chart-3: #535F70;
   --chart-4: #B08700;
   --chart-5: #BA1A1A;
+  --collab-cursor-foreground: #FFFFFF;
   --sidebar: #FAFAFA;
   --sidebar-foreground: #111111;
   --sidebar-primary: #1A1A1A;
@@ -165,6 +172,7 @@
   --chart-3: #BBC7DB;
   --chart-4: #F2C55C;
   --chart-5: #FFB4AB;
+  --collab-cursor-foreground: #000000;
   --sidebar: var(--card);
   --sidebar-foreground: #F5F5F5;
   --sidebar-primary: #F2F2F2;

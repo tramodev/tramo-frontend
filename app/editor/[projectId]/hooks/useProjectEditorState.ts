@@ -35,6 +35,10 @@ import { clearLocalDrafts, editorDraftForRoute, type DraftCommitResult } from '@
 import type { CollabHandoff } from '@/app/editor/plugins/CollaborationNotePlugin';
 import type { UserProfile } from '@/lib/profile';
 import { ItemTitleSaves } from '@/lib/item-title-saves';
+import { $noteTitle } from '@/app/editor/nodes/TitleNode';
+import { EMPTY_STRUCTURE, absorbed, addItem, addTrail, alignItem, compose, followNavigation, linkItem, orderTrailItems, orderTrails,
+  parseStructure, removeItem, removeTrail, renameItem, renameTrail as renameTrailOp, unlinkItem, view as structureView,
+  type ItemMeta, type PendingOp, type Structure, type StructureOp } from '@/app/editor/structure';
 
 const subscribeIdle = () => () => {};
 const idleDraft = { status: 'saved' as const, error: '' };
@@ -43,6 +47,11 @@ const getIdleDraft = () => idleDraft;
 export interface ReorderNotice {
   error?: string;
 }
+
+type LoadedContent = { content: string; textStats: { words: number; characters: number } };
+const SETTLED_OP_MS = 10_000;
+const metaOf = (item: Item): ItemMeta => ({ id: item.id, title: item.title, titleAlign: item.titleAlign, unfiled: item.unfiled, textStats: item.textStats });
+const loadedContent = (content: string): LoadedContent => ({ content, textStats: countTextStats(content) });
 
 export function useProjectEditorState(routeProjectId: string, connectionsPanelOpen: boolean, user?: Pick<UserProfile, 'userId' | 'username' | 'imageUrl'>) {
   const [draft] = useState(() => typeof window !== 'undefined' && user?.userId ? editorDraftForRoute(user.userId, routeProjectId) : null);
@@ -88,7 +97,53 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const [graphColors, setGraphColors] = useState<string | null>(null);
   const [tags, setTags] = useState('');
 
-  const [trails, setTrails] = useState<Trail[]>([]);
+  const [remote, setRemoteState] = useState<Structure>(EMPTY_STRUCTURE);
+  const remoteRef = useRef(remote);
+  const setRemote = useCallback((next: Structure | ((previous: Structure) => Structure)) => {
+    remoteRef.current = typeof next === 'function' ? next(remoteRef.current) : next;
+    setRemoteState(remoteRef.current);
+  }, []);
+  const [ops, setOpsState] = useState<PendingOp[]>([]);
+  const opsRef = useRef(ops);
+  const setOps = useCallback((next: PendingOp[] | ((previous: PendingOp[]) => PendingOp[])) => {
+    opsRef.current = typeof next === 'function' ? next(opsRef.current) : next;
+    setOpsState(opsRef.current);
+  }, []);
+  const [contents, setContents] = useState<Record<string, LoadedContent>>({});
+  const [editorKeys, setEditorKeys] = useState<Record<string, string>>({});
+  const shown = useMemo(() => structureView(remote, ops), [remote, ops]);
+  const trails: Trail[] = shown.trails;
+  const items = useMemo(() => Object.fromEntries(Object.entries(shown.items).map(([id, meta]) => [id, {
+    ...meta, editorKey: editorKeys[id] ?? meta.editorKey, content: contents[id]?.content ?? null, textStats: contents[id]?.textStats ?? meta.textStats,
+  }])) as Record<string, Item>, [shown, contents, editorKeys]);
+  const pend = useCallback((key: string, apply: StructureOp) => setOps(previous => previous.some(op => op.key === key)
+    ? previous.map(op => op.key === key ? { key, apply } : op) : [...previous, { key, apply }]), [setOps]);
+  const drop = useCallback((key: string) => setOps(previous => previous.filter(op => op.key !== key)), [setOps]);
+  const settle = useCallback((key: string, apply?: StructureOp) => {
+    const token = {};
+    setOps(previous => {
+      const existing = previous.find(op => op.key === key);
+      const next = { key, apply: apply ?? existing?.apply, done: token };
+      if (!next.apply) return previous;
+      const op = next as PendingOp;
+      if (absorbed(op, remoteRef.current)) return previous.filter(other => other.key !== key);
+      return existing ? previous.map(other => other.key === key ? op : other) : [...previous, op];
+    });
+    setTimeout(() => setOps(previous => previous.filter(op => op.done !== token)), SETTLED_OP_MS);
+  }, [setOps]);
+  const optimistic = useCallback(async (key: string, apply: StructureOp, run: () => Promise<unknown>, keepOnFailure = false) => {
+    pend(key, apply);
+    try {
+      await run();
+    } catch (error) {
+      if (!keepOnFailure) drop(key);
+      throw error;
+    }
+    settle(key);
+  }, [pend, drop, settle]);
+  useEffect(() => titleSaves.subscribe(() => {
+    for (const op of opsRef.current) if (op.key.startsWith('title:') && !op.done && !titleSaves.has(op.key.slice('title:'.length))) settle(op.key);
+  }), [titleSaves, settle]);
   const [reorderNotices, setReorderNotices] = useState<Record<string, ReorderNotice>>({});
   const reorderingTrails = useRef(new Set<string>());
   const reorderingProjectTrails = useRef(false);
@@ -98,7 +153,6 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     delete next[trailId];
     return next;
   });
-  const [items, setItems] = useState<Record<string, Item>>({});
   const [previewResult, setPreviewResult] = useState<{ projectId: string; data: MapPreviews | null } | null>(null);
   const mapPreviews = previewResult?.projectId === projectId ? previewResult.data : undefined;
   const [navigation, setNavigation] = useState<{
@@ -110,12 +164,23 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const selectedItemId = navigation.itemId;
   const activeTrailId = navigation.trailId;
   const updateItemContentLocally = useCallback((itemId: string, content: string) => {
-    setItems(prevItems => {
-      const item = prevItems[itemId];
-      if (!item) return prevItems;
-      return { ...prevItems, [itemId]: { ...item, content, textStats: countTextStats(content) } };
-    });
+    setContents(previous => ({ ...previous, [itemId]: loadedContent(content) }));
   }, []);
+  const latestStructure = useRef<unknown>(null);
+  const receiveStructure = useCallback((raw: unknown) => {
+    if (raw !== undefined) latestStructure.current = raw;
+    const next = parseStructure(latestStructure.current);
+    const current = remoteRef.current;
+    if (!next || current.version < 0 || next.version <= current.version) return;
+    if (next.restoreEpoch !== current.restoreEpoch) {
+      setRemote(previous => ({ ...previous, version: -1 }));
+      refreshProject();
+      return;
+    }
+    setRemote(next);
+    setOps(previous => previous.filter(op => !op.done || !absorbed(op, next)));
+    setNavigation(previous => followNavigation(previous, structureView(next, opsRef.current)));
+  }, [refreshProject, setRemote, setOps]);
 
   const autoSave = useAutoSave({ onOptimisticUpdate: updateItemContentLocally });
   const [collabHandoff, setCollabHandoff] = useState<CollabHandoff & { itemId: string } | null>(null);
@@ -129,20 +194,21 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const [profile, setProfile] = useState<{ username: string; imageUrl: string | null } | null>(null);
   const [role, setRole] = useState<ProjectRole>('OWNER');
   const [accessLost, setAccessLost] = useState(false);
+  const [noAccessProjectId, setNoAccessProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!draft) return;
     const applyIds = (result: DraftCommitResult) => {
       setProjectId(result.projectId);
       setRestoreEpoch(result.restoreEpoch);
-      setItems(previous => {
-        const item = Object.values(previous).find(item => item.editorKey === draft.editorKey);
-        return { [String(result.itemId)]: { ...item, id: String(result.itemId), editorKey: draft.editorKey,
-          title: draft.backup.latest.item.title, titleAlign: draft.backup.latest.item.titleAlign,
-          unfiled: false, content: draft.backup.latest.item.content } };
-      });
-      setTrails([{ id: String(result.trailId), editorKey: draft.editorKey, title: draft.backup.latest.trail.title,
-        description: '', version: 1, forkedFrom: null, itemIds: [String(result.itemId)], steps: [{ itemId: String(result.itemId) }] }]);
+      const itemId = String(result.itemId);
+      const latest = draft.backup.latest;
+      setRemote(previous => ({ ...previous, restoreEpoch: result.restoreEpoch,
+        items: { [itemId]: { ...Object.values(previous.items).find(item => item.editorKey === draft.editorKey), id: itemId, editorKey: draft.editorKey,
+          title: latest.item.title, titleAlign: latest.item.titleAlign, unfiled: false } },
+        trails: [{ id: String(result.trailId), editorKey: draft.editorKey, title: latest.trail.title,
+          description: '', version: 1, forkedFrom: null, itemIds: [itemId], steps: [{ itemId }] }] }));
+      setContents({ [itemId]: loadedContent(latest.item.content) });
       setNavigation(previous => ({ ...previous, trailId: String(result.trailId), itemId: String(result.itemId),
         request: previous.request ? { ...previous.request, itemId: String(result.itemId) } : undefined }));
       if (window.location.pathname !== `/editor/${result.projectId}`) router.replace(`/editor/${result.projectId}`);
@@ -160,18 +226,19 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       window.removeEventListener('online', online);
       window.removeEventListener('beforeunload', beforeUnload);
     };
-  }, [draft, router]);
+  }, [draft, router, setRemote]);
 
   useEffect(() => {
     if (!draft || draftState.status !== 'saved' || !draft.backup.result) return;
     void Promise.resolve().then(() => {
       setProjectTitle(title => title.trim() || 'Untitled project');
-      setTrails(previous => previous.map(trail => ({ ...trail, title: trail.title.trim() || 'My first trail' })));
-      setItems(previous => Object.fromEntries(Object.entries(previous).map(([id, item]) => [id, { ...item,
-        title: item.title.trim() || 'Untitled note', editorKey: item.editorKey === draft.editorKey ? undefined : item.editorKey }])));
+      setRemote(previous => ({ ...previous,
+        trails: previous.trails.map(trail => ({ ...trail, title: trail.title.trim() || 'My first trail' })),
+        items: Object.fromEntries(Object.entries(previous.items).map(([id, item]) => [id, { ...item,
+          title: item.title.trim() || 'Untitled note', editorKey: item.editorKey === draft.editorKey ? undefined : item.editorKey }])) }));
       if (draft.handoff && draft.backup.result) setCollabHandoff({ itemId: String(draft.backup.result.itemId), ...draft.handoff });
     });
-  }, [draft, draftState.status]);
+  }, [draft, draftState.status, setRemote]);
 
   useEffect(() => {
     let cancelled = false;
@@ -185,10 +252,12 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
           const itemId = draft.editorKey;
           setProjectTitle(latest.project.title);
           setProfile(user ? { username: user.username, imageUrl: user.imageUrl } : null);
-          setTrails([{ id: draft.editorKey, editorKey: draft.editorKey, title: latest.trail.title, description: '', version: 1,
-            forkedFrom: null, itemIds: [itemId], steps: [{ itemId }] }]);
-          setItems({ [itemId]: { id: itemId, editorKey: draft.editorKey, title: latest.item.title,
-            titleAlign: latest.item.titleAlign, unfiled: false, content: latest.item.content, textStats: countTextStats(latest.item.content) } });
+          setRemote({ ...EMPTY_STRUCTURE,
+            items: { [itemId]: { id: itemId, editorKey: draft.editorKey, title: latest.item.title, titleAlign: latest.item.titleAlign, unfiled: false } },
+            trails: [{ id: draft.editorKey, editorKey: draft.editorKey, title: latest.trail.title, description: '', version: 1,
+              forkedFrom: null, itemIds: [itemId], steps: [{ itemId }] }] });
+          setOps([]);
+          setContents({ [itemId]: loadedContent(latest.item.content) });
           setNavigation({ itemId, trailId: draft.editorKey, request: { itemId, sequence: ++navigationSequence.current, focus: true } });
           setLoaded(true);
           draft.start();
@@ -203,27 +272,25 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       if (cancelled) return;
       if (!result) {
         if (refreshKey) setAccessLost(true);
-        else router.replace('/projects');
+        else setNoAccessProjectId(routeProjectId);
         return;
       }
       const { project } = result;
       setProjectId(routeProjectId);
       setRestoreEpoch(result.restoreEpoch);
       resetItemContents(Object.keys(project.items));
-      const contents = acceptLoadedContents(result.contents);
-      for (const [itemId, content] of Object.entries(contents)) {
-        const item = project.items[itemId];
-        if (item) project.items[itemId] = { ...item, content, textStats: countTextStats(content) };
-      }
+      const loaded = acceptLoadedContents(result.contents);
       const pendingTitles = titleSaves.restore(routeProjectId, Object.keys(project.items));
-      for (const [id, title] of Object.entries(pendingTitles)) project.items[id] = { ...project.items[id], title };
       setProjectTitle(project.title);
       setVisibility(project.visibility);
       setDescription(project.description);
       setGraphColors(project.graphColors);
       setTags(project.tags);
-      setTrails(project.trails);
-      setItems(project.items);
+      setRemote(result.structure);
+      setOps(Object.entries(pendingTitles).map(([id, title]) => ({ key: `title:${id}`, apply: renameItem(id, title) })));
+      setContents(Object.fromEntries(Object.entries(loaded).filter(([id]) => result.structure.items[id]).map(([id, content]) => [id, loadedContent(content)])));
+      setEditorKeys({});
+      receiveStructure(undefined);
       setProfile(result.profile);
       setRole(result.role);
       setLoaded(true);
@@ -238,7 +305,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     return () => {
       cancelled = true;
     };
-  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves, refreshKey]);
+  }, [routeProjectId, router, redirectToLogin, draft, user, titleSaves, refreshKey, setRemote, setOps, receiveStructure]);
 
   useEffect(() => {
     if (isDraft || !loaded || (!connectionsPanelOpen && view !== 'graph') || mapPreviews !== undefined) return;
@@ -275,17 +342,12 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const handleSetItemTitleAlign = (itemId: string, titleAlign: TitleAlign) => {
     if (draft && draft.getSnapshot().status !== 'saved') {
       draft.update({ item: { ...draft.backup.latest.item, titleAlign } });
-      setItems(previous => ({ ...previous, [itemId]: { ...previous[itemId], titleAlign } }));
+      setRemote(alignItem(itemId, titleAlign));
       return Promise.resolve();
     }
-    return pendingSaves.current.track(`align:${itemId}`, async () => {
-    setItems(prevItems => {
-      const item = prevItems[itemId];
-      if (!item) return prevItems;
-      return { ...prevItems, [itemId]: { ...item, titleAlign } };
-    });
-    await setItemTitleAlign(itemId, titleAlign, restoreEpoch, projectId);
-    }, true);
+    pend(`align:${itemId}`, alignItem(itemId, titleAlign));
+    return pendingSaves.current.track(`align:${itemId}`, () => optimistic(`align:${itemId}`, alignItem(itemId, titleAlign),
+      () => setItemTitleAlign(itemId, titleAlign, restoreEpoch, projectId), true), true);
   };
 
   const handleSetGraphColors = (colors: string) => pendingSaves.current.track('graph-colors', async () => {
@@ -305,11 +367,9 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       .then((byId) => {
         if (cancelled) return;
         setContentLoadError(false);
-        setItems((prev) => {
+        setContents((prev) => {
           const next = { ...prev };
-          for (const [itemId, content] of Object.entries(byId)) {
-            if (next[itemId] && next[itemId].content == null) next[itemId] = { ...next[itemId], content, textStats: countTextStats(content) };
-          }
+          for (const [itemId, content] of Object.entries(byId)) if (!next[itemId]) next[itemId] = loadedContent(content);
           return next;
         });
       })
@@ -323,8 +383,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     getItemContent(selectedItemId).then((content) => {
       if (cancelled) return;
       setContentLoadError(false);
-      setItems((prev) => prev[selectedItemId] && prev[selectedItemId].content == null
-        ? { ...prev, [selectedItemId]: { ...prev[selectedItemId], content, textStats: countTextStats(content) } } : prev);
+      setContents((prev) => prev[selectedItemId] ? prev : { ...prev, [selectedItemId]: loadedContent(content) });
     }).catch(() => { if (!cancelled) setContentLoadError(true); });
     return () => { cancelled = true; };
   }, [activeTrailId, selectedItemId, contentRetry, items]);
@@ -364,19 +423,12 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       const stepByItemId = new Map(previous.steps.map(step => [step.itemId, step]));
       if (itemIds.length !== previous.steps.length || new Set(itemIds).size !== itemIds.length || itemIds.some(id => !stepByItemId.has(id))) return;
       reorderingTrails.current.add(trailId);
-      setTrails(prev => prev.map(trail => trail.id === trailId
-        ? { ...trail, itemIds, steps: itemIds.map(id => stepByItemId.get(id)!) } : trail));
       try {
-        await reorderTrailItems(trailId, itemIds, restoreEpoch);
+        await optimistic(`order:${trailId}`, orderTrailItems(trailId, itemIds), () => reorderTrailItems(trailId, itemIds, restoreEpoch));
         setReorderNotices(prev => ({ ...prev, [trailId]: {
         } }));
       } catch (err) {
         console.error(err);
-        setTrails(prev => prev.map(trail => {
-          if (trail.id !== trailId) return trail;
-          const currentSteps = new Map(trail.steps.map(step => [step.itemId, step]));
-          return { ...trail, itemIds: previous.itemIds, steps: previous.steps.map(step => currentSteps.get(step.itemId) ?? step) };
-        }));
         setReorderNotices(prev => ({ ...prev, [trailId]: {
           error: 'Could not reorder this trail. The previous order was restored. Please try again.',
         } }));
@@ -389,22 +441,20 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
 
   const handleCreateTrail = (title: string) => pendingSaves.current.track(`create-trail:${title}`, async () => {
     const newTrail = await createTrail(projectId, title, restoreEpoch);
-    setTrails(prevTrails => [...prevTrails, newTrail]);
+    settle(`create-trail:${newTrail.id}`, addTrail(newTrail));
   }, false);
 
   const handleReorderTrails = (trailIds: string[]) => {
     if (reorderingProjectTrails.current) return Promise.resolve();
     const byId = new Map(trails.map(trail => [trail.id, trail]));
     if (trailIds.length !== trails.length || new Set(trailIds).size !== trails.length || trailIds.some(id => !byId.has(id))) return Promise.resolve();
-    const previousOrder = new Map(trails.map((trail, index) => [trail.id, index]));
     reorderingProjectTrails.current = true;
     setTrailOrderError(null);
-    setTrails(trailIds.map(id => byId.get(id)!));
+    pend('trail-order', orderTrails(trailIds));
     return pendingSaves.current.track('trail-order', async () => {
       try {
-        await reorderProjectTrails(projectId, trailIds, restoreEpoch);
+        await optimistic('trail-order', orderTrails(trailIds), () => reorderProjectTrails(projectId, trailIds, restoreEpoch));
       } catch (error) {
-        setTrails(current => [...current].sort((a, b) => (previousOrder.get(a.id) ?? previousOrder.size) - (previousOrder.get(b.id) ?? previousOrder.size)));
         setTrailOrderError('Could not reorder the trails. The previous order was restored. Please try again.');
         throw error;
       } finally {
@@ -430,42 +480,21 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     const needsOrder = targetOrder.some((id, position) => attachedOrder[position] !== id);
     reorderingTrails.current.add(sourceId);
     reorderingTrails.current.add(targetId);
-    return pendingSaves.current.track(`move:${sourceId}:${targetId}:${itemId}`, async () => {
-      setTrails(previous => previous.map(trail => {
-        if (trail.id === sourceId) return { ...trail, itemIds: trail.itemIds.filter(id => id !== itemId), steps: trail.steps.filter(step => step.itemId !== itemId) };
-        if (trail.id === targetId) return { ...trail, itemIds: targetOrder, steps: targetOrder.map(id => trail.steps.find(step => step.itemId === id) ?? { itemId: id }) };
-        return trail;
-      }));
+    const key = `move:${sourceId}:${targetId}:${itemId}`;
+    return pendingSaves.current.track(key, async () => {
       let attached = target.itemIds.includes(itemId);
-      let ordered = !needsOrder;
+      pend(key, compose(linkItem(targetId, itemId), orderTrailItems(targetId, targetOrder), unlinkItem(sourceId, itemId)));
       try {
         await attachItemToTrail(targetId, itemId, restoreEpoch);
         attached = true;
-        if (needsOrder) {
-          await reorderTrailItems(targetId, targetOrder, restoreEpoch);
-          ordered = true;
-        }
+        if (needsOrder) await reorderTrailItems(targetId, targetOrder, restoreEpoch);
         await detachItemFromTrail(sourceId, itemId, restoreEpoch);
+        settle(key);
         setNavigation(previous => previous.trailId === sourceId && previous.itemId === itemId
           ? { ...previous, trailId: targetId } : previous);
       } catch (error) {
-        setTrails(previous => previous.map(trail => {
-          if (trail.id === sourceId && !trail.itemIds.includes(itemId)) {
-            const itemIds = [...trail.itemIds];
-            const steps = [...trail.steps];
-            const index = Math.min(source.itemIds.indexOf(itemId), itemIds.length);
-            itemIds.splice(index, 0, itemId);
-            steps.splice(index, 0, source.steps.find(step => step.itemId === itemId)!);
-            return { ...trail, itemIds, steps };
-          }
-          if (trail.id === targetId && (!attached || !ordered)) {
-            const savedOrder = attached ? attachedOrder : target.itemIds;
-            const currentIds = attached ? trail.itemIds : trail.itemIds.filter(id => id !== itemId);
-            const itemIds = [...savedOrder.filter(id => currentIds.includes(id)), ...currentIds.filter(id => !savedOrder.includes(id))];
-            return { ...trail, itemIds, steps: itemIds.map(id => trail.steps.find(step => step.itemId === id)!) };
-          }
-          return trail;
-        }));
+        if (attached) settle(key, linkItem(targetId, itemId));
+        else drop(key);
         throw new Error(attached
           ? 'Could not finish the move. The note is in both trails; retry the move.'
           : 'Could not move the note. It remains in its original trail.', { cause: error });
@@ -476,151 +505,74 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     }, false);
   };
 
-  const handleCreateItem = (trailId: string, title: string) => pendingSaves.current.track(`create-item:${trailId}:${title}`, async () => {
+  const createItemWith = async (trailId: string | undefined, title: string, create: () => Promise<Item>) => {
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const optimisticItem: Item = { id: tempId, editorKey: tempId, title, titleAlign: 'center', unfiled: false, content: '', textStats: { words: 0, characters: 0 } };
-    setItems(prevItems => ({ ...prevItems, [tempId]: optimisticItem }));
-    setTrails(prevTrails => prevTrails.map(trail =>
-      trail.id === trailId
-        ? {
-            ...trail,
-            itemIds: [...trail.itemIds, tempId],
-            steps: [...trail.steps, { itemId: tempId }],
-          }
-        : trail
-    ));
+    const key = `create:${tempId}`;
+    const temp: ItemMeta = { id: tempId, editorKey: tempId, title, titleAlign: 'center', unfiled: !trailId, textStats: { words: 0, characters: 0 } };
+    setContents(previous => ({ ...previous, [tempId]: loadedContent('') }));
+    pend(key, addItem(temp, trailId));
     setView('write');
     setNavigation({ trailId, itemId: tempId, request: { itemId: tempId, sequence: ++navigationSequence.current, focus: true } });
     let newItem: Item;
     try {
-      newItem = await createItem(trailId, title, restoreEpoch);
+      newItem = await create();
     } catch (err) {
-      setItems(prev => { const next = { ...prev }; delete next[tempId]; return next; });
-      setTrails(prev => prev.map(t => t.id === trailId ? { ...t, itemIds: t.itemIds.filter(id => id !== tempId), steps: t.steps.filter(s => s.itemId !== tempId) } : t));
+      drop(key);
       setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: undefined, request: undefined } : prev);
       throw err;
     }
-    setItems(prev => {
-      const next = { ...prev };
-      const tempItem = next[tempId];
-      delete next[tempId];
-      next[newItem.id] = { ...newItem, editorKey: tempId, content: tempItem?.content ?? newItem.content };
-      return next;
-    });
-    setTrails(prev => prev.map(t => t.id === trailId ? {
-      ...t,
-      itemIds: t.itemIds.map(id => id === tempId ? newItem.id : id),
-      steps: t.steps.map(s => s.itemId === tempId ? { itemId: newItem.id } : s),
-    } : t));
+    setEditorKeys(previous => ({ ...previous, [newItem.id]: tempId }));
+    setContents(previous => ({ ...previous, [newItem.id]: previous[tempId] ?? loadedContent(newItem.content ?? '') }));
+    settle(key, addItem(metaOf(newItem), trailId));
     setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: newItem.id, request: prev.request ? { ...prev.request, itemId: newItem.id } : undefined } : prev);
-  }, false);
+  };
 
-  const handleLinkItemToTrail = (trailId: string, itemId: string) => pendingSaves.current.track(`attach:${trailId}:${itemId}`, async () => {
-    await attachItemToTrail(trailId, itemId, restoreEpoch);
-    setTrails(prevTrails => prevTrails.map(trail =>
-      trail.id === trailId && !trail.itemIds.includes(itemId)
-        ? {
-            ...trail,
-            itemIds: [...trail.itemIds, itemId],
-            steps: [...trail.steps, { itemId }],
-          }
-        : trail
-    ));
-  }, false);
+  const handleCreateItem = (trailId: string, title: string) => pendingSaves.current.track(`create-item:${trailId}:${title}`,
+    () => createItemWith(trailId, title, () => createItem(trailId, title, restoreEpoch)), false);
+
+  const handleLinkItemToTrail = (trailId: string, itemId: string) => pendingSaves.current.track(`attach:${trailId}:${itemId}`,
+    () => optimistic(`attach:${trailId}:${itemId}`, linkItem(trailId, itemId), () => attachItemToTrail(trailId, itemId, restoreEpoch)), false);
 
   const handleUnlinkItemFromTrail = (trailId: string, itemId: string) => pendingSaves.current.track(`detach:${trailId}:${itemId}`, async () => {
-    await detachItemFromTrail(trailId, itemId, restoreEpoch);
-    const nextTrails = trails.map(trail =>
-      trail.id === trailId
-        ? {
-            ...trail,
-            itemIds: trail.itemIds.filter(id => id !== itemId),
-            steps: trail.steps.filter(s => s.itemId !== itemId),
-          }
-        : trail
-    );
-    setTrails(nextTrails);
+    const nextTrail = unlinkItem(trailId, itemId)(shown).trails.find(trail => trail.id === trailId);
+    await optimistic(`detach:${trailId}:${itemId}`, unlinkItem(trailId, itemId), () => detachItemFromTrail(trailId, itemId, restoreEpoch));
     if (activeTrailId === trailId && selectedItemId === itemId) {
-      const next = nextTrails.find((t) => t.id === trailId)?.itemIds[0];
+      const next = nextTrail?.itemIds[0];
       setNavigation({ trailId: next ? trailId : undefined, itemId: next ?? itemId });
     }
-    if (!nextTrails.some(trail => trail.itemIds.includes(itemId))) {
-      setItems(prev => {
-        const it = prev[itemId];
-        return it && !it.unfiled ? { ...prev, [itemId]: { ...it, unfiled: true } } : prev;
-      });
-    }
   }, false);
 
-  const handleCreateLooseItem = (title: string) => pendingSaves.current.track(`create-loose:${title}`, async () => {
-    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const optimisticItem: Item = { id: tempId, editorKey: tempId, title, titleAlign: 'center', unfiled: true, content: '', textStats: { words: 0, characters: 0 } };
-    setItems(prevItems => ({ ...prevItems, [tempId]: optimisticItem }));
-    setView('write');
-    setNavigation({ itemId: tempId, request: { itemId: tempId, sequence: ++navigationSequence.current, focus: true } });
-    let newItem: Item;
-    try {
-      newItem = await createLooseItem(projectId, title, restoreEpoch);
-    } catch (err) {
-      setItems(prev => { const next = { ...prev }; delete next[tempId]; return next; });
-      setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: undefined, request: undefined } : prev);
-      throw err;
-    }
-    setItems(prev => {
-      const next = { ...prev };
-      const tempItem = next[tempId];
-      delete next[tempId];
-      next[newItem.id] = { ...newItem, editorKey: tempId, content: tempItem?.content ?? newItem.content };
-      return next;
-    });
-    setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: newItem.id, request: prev.request ? { ...prev.request, itemId: newItem.id } : undefined } : prev);
-  }, false);
+  const handleCreateLooseItem = (title: string) => pendingSaves.current.track(`create-loose:${title}`,
+    () => createItemWith(undefined, title, () => createLooseItem(projectId, title, restoreEpoch)), false);
 
   const handleDeleteItem = (itemId: string) => pendingSaves.current.track(`delete-item:${itemId}`, async () => {
-    await deleteItem(itemId, restoreEpoch, projectId);
+    const next = trails.find(trail => trail.id === activeTrailId)?.itemIds.find(id => id !== itemId);
+    await optimistic(`delete-item:${itemId}`, removeItem(itemId), () => deleteItem(itemId, restoreEpoch, projectId));
     titleSaves.discard(projectId, itemId);
-    setTrails(prevTrails => prevTrails.map(trail => ({
-      ...trail,
-      itemIds: trail.itemIds.filter(id => id !== itemId),
-      steps: trail.steps.filter(s => s.itemId !== itemId),
-    })));
-    setItems(prevItems => {
-      const next = { ...prevItems };
-      delete next[itemId];
-      return next;
-    });
-    setNavigation((prev) => {
-      if (prev.itemId !== itemId) return prev;
-      const next = trails.find((t) => t.id === prev.trailId)?.itemIds.find((id) => id !== itemId);
-      return { ...prev, itemId: next, request: undefined };
-    });
+    drop(`title:${itemId}`);
+    setNavigation(prev => prev.itemId !== itemId ? prev : { ...prev, itemId: next, request: undefined });
   }, false);
 
   const handleRenameTrail = (trailId: string, title: string) => {
     if (draft && draft.getSnapshot().status !== 'saved') {
-      setTrails(previous => previous.map(trail => ({ ...trail, title })));
+      setRemote(previous => ({ ...previous, trails: previous.trails.map(trail => ({ ...trail, title })) }));
       draft.update({ trail: { title } });
       return Promise.resolve();
     }
-    setTrails(prevTrails => prevTrails.map(trail =>
-      trail.id === trailId ? { ...trail, title } : trail
-    ));
-    return pendingSaves.current.track(`trail-title:${trailId}`, () => renameTrail(trailId, title, restoreEpoch), true).catch(() => {});
+    pend(`trail-title:${trailId}`, renameTrailOp(trailId, title));
+    return pendingSaves.current.track(`trail-title:${trailId}`, () => optimistic(`trail-title:${trailId}`, renameTrailOp(trailId, title),
+      () => renameTrail(trailId, title, restoreEpoch), true), true).catch(() => {});
   };
 
   const handleRenameItem = (itemId: string, title: string) => {
     const result = draft?.backup.result;
     if (result && itemId === draft.editorKey) itemId = String(result.itemId);
     if (draft && draft.getSnapshot().status !== 'saved') {
-      setItems(previous => Object.fromEntries(Object.entries(previous).map(([id, item]) => [id, { ...item, title }])));
+      setRemote(previous => ({ ...previous, items: Object.fromEntries(Object.entries(previous.items).map(([id, item]) => [id, { ...item, title }])) }));
       draft.update({ item: { ...draft.backup.latest.item, title } }, true);
       return Promise.resolve();
     }
-    setItems(prevItems => {
-      const item = prevItems[itemId];
-      if (!item) return prevItems;
-      return { ...prevItems, [itemId]: { ...item, title } };
-    });
+    pend(`title:${itemId}`, renameItem(itemId, title));
     titleSaves.update(result?.projectId ?? projectId, itemId, title, result?.restoreEpoch ?? restoreEpoch);
     return Promise.resolve();
   };
@@ -629,25 +581,9 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     const target = trails.find(trail => trail.id === trailId);
     if (!target) return;
 
-    await deleteTrailRequest(trailId, restoreEpoch);
-    const remainingTrails = trails.filter(trail => trail.id !== trailId);
-    setTrails(remainingTrails);
-    if (activeTrailId === trailId) {
-      const next = remainingTrails[0];
-      setNavigation({ trailId: next?.id, itemId: next?.itemIds[0] });
-    }
-    const orphanIds = target.itemIds.filter(
-      itemId => !remainingTrails.some(trail => trail.itemIds.includes(itemId))
-    );
-    if (orphanIds.length > 0) {
-      setItems(prev => {
-        const next = { ...prev };
-        orphanIds.forEach(id => {
-          if (next[id] && !next[id].unfiled) next[id] = { ...next[id], unfiled: true };
-        });
-        return next;
-      });
-    }
+    const next = trails.find(trail => trail.id !== trailId);
+    await optimistic(`delete-trail:${trailId}`, removeTrail(trailId), () => deleteTrailRequest(trailId, restoreEpoch));
+    if (activeTrailId === trailId) setNavigation({ trailId: next?.id, itemId: next?.itemIds[0] });
   }, false);
 
   const handleVisibilityChange = async (next: ProjectVisibility) => {
@@ -693,6 +629,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     profile,
     role,
     accessLost,
+    noAccess: noAccessProjectId === routeProjectId,
     trails,
     items,
     mapPreviews,
@@ -712,12 +649,11 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     redirectToLogin,
     flushProjectChanges: async () => { await Promise.all([titleSaves.flush(), pendingSaves.current.flush()]); },
     applyExtraction: (result: ExtractionResult) => {
-      setItems(previous => ({ ...previous,
-        [result.item.id]: { ...result.item, textStats: countTextStats(result.item.content ?? '') },
-      }));
-      if (result.trailId) setTrails(previous => previous.map(trail => trail.id === result.trailId
-        ? { ...trail, steps: result.steps, itemIds: result.steps.map(step => step.itemId) } : trail));
+      updateItemContentLocally(result.item.id, result.item.content ?? '');
+      settle(`extract:${result.item.id}`, compose(addItem(metaOf(result.item)),
+        ...(result.trailId ? [linkItem(result.trailId, result.item.id), orderTrailItems(result.trailId, result.steps.map(step => step.itemId))] : [])));
     },
+    receiveStructure,
     commitItemTitle,
     handleSetItemTitleAlign,
     handleSetGraphColors,
@@ -741,6 +677,13 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     updateItemContentLocally,
     handleRenameProject,
     ...autoSave,
+    onCollabChange: (itemId: string, editorState: import('lexical').EditorState) => {
+      autoSave.onCollabChange?.(itemId, editorState);
+      const title = editorState.read($noteTitle)?.trim();
+      if (title === undefined) return;
+      if (!title || title === remoteRef.current.items[itemId]?.title) drop(`live-title:${itemId}`);
+      else settle(`live-title:${itemId}`, renameItem(itemId, title));
+    },
     ...(isDraft ? { saveStatus: draftState.status === 'error' ? 'error' as const : draftState.status === 'draft' ? 'idle' as const : 'saving' as const,
       saveError: draftState.error } : {}),
     ...(!isDraft && titleState.status === 'error' ? { saveStatus: 'error' as const } : {}),
