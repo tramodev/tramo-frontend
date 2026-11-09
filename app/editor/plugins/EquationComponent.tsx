@@ -289,16 +289,13 @@ export default function EquationComponent({
 
   const onDelete = useCallback(
     (event: KeyboardEvent) => {
-      if (isSelected && $isNodeSelection($getSelection())) {
-        event.preventDefault();
-        const node = $getNodeByKey(nodeKey);
-        if ($isEquationNode(node)) {
-          node.remove();
-        }
-      }
-      return false;
+      const selection = $getSelection();
+      if (!isSelected || !$isNodeSelection(selection)) return false;
+      event.preventDefault();
+      selection.deleteNodes();
+      return true;
     },
-    [isSelected, nodeKey],
+    [isSelected],
   );
 
   const enterFrom = useCallback(

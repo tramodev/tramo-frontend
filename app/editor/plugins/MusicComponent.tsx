@@ -267,16 +267,13 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
 
   const onDelete = useCallback(
     (event: KeyboardEvent) => {
-      if (isSelected && $isNodeSelection($getSelection())) {
-        event.preventDefault();
-        const node = $getNodeByKey(nodeKey);
-        if ($isMusicNode(node)) {
-          node.remove();
-        }
-      }
-      return false;
+      const selection = $getSelection();
+      if (!isSelected || !$isNodeSelection(selection)) return false;
+      event.preventDefault();
+      selection.deleteNodes();
+      return true;
     },
-    [isSelected, nodeKey],
+    [isSelected],
   );
 
   const enterFrom = useCallback(
