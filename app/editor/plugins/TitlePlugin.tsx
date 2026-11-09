@@ -29,6 +29,7 @@ import {
   OUTDENT_CONTENT_COMMAND,
   PASTE_COMMAND,
   RootNode,
+  TextNode,
   type LexicalEditor,
 } from 'lexical';
 import { $createTitleNode, $inTitle, $isTitleNode, $normalizeTitles, TITLE_MAX_LENGTH, TitleNode } from '@/app/editor/nodes/TitleNode';
@@ -105,6 +106,10 @@ export function registerTitle(editor: LexicalEditor) {
   return mergeRegister(
     editor.registerNodeTransform(RootNode, $enforceTitleRoot),
     editor.registerNodeTransform(TitleNode, $enforceTitleText),
+    editor.registerNodeTransform(TextNode, node => {
+      const parent = node.getParent();
+      if ($isTitleNode(parent)) $enforceTitleText(parent);
+    }),
     editor.registerCommand(KEY_ENTER_COMMAND, event => {
       if (!$enterBodyFromTitle()) return false;
       event?.preventDefault();

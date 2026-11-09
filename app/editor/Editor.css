@@ -759,6 +759,7 @@ div.editor-equation {
   display: flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
   min-height: 8rem;
   border: 1px dashed var(--border);
   border-radius: 0.5rem;
@@ -1075,6 +1076,22 @@ div.editor-equation {
   margin: 0;
   margin-left: 16px;
   list-style-type: disc;
+}
+
+[data-multilevel] .editor-list-ol-2 {
+  list-style-type: lower-alpha;
+}
+
+[data-multilevel] .editor-list-ol-3 {
+  list-style-type: lower-roman;
+}
+
+.editor-list-ul-2 {
+  list-style-type: circle;
+}
+
+.editor-list-ul-3 {
+  list-style-type: square;
 }
 
 .editor-listitem {

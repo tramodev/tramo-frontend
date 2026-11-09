@@ -11,6 +11,7 @@ import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin"
 import { editorConfig } from "@/app/editor/lexical-config"
 import ItemLinkClickPlugin from "@/app/editor/plugins/ItemLinkClickPlugin"
 import CodeHighlightPlugin from "@/app/editor/plugins/CodeHighlightPlugin"
+import ListStylePlugin from "@/app/editor/plugins/ListStylePlugin"
 import "@/app/editor/Editor.css"
 
 export function LexicalReadOnly({
@@ -38,6 +39,7 @@ export function LexicalReadOnly({
       />
       {onItemClick && <ItemLinkClickPlugin onNavigate={onItemClick} />}
       <CodeHighlightPlugin />
+      <ListStylePlugin />
       <ClickableLinkPlugin newTab />
     </SafeNoteComposer>
   )

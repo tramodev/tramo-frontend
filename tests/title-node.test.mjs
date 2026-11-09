@@ -76,6 +76,16 @@ test('title text is plain, single line and capped like the API', () => {
   });
 });
 
+test('styling existing title text is undone so it never looks saved', () => {
+  const s = setup(() => lexical.$getRoot().append(titleNode('Title'), paragraph('Body')));
+  s.editor.update(() => {
+    const [titleText, bodyText] = lexical.$getRoot().getAllTextNodes();
+    titleText.setStyle('font-family: Georgia; font-size: 30px; color: red');
+    bodyText.setStyle('font-family: Georgia');
+  }, { discrete: true });
+  expect(s.editor.getEditorState().read(() => lexical.$getRoot().getAllTextNodes().map(node => node.getStyle()))).toEqual(['', 'font-family: Georgia']);
+});
+
 test('updates from collaborators or the shared undo stack are never rewritten locally', () => {
   for (const tag of ['collaboration', 'historic']) {
     const s = setup();
