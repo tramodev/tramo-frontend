@@ -24,6 +24,7 @@ import ctaBg from "@/public/cta-bg.webp";
 export const metadata: Metadata = {
   title: { absolute: "Tramo — Turn notes into trails for learning and explaining" },
   description: "Turn connected, reusable notes into trails for learning and explaining. Write a note once, reuse it in as many trails as you need, and share a clear explanation.",
+  alternates: { canonical: "/" },
 };
 
 const STRUCTURED_DATA = JSON.stringify({
