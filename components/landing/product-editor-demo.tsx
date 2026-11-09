@@ -70,7 +70,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
     setSelected({ note: id, trail });
   }
 
-  return <div className="@container relative flex h-[35rem] flex-col overflow-hidden rounded-t-lg border border-b-0 border-border bg-background text-foreground [overflow-anchor:none]">
+  return <div className={cn('@container relative flex h-[35rem] flex-col overflow-hidden rounded-lg border border-border bg-background text-foreground [overflow-anchor:none]', variant === 'connections' ? 'rounded-r-none border-r-0 lg:w-[110%]' : 'rounded-l-none border-l-0')}>
     <div className={cn('grid min-h-0 flex-1 overflow-hidden', variant === 'connections' ? 'grid-rows-1 @min-[36rem]:grid-cols-[12rem_minmax(0,1fr)]' : 'grid-rows-[minmax(0,1fr)_auto] @min-[28rem]:grid-cols-[minmax(0,1fr)_16rem] @min-[28rem]:grid-rows-1')}>
       {variant === 'connections' && <nav aria-label="Demo trails" className="hidden min-h-0 min-w-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-r border-border bg-sidebar p-3 @min-[36rem]:block">
         <div className="mb-4 flex items-center gap-2">
