@@ -439,6 +439,7 @@ a[rel^="mypath-idea:"] {
 
 .editor-image {
   display: inline-block;
+  max-width: 100%;
 }
 
 .editor-equation {
