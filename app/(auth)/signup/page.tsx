@@ -8,6 +8,7 @@ import { AuthPoster } from "@/components/auth/auth-poster"
 export const metadata: Metadata = {
   title: "Sign up",
   description: "Create a free Tramo account and start mapping your ideas.",
+  robots: { index: false },
 }
 
 export default function SignupPage() {

@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { backendFetch } from '@/lib/backend-fetch';
 import type { MetadataRoute } from "next"
+import { connection } from "next/server"
 import { API_BASE_URL, SITE_URL } from "@/lib/config"
 import { SECTIONS } from "@/app/wiki/content"
 import { getBlogPosts } from "@/lib/site-content"
-
-export const revalidate = 3600
 
 interface SitemapProject {
   id: string
@@ -21,9 +20,10 @@ interface SitemapUser {
 async function getSitemapProjects(): Promise<SitemapProject[]> {
   try {
     const response = await backendFetch(`${API_BASE_URL}/api/public/sitemap/projects`, { cache: "force-cache", next: { revalidate: 3600 } })
-    if (!response.ok) return []
+    if (!response.ok) throw new Error(`status ${response.status}`)
     return await response.json()
-  } catch {
+  } catch (error) {
+    console.error("Sitemap could not load public projects", error)
     return []
   }
 }
@@ -31,14 +31,16 @@ async function getSitemapProjects(): Promise<SitemapProject[]> {
 async function getSitemapUsers(): Promise<SitemapUser[]> {
   try {
     const response = await backendFetch(`${API_BASE_URL}/api/public/sitemap/users`, { cache: "force-cache", next: { revalidate: 3600 } })
-    if (!response.ok) return []
+    if (!response.ok) throw new Error(`status ${response.status}`)
     return await response.json()
-  } catch {
+  } catch (error) {
+    console.error("Sitemap could not load public users", error)
     return []
   }
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection()
   const [projects, users, posts] = await Promise.all([getSitemapProjects(), getSitemapUsers(), getBlogPosts().catch(() => [])])
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -46,13 +48,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/tos`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${SITE_URL}/blog`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/changelog`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/wiki`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/roadmap`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/explore`, changeFrequency: "hourly", priority: 0.9 },
-    { url: `${SITE_URL}/login`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${SITE_URL}/signup`, changeFrequency: "yearly", priority: 0.3 },
+    ...(posts.length > 0 ? [{ url: `${SITE_URL}/blog`, changeFrequency: "weekly" as const, priority: 0.5 }] : []),
   ]
 
   const projectRoutes: MetadataRoute.Sitemap = projects.map((project) => ({

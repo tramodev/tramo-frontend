@@ -5,11 +5,15 @@ import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { getBlogPosts } from '@/lib/site-content';
 
-export const metadata: Metadata = {
-  title: 'Blog',
-  description: 'Ideas on connected thinking, notes on building Tramo, and what comes next.',
-  alternates: { canonical: '/blog' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const posts = await getBlogPosts().catch(() => null);
+  return {
+    title: 'Blog',
+    description: 'Ideas on connected thinking, notes on building Tramo, and what comes next.',
+    alternates: { canonical: '/blog' },
+    ...(posts?.length === 0 && { robots: { index: false } }),
+  };
+}
 
 export default async function BlogPage() {
   await connection();
