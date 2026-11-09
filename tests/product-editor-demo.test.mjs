@@ -49,6 +49,8 @@ function loadDemo(variant) {
 test('edits follow a shared note across trails, survive note navigation and reset locally', () => {
   const render = loadDemo('shared');
   let nodes = render();
+  nodes.find(node => node.props['aria-label'] === 'Open Memex').props.onClick();
+  nodes = render();
   const content = { root: { children: [{ text: 'My edited explanation' }] } };
   nodes.find(node => node.type === 'OnChange').props.onChange({ toJSON: () => content });
   nodes = render();
@@ -68,7 +70,7 @@ test('edits follow a shared note across trails, survive note navigation and rese
   nodes.find(node => node.props['aria-label'] === 'Reset demo').props.onClick();
   nodes = render();
   expect(typeof nodes.find(node => node.type === 'Composer').props.initialConfig.editorState).toBe('function');
-  expect(nodes.find(node => node.type === 'Composer').key).toBe('memex-1');
+  expect(nodes.find(node => node.type === 'Composer').key).toBe('essay-1');
   expect(typeof loadDemo('shared')().find(node => node.type === 'Composer').props.initialConfig.editorState).toBe('function');
 });
 
@@ -81,9 +83,9 @@ test('the demo initializes valid Lexical content with a working local note link'
   };
   expect(parse('connections').content.root.children).toHaveLength(2);
   const { editor, content } = parse('shared');
-  expect(content.root.children).toHaveLength(3);
-  expect(content.root.children[2].children[0].type).toBe('link');
-  expect(content.root.children[2].children[0].url).toBe('#essay');
+  expect(content.root.children).toHaveLength(2);
+  expect(content.root.children[1].children[0].type).toBe('link');
+  expect(content.root.children[1].children[0].url).toBe('#memex');
   expect(() => editor.parseEditorState(JSON.stringify(content))).not.toThrow();
 });
 
@@ -104,14 +106,16 @@ test('the second demo replaces the left sidebar with navigable connections and n
   expect(nodes.some(node => node.props['aria-label'] === 'Demo trails')).toBe(false);
   expect(nodes.some(node => node.props['aria-label'] === 'Demo connections')).toBe(true);
   expect(nodes.some(node => node.props['aria-label'] === 'Open map')).toBe(false);
-  nodes.find(node => node.props['aria-label'] === 'Open As We May Think').props.onClick();
+  nodes.find(node => node.props['aria-label'] === 'Open Memex').props.onClick();
   nodes = render();
-  expect(nodes.find(node => node.type === 'RichText').props.contentEditable.props['aria-label']).toBe('As We May Think demo editor');
+  expect(nodes.find(node => node.type === 'RichText').props.contentEditable.props['aria-label']).toBe('Memex demo editor');
 });
 
 test('Sharing a trail to Memex handles links before editor focus and click updates', () => {
   const render = loadDemo('shared');
   let nodes = render();
+  nodes.find(node => node.props['aria-label'] === 'Open Memex').props.onClick();
+  nodes = render();
   nodes.find(node => node.props['aria-label'] === 'Open Sharing a trail').props.onClick();
   nodes = render();
   const content = nodes.find(node => node.type === 'div' && node.props.onClickCapture);

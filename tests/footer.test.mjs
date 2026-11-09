@@ -28,7 +28,7 @@ test('footer shows the brand, social icons and copyright in order', () => {
   expect(x.props.rel).toBe('noopener noreferrer');
   expect(nodes.indexOf(x)).toBeLessThan(nodes.indexOf(github));
   const copyright = nodes.find(node => node.type === 'p');
-  expect(copyright.props.children.join('')).toContain(`${new Date().getFullYear()} Tramo Inc. All rights reserved.`);
+  expect(copyright.props.children.filter(child => typeof child !== 'object').join('')).toContain(`${new Date().getFullYear()} Ezequiel Martino. Open source under `);
   expect(nodes.findIndex(node => node.type === 'Wordmark')).toBeLessThan(nodes.indexOf(github));
   expect(nodes.indexOf(github)).toBeLessThan(nodes.indexOf(copyright));
 });
