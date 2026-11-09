@@ -6,8 +6,8 @@ import ts from 'typescript';
 function setup() {
   const states = [], refs = [], requests = [], downloads = [];
   let stateIndex = 0, refIndex = 0;
-  const configuration = { beforeExport: async () => {}, response: { ok: true, headers: { get: () => 'application/zip' }, blob: async () => ({ size: 10 }) } };
-  const jsx = (type, props) => ({ type, props });
+  const configuration = { beforeExport: async () => {}, response: { ok: true, headers: { get: name => ({ 'Content-Type': 'application/zip' })[name] ?? null }, blob: async () => ({ size: 10 }) } };
+  const jsx = (type, props, key) => ({ type, props, key });
   const exports = {};
   runInNewContext(ts.transpileModule(readFileSync('components/editor/export-project-button.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
@@ -19,7 +19,8 @@ function setup() {
         useState: value => { const i = stateIndex++; if (!(i in states)) states[i] = value; return [states[i], next => { states[i] = next; }]; },
       },
       'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
-      'lucide-react': { Download: 'Download', Loader2: 'Loader2' },
+      'lucide-react': { Download: 'Download', Loader2: 'Loader2', FileCode: 'FileCode', FilePen: 'FilePen', FileText: 'FileText', FileType: 'FileType' },
+      '@/components/ui/dropdown-menu': Object.fromEntries(['DropdownMenu', 'DropdownMenuContent', 'DropdownMenuItem', 'DropdownMenuTrigger'].map(name => [name, name])),
       '@/components/ui/button': { Button: 'Button' },
       '@/components/ui/dialog': Object.fromEntries(['Dialog', 'DialogContent', 'DialogDescription', 'DialogHeader', 'DialogTitle'].map(name => [name, name])),
     })[name],
@@ -36,36 +37,38 @@ function setup() {
     stateIndex = refIndex = 0;
     return flatten(exports.ExportProjectButton({ projectId: 'opaque', beforeExport: () => configuration.beforeExport() }));
   }
-  return { render, configuration, requests, downloads };
+  const choose = format => render().find(node => node.type === 'DropdownMenuItem' && node.key === format).props.onSelect();
+  return { render, choose, configuration, requests, downloads };
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 test('export waits for pending saves, prevents duplicate requests and downloads the ZIP once', async () => {
   const s = setup(); let saved;
   s.configuration.beforeExport = () => new Promise(resolve => { saved = resolve; });
-  const button = s.render().find(node => node.type === 'Button');
-  button.props.onClick(); button.props.onClick(); await settle();
+  s.choose('html'); s.choose('html'); await settle();
   expect(s.requests).toHaveLength(0);
-  expect(s.render().find(node => node.type === 'Button').props.disabled).toBe(true);
+  expect(s.render().find(node => node.type === 'DropdownMenuTrigger').props.disabled).toBe(true);
   saved(); await settle();
   expect(s.requests).toHaveLength(1);
-  expect(s.requests[0][0]).toBe('/api/projects/opaque/export');
+  expect(s.requests[0][0]).toBe('/api/projects/opaque/export?format=html');
   expect(s.downloads).toEqual(['tramo-project-opaque.zip']);
 });
 
 test('failed save prevents export and presents a recoverable error', async () => {
   const s = setup(); s.configuration.beforeExport = async () => { throw new Error('Image upload is unfinished'); };
-  s.render().find(node => node.type === 'Button').props.onClick(); await settle();
+  s.choose('pdf'); await settle();
   expect(s.requests).toHaveLength(0); expect(s.downloads).toHaveLength(0);
   expect(s.render().find(node => node.props.role === 'alert').props.children).toBe('Image upload is unfinished');
   s.configuration.beforeExport = async () => {};
+  s.configuration.response.headers = { get: name => ({ 'Content-Type': 'application/pdf' })[name] ?? null };
   s.render().find(node => node.type === 'Button' && node.props.children === 'Try again').props.onClick(); await settle();
-  expect(s.downloads).toHaveLength(1);
+  expect(s.requests[0][0]).toBe('/api/projects/opaque/export?format=pdf');
+  expect(s.downloads).toEqual(['tramo-project-opaque.pdf']);
 });
 
 test('missing storage resource errors are shown instead of downloading an incomplete export', async () => {
   const s = setup(); s.configuration.response = { ok: false, json: async () => ({ message: 'Cannot export required resource: image-id' }) };
-  s.render().find(node => node.type === 'Button').props.onClick(); await settle();
+  s.choose('html'); await settle();
   expect(s.downloads).toHaveLength(0);
   expect(s.render().find(node => node.props.role === 'alert').props.children).toContain('image-id');
 });
@@ -89,6 +92,27 @@ test('export ignores the client count and keeps the access token in its header',
   const route = exportRoute();
   const response = await route.POST(new Request('http://localhost/api/projects/project/export?embedErrors=2', { method: 'POST' }), { params: Promise.resolve({ projectId: 'project' }) });
   expect(response.status).toBe(200);
-  expect(route.requests[0].url).toBe('http://backend/api/project/project/export');
+  expect(route.requests[0].url).toBe('http://backend/api/project/project/export?format=html');
   expect(route.requests[0].options.headers.Authorization).toBe('Bearer private-token');
+});
+
+test('each format downloads with the server filename and rejects a mismatched response', async () => {
+  const s = setup();
+  s.configuration.response.headers = { get: name => ({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Content-Disposition': `attachment; filename="Ano nandu.docx"; filename*=UTF-8''A%C3%B1o%20%C3%B1and%C3%BA.docx` })[name] ?? null };
+  s.choose('docx'); await settle();
+  expect(s.requests[0][0]).toBe('/api/projects/opaque/export?format=docx');
+  expect(s.downloads).toEqual(['Año ñandú.docx']);
+  s.choose('pdf'); await settle();
+  expect(s.downloads).toHaveLength(1);
+  expect(s.render().find(node => node.props.role === 'alert').props.children).toContain('invalid');
+});
+
+test('export forwards known formats and rejects anything else before reaching the backend', async () => {
+  const route = exportRoute();
+  const call = format => route.POST(new Request(`http://localhost/api/projects/project/export?format=${format}`, { method: 'POST' }), { params: Promise.resolve({ projectId: 'project' }) });
+  expect((await call('pdf')).status).toBe(200);
+  expect(route.requests[0].url).toBe('http://backend/api/project/project/export?format=pdf');
+  expect((await call('exe')).status).toBe(400);
+  expect((await call('pdf%26x=1')).status).toBe(400);
+  expect(route.requests).toHaveLength(1);
 });
