@@ -92,7 +92,7 @@ export function CollaborationSection() {
       <div className="-mx-4 flex flex-col gap-1">
         {FEATURES.map(({ icon: Icon, lead, rest }, index) => <button key={lead} type="button" aria-pressed={active === index}
           onClick={() => setActive(index)} onFocus={() => setActive(index)}
-          className={cn('flex gap-3 rounded-lg p-4 text-left text-[0.9375rem] leading-relaxed text-muted-foreground transition-colors', active === index ? 'bg-muted' : 'hover:bg-muted/50')}>
+          className={cn('flex cursor-pointer gap-3 rounded-lg p-4 text-left text-[0.9375rem] leading-relaxed text-muted-foreground transition-colors', active === index ? 'bg-muted' : 'hover:bg-muted/50')}>
           <Icon className="mt-1 h-4 w-4 shrink-0 text-primary" />
           <span><strong className="font-medium text-foreground">{lead}</strong> {rest}</span>
         </button>)}
