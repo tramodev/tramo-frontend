@@ -23,7 +23,9 @@ test('blog lists published API posts with working article links', async () => {
     'next/link': { default: 'a' },
   });
   const nodes = flatten(await page.default());
-  expect(page.metadata.alternates.canonical).toBe('/blog');
+  const metadata = await page.generateMetadata();
+  expect(metadata.alternates.canonical).toBe('/blog');
+  expect(metadata.robots).toBeUndefined();
   expect(nodes.filter(node => node.type === 'h1')).toHaveLength(1);
   expect(nodes.filter(node => node.type === 'article')).toHaveLength(1);
   expect(nodes.filter(node => node.props.href).map(node => node.props.href)).toEqual(['/blog/first-post']);
@@ -35,6 +37,9 @@ test('blog has an honest empty state instead of exposing drafts', async () => {
   const nodes = flatten(await page.default());
   expect(nodes.filter(node => node.type === 'article')).toHaveLength(0);
   expect(nodes.some(node => node.props.children === 'Articles coming soon.')).toBe(true);
+  expect((await page.generateMetadata()).robots).toEqual({ index: false });
+  const failing = load('app/blog/page.tsx', { '@/lib/site-content': { getBlogPosts: async () => { throw new Error('down'); } } });
+  expect((await failing.generateMetadata()).robots).toBeUndefined();
 });
 
 test('blog article renders plain text and missing or unpublished posts return not found', async () => {

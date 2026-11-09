@@ -7,6 +7,7 @@ import { AuthPoster } from "@/components/auth/auth-poster"
 export const metadata: Metadata = {
   title: "Log in",
   description: "Log in to your Tramo account to keep building and sharing your trails.",
+  robots: { index: false },
 }
 
 export default function LoginPage() {
