@@ -1077,6 +1077,22 @@ div.editor-equation {
   list-style-type: disc;
 }
 
+[data-multilevel] .editor-list-ol-2 {
+  list-style-type: lower-alpha;
+}
+
+[data-multilevel] .editor-list-ol-3 {
+  list-style-type: lower-roman;
+}
+
+.editor-list-ul-2 {
+  list-style-type: circle;
+}
+
+.editor-list-ul-3 {
+  list-style-type: square;
+}
+
 .editor-listitem {
   margin: 8px 32px 8px 32px;
 }

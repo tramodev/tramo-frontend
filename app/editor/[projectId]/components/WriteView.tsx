@@ -36,6 +36,7 @@ import { CodeBlockGuardPlugin } from '../../plugins/CodeBlockGuardPlugin';
 import TitlePlugin from '../../plugins/TitlePlugin';
 import { $isTitleNode } from '@/app/editor/nodes/TitleNode';
 import ListTabPlugin from '../../plugins/ListTabPlugin';
+import ListStylePlugin from '../../plugins/ListStylePlugin';
 import PastePlugin from '../../plugins/PastePlugin';
 import CodeHighlightPlugin from '../../plugins/CodeHighlightPlugin';
 import CodeLanguagePlugin from '../../plugins/CodeLanguagePlugin';
@@ -311,6 +312,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         <CodeLanguagePlugin />
         <TrailingParagraphPlugin />
         <ListTabPlugin />
+        <ListStylePlugin />
         <TabIndentationPlugin />
         <HorizontalRulePlugin />
         <SlashMenuPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId}

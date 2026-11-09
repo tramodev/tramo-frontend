@@ -33,7 +33,6 @@ import {
   HeadingTagType,
 } from '@lexical/rich-text';
 import {
-  INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
   INSERT_CHECK_LIST_COMMAND,
   $isListNode,
@@ -72,6 +71,7 @@ import {
   Type,
   List as ListIcon,
   ListOrdered,
+  ListTree,
   CheckSquare,
   Code,
   SquareCode,
@@ -105,6 +105,7 @@ import { Button } from '@/components/ui/button';
 import { insertImageWithUpload } from './ImagesPlugin';
 import { INSERT_EQUATION_COMMAND, INSERT_MUSIC_COMMAND, OPEN_EMBED_DIALOG_COMMAND, OPEN_FIND_REPLACE_COMMAND, OPEN_LINK_EDITOR_COMMAND } from '@/app/editor/commands';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
+import { $isMultilevelList, $setNumberedList } from '@/app/editor/list-style';
 import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
 
 const COLOR_OPTIONS: { value: string; label: string }[] = [
@@ -133,6 +134,7 @@ type BlockOption =
   | 'h3'
   | 'bullet'
   | 'number'
+  | 'multilevel'
   | 'check'
   | 'quote'
   | 'code';
@@ -143,6 +145,7 @@ const BLOCK_OPTIONS: { value: BlockOption; label: string; Icon: typeof Type }[] 
   { value: 'h2', label: 'Heading 2', Icon: Heading2 },
   { value: 'h3', label: 'Heading 3', Icon: Heading3 },
   { value: 'number', label: 'Numbered list', Icon: ListOrdered },
+  { value: 'multilevel', label: 'Multilevel list', Icon: ListTree },
   { value: 'bullet', label: 'Bulleted list', Icon: ListIcon },
   { value: 'quote', label: 'Quote', Icon: Quote },
   { value: 'check', label: 'Check list', Icon: CheckSquare },
@@ -151,7 +154,6 @@ const BLOCK_OPTIONS: { value: BlockOption; label: string; Icon: typeof Type }[] 
 
 const LIST_COMMANDS: Partial<Record<BlockOption, LexicalCommand<void>>> = {
   bullet: INSERT_UNORDERED_LIST_COMMAND,
-  number: INSERT_ORDERED_LIST_COMMAND,
   check: INSERT_CHECK_LIST_COMMAND,
 };
 
@@ -383,7 +385,7 @@ export default function ToolbarPlugin({
         if ($isListNode(element)) {
           const parentList = $getNearestNodeOfType<ListNode>(anchorNode, ListNode);
           const type = parentList ? parentList.getListType() : element.getListType();
-          setBlockType(type);
+          setBlockType(type === 'number' && $isMultilevelList(element) ? 'multilevel' : type);
         } else {
           const type = $isHeadingNode(element)
             ? element.getTag()
@@ -554,6 +556,10 @@ export default function ToolbarPlugin({
   const selectBlock = (value: BlockOption) => {
     if (value === blockType) {
       formatParagraph();
+      return;
+    }
+    if (value === 'number' || value === 'multilevel') {
+      editor.update(() => $setNumberedList(value === 'multilevel'));
       return;
     }
     const listCommand = LIST_COMMANDS[value];

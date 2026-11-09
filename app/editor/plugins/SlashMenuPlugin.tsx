@@ -17,7 +17,6 @@ import { $createCodeNode } from '@lexical/code';
 import { $setBlocksType } from '@lexical/selection';
 import {
   INSERT_CHECK_LIST_COMMAND,
-  INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
 } from '@lexical/list';
 import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
@@ -29,6 +28,7 @@ import {
   Image as ImageIcon,
   List as ListIcon,
   ListOrdered,
+  ListTree,
   Minus,
   Music,
   Quote,
@@ -39,6 +39,7 @@ import {
   Type,
   Video,
 } from 'lucide-react';
+import { $setNumberedList } from '@/app/editor/list-style';
 import { insertImageWithUpload } from './ImagesPlugin';
 import { INSERT_EQUATION_COMMAND, INSERT_MUSIC_COMMAND, OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/commands';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
@@ -105,7 +106,10 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
         e.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined),
       ),
       new SlashOption('Numbered list', ListOrdered, 'number ordered list ol', (e) =>
-        e.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined),
+        e.update(() => $setNumberedList(false)),
+      ),
+      new SlashOption('Multilevel list', ListTree, 'multilevel nested outline ordered list', (e) =>
+        e.update(() => $setNumberedList(true)),
       ),
       new SlashOption('Check list', CheckSquare, 'check todo task list', (e) =>
         e.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined),

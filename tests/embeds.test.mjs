@@ -16,6 +16,7 @@ function load(path, overrides = {}, globals = {}) {
   return exports;
 }
 modules['@/app/editor/commands'] = load('app/editor/commands.ts');
+modules['@/app/editor/list-style'] = load('app/editor/list-style.ts');
 modules['@/app/editor/nodes/TitleNode'] = load('app/editor/nodes/TitleNode.ts');
 modules['@/app/editor/plugins/TypeaheadMenu'] = { TypeaheadMenu: 'TypeaheadMenu' };
 modules['@/app/editor/plugins/embed'] = load('app/editor/plugins/embed.ts');
