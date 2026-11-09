@@ -229,18 +229,20 @@ function ToolbarMenuButton({
   tooltip,
   className,
   children,
+  disabled,
 }: {
   label: string;
   tooltip: string;
   className: string;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <DropdownMenuTrigger asChild>
-          <Toolbar.Button asChild>
-          <button className={className} aria-label={label}>
+          <Toolbar.Button asChild disabled={disabled}>
+          <button className={className} aria-label={label} disabled={disabled}>
             {children}
           </button>
           </Toolbar.Button>
@@ -639,7 +641,7 @@ export default function ToolbarPlugin({
           });
         }
       }}>
-        <ToolbarMenuButton label="Text color" tooltip="Text color" className="toolbar-item spaced">
+        <ToolbarMenuButton label="Text color" tooltip="Text color" disabled={inTitle} className="toolbar-item spaced">
           <Baseline size="1.125rem" style={textColor ? { color: textColor } : undefined} />
         </ToolbarMenuButton>
         <DropdownMenuContent align="start">
@@ -687,7 +689,7 @@ export default function ToolbarPlugin({
       <Divider />
       <div className="toolbar-font-controls">
       <DropdownMenu>
-        <ToolbarMenuButton label="Font Family" tooltip="Font Family" className="toolbar-item align-dropdown-trigger text-dropdown-trigger spaced">
+        <ToolbarMenuButton label="Font Family" tooltip="Font Family" disabled={inTitle} className="toolbar-item align-dropdown-trigger text-dropdown-trigger spaced">
           <span className="min-w-0 flex-1 truncate text-left" style={{ fontFamily }}>{fontFamily}</span>
           <ChevronDown size="0.75rem" />
         </ToolbarMenuButton>
@@ -708,14 +710,16 @@ export default function ToolbarPlugin({
           size={14}
           spaced={false}
           onClick={() => updateFontSizeByStep(-1)}
+          disabled={inTitle}
         />
-        <Toolbar.Button asChild>
+        <Toolbar.Button asChild disabled={inTitle}>
         <input
           type="number"
           className="font-size-input"
           value={fontSize}
           min={MIN_FONT_SIZE}
           max={MAX_FONT_SIZE}
+          disabled={inTitle}
           onChange={(e) => setFontSize(e.target.value)}
           onBlur={(e) => onFontSizeCommit(e.target.value)}
           onKeyDown={(e) => {
@@ -734,6 +738,7 @@ export default function ToolbarPlugin({
           size={14}
           spaced={false}
           onClick={() => updateFontSizeByStep(1)}
+          disabled={inTitle}
         />
       </div>
       {textColorControl}
