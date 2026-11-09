@@ -32,12 +32,12 @@ const PREVIEW_PROJECT: ProjectFeedItem = {
 export function ExplorePublishSection() {
   return <section id="community" className="pt-16 pb-[84px]">
     <h2 className="landing-display mb-3.5 max-w-[25ch] font-display text-[2.5rem] font-medium leading-[1.1]">Your thinking doesn’t have to end with you.</h2>
-    <p className="mb-10 max-w-[60ch] text-[1.0625rem] leading-relaxed text-muted-foreground">Follow someone else’s trail. Share a path of your own. Build on ideas instead of starting from a blank page.</p>
+    <p className="mb-16 max-w-[60ch] text-[1.0625rem] leading-relaxed text-muted-foreground">Follow someone else’s trail. Share a path of your own. Build on ideas instead of starting from a blank page.</p>
     <div className="grid grid-cols-[minmax(0,1fr)] gap-16 md:grid-cols-2 md:gap-12 lg:gap-16">
       <FadeUp className="h-full">
         <div className="flex h-full flex-col">
           <div className="flex flex-1 flex-col pb-8">
-          <h3 className="mb-3 font-display text-2xl font-medium">Find your next thread.</h3>
+          <h3 className="mb-3 font-display text-xl font-medium">Find your next thread.</h3>
           <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">Discover published projects and follow their trails to find your next idea.</p>
           <Button asChild variant="secondary" size="lg" className="mt-auto self-start">
             <a href="/explore">Explore projects<ArrowRight className="h-4 w-4" /></a>
@@ -55,7 +55,7 @@ export function ExplorePublishSection() {
       <FadeUp delay={0.1} className="h-full">
         <div className="flex h-full flex-col">
           <div className="flex flex-col pb-8">
-          <h3 className="mb-3 font-display text-2xl font-medium">Publish when you’re ready.</h3>
+          <h3 className="mb-3 font-display text-xl font-medium">Publish when you’re ready.</h3>
           <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">Share a snapshot readers can follow, note by note. Keep working privately and publish an update when it’s ready.</p>
           </div>
           <div aria-hidden="true" inert className="flex min-h-[320px] flex-1 flex-col gap-4 overflow-hidden rounded-xl border border-border bg-background p-5">
