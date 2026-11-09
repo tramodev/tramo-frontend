@@ -15,6 +15,14 @@ const FORMAT_OPTIONS = [
   { value: 'docx', label: 'Word', description: 'Editable .docx document', icon: FilePen, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', suffix: '.docx' },
 ] as const satisfies readonly ExportOption[];
 
+const downloadName = (disposition: string | null) => {
+  const encoded = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  if (encoded) {
+    try { return decodeURIComponent(encoded); } catch {}
+  }
+  return disposition?.match(/filename="([^"]+)"/i)?.[1] ?? null;
+};
+
 export function ExportProjectButton({ projectId, beforeExport }: { projectId: string; beforeExport: () => Promise<void> }) {
   const busy = useRef(false);
   const last = useRef<ExportOption>(FORMAT_OPTIONS[1]);
@@ -39,7 +47,7 @@ export function ExportProjectButton({ projectId, beforeExport }: { projectId: st
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `tramo-project-${projectId}${option.suffix}`;
+      anchor.download = downloadName(response.headers.get('Content-Disposition')) ?? `tramo-project-${projectId}${option.suffix}`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
