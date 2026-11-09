@@ -8,10 +8,12 @@ export const maxDuration = 120;
 export async function POST(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   if (!/^[a-zA-Z0-9]+$/.test(projectId)) return new Response(null, { status: 400 });
+  const format = new URL(request.url).searchParams.get('format') ?? 'html';
+  if (!['html', 'md', 'pdf', 'docx'].includes(format)) return new Response(null, { status: 400 });
   const open = async () => {
     const token = await getAccessToken();
     if (!token) return new Response(null, { status: 401 });
-    return backendFetch(`${API_BASE_URL}/api/project/${projectId}/export`, {
+    return backendFetch(`${API_BASE_URL}/api/project/${projectId}/export?format=${format}`, {
       headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: request.signal,
     });
   };
