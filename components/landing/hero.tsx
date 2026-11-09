@@ -13,7 +13,7 @@ export const Hero: React.FC = () => {
       <StaggerGroup className="relative pt-[88px] text-center">
         <StaggerItem>
           <h1 className="landing-display font-display font-normal leading-[1.12] text-[clamp(40px,5.6vw,64px)]">
-            <span className="block">Turn connected, reusable notes</span>
+            <span className="block">Turn connected, reusable notes</span>{' '}
             <span className="block">into <strong className="font-semibold">trails</strong> for learning and explaining.</span>
           </h1>
         </StaggerItem>

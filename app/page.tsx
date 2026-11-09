@@ -1,5 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
@@ -18,6 +19,11 @@ import { FadeUp, LandingMotionConfig } from "@/components/landing/landing-motion
 import { isLoggedIn } from "@/lib/auth";
 import heroBg from "@/public/hero-bg.webp";
 import ctaBg from "@/public/cta-bg.webp";
+
+export const metadata: Metadata = {
+  title: { absolute: "Tramo — Turn notes into trails for learning and explaining" },
+  description: "Turn connected, reusable notes into trails for learning and explaining. Write a note once, reuse it in as many trails as you need, and share a clear explanation.",
+};
 
 export default async function Home() {
   if (await isLoggedIn()) {
