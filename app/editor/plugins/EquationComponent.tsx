@@ -304,7 +304,7 @@ export default function EquationComponent({
   const enterFrom = useCallback(
     (edge: Edge) => (event: KeyboardEvent) => {
       const node = $getNodeByKey(nodeKey);
-      if (!$isEquationNode(node) || !$caretTouches(node, edge)) return false;
+      if (event.shiftKey || !$isEquationNode(node) || !$caretTouches(node, edge)) return false;
       event.preventDefault();
       startEditing(edge);
       return true;
@@ -315,7 +315,7 @@ export default function EquationComponent({
   const enterFromLine = useCallback(
     (edge: Edge) => (event: KeyboardEvent) => {
       const node = $getNodeByKey(nodeKey);
-      if (!$isEquationNode(node) || !$caretOnEdgeLine(node, edge, editor)) return false;
+      if (event.shiftKey || !$isEquationNode(node) || !$caretOnEdgeLine(node, edge, editor)) return false;
       event.preventDefault();
       startEditing(edge);
       return true;
