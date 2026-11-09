@@ -71,19 +71,19 @@ function CardsArt() {
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 688 868" fill="none" preserveAspectRatio="xMidYMid slice">
         <path d="M180 620 C 220 520, 300 490, 360 430 C 420 372, 430 300, 490 250" className="stroke-primary" strokeWidth="6" strokeLinecap="round" strokeDasharray="1 16" />
       </svg>
-      <NoteCard className="left-[13%] top-[56%] w-[29%] -rotate-[4deg] bg-white" chip="bg-[#D2E5F5]" />
-      <NoteCard className="left-[41%] top-[38%] w-[29%] rotate-[3deg] bg-white" chip="bg-[#E8DDFF]" />
+      <NoteCard className="left-[13%] top-[56%] w-[29%] -rotate-[4deg]" chip="bg-chart-1/25" />
+      <NoteCard className="left-[41%] top-[38%] w-[29%] rotate-[3deg]" chip="bg-chart-2/25" />
       <div className="absolute left-[61%] top-[17%] w-[30%] -rotate-2 rounded-2xl bg-primary p-5 shadow-md">
-        <span className="mb-2.5 inline-flex size-[26px] items-center justify-center rounded-lg bg-white/20">
+        <span className="mb-2.5 inline-flex size-[26px] items-center justify-center rounded-lg bg-primary-foreground/20">
           <svg width="17" height="17" viewBox="0 0 32 32">
-            <path d="M16 29 L16 16 Q16 10 21.5 8.5" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" />
-            <path d="M16 21 Q16 16.5 11 15.5" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" />
-            <circle cx="25" cy="7.5" r="4" fill="#C3E8FF" />
-            <circle cx="7.5" cy="14.5" r="3.1" fill="none" stroke="#C3E8FF" strokeWidth="3.2" />
+            <path d="M16 29 L16 16 Q16 10 21.5 8.5" fill="none" stroke="var(--primary-foreground)" strokeWidth="3.4" strokeLinecap="round" />
+            <path d="M16 21 Q16 16.5 11 15.5" fill="none" stroke="var(--primary-foreground)" strokeWidth="3.4" strokeLinecap="round" />
+            <circle cx="25" cy="7.5" r="4" fill="var(--primary-foreground)" />
+            <circle cx="7.5" cy="14.5" r="3.1" fill="none" stroke="var(--primary-foreground)" strokeWidth="3.2" />
           </svg>
         </span>
-        <div className="h-[7px] rounded-full bg-white/40" />
-        <div className="mt-2 h-[7px] w-2/3 rounded-full bg-white/40" />
+        <div className="h-[7px] rounded-full bg-primary-foreground/40" />
+        <div className="mt-2 h-[7px] w-2/3 rounded-full bg-primary-foreground/40" />
       </div>
     </>
   )
@@ -91,10 +91,10 @@ function CardsArt() {
 
 function NoteCard({ className, chip }: { className?: string; chip: string }) {
   return (
-    <div className={cn("absolute rounded-2xl p-5 shadow-md", className)}>
+    <div className={cn("absolute rounded-2xl bg-background p-5 shadow-md", className)}>
       <div className={cn("mb-3 h-2 w-9 rounded-full", chip)} />
-      <div className="h-[7px] rounded-full bg-[#EAEEF2]" />
-      <div className="mt-2 h-[7px] w-[70%] rounded-full bg-[#EAEEF2]" />
+      <div className="h-[7px] rounded-full bg-foreground/10" />
+      <div className="mt-2 h-[7px] w-[70%] rounded-full bg-foreground/10" />
     </div>
   )
 }
