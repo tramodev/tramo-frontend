@@ -45,9 +45,9 @@ const TRAILS: { title: string; notes: NoteId[] }[] = [
   { title: 'Thinking in trails', notes: ['memex', 'trails', 'sharing'] },
 ];
 
-function DemoToolbar() {
+function DemoToolbar({ variant }: { variant: 'connections' | 'shared' }) {
   const [editor] = useLexicalComposerContext();
-  return <div><div className="mx-auto mt-3 flex w-[90%] shrink-0 items-center gap-1 overflow-hidden rounded-[24px] bg-muted px-3 py-2 [&>*]:shrink-0 [&>button:hover]:bg-accent">
+  return <div className={cn(variant === 'connections' && 'shrink-0 lg:flex lg:justify-center lg:pr-[calc(100cqw/11+1.5rem)] lg:pl-6')}><div className={cn('mx-auto mt-3 flex w-[90%] shrink-0 items-center gap-1 overflow-hidden rounded-[24px] bg-muted px-3 py-2 [&>*]:shrink-0 [&>button:hover]:bg-accent', variant === 'connections' && 'lg:w-fit lg:max-w-full')}>
     <Button type="button" variant="ghost" size="icon-sm" aria-label="Undo" onMouseDown={event => event.preventDefault()} onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}><Undo className="size-4" /></Button>
     <Button type="button" variant="ghost" size="icon-sm" aria-label="Redo" onMouseDown={event => event.preventDefault()} onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}><Redo className="size-4" /></Button>
     <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
@@ -116,7 +116,7 @@ export function ProductEditorDemo({ variant }: { variant: 'connections' | 'share
             if (variant === 'shared') root.append($createParagraphNode().append($createLinkNode(`#${note.related}`).append($createTextNode(NOTES[note.related].title))));
           }),
         }}>
-          {variant === 'shared' && <DemoToolbar />}
+          <DemoToolbar variant={variant} />
           <div className={cn('min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-5 sm:px-6', variant === 'connections' && 'pb-10 sm:pb-[3.25rem] lg:pr-[calc(100cqw/11+1.5rem)]')}>
             <div className={cn(variant === 'connections' && 'lg:mx-auto lg:max-w-[68%]')}>
             <p className="mb-3 text-center font-display text-2xl font-medium">{note.title}</p>

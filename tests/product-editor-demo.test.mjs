@@ -162,3 +162,9 @@ test('connections navigate locally and pasted external links cannot navigate awa
   expect(prevented).toBe(true);
   expect(render().find(node => node.type === 'RichText').props.contentEditable.props['aria-label']).toBe('As We May Think demo editor');
 });
+
+test('both editor demos show the formatting toolbar', () => {
+  for (const variant of ['connections', 'shared']) {
+    expect(loadDemo(variant)().some(node => node.type?.name === 'DemoToolbar' && node.props.variant === variant)).toBe(true);
+  }
+});
