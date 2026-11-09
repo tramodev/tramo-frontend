@@ -1,5 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import { cache } from "react"
 import type { Metadata } from "next"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { PublicProjectView } from "@/components/project/public-project-view"
@@ -9,7 +10,26 @@ import { isLoggedIn, getUsername } from "@/lib/auth"
 import { getMyProfile } from "@/lib/profile"
 import { JoinClient } from "./join-client"
 
-export const metadata: Metadata = { title: "Shared project", robots: { index: false, follow: false } }
+const fetchShared = cache(getSharedProject)
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token?: string[] }>
+}): Promise<Metadata> {
+  const { token } = await params
+  const project = token?.[0] ? await fetchShared(token[0]) : null
+  const robots = { index: false, follow: false }
+  if (!project) return { title: "Shared project", robots }
+  const description = project.description ?? `A trail by ${project.ownerUsername} on Tramo.`
+  return {
+    title: project.title,
+    description,
+    robots,
+    openGraph: { title: project.title, description, siteName: "Tramo" },
+    twitter: { title: project.title, description },
+  }
+}
 
 export default async function JoinPage({
   params,
@@ -18,7 +38,7 @@ export default async function JoinPage({
 }) {
   const { token } = await params
   const shareToken = token?.[0]
-  const project = shareToken ? await getSharedProject(shareToken) : null
+  const project = shareToken ? await fetchShared(shareToken) : null
   if (!shareToken || !project) return <JoinClient />
 
   const [homeHref, loggedIn, username] = await Promise.all([getHomeHref(), isLoggedIn(), getUsername()])
