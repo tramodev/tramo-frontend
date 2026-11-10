@@ -50,6 +50,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(
     () => { try { return typeof window === 'undefined' || localStorage.getItem(SIDEBAR_OPEN_STORAGE_KEY) !== 'false'; } catch { return true; } }
   );
+  const [writeRevealed, setWriteRevealed] = useState(false);
   const [connectionsPanelOpen, setConnectionsPanelOpen] = useState(
     () => { try { return typeof window !== 'undefined' && localStorage.getItem(CONNECTIONS_OPEN_STORAGE_KEY) === 'true'; } catch { return false; } }
   );
@@ -226,7 +227,8 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
             {project.draftError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.draftError}<button type="button" className="underline" onClick={project.retryDraft}>Retry</button></div>}
             {project.titleSaveError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive">{project.titleSaveError}<button type="button" className="underline" onClick={project.retryItemTitles}>Retry</button></div>}
             <div className="relative flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
-            {!project.loaded ? <div className="editor-container flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</div> : <>
+            {(!project.loaded || (project.view !== 'graph' && !!project.selectedItem && !writeRevealed && !project.contentLoadError)) && <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background text-sm text-muted-foreground" role="status"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</div>}
+            {project.loaded && <>
             {project.view === 'graph' && (
               <GraphView
                 projectId={projectId}
@@ -266,6 +268,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
                 reorderNotice={project.activeTrailId ? project.reorderNotices[project.activeTrailId] : undefined}
                 onDismissReorderNotice={() => { if (project.activeTrailId) project.dismissReorderNotice(project.activeTrailId); }}
                 contentLoadError={project.contentLoadError}
+                onRevealChange={setWriteRevealed}
                 onRetryContent={project.retryContent}
                 navigationRequest={project.navigationRequest}
                 onVisibleItem={project.handleVisibleItem}

@@ -4,7 +4,7 @@ const profile = { userId: '1', username: 'embedtester', email: 'embed@example.te
 const now = new Date().toISOString();
 const project = { id: 'embeds', title: 'Embed tests', description: 'Browser regression fixture', tags: [], visibility: 'private', restoreEpoch: 0, thumbnailImageUrl: null, creationDate: now, modifiedDate: now, storageBytes: 0 };
 const item = { id: 1, title: 'Note', titleAlign: 'left', unfiled: true, type: null };
-let content = '', historyContent = '', published = 0, saves = 0, creations = 0, restores = 0;
+let content = '', historyContent = '', published = 0, saves = 0, creations = 0, restores = 0, notes = null, selected = 1;
 const version = { id: 1, createdAt: now, type: 'MANUAL', name: 'Earlier version', authors: [{ id: 1, username: profile.username }] };
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, 'http://127.0.0.1:3180');
@@ -16,6 +16,8 @@ const server = createServer(async (request, response) => {
   if (path === '/health') return send({ ok: true });
   if (path === '/fixture' && request.method === 'POST') {
     content = body.content ?? '';
+    notes = body.notes ?? null;
+    selected = body.selected ?? 1;
     historyContent = body.historyContent ?? content;
     project.restoreEpoch = 0;
     restores = 0;
@@ -25,6 +27,8 @@ const server = createServer(async (request, response) => {
   }
   if (path === '/fixture') return send({ content, published, saves, creations, restores, restoreEpoch: project.restoreEpoch });
   if (path === '/api/profile/me') return send(profile);
+  if (path === '/api/project/embeds/editor' && notes) return send({ ...project, trails: [{ id: 10, title: 'Trail', description: null, version: 1, forkedFromId: null, itemIds: notes.map((_, index) => index + 1) }], items: notes.map((_, index) => ({ ...item, id: index + 1, title: `Note ${index + 1}`, unfiled: false, words: 0, characters: 0 })), selectedItemId: selected, selectedTrailId: 10, contents: notes.map((note, index) => ({ id: index + 1, content: note, extractionEpoch: 0 })), username: profile.username, imageUrl: null });
+  if (notes && /^\/api\/item\/\d+\/content$/.test(path) && request.method === 'GET') return send({ content: notes[Number(path.split('/')[3]) - 1] ?? '', extractionEpoch: 0 });
   if (path === '/api/project/embeds/editor') return send({ ...project, trails: [], items: [{ ...item, words: 0, characters: 0 }], selectedItemId: 1, selectedTrailId: null, contents: [{ id: 1, content, extractionEpoch: 0 }], username: profile.username, imageUrl: null });
   if (path === '/api/project/embeds') return send(project);
   if (path === '/api/project') return send([project]);
