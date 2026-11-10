@@ -9,6 +9,7 @@ import { googleAuthHandler } from "@/lib/google-auth-actions"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { TopProgressBar } from "@/components/layout/top-progress-bar"
 
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""
 
@@ -43,15 +44,16 @@ export function GoogleAuthButton({
       if (!result.success) {
         setError(result.error)
         if (result.linkRequired) setIdToken(credential)
+        setIsPending(false)
         return
       }
       router.push(result.requiresBirthDate ? "/onboarding/birth-date" : "/")
       router.refresh()
     } catch {
       setError("Google sign-in failed. Please try again.")
+      setIsPending(false)
     } finally {
       setPassword("")
-      setIsPending(false)
     }
   }
 
@@ -69,6 +71,7 @@ export function GoogleAuthButton({
   return (
     <GoogleOAuthProvider clientId={clientId} locale="en">
       <div ref={containerRef} className="flex w-full flex-col items-center gap-2">
+        {isPending && <TopProgressBar label="Signing in with Google" />}
         {width > 0 && <GoogleLogin
           onSuccess={handleSuccess}
           onError={() => setError("Google sign-in failed. Please try again.")}
