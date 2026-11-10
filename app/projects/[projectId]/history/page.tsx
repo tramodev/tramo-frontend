@@ -15,5 +15,5 @@ export default async function ProjectHistoryPage({ params }: { params: Promise<{
   const { restoreEpoch } = await parseResponse<{ restoreEpoch: number }>(response);
   const [history, current] = await Promise.all([getProjectHistory(projectId), getCurrentProjectState(projectId)]);
   const latest = history.versions[0] ? await getProjectVersion(projectId, history.versions[0].id) : null;
-  return <HistoryView projectId={projectId} restoreEpoch={restoreEpoch} initialHistory={history} current={current} latest={latest?.snapshot ?? null} />;
+  return <HistoryView projectId={projectId} restoreEpoch={restoreEpoch} initialHistory={history} current={current} latest={latest} />;
 }

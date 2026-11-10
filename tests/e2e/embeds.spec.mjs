@@ -330,6 +330,7 @@ for (const width of [1280, 390]) {
     await page.goto('/projects/embeds/history');
     await expect(page.locator('[data-history-diff] .editor-text-highlight').first()).toContainText('Current');
     await expect(page.locator('[data-history-diff] .editor-text-strikethrough').first()).toContainText('Restored');
+    await expect(page.getByRole('main').getByText('@collaborator')).toBeVisible();
     await page.getByRole('button', { name: /Earlier version/ }).click();
     await expect(page.locator('.editor-input')).toContainText('Restored version text');
     await page.getByRole('button', { name: 'Restore this version', exact: true }).click();

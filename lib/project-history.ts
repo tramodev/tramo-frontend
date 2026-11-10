@@ -5,7 +5,8 @@ import { authenticatedFetch } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/config';
 import { parseResponse } from '@/lib/http';
 
-export interface HistoryVersion { id: number; createdAt: string; type: 'AUTO' | 'MANUAL' | 'RESTORE'; name: string | null; authors: { id: number; username: string }[] }
+export interface HistoryAuthor { id: number; username: string }
+export interface HistoryVersion { id: number; createdAt: string; type: 'AUTO' | 'MANUAL' | 'RESTORE'; name: string | null; authors: HistoryAuthor[] }
 export interface ProjectHistory { versions: HistoryVersion[]; nextCursor: number | null; unavailable: boolean }
 export interface VersionSnapshot {
   title: string;
@@ -13,7 +14,8 @@ export interface VersionSnapshot {
   items: { id: number; title: string; type: string | null; titleAlign: 'left' | 'center' | 'right' | null; content: string | null; unfiled: boolean }[];
   trails: { id: number; title: string; description: string | null; forkedFromId: number | null; itemIds: number[] }[];
 }
-export interface VersionDetail { version: HistoryVersion; snapshot: VersionSnapshot }
+export interface VersionState { snapshot: VersionSnapshot; itemAuthors: Record<string, HistoryAuthor[]> }
+export interface VersionDetail extends VersionState { version: HistoryVersion }
 
 async function request<T>(projectId: string, path = '', init: RequestInit = {}): Promise<T> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${encodeURIComponent(projectId)}/history${path}`, { ...init, cache: 'no-store' });
@@ -31,7 +33,7 @@ export async function getProjectVersion(projectId: string, versionId: number): P
   if (response.status === 403 || response.status === 404) return null;
   return parseResponse<VersionDetail>(response);
 }
-export async function getCurrentProjectState(projectId: string): Promise<VersionSnapshot> {
+export async function getCurrentProjectState(projectId: string): Promise<VersionState> {
   return request(projectId, '/current');
 }
 export async function createProjectVersion(projectId: string, name: string, epoch: number): Promise<HistoryVersion> {
