@@ -1343,14 +1343,6 @@ pre::-webkit-scrollbar-thumb {
   min-height: calc(8lh + 60px);
 }
 
-.trail-item-editor .pending-note:has(> .pending-note-title) {
-  min-height: calc(8 * 0.9375rem * 1.6 + 60px);
-}
-
-.trail-item-editor .pending-note-title + .editor-input {
-  min-height: 0;
-}
-
 .item-mention-menu {
   position: fixed;
   z-index: 60;
