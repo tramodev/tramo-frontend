@@ -81,10 +81,12 @@ export function HistoryView({ projectId, restoreEpoch, initialHistory, current, 
     try {
       const details = await Promise.all(missing.map(entry => getProjectVersion(projectId, entry)));
       if (id !== request.current) return;
-      const next = new Map(states);
-      details.forEach((detail, index) => { if (detail) next.set(missing[index], detail); });
-      setStates(next);
-      const target = next.get(selection);
+      setStates(previous => {
+        const next = new Map(previous);
+        details.forEach((detail, index) => { if (detail) next.set(missing[index], detail); });
+        return next;
+      });
+      const target = states.get(selection) ?? details[missing.indexOf(selection as number)];
       if (target) jump(noteSlots(target.snapshot).some(entry => entry.slot === activeSlot) ? activeSlot : noteSlots(target.snapshot)[0]?.slot ?? null);
     } catch (failure) { if (id === request.current) setError(failure instanceof Error ? failure.message : 'Could not load version.'); }
   };
@@ -160,7 +162,7 @@ export function HistoryView({ projectId, restoreEpoch, initialHistory, current, 
                       @{author.username}
                     </span>)}
                   </p>}
-                  <div className="mt-4">{live && <LexicalReadOnly key={`${selected}:${showChanges}`} content={content ?? ''} />}</div>
+                  <div className="mt-4">{live && <LexicalReadOnly key={`${selected}:${showChanges}:${!!base}`} content={content ?? ''} />}</div>
                 </section>;
               })}
             </div>
