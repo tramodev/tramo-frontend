@@ -152,7 +152,7 @@ export function HistoryView({ projectId, restoreEpoch, initialHistory, current, 
                 return <section key={entry.slot} data-item-id={entry.slot} data-mounted={live} tabIndex={-1} aria-label={note.title || 'Untitled note'}
                   ref={element => { if (element) slotRefs.current.set(entry.slot, element); else slotRefs.current.delete(entry.slot); }}
                   className="scroll-mt-4 border-b border-border py-8 last:border-b-0"
-                  style={{ '--history-color': colorOf(note.id), ...(authors.length === 1 ? { '--history-author': JSON.stringify(`@${authors[0].username}`) } : {}), ...(live ? {} : { height: heights.get(entry.slot) ?? 240, overflow: 'hidden' }) } as React.CSSProperties}>
+                  style={{ '--history-color': colorOf(note.id), ...(live ? {} : { height: heights.get(entry.slot) ?? 240, overflow: 'hidden' }) } as React.CSSProperties}>
                   {entry.first && <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">{entry.group}</p>}
                   <h2 className="break-words font-display text-3xl" style={{ textAlign: note.titleAlign ?? 'center' }}>{note.title}</h2>
                   {showChanges && changed.has(note.id) && authors.length > 0 && <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
