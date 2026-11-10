@@ -5,7 +5,7 @@ const now = new Date().toISOString();
 const project = { id: 'embeds', title: 'Embed tests', description: 'Browser regression fixture', tags: [], visibility: 'private', restoreEpoch: 0, thumbnailImageUrl: null, creationDate: now, modifiedDate: now, storageBytes: 0 };
 const item = { id: 1, title: 'Note', titleAlign: 'left', unfiled: true, type: null };
 let content = '', historyContent = '', published = 0, saves = 0, creations = 0, restores = 0;
-const version = { id: 1, createdAt: now, type: 'MANUAL', name: 'Earlier version', authorUsername: profile.username };
+const version = { id: 1, createdAt: now, type: 'MANUAL', name: 'Earlier version', authors: [{ id: 1, username: profile.username }] };
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, 'http://127.0.0.1:3180');
   const path = url.pathname;
@@ -44,6 +44,7 @@ const server = createServer(async (request, response) => {
   }
   if (path === '/api/public/project/embeds') return send({ ...project, ownerUsername: 'embedtester', trails: [], looseItems: [{ ...item, content }], voteCount: 0, viewCount: 0, commentCount: 0, canFork: false, canComment: false, votedByRequester: false, bookmarkedByRequester: false });
   if (path === '/api/project/embeds/history') return send({ versions: [version], nextCursor: null, unavailable: false });
+  if (path === '/api/project/embeds/history/current') return send({ title: project.title, description: project.description, trails: [], items: [{ ...item, content }] });
   if (path === '/api/project/embeds/history/1') return send({ version, snapshot: { title: project.title, description: project.description, trails: [], items: [{ ...item, content: historyContent }] } });
   if (path === '/api/project/embeds/history/1/restore' && request.method === 'POST') {
     if (request.headers['x-project-epoch'] !== String(project.restoreEpoch)) return send({ message: 'Stale project epoch' }, 409);

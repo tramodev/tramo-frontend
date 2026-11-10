@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { AlertCircle, Globe, Loader2, UserPlus } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AlertCircle, Globe, History, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserMenu } from '@/components/layout/user-menu';
@@ -11,7 +11,6 @@ import { EmbedErrorsStatus } from '@/components/editor/embed-errors-status';
 import type { ProjectEmbedError } from '@/lib/project-embed-errors';
 import type { Item } from '@/app/editor/types';
 import { ExportProjectButton } from '@/components/editor/export-project-button';
-import { ProjectHistorySheet } from '@/components/editor/project-history-sheet';
 import { ShareDialog } from '@/components/project/share-dialog';
 import { PROJECT_TEXT_MAX_LENGTH } from '@/lib/project-validation';
 import type { SaveStatus } from '../hooks/useAutoSave';
@@ -158,6 +157,8 @@ export function EditorActions({
   presence,
 }: EditorActionsProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const [historyError, setHistoryError] = useState('');
   const [shareOpen, setShareOpen] = useState(() => searchParams.get('share') === '1');
   useEffect(() => {
     if (searchParams.get('share') !== '1') return;
@@ -174,7 +175,13 @@ export function EditorActions({
         </span>
       ) : <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" role="status">Counting project…</span>}
       {!disabled && <ExportProjectButton projectId={projectId} beforeExport={beforeExport} />}
-      {!disabled && canEdit && <ProjectHistorySheet projectId={projectId} restoreEpoch={restoreEpoch} beforeSave={beforeExport} />}
+      {!disabled && canEdit && <>
+        {historyError && <span role="alert" className="max-w-48 text-xs text-destructive">{historyError}</span>}
+        <Button variant="ghost" size="icon" title="Version history" aria-label="Version history" onClick={() => {
+          setHistoryError('');
+          beforeExport().then(() => router.push(`/projects/${projectId}/history`), (failure: unknown) => setHistoryError(failure instanceof Error ? failure.message : 'Could not save project changes.'));
+        }}><History className="h-[15px] w-[15px]" /></Button>
+      </>}
       {presence}
       {canShare && <>
         <Button data-tour="share" variant="secondary" size="lg" className="project-share-button" disabled={disabled} aria-label="Share project" onClick={() => setShareOpen(true)}>

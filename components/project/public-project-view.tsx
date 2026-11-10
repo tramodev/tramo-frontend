@@ -23,8 +23,6 @@ import { ProfileHoverCard } from "@/components/social/profile-hover-card"
 import { CommentsSection } from "@/components/project/comments-section"
 import { UserMenu } from "@/components/layout/user-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { RestoreProjectVersionButton } from "@/components/project/restore-project-version-button"
-import type { HistoryVersion } from "@/lib/project-history"
 import type { ProjectSnapshotSummary } from "@/lib/project-snapshots"
 import type { PublicItem, PublicProject } from "@/lib/public-project"
 import type { Item, Trail } from "@/app/editor/types"
@@ -71,7 +69,6 @@ export function PublicProjectView({
   username,
   imageUrl,
   snapshot,
-  historyVersion,
   shareToken,
 }: {
   project: ReaderProject | PublicProject
@@ -81,12 +78,11 @@ export function PublicProjectView({
   username: string | null
   imageUrl: string | null
   snapshot?: ProjectSnapshotSummary
-  historyVersion?: HistoryVersion & { restoreEpoch: number }
   shareToken?: string
 }) {
-  const source = historyVersion ? null : project as PublicProject
+  const source = project as PublicProject
   const publicProject = shareToken ? null : source
-  const historical = Boolean(snapshot || historyVersion)
+  const historical = Boolean(snapshot)
   const mounted = useMounted()
   const sections = useMemo(() => [
     ...project.trails.map(trail => ({ id: `trail:${trail.id}`, trailId: trail.id, title: trail.title, description: trail.description, items: trail.items })),
@@ -170,12 +166,12 @@ export function PublicProjectView({
   const emptyState = (
     <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-3 rounded-2xl bg-popover text-center text-muted-foreground">
       <FolderPlus className="h-12 w-12 opacity-40" />
-      <p className="text-lg font-medium">{historyVersion ? 'This version has no notes' : shareToken ? 'This project has no notes yet' : 'This project has no published notes yet'}</p>
+      <p className="text-lg font-medium">{shareToken ? 'This project has no notes yet' : 'This project has no published notes yet'}</p>
     </div>
   )
 
   return (
-    <EditorImagesProvider projectId={project.id} publicRead={!historyVersion} shareToken={shareToken} snapshotId={snapshot ? Number(snapshot.id) : undefined} versionId={historyVersion?.id}>
+    <EditorImagesProvider projectId={project.id} publicRead shareToken={shareToken} snapshotId={snapshot ? Number(snapshot.id) : undefined}>
     <ProjectShell
       homeHref={homeHref}
       showLogo={false}
@@ -269,7 +265,6 @@ export function PublicProjectView({
           ) : (
             <AuthPromptActions />
           ))}
-          {historyVersion && <RestoreProjectVersionButton projectId={project.id} versionId={historyVersion.id} restoreEpoch={historyVersion.restoreEpoch} />}
           {isLoggedIn && <UserMenu loggedIn={isLoggedIn} username={username} imageUrl={imageUrl} />}
         </>
       }
@@ -300,12 +295,6 @@ export function PublicProjectView({
             <div className="editor-container flex min-h-0 min-w-0 flex-1 flex-col">
               <div ref={columnRef} className="editor-inner" style={{ paddingInline: 'clamp(12px, 4vw, 48px)' }}>
                 <div className="editor-content-column [overflow-wrap:anywhere]">
-                  {historyVersion && <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
-                    Preview: {historyVersion.name || historyVersion.type} · <time dateTime={historyVersion.createdAt}>
-                      {mounted ? new Date(historyVersion.createdAt).toLocaleString() : historyVersion.createdAt}
-                    </time>.{" "}
-                    <Link href={`/editor/${project.id}`} className="font-medium text-foreground underline">Back to editor</Link>
-                  </div>}
                   {snapshot && <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
                     You&apos;re viewing Version {snapshot.version} · <time dateTime={snapshot.createdAt}>
                       {mounted ? new Date(snapshot.createdAt).toLocaleString() : snapshot.createdAt}

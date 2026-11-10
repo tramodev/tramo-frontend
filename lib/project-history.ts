@@ -5,17 +5,15 @@ import { authenticatedFetch } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/config';
 import { parseResponse } from '@/lib/http';
 
-export interface HistoryVersion { id: number; createdAt: string; type: 'AUTO' | 'MANUAL' | 'RESTORE'; name: string | null; authorUsername?: string | null }
+export interface HistoryVersion { id: number; createdAt: string; type: 'AUTO' | 'MANUAL' | 'RESTORE'; name: string | null; authors: { id: number; username: string }[] }
 export interface ProjectHistory { versions: HistoryVersion[]; nextCursor: number | null; unavailable: boolean }
-export interface VersionDetail {
-  version: HistoryVersion;
-  snapshot: {
-    title: string;
-    description: string | null;
-    items: { id: number; title: string; type: string | null; titleAlign: 'left' | 'center' | 'right' | null; content: string | null; unfiled: boolean }[];
-    trails: { id: number; title: string; description: string | null; forkedFromId: number | null; itemIds: number[] }[];
-  };
+export interface VersionSnapshot {
+  title: string;
+  description: string | null;
+  items: { id: number; title: string; type: string | null; titleAlign: 'left' | 'center' | 'right' | null; content: string | null; unfiled: boolean }[];
+  trails: { id: number; title: string; description: string | null; forkedFromId: number | null; itemIds: number[] }[];
 }
+export interface VersionDetail { version: HistoryVersion; snapshot: VersionSnapshot }
 
 async function request<T>(projectId: string, path = '', init: RequestInit = {}): Promise<T> {
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${encodeURIComponent(projectId)}/history${path}`, { ...init, cache: 'no-store' });
@@ -32,6 +30,9 @@ export async function getProjectVersion(projectId: string, versionId: number): P
   const response = await authenticatedFetch(`${API_BASE_URL}/api/project/${encodeURIComponent(projectId)}/history/${versionId}`, { cache: 'no-store' });
   if (response.status === 403 || response.status === 404) return null;
   return parseResponse<VersionDetail>(response);
+}
+export async function getCurrentProjectState(projectId: string): Promise<VersionSnapshot> {
+  return request(projectId, '/current');
 }
 export async function createProjectVersion(projectId: string, name: string, epoch: number): Promise<HistoryVersion> {
   return request(projectId, '', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-Epoch': String(epoch) }, body: JSON.stringify({ name: name.trim() || null }) });
