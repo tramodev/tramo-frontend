@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { authenticateHandler } from "@/app/(auth)/login/actions"
 import { ResendVerificationButton } from "@/components/auth/resend-verification-button"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
+import { TopProgressBar } from "@/components/layout/top-progress-bar"
 import { startTransition, useActionState, useState } from 'react';
 import Script from 'next/script';
 
@@ -69,6 +70,7 @@ export function LoginForm({
       className={cn("flex flex-col gap-6", className)}
       {...props}
     >
+      {(isPending || checkingCaptcha) && <TopProgressBar label="Logging in" />}
       {state?.captchaRequired && (
         <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
       )}

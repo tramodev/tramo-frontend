@@ -347,63 +347,6 @@ test('shared-note tooltips explain trail membership and hide for single-trail no
   }
 });
 
-test('one history panel has two tabs and loads publications only when selected', async () => {
-  const requests = [];
-  const render = load('components/editor/project-history-sheet.tsx', {
-    '@/components/ui/sheet': { Sheet: 'Sheet', SheetTrigger: 'SheetTrigger' },
-    'radix-ui': { Tabs: { Root: 'Tabs', List: 'TabList', Trigger: 'Tab', Content: 'TabContent' } },
-    '@/lib/project-history': { getProjectHistory: async id => {
-      requests.push(`drafts:${id}`);
-      return { versions: [], nextCursor: null, unavailable: false };
-    } },
-    '@/lib/project-snapshots': { getProjectSnapshots: async id => {
-      requests.push(`publications:${id}`);
-      return [{ id: '42', version: 3, createdAt: '2026-10-17T12:00:00Z' }];
-    } },
-    'next/link': { default: 'Link' },
-  });
-  const props = { projectId: 'project', restoreEpoch: 0, beforeSave: async () => {} };
-  let nodes = render('ProjectHistorySheet', props);
-  expect(nodes.filter(node => node.type === 'SheetTrigger')).toHaveLength(1);
-  expect(nodes.filter(node => node.type === 'Tab').map(node => flatten(node)[1].props.children)).toEqual(['Project history', 'Publish history']);
-  await nodes.find(node => node.type === 'Sheet').props.onOpenChange(true);
-  expect(requests).toEqual(['drafts:project']);
-  nodes = render('ProjectHistorySheet', props);
-  expect(nodes.find(node => node.type === 'Tabs').props.value).toBe('project');
-  await nodes.find(node => node.type === 'Tabs').props.onValueChange('publish');
-  nodes = render('ProjectHistorySheet', props);
-  expect(nodes.find(node => node.type === 'Tabs').props.value).toBe('publish');
-  const link = nodes.find(node => node.type === 'Link');
-  expect(requests).toEqual(['drafts:project', 'publications:project']);
-  expect(link.props.href).toBe('/p/project/versions/42');
-  expect(link.props.target).toBe('_blank');
-  expect(link.props['aria-label']).toBe('Open version 3 in a new tab');
-  nodes.find(node => node.type === 'Tabs').props.onValueChange('project');
-  nodes.find(node => node.type === 'Sheet').props.onOpenChange(false);
-  nodes.find(node => node.type === 'Sheet').props.onOpenChange(true);
-  expect(render('ProjectHistorySheet', props).find(node => node.type === 'Tabs').props.value).toBe('project');
-});
-
-test('publish history reports loading failures and retries inside the shared panel', async () => {
-  let attempts = 0;
-  const render = load('components/editor/project-history-sheet.tsx', {
-    '@/components/ui/sheet': { Sheet: 'Sheet' },
-    '@/components/ui/button': { Button: 'Button' },
-    'radix-ui': { Tabs: { Root: 'Tabs', Trigger: 'Tab', Content: 'TabContent' } },
-    '@/lib/project-snapshots': { getProjectSnapshots: async () => { if (++attempts === 1) throw new Error('Offline'); return []; } },
-  }, { Error });
-  const props = { projectId: 'project', restoreEpoch: 0, beforeSave: async () => {} };
-  await render('ProjectHistorySheet', props).find(node => node.type === 'Tabs').props.onValueChange('publish');
-  let nodes = render('ProjectHistorySheet', props);
-  expect(nodes.find(node => node.props.role === 'alert').props.children[0]).toBe('Offline');
-  nodes.find(node => node.type === 'Button' && node.props.children === 'Retry').props.onClick();
-  await new Promise(resolve => setImmediate(resolve));
-  nodes = render('ProjectHistorySheet', props);
-  expect(nodes.some(node => node.props.children === 'No published versions yet.')).toBe(true);
-  expect(attempts).toBe(2);
-});
-
-
 test('historical publications use the public reader and resolve images from the saved version', () => {
   const render = load('components/project/public-project-view.tsx', {
     '@/components/editor/project-shell': { ProjectShell: 'ProjectShell' },
@@ -453,58 +396,6 @@ test('historical dates keep the server text during hydration and use browser for
   expect(formatted).toBe(1);
 });
 
-
-test('project history lists links to private previews without loading snapshots', async () => {
-  let details = 0;
-  const render = load('components/editor/project-history-sheet.tsx', {
-    '@/components/ui/sheet': { Sheet: 'Sheet', SheetTrigger: 'Trigger' },
-    '@/components/ui/button': { Button: 'Button' },
-    '@/components/profile/row': { Row: 'Row' },
-    'next/link': { default: 'Link' },
-    'radix-ui': { Tabs: { Root: 'Tabs', List: 'List', Trigger: 'Tab', Content: 'Content' } },
-    '@/lib/project-history': {
-      getProjectHistory: async () => ({ versions: [{ id: 42, name: 'Milestone', type: 'MANUAL', createdAt: '2026-10-17T12:00:00Z' }], nextCursor: 42 }),
-      getProjectVersion: async () => { details++; },
-    },
-  });
-  const props = { projectId: 'project', restoreEpoch: 3, beforeSave: async () => {} };
-  render('ProjectHistorySheet', props).find(node => node.type === 'Sheet').props.onOpenChange(true);
-  await new Promise(resolve => setImmediate(resolve));
-  const nodes = render('ProjectHistorySheet', props);
-  const link = nodes.find(node => node.type === 'Link');
-  expect(link.props.href).toBe('/projects/project/history/42');
-  expect(link.props.target).toBe('_blank');
-  expect(link.props.rel).toBe('noopener noreferrer');
-  expect(nodes.some(node => node.props.children === 'Milestone')).toBe(true);
-  expect(nodes.some(node => node.props.children === 'Load older versions')).toBe(true);
-  expect(nodes.some(node => node.props.children === 'Restore this version')).toBe(false);
-  expect(details).toBe(0);
-});
-
-test('private history preview uses saved image access and offers restore without public actions', () => {
-  const render = load('components/project/public-project-view.tsx', {
-    '@/components/editor/project-shell': { ProjectShell: 'Shell' },
-    '@/components/editor/editor-images-provider': { EditorImagesProvider: 'Images' },
-    '@/components/project/restore-project-version-button': { RestoreProjectVersionButton: 'Restore' },
-    '@/components/project/lexical-read-only': { LexicalReadOnly: 'Reader' },
-    '@/components/project/comments-section': { CommentsSection: 'Comments' },
-    '@/components/social/share-to-followers-button': { ShareToFollowersButton: 'Share' },
-    '@/hooks/use-scroll-spy': { useScrollSpy: () => () => {} },
-    'next/link': { default: 'Link' },
-  });
-  const historyVersion = { id: 42, type: 'MANUAL', name: 'Milestone', createdAt: '2026-10-17T12:00:00Z', restoreEpoch: 3 };
-  const project = { id: 'project', title: 'Saved title', trails: [], looseItems: [{ id: 'note', title: 'Saved note', content: 'Saved JSON', titleAlign: 'right' }] };
-  const nodes = render('PublicProjectView', { project, historyVersion, isLoggedIn: true });
-  expect(nodes.find(node => node.type === 'Images').props).toMatchObject({ publicRead: false, versionId: 42, snapshotId: undefined });
-  const shell = nodes.find(node => node.type === 'Shell');
-  const content = flatten(shell.props.content);
-  expect(content.find(node => node.type === 'Reader').props.content).toBe('Saved JSON');
-  expect(content.find(node => node.type === 'Link').props.href).toBe('/editor/project');
-  expect(content.some(node => node.type === 'Comments')).toBe(false);
-  const actions = flatten(shell.props.actions);
-  expect(actions.find(node => node.type === 'Restore').props).toEqual({ projectId: 'project', versionId: 42, restoreEpoch: 3 });
-  expect(actions.some(node => node.type === 'Share' || node.props.href === '#comments')).toBe(false);
-});
 
 test('restore requires confirmation, blocks double submission and confirms success before opening the editor', async () => {
   const calls = [], navigation = [];

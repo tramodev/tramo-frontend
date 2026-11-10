@@ -17,6 +17,7 @@ import { startTransition, useActionState, useEffect, useState } from "react"
 import { registerHandler } from "@/app/(auth)/signup/actions"
 import { getPasswordStrength } from "@/lib/password-strength"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
+import { TopProgressBar } from "@/components/layout/top-progress-bar"
 
 type Availability = "idle" | "checking" | "available" | "taken"
 
@@ -67,6 +68,7 @@ export function SignupForm({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [captchaError, setCaptchaError] = useState("");
+  const [checkingCaptcha, setCheckingCaptcha] = useState(false);
   const strength = getPasswordStrength(password);
   const errors = state?.errors;
   const passwordsMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
@@ -94,6 +96,7 @@ export function SignupForm({
       return;
     }
 
+    setCheckingCaptcha(true);
     try {
       const captchaToken = await new Promise<string>((resolve, reject) => {
         window.grecaptcha!.ready(() => {
@@ -105,11 +108,14 @@ export function SignupForm({
       startTransition(() => formAction(formData));
     } catch {
       setCaptchaError("Captcha verification failed. Please try again.");
+    } finally {
+      setCheckingCaptcha(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6", className)} {...props}>
+      {(isPending || checkingCaptcha) && <TopProgressBar label="Creating account" />}
       <div>
         <h1 className="font-display text-[2.25rem] font-normal">Create your account</h1>
         <p className="mt-3 text-[0.9375rem] leading-6 text-muted-foreground">

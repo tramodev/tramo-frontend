@@ -272,6 +272,21 @@ button[class~="focus:ring-2"]:focus:not(:focus-visible) {
   }
 }
 
+@keyframes top-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(0.92); }
+}
+.top-progress-fill {
+  transform-origin: left;
+  animation: top-progress 10s cubic-bezier(0.08, 0.8, 0.2, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .top-progress-fill {
+    animation: none;
+    transform: scaleX(0.6);
+  }
+}
+
 .driver-popover {
   background-color: var(--popover) !important;
   color: var(--popover-foreground) !important;

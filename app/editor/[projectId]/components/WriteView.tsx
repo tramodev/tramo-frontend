@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Loader2, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { EditorState } from 'lexical';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
@@ -86,6 +86,7 @@ interface WriteViewProps {
   onDismissReorderNotice: () => void;
   contentLoadError: boolean;
   onRetryContent: () => void;
+  onRevealChange?: (revealed: boolean) => void;
   navigationRequest?: { itemId: string; sequence: number; focus: boolean; embedIndex?: number };
   onVisibleItem: (itemId: string) => void;
   onSelectTrail: (trailId: string) => void;
@@ -275,7 +276,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           <p>Used in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length} trails. Edits appear in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length === 2 ? 'both' : 'all of them'}.</p>
           <div className="mt-1 flex flex-wrap gap-3">{props.trails.filter(trail => trail.itemIds.includes(item.id)).map(trail => <button type="button" key={trail.id} onClick={() => props.onSelectItem(item, trail.id)} className="underline">{trail.title}</button>)}</div>
         </div>}
-        {!live && <div aria-busy="true">
+        {!live && <div aria-busy="true" className="pending-note">
           {waiting && <p role="status" className="px-7 pt-2 text-xs text-muted-foreground">
             {waiting === 'limit' ? 'Too many open tabs. Close one to keep editing.' : 'Connecting…'}
           </p>}
@@ -424,6 +425,9 @@ export function WriteView(props: WriteViewProps) {
   const [busyItems, setBusyItems] = useState<Set<string>>(() => new Set());
   const [pendingMove, setPendingMove] = useState<{ itemId: string; direction: -1 | 1; title: boolean; context: string; sequence?: number } | null>(null);
   const handledRequest = useRef<number | null>(null);
+  const [settledContext, setSettledContext] = useState<string | null>(null);
+  const [registrations, setRegistrations] = useState(0);
+  const positionedTarget = useRef<string | null>(null);
   const inTrail = !!trail?.itemIds.includes(item.id);
   const nextTrail = inTrail && trail ? props.trails[props.trails.findIndex(candidate => candidate.id === trail.id) + 1] : undefined;
   const previousTrail = inTrail && trail ? props.trails[props.trails.findIndex(candidate => candidate.id === trail.id) - 1] : undefined;
@@ -432,7 +436,7 @@ export function WriteView(props: WriteViewProps) {
   const focusedId = ids.includes(focusedItemId) ? focusedItemId : item.id;
   const contentReady = ids.every((id) => items[id]?.content != null);
   const context = inTrail ? `trail:${trail!.editorKey ?? trail!.id}` : `item:${item.editorKey ?? item.id}`;
-  const revealed = contentReady && positionedContext === context;
+  const revealed = contentReady && settledContext === context;
   const { visibleIds, selectionIds, heights } = useVirtualNotes(editorInnerRef, slotRefs, ids, active && contentReady);
   const moveTarget = pendingMove?.context === context && pendingMove.sequence === navigationRequest?.sequence ? pendingMove : null;
   useEffect(() => () => {
@@ -449,6 +453,37 @@ export function WriteView(props: WriteViewProps) {
   const pinScrollSpy = useScrollSpy({ root: editorInnerRef, slots: slotRefs, ids, enabled: active && revealed, onVisible: (id) => {
     if (!navigationRequest || handledRequest.current === navigationRequest.sequence) onVisibleItem(id);
   } });
+  const onRevealChange = props.onRevealChange;
+  const revealedRef = useRef(revealed);
+  useEffect(() => {
+    revealedRef.current = revealed;
+    onRevealChange?.(revealed);
+  }, [revealed, onRevealChange]);
+  const releaseAnchor = useRef(() => {});
+  useEffect(() => () => releaseAnchor.current(), []);
+  const anchor = useCallback((target: HTMLElement) => {
+    releaseAnchor.current();
+    const container = editorInnerRef.current;
+    const column = container?.firstElementChild;
+    if (!container || !column) return;
+    const top = target.getBoundingClientRect().top;
+    let expected = container.scrollTop;
+    const observer = new ResizeObserver(() => {
+      container.scrollTop += target.getBoundingClientRect().top - top;
+      expected = container.scrollTop;
+    });
+    const onScroll = () => { if (Math.abs(container.scrollTop - expected) > 1) release(); };
+    const release = () => {
+      observer.disconnect();
+      container.removeEventListener('scroll', onScroll);
+      for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) container.removeEventListener(type, release);
+      releaseAnchor.current = () => {};
+    };
+    observer.observe(column);
+    container.addEventListener('scroll', onScroll, { passive: true });
+    for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) container.addEventListener(type, release, { passive: true });
+    releaseAnchor.current = release;
+  }, []);
 
   const onFocus = useCallback((itemId: string) => {
     setFocusedItemId(itemId);
@@ -466,6 +501,7 @@ export function WriteView(props: WriteViewProps) {
   const register = useCallback((id: string, editor: LexicalEditor | null) => {
     if (editor) {
       editors.current.set(id, editor);
+      if (!revealedRef.current) setRegistrations(count => count + 1);
       setInvalidItems(previous => {
         if (!previous.has(id)) return previous;
         const next = new Set(previous);
@@ -507,14 +543,26 @@ export function WriteView(props: WriteViewProps) {
       if (!editor && !invalidItems.has(targetId)) return;
       handledRequest.current = request?.sequence ?? null;
       pinScrollSpy();
-      slotRefs.current.get(targetId)?.scrollIntoView({ block: 'start' });
+      const target = slotRefs.current.get(targetId);
+      target?.scrollIntoView({ block: 'start' });
+      if (target) anchor(target);
+      positionedTarget.current = targetId;
       setFocusedItemId(targetId);
       onVisibleItem(targetId);
       setPositionedContext(context);
       if (request?.focus && request.embedIndex === undefined && editor) requestAnimationFrame(() => focusEditor(editor));
     });
     return () => cancelAnimationFrame(frame);
-  }, [active, navigationRequest, contentReady, onVisibleItem, pinScrollSpy, positionedContext, context, item.id, visibleIds, invalidItems]);
+  }, [active, navigationRequest, contentReady, onVisibleItem, pinScrollSpy, anchor, positionedContext, context, item.id, visibleIds, invalidItems]);
+
+  useEffect(() => {
+    if (positionedContext !== context || settledContext === context) return;
+    const target = positionedTarget.current;
+    const ready = !!target && visibleIds.has(target) && [...visibleIds].every(id => !ids.includes(id) || editors.current.has(id) || invalidItems.has(id));
+    const frame = ready ? requestAnimationFrame(() => setSettledContext(context)) : 0;
+    const fallback = setTimeout(() => setSettledContext(context), 600);
+    return () => { cancelAnimationFrame(frame); clearTimeout(fallback); };
+  }, [positionedContext, settledContext, context, ids, visibleIds, invalidItems, registrations]);
 
   useEffect(() => {
     if (!active || props.draft) return;
@@ -547,8 +595,8 @@ export function WriteView(props: WriteViewProps) {
     {imageError && <div role="alert" className="text-sm text-destructive">{imageError}<button type="button" onClick={() => setImageError(null)}>Dismiss</button></div>}
     <div data-tour="write-panel" className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <div className="editor-container relative flex flex-1 min-h-0 flex-col" aria-busy={!revealed}>
-        {!revealed && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background text-sm text-muted-foreground" role="status">
-          {props.contentLoadError ? <><p>Could not load the editor.</p><button type="button" className="text-foreground underline" onClick={props.onRetryContent}>Retry</button></> : <><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</>}
+        {!revealed && props.contentLoadError && <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-background text-sm text-muted-foreground" role="status">
+          <p>Could not load the editor.</p><button type="button" className="text-foreground underline" onClick={props.onRetryContent}>Retry</button>
         </div>}
         <div ref={setToolbar} id="editor-formatting-toolbar" data-editor-toolbar data-open={props.toolbarOpen ?? false} className="min-h-[52px]" style={{ visibility: revealed ? undefined : 'hidden' }} />
         {props.reorderNotice && props.reorderNotice.error && <div

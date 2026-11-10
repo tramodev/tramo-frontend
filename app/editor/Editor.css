@@ -209,6 +209,15 @@
   text-decoration: underline line-through;
 }
 
+[data-history-diff] .editor-text-highlight {
+  background-color: color-mix(in srgb, var(--history-color) 30%, transparent);
+}
+
+[data-history-diff] .editor-text-strikethrough,
+[data-history-diff] .editor-text-underlineStrikethrough {
+  color: var(--history-color);
+}
+
 .editor-text-code {
   background-color: var(--muted);
   color: var(--foreground);
@@ -1332,6 +1341,14 @@ pre::-webkit-scrollbar-thumb {
 
 .trail-item-editor .editor-input {
   min-height: calc(8lh + 60px);
+}
+
+.trail-item-editor .pending-note:has(> .pending-note-title) {
+  min-height: calc(8 * 0.9375rem * 1.6 + 60px);
+}
+
+.trail-item-editor .pending-note-title + .editor-input {
+  min-height: 0;
 }
 
 .item-mention-menu {

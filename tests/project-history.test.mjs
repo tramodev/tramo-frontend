@@ -53,3 +53,10 @@ test('private detail never falls back to public content and propagates server er
   status = 500;
   await expect(exports.getProjectVersion('project', 42)).rejects.toThrow('Server error');
 });
+
+test('current state is read privately from the history endpoint', async () => {
+  const { client, requests } = setup();
+  await client.getCurrentProjectState('abc');
+  expect(requests[0].url).toBe('http://backend/api/project/abc/history/current');
+  expect(requests[0].init.cache).toBe('no-store');
+});

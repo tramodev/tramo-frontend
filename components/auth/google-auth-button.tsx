@@ -9,6 +9,7 @@ import { googleAuthHandler } from "@/lib/google-auth-actions"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { TopProgressBar } from "@/components/layout/top-progress-bar"
 
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""
 
@@ -43,15 +44,16 @@ export function GoogleAuthButton({
       if (!result.success) {
         setError(result.error)
         if (result.linkRequired) setIdToken(credential)
+        setIsPending(false)
         return
       }
       router.push(result.requiresBirthDate ? "/onboarding/birth-date" : "/")
       router.refresh()
     } catch {
       setError("Google sign-in failed. Please try again.")
+      setIsPending(false)
     } finally {
       setPassword("")
-      setIsPending(false)
     }
   }
 
@@ -69,16 +71,22 @@ export function GoogleAuthButton({
   return (
     <GoogleOAuthProvider clientId={clientId} locale="en">
       <div ref={containerRef} className="flex w-full flex-col items-center gap-2">
-        {width > 0 && <GoogleLogin
-          onSuccess={handleSuccess}
-          onError={() => setError("Google sign-in failed. Please try again.")}
-          theme="outline"
-          shape="pill"
-          logo_alignment="center"
-          size="large"
-          text={text}
-          width={width}
-        />}
+        {isPending && <TopProgressBar label="Signing in with Google" />}
+        <div className="relative flex h-11 w-full items-center justify-center">
+          <div aria-hidden="true" className="absolute inset-x-0 top-1/2 h-10 -translate-y-1/2 animate-pulse rounded-full border border-border bg-muted motion-reduce:animate-none" />
+          {width > 0 && <div className="relative">
+            <GoogleLogin
+              onSuccess={handleSuccess}
+              onError={() => setError("Google sign-in failed. Please try again.")}
+              theme="outline"
+              shape="pill"
+              logo_alignment="center"
+              size="large"
+              text={text}
+              width={width}
+            />
+          </div>}
+        </div>
         {idToken && (
           <div className="flex w-full flex-col gap-2">
             <Field floatingLabel>
