@@ -213,6 +213,15 @@
   background-color: color-mix(in srgb, var(--history-color) 30%, transparent);
 }
 
+[data-history-diff] .editor-text-highlight::after {
+  content: var(--history-author, none);
+  margin-left: 2px;
+  font-size: 0.65em;
+  font-weight: 500;
+  vertical-align: super;
+  color: var(--history-color);
+}
+
 [data-history-diff] .editor-text-strikethrough,
 [data-history-diff] .editor-text-underlineStrikethrough {
   color: var(--history-color);
