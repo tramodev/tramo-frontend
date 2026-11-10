@@ -27,8 +27,9 @@ test('footer shows the brand, social icons and copyright in order', () => {
   const x = nodes.find(node => node.props.href === 'https://x.com/tramodev');
   expect(x.props.rel).toBe('noopener noreferrer');
   expect(nodes.indexOf(x)).toBeLessThan(nodes.indexOf(github));
-  const copyright = nodes.find(node => node.type === 'p');
-  expect(copyright.props.children.filter(child => typeof child !== 'object').join('')).toContain(`${new Date().getFullYear()} Tramo · tramo.dev · Ezequiel Martino. Open source under `);
+  const [copyright, license] = nodes.filter(node => node.type === 'p');
+  expect([copyright.props.children].flat().filter(child => typeof child !== 'object').join('')).toBe(`© ${new Date().getFullYear()} Tramo · tramo.dev · Ezequiel Martino`);
+  expect([license.props.children].flat().filter(child => typeof child !== 'object').join('')).toBe('Open source under .');
   expect(nodes.findIndex(node => node.type === 'Wordmark')).toBeLessThan(nodes.indexOf(github));
   expect(nodes.indexOf(github)).toBeLessThan(nodes.indexOf(copyright));
 });

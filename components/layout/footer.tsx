@@ -25,7 +25,10 @@ export function Footer() {
               <Github aria-hidden="true" className="h-5 w-5" />
             </a>
           </nav>
-          <p>&copy; {new Date().getFullYear()} Tramo · tramo.dev · Ezequiel Martino. Open source under <a href="https://github.com/tramodev" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-foreground">AGPL-3.0<span className="sr-only"> (opens in a new tab)</span></a>.</p>
+          <div className="space-y-1">
+            <p>&copy; {new Date().getFullYear()} Tramo · tramo.dev · Ezequiel Martino</p>
+            <p>Open source under <a href="https://github.com/tramodev" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-foreground">AGPL-3.0<span className="sr-only"> (opens in a new tab)</span></a>.</p>
+          </div>
         </div>
         <nav aria-label="Footer" className="grid grid-cols-2 gap-6 md:gap-8 xl:grid-cols-4">
           {[{ title: "Company", pages: ["About", "Contact"] }, { title: "Product", pages: ["Features", "Plans"] }, { title: "Resources", pages: ["Wiki", "Changelog", "Roadmap", "Blog"] }, { title: "Legal", pages: ["Privacy Policy", "Terms of Service"] }].map(section => (
