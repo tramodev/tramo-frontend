@@ -185,10 +185,10 @@ export function HistoryView({ projectId, restoreEpoch, isOwner, initialHistory, 
             </div>
           </EditorImagesProvider>}
       </main>
-      <aside aria-label="Version history" className="flex shrink-0 flex-col border-t border-border md:w-80 md:border-t-0 md:border-l">
+      <aside aria-label="Version history" className="flex h-72 shrink-0 flex-col border-t border-border md:h-auto md:w-80 md:border-t-0 md:border-l">
         <div className="flex items-center justify-between gap-2 px-4 py-3">
           <h2 className="text-base font-medium">Version history</h2>
-          {panel === 'versions' && !naming && <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>Name current version</Button>}
+          {!naming && <Button variant="ghost" size="sm" className={panel === 'published' ? 'invisible' : undefined} onClick={() => setNaming(true)}>Name current version</Button>}
         </div>
         {isOwner && <div className="px-4 pb-3"><SegmentedControl options={[{ value: 'versions', label: 'Versions' }, { value: 'published', label: 'Published' }] as const} value={panel} onChange={showPanel} /></div>}
         {panel === 'published' ? <ul className="min-h-0 flex-1 overflow-y-auto pb-4" aria-busy={!publications && !publicationsError}>

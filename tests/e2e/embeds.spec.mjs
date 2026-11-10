@@ -331,7 +331,10 @@ for (const width of [1280, 390]) {
     await expect(page.locator('[data-history-diff] .editor-text-highlight').first()).toContainText('Current');
     await expect(page.locator('[data-history-diff] .editor-text-strikethrough').first()).toContainText('Restored');
     await expect(page.getByRole('main').getByText('@collaborator')).toBeVisible();
-    await page.getByRole('button', { name: 'Published', exact: true }).click();
+    const published = page.getByRole('button', { name: 'Published', exact: true });
+    const top = (await published.boundingBox()).y;
+    await published.click();
+    expect((await published.boundingBox()).y).toBe(top);
     await expect(page.getByRole('link', { name: 'Open published version 1 in a new tab' })).toHaveAttribute('href', '/p/embeds/versions/7');
     await page.getByRole('button', { name: 'Versions', exact: true }).click();
     await page.getByRole('button', { name: /Earlier version/ }).click();
