@@ -275,7 +275,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           <p>Used in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length} trails. Edits appear in {props.trails.filter(trail => trail.itemIds.includes(item.id)).length === 2 ? 'both' : 'all of them'}.</p>
           <div className="mt-1 flex flex-wrap gap-3">{props.trails.filter(trail => trail.itemIds.includes(item.id)).map(trail => <button type="button" key={trail.id} onClick={() => props.onSelectItem(item, trail.id)} className="underline">{trail.title}</button>)}</div>
         </div>}
-        {!live && <div aria-busy="true">
+        {!live && <div aria-busy="true" className="pending-note">
           {waiting && <p role="status" className="px-7 pt-2 text-xs text-muted-foreground">
             {waiting === 'limit' ? 'Too many open tabs. Close one to keep editing.' : 'Connecting…'}
           </p>}
