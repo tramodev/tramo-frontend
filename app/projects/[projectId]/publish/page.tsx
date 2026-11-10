@@ -35,7 +35,6 @@ import {
 import { getMyProfile } from "@/lib/profile"
 import type { ProjectFeedItem } from "@/lib/public-project"
 import { TaskHint } from "@/components/editor/task-hint"
-import { PublishHistorySheet } from "@/components/project/publish-history-sheet"
 import { cn } from "@/lib/utils"
 import { createPendingSaves } from "@/lib/pending-saves"
 import { assertProjectText, PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
@@ -232,7 +231,6 @@ export default function PublishPage() {
           <span className="leading-none">Editor</span>
         </button>
         <h1 className="text-[1.0625rem] font-semibold leading-none">Publish</h1>
-        <div className="ml-auto"><PublishHistorySheet projectId={projectId} /></div>
       </div>
 
       <div tabIndex={0} role="region" aria-label="Explore preview" className="min-w-0 flex-1 overflow-y-auto bg-muted focus-visible:outline-2 focus-visible:outline-ring lg:col-start-1 lg:row-start-2 lg:min-h-0">

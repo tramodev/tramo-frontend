@@ -2,9 +2,10 @@
 
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Switch } from '@/components/ui/switch';
 import { EditorImagesProvider } from '@/components/editor/editor-images-provider';
 import { LexicalReadOnly } from '@/components/project/lexical-read-only';
@@ -15,6 +16,7 @@ import { useVirtualNotes } from '@/app/editor/[projectId]/hooks/useVirtualNotes'
 import { cursorColor } from '@/lib/collab-client';
 import { diffNoteContent } from '@/lib/lexical-diff';
 import { compareVersionEntries } from '@/lib/version-comparison';
+import { getProjectSnapshots, type ProjectSnapshotSummary } from '@/lib/project-snapshots';
 import { createProjectVersion, getProjectHistory, getProjectVersion, type HistoryVersion, type ProjectHistory, type VersionSnapshot, type VersionState } from '@/lib/project-history';
 
 type Selection = number | 'current';
@@ -31,9 +33,10 @@ function versionLabel(version: HistoryVersion) {
   return version.name || (version.type === 'RESTORE' ? 'Before restoration' : null);
 }
 
-export function HistoryView({ projectId, restoreEpoch, initialHistory, current, latest }: {
+export function HistoryView({ projectId, restoreEpoch, isOwner, initialHistory, current, latest }: {
   projectId: string;
   restoreEpoch: number;
+  isOwner: boolean;
   initialHistory: ProjectHistory;
   current: VersionState;
   latest: VersionState | null;
@@ -49,6 +52,9 @@ export function HistoryView({ projectId, restoreEpoch, initialHistory, current, 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const request = useRef(0);
+  const [panel, setPanel] = useState<'versions' | 'published'>('versions');
+  const [publications, setPublications] = useState<ProjectSnapshotSummary[] | null>(null);
+  const [publicationsError, setPublicationsError] = useState('');
   const columnRef = useRef<HTMLElement>(null);
   const slotRefs = useRef(new Map<string, HTMLElement>());
 
@@ -113,6 +119,17 @@ export function HistoryView({ projectId, restoreEpoch, initialHistory, current, 
     finally { setBusy(false); }
   };
 
+  const loadPublications = async () => {
+    setPublicationsError('');
+    try { setPublications(await getProjectSnapshots(projectId)); }
+    catch (failure) { setPublicationsError(failure instanceof Error ? failure.message : 'Could not load publish history.'); }
+  };
+
+  const showPanel = (next: 'versions' | 'published') => {
+    setPanel(next);
+    if (next === 'published' && !publications) void loadPublications();
+  };
+
   const when = (date: string) => mounted ? new Date(date).toLocaleString(undefined, { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : date;
 
   return <div className="flex h-dvh flex-col bg-background">
@@ -171,8 +188,23 @@ export function HistoryView({ projectId, restoreEpoch, initialHistory, current, 
       <aside aria-label="Version history" className="flex shrink-0 flex-col border-t border-border md:w-80 md:border-t-0 md:border-l">
         <div className="flex items-center justify-between gap-2 px-4 py-3">
           <h2 className="text-base font-medium">Version history</h2>
-          {!naming && <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>Name current version</Button>}
+          {panel === 'versions' && !naming && <Button variant="ghost" size="sm" onClick={() => setNaming(true)}>Name current version</Button>}
         </div>
+        {isOwner && <div className="px-4 pb-3"><SegmentedControl options={[{ value: 'versions', label: 'Versions' }, { value: 'published', label: 'Published' }] as const} value={panel} onChange={showPanel} /></div>}
+        {panel === 'published' ? <ul className="min-h-0 flex-1 overflow-y-auto pb-4" aria-busy={!publications && !publicationsError}>
+          {!publications && !publicationsError && <li role="status" className="px-4 text-sm text-muted-foreground">Loading publish history…</li>}
+          {publicationsError && <li role="alert" className="px-4 text-sm text-destructive">{publicationsError} <Button variant="ghost" size="sm" onClick={() => void loadPublications()}>Retry</Button></li>}
+          {publications?.length === 0 && <li className="px-4 text-sm text-muted-foreground">No published versions yet.</li>}
+          {publications?.map(publication => <li key={publication.id}>
+            <Link href={`/p/${projectId}/versions/${publication.id}`} target="_blank" rel="noopener noreferrer" aria-label={`Open published version ${publication.version} in a new tab`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">Version {publication.version}</span>
+                <span className="block text-xs text-muted-foreground">{when(publication.createdAt)}</span>
+              </span>
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </Link>
+          </li>)}
+        </ul> : <>
         {naming && <form className="space-y-2 px-4 pb-3" onSubmit={event => { event.preventDefault(); void nameCurrent(); }}>
           <Input autoFocus className="h-9" aria-label="Version name" placeholder="Version name" maxLength={120} value={name} disabled={busy} onChange={event => setName(event.target.value)} />
           <div className="flex justify-end gap-2">
@@ -199,6 +231,7 @@ export function HistoryView({ projectId, restoreEpoch, initialHistory, current, 
           })}
           {history.nextCursor && <li className="px-4 pt-2"><Button variant="ghost" size="sm" disabled={busy} onClick={() => void loadOlder()}>Load older versions</Button></li>}
         </ul>
+        </>}
       </aside>
     </div>
   </div>;

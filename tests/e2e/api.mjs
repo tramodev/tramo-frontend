@@ -44,6 +44,7 @@ const server = createServer(async (request, response) => {
   }
   if (path === '/api/public/project/embeds') return send({ ...project, ownerUsername: 'embedtester', trails: [], looseItems: [{ ...item, content }], voteCount: 0, viewCount: 0, commentCount: 0, canFork: false, canComment: false, votedByRequester: false, bookmarkedByRequester: false });
   if (path === '/api/project/embeds/history') return send({ versions: [version], nextCursor: null, unavailable: false });
+  if (path === '/api/project/embeds/versions') return send([{ id: 7, version: 1, createdDate: now }]);
   if (path === '/api/project/embeds/history/current') return send({ snapshot: { title: project.title, description: project.description, trails: [], items: [{ ...item, content }] }, itemAuthors: { [item.id]: [{ id: 2, username: 'collaborator' }] } });
   if (path === '/api/project/embeds/history/1') return send({ version, snapshot: { title: project.title, description: project.description, trails: [], items: [{ ...item, content: historyContent }] }, itemAuthors: {} });
   if (path === '/api/project/embeds/history/1/restore' && request.method === 'POST') {
