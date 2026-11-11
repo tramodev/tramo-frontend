@@ -113,13 +113,15 @@ function AppView({ step, still = false }: { step: number; still?: boolean }) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3 @[36rem]:px-4">
+        <div className="flex h-12 shrink-0 items-center gap-2 px-3 @[36rem]:px-4">
           <PanelLeft className="size-3.5 shrink-0 text-muted-foreground @[36rem]:hidden" />
           <span className="min-w-0 truncate text-[0.8125rem] font-medium">{YOUR_PROJECT.title}</span>
           <span className="hidden items-center gap-1 text-xs text-muted-foreground @[30rem]:flex">
             <Check className="size-3" />Saved
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-2">
+            <Pill icon={UserPlus} label="Share" />
+            <Pill icon={Globe} label="Publish" />
             <span className="flex -space-x-1.5">
               <Avatar letter="A" ring={step === 5 ? ANA : undefined} />
               {step === 5 && (
@@ -128,8 +130,6 @@ function AppView({ step, still = false }: { step: number; still?: boolean }) {
                 </motion.span>
               )}
             </span>
-            <Pill icon={UserPlus} label="Share" />
-            <Pill icon={Globe} label="Publish" />
           </span>
         </div>
 
