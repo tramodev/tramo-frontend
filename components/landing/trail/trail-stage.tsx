@@ -120,16 +120,14 @@ function AppView({ step, still = false }: { step: number; still?: boolean }) {
             <Check className="size-3" />Saved
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-2">
+            {step === 5 && (
+              <motion.span initial={still ? false : { opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING}>
+                <Avatar letter="E" outline ring={EZEQUIEL} />
+              </motion.span>
+            )}
             <Pill icon={UserPlus} label="Share" />
             <Pill icon={Globe} label="Publish" />
-            <span className="flex -space-x-1.5">
-              <Avatar letter="A" ring={step === 5 ? ANA : undefined} />
-              {step === 5 && (
-                <motion.span initial={still ? false : { opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING}>
-                  <Avatar letter="E" outline ring={EZEQUIEL} />
-                </motion.span>
-              )}
-            </span>
+            <Avatar letter="A" ring={step === 5 ? ANA : undefined} />
           </span>
         </div>
 
