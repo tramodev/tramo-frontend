@@ -600,9 +600,16 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     if (draft && draft.getSnapshot().status !== 'saved') {
       setProjectTitle(title); draft.update({ project: { title } }); return Promise.resolve();
     }
+    const previous = projectTitle;
+    setProjectTitle(title);
     return pendingSaves.current.track("project-title", async () => {
-      await renameProject(projectId, title, restoreEpoch);
-      setProjectTitle(title);
+      try {
+        await renameProject(projectId, title, restoreEpoch);
+        setProjectTitle(title);
+      } catch (error) {
+        setProjectTitle(current => current === title ? previous : current);
+        throw error;
+      }
     }, true);
   };
 
