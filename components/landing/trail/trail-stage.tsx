@@ -146,7 +146,7 @@ function AppView({ step, still = false }: { step: number; still?: boolean }) {
               </motion.div>
             </AnimatePresence>
           </div>
-          {connections && <ConnectionsPanel still={still} />}
+          {connections && <ConnectionsPanel step={step} still={still} />}
         </div>
       </div>
     </div>
@@ -268,7 +268,7 @@ function Cursor({ name, color, still }: { name: string; color: string; still: bo
   );
 }
 
-function ConnectionsPanel({ still }: { still: boolean }) {
+function ConnectionsPanel({ step, still }: { step: number; still: boolean }) {
   return (
     <motion.div
       initial={still ? false : { opacity: 0, x: 16 }}
@@ -280,14 +280,49 @@ function ConnectionsPanel({ still }: { still: boolean }) {
         <p className="text-[0.8125rem] font-medium">Connections (2)</p>
         <X className="size-3.5 text-muted-foreground" />
       </div>
-      <p className="text-xs text-muted-foreground">Connections involving “Memex”.</p>
-      {['As We May Think', 'Associative trails'].map(title => (
-        <div key={title} className="rounded-md border border-border p-2.5">
-          <p className="text-[0.8125rem]">Memex — {title}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">@ mention in Memex</p>
+      <p className="text-xs text-muted-foreground @[30rem]:hidden @[46rem]:block">Connections involving “Memex”.</p>
+      <div className="grid flex-1 gap-2.5 @[30rem]:grid-cols-2 @[46rem]:flex @[46rem]:flex-col">
+        <div className="flex flex-col gap-2.5">
+          {['As We May Think', 'Associative trails'].map(title => (
+            <div key={title} className="rounded-md border border-border p-2.5">
+              <p className="text-[0.8125rem]">Memex — {title}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">@ mention in Memex</p>
+            </div>
+          ))}
         </div>
-      ))}
+        <div className="mt-auto flex flex-col border-t border-border pt-2 @[30rem]:mt-0 @[30rem]:border-t-0 @[30rem]:pt-0 @[46rem]:mt-auto @[46rem]:border-t @[46rem]:pt-2">
+          <span className="mb-1 text-xs text-primary">Open map</span>
+          <MiniMap lanes={step >= 3 ? 2 : 1} still={still} />
+        </div>
+      </div>
     </motion.div>
+  );
+}
+
+function MiniMap({ lanes, still }: { lanes: number; still: boolean }) {
+  return (
+    <div
+      className="relative flex h-28 gap-2 overflow-hidden rounded-md border border-border bg-popover p-1.5"
+      style={{ backgroundImage: 'radial-gradient(var(--border) 1px, transparent 0)', backgroundSize: '10px 10px' }}
+    >
+      {LANES.slice(0, lanes).map((lane, l) => (
+        <motion.div
+          key={lane.title}
+          initial={still || l === 0 ? false : { opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={SPRING}
+          className="grid min-w-0 flex-1 grid-rows-3 gap-1.5 rounded-sm border border-border bg-muted/20 p-1"
+        >
+          {lane.cards.map(card => (
+            <div key={card.title} className={cn('flex flex-col justify-center gap-1 rounded-sm border bg-card px-1.5', lanes === 2 && card.shared ? 'border-[var(--ed-purple)]' : 'border-border')}>
+              <span className="h-1 w-3/5 rounded-full bg-foreground/60" />
+              <span className="h-0.5 w-4/5 rounded-full bg-muted-foreground/40" />
+            </div>
+          ))}
+        </motion.div>
+      ))}
+      {lanes === 1 && <div className="flex-1" />}
+    </div>
   );
 }
 
