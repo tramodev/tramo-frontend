@@ -141,7 +141,7 @@ export const BrowserMockup: React.FC = () => {
       <div
         className="flex h-full w-full overflow-hidden"
       >
-        <div className="w-[19cqw] hidden lg:flex flex-col shrink-0 p-2.5 gap-2.5 overflow-hidden bg-card">
+        <div className="w-[19cqw] hidden lg:flex flex-col shrink-0 p-2.5 gap-2.5 overflow-hidden bg-card border-r border-border">
           <div className="flex items-center gap-2 pt-0.5">
             <Mark size={22} className="shrink-0" />
             <div className="flex flex-1 items-center gap-1.5 rounded-full border border-input bg-popover px-2.5 py-1.5 text-xs text-muted-foreground">
