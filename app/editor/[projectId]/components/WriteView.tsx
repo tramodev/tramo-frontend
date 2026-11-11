@@ -291,7 +291,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           } ErrorBoundary={LexicalErrorBoundary} />
         </div>
         {collaborative
-          ? socket && props.collab && <CollaborationNotePlugin itemId={item.id} socket={socket} username={props.collab.username} userId={props.collab.userId} cursorsContainer={anchor}
+          ? socket && props.collab && !item.id.startsWith('temp-') && <CollaborationNotePlugin itemId={item.id} socket={socket} username={props.collab.username} userId={props.collab.userId} cursorsContainer={anchor}
             handoff={props.collabHandoff?.itemId === item.id ? props.collabHandoff : null} onHandoff={props.onCollabHandoff} onWaiting={setWaiting}
             onStatus={(id, status) => { if (status === 'synced') setLive(true); props.onCollabStatus?.(id, status); }} onClosed={onCollabClosed} />
           : <HistoryPlugin externalHistoryState={history} />}
