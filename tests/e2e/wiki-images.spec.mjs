@@ -69,7 +69,7 @@ test('measure a direct link to a later wiki screenshot', async ({ page }, testIn
     if (message.text().includes('Largest Contentful Paint')) warnings.push(message.text());
   });
   await page.goto('/wiki/projects#feature-3');
-  const image = page.locator('img[src="/wiki/projects/delete.webp"]');
+  const image = page.locator('img[src="/wiki/projects/03-delete.webp"]');
   await expect(image).toBeInViewport();
   await expect.poll(() => image.evaluate(element => element.complete)).toBe(true);
   await page.waitForLoadState('networkidle');
