@@ -122,7 +122,7 @@ function AppView({ step, still = false }: { step: number; still?: boolean }) {
           <span className="ml-auto flex shrink-0 items-center gap-2">
             {step === 5 && (
               <motion.span initial={still ? false : { opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING}>
-                <Avatar letter="E" outline ring={EZEQUIEL} />
+                <Avatar letter="P" outline ring={PEDRO} />
               </motion.span>
             )}
             <Pill icon={UserPlus} label="Share" />
@@ -183,7 +183,7 @@ function SidebarTrail({ title, notes, active, shared, still }: { title: string; 
 }
 
 const ANA = 'var(--chart-1)';
-const EZEQUIEL = 'var(--chart-5)';
+const PEDRO = 'var(--success)';
 
 function NoteView({ step, still }: { step: number; still: boolean }) {
   const mention = (label: string) => step >= 2
@@ -241,7 +241,7 @@ function NoteView({ step, still }: { step: number; still: boolean }) {
               {step === 5 && (
                 <li className="text-foreground">
                   Fork it and build on it
-                  <Cursor name="Ezequiel" color={EZEQUIEL} still={still} />
+                  <Cursor name="Pedro" color={PEDRO} still={still} />
                 </li>
               )}
             </ul>
