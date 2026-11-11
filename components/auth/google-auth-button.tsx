@@ -72,7 +72,7 @@ export function GoogleAuthButton({
     <GoogleOAuthProvider clientId={clientId} locale="en">
       <div ref={containerRef} className="flex w-full flex-col items-center gap-2">
         {isPending && <TopProgressBar label="Signing in with Google" />}
-        <div className="relative flex h-11 w-full items-center justify-center">
+        <div className="relative flex h-11 w-full max-w-[400px] items-center justify-center">
           <div aria-hidden="true" className="absolute inset-x-0 top-1/2 h-10 -translate-y-1/2 animate-pulse rounded-full border border-border bg-muted motion-reduce:animate-none" />
           {width > 0 && <div className="relative">
             <GoogleLogin
