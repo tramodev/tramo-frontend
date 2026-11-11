@@ -9,7 +9,7 @@ const PATREON_URL = 'https://www.patreon.com/tramodev';
 
 const FREE_FEATURES = [
   'Trails & map',
-  'Fork with credit',
+  'Fork',
   'Unlimited projects',
   'Unlimited publishing',
   'Follow, comment & upvote',
@@ -26,7 +26,7 @@ const SUPPORTER_FEATURES = [
 
 export const PricingSection: React.FC = () => {
   return (
-    <section id="pricing" className="pt-16 pb-[84px]">
+    <section id="pricing">
       <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
         <FadeUp className="min-w-0">
           <div className="flex h-full min-w-0 flex-col rounded-[28px] bg-card p-6 sm:p-8 lg:p-11">

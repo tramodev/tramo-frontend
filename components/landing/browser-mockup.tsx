@@ -128,13 +128,13 @@ export const BrowserMockup: React.FC = () => {
     <div className="@container w-full flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-elevation-2">
       <div className="h-9 flex items-center gap-2 px-4 shrink-0 bg-card border-b border-border">
         <span className="flex gap-1.5 shrink-0">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--ed-red)' }} />
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--ed-orange)' }} />
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--ed-green)' }} />
+          <span className="w-2.5 h-2.5 rounded-full bg-input" />
+          <span className="w-2.5 h-2.5 rounded-full bg-input" />
+          <span className="w-2.5 h-2.5 rounded-full bg-input" />
         </span>
-        <div className="mx-auto flex items-center gap-1.5 rounded-full bg-popover px-3 py-1 text-[0.6875rem] text-muted-foreground max-w-[60%] truncate">
+        <div className="mx-auto flex items-center gap-1.5 rounded-full bg-popover px-3 py-1 text-xs text-muted-foreground max-w-[60%] truncate">
           <Lock className="w-2.5 h-2.5 shrink-0" />
-          tramo.dev/p/y1Og16
+          tramo.dev/editor/y1Og16
         </div>
       </div>
       <div className="relative h-[36rem] overflow-hidden md:aspect-[16/9] md:h-auto">
@@ -144,14 +144,14 @@ export const BrowserMockup: React.FC = () => {
         <div className="w-[19cqw] hidden lg:flex flex-col shrink-0 p-2.5 gap-2.5 overflow-hidden bg-card border-r border-border">
           <div className="flex items-center gap-2 pt-0.5">
             <Mark size={22} className="shrink-0" />
-            <div className="flex flex-1 items-center gap-1.5 rounded-full border border-input bg-popover px-2.5 py-1.5 text-[0.6875rem] text-muted-foreground">
+            <div className="flex flex-1 items-center gap-1.5 rounded-full border border-input bg-popover px-2.5 py-1.5 text-xs text-muted-foreground">
               <Search className="w-3 h-3 shrink-0" />
               Search this project
             </div>
           </div>
 
           <div className="flex items-center justify-between px-2">
-            <p className="text-[0.6875rem] font-medium text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground">
               Trails
             </p>
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
@@ -176,7 +176,7 @@ export const BrowserMockup: React.FC = () => {
                         fontWeight: 600,
                       } : undefined}
                     >
-                      <span className="w-3 shrink-0 text-[0.625rem] tabular-nums">{i + 1}</span>
+                      <span className="w-3 shrink-0 text-xs tabular-nums">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate">{item.title}</span>
                       {item.shared && <SharedNoteIndicator trails={GRAPH_TRAILS} />}
                       <span aria-hidden="true" className="flex w-6 shrink-0 -translate-x-1 self-stretch items-center justify-center text-muted-foreground opacity-0 transition-colors hover:text-foreground group-hover/note:opacity-100"><MoreHorizontal className="h-3 w-3" /></span>
@@ -188,7 +188,7 @@ export const BrowserMockup: React.FC = () => {
           </div>
 
           <div className="mt-1 flex items-center justify-between px-2">
-            <p className="text-[0.6875rem] font-medium text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground">
               Notes
             </p>
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
@@ -212,22 +212,22 @@ export const BrowserMockup: React.FC = () => {
       <div className="h-12 flex items-center gap-2 px-3 shrink-0 bg-background sm:gap-3 sm:px-5">
         <PanelLeft className="lg:hidden w-3.5 h-3.5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 truncate text-[0.8125rem] font-medium">Memex and Vannevar Bush</span>
-        <span className="hidden items-center gap-1 text-[0.6875rem] text-primary sm:flex">
+        <span className="hidden items-center gap-1 text-xs text-primary sm:flex">
           <Check className="w-3 h-3" />Saved
         </span>
         <div className="ml-auto flex shrink-0 items-center gap-3">
-        <span className="hidden xl:inline text-[0.6875rem] text-muted-foreground">123 words · 645 characters</span>
+        <span className="hidden xl:inline text-xs text-muted-foreground">123 words · 645 characters</span>
         <Download className="hidden w-3.5 h-3.5 text-muted-foreground sm:block" />
         <History className="hidden w-3.5 h-3.5 text-muted-foreground sm:block" />
-        <Button variant="secondary" size="lg" aria-label="Share project" className="h-8 gap-[6.4px] px-[12.8px] text-[0.7rem] has-[>svg]:px-[12.8px]">
+        <Button variant="secondary" size="lg" aria-label="Share project" className="h-8 gap-[6.4px] px-[12.8px] text-xs has-[>svg]:px-[12.8px]">
           <UserPlus className="size-3" />
           <span className="hidden sm:inline">Share</span>
         </Button>
-        <Button variant="secondary" size="lg" aria-label="Publish project" className="h-8 gap-[6.4px] px-[12.8px] text-[0.7rem] has-[>svg]:px-[12.8px]">
+        <Button variant="secondary" size="lg" aria-label="Publish project" className="h-8 gap-[6.4px] px-[12.8px] text-xs has-[>svg]:px-[12.8px]">
           <Globe className="size-3" />
           <span className="hidden sm:inline">Publish</span>
         </Button>
-        <span className="w-[26px] h-[26px] shrink-0 rounded-full flex items-center justify-center text-[0.6875rem] font-medium bg-primary text-primary-foreground">
+        <span className="w-[26px] h-[26px] shrink-0 rounded-full flex items-center justify-center text-xs font-medium bg-primary text-primary-foreground">
           A
         </span>
         </div>
@@ -241,14 +241,14 @@ export const BrowserMockup: React.FC = () => {
             <Ellipsis className="w-3.5 h-3.5 md:hidden" />
             <div className="hidden md:contents" data-mock-formatting>
             <span className="h-3.5 w-px shrink-0 bg-border" />
-            <span className="flex items-center gap-1 text-[0.6875rem] shrink-0"><Type className="w-3.5 h-3.5" />Normal<ChevronDown className="w-3 h-3" /></span>
+            <span className="flex items-center gap-1 text-xs shrink-0"><Type className="w-3.5 h-3.5" />Normal<ChevronDown className="w-3 h-3" /></span>
             <span className="contents @max-[37rem]/editor:hidden">
             <span className="h-3.5 w-px shrink-0 bg-border" />
-            <span className="flex items-center gap-1 text-[0.6875rem] font-medium shrink-0">
+            <span className="flex items-center gap-1 text-xs font-medium shrink-0">
               Arial
               <ChevronDown className="w-3 h-3" />
             </span>
-            <span className="flex items-center gap-0.5 text-[0.6875rem] font-medium shrink-0">
+            <span className="flex items-center gap-0.5 text-xs font-medium shrink-0">
               <ChevronDown className="w-3 h-3" />
               15
               <ChevronUp className="w-3 h-3" />
@@ -292,11 +292,11 @@ export const BrowserMockup: React.FC = () => {
               selection?.addRange(range);
             }}
           >
-            <p className="mb-3 text-[0.625rem] font-medium uppercase tracking-widest text-foreground">Step 3</p>
+            <p className="mb-3 text-xs font-medium uppercase tracking-widest text-foreground">Step 3</p>
             <p contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" aria-label="Demo note title" className="font-display font-medium text-[1.75rem] mb-2.5 cursor-text text-center outline-none">
               Memex
             </p>
-            <div className="mb-5 text-[0.6875rem] text-muted-foreground">
+            <div className="mb-5 text-xs text-muted-foreground">
               <p>Used in 2 trails. Edits appear in both.</p>
               <div className="mt-1 flex flex-wrap gap-3">
                 {GRAPH_TRAILS.map(trail => <span key={trail.id} className="underline">{trail.title}</span>)}
@@ -306,11 +306,11 @@ export const BrowserMockup: React.FC = () => {
             <p className="text-sm leading-6 mb-3 text-muted-foreground sm:text-[0.8125rem]">
               Bush&apos;s Memex is a proposed personal library for books, records and communications.
               Introduced in{' '}
-              <span className="cursor-pointer text-[var(--ed-blue)] underline underline-offset-2">
+              <span className="cursor-pointer font-medium text-[var(--ed-blue)] underline underline-offset-2">
                 As We May Think
               </span>
               , it lets readers connect records and revisit those connections through{' '}
-              <span className="cursor-pointer text-[var(--ed-blue)] underline underline-offset-2">
+              <span className="cursor-pointer font-medium text-[var(--ed-blue)] underline underline-offset-2">
                 Associative trails
               </span>
               .
@@ -322,7 +322,7 @@ export const BrowserMockup: React.FC = () => {
             </ul>
             </div>
             <div className="mt-8 flex justify-end">
-              <button type="button" className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-[0.6875rem] hover:bg-muted">
+              <button type="button" className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted">
                 Next trail: Thinking in trails
                 <kbd className="hidden text-muted-foreground sm:inline">⌘⌥→</kbd>
                 <ArrowRight className="h-3.5 w-3.5 shrink-0" />
@@ -337,14 +337,14 @@ export const BrowserMockup: React.FC = () => {
             <X className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <div className="flex-1 min-h-0 overflow-hidden space-y-2">
-            <p className="text-[0.625rem] text-muted-foreground">Connections involving “Memex”.</p>
+            <p className="text-xs text-muted-foreground">Connections involving “Memex”.</p>
             {CONNECTIONS.map(title => <div key={title} className="space-y-1 rounded-lg border border-border p-2.5">
-              <p className="text-[0.6875rem]">{title}</p>
-              <p className="text-[0.625rem] text-muted-foreground">@ mention in Memex</p>
+              <p className="text-xs">{title}</p>
+              <p className="text-xs text-muted-foreground">@ mention in Memex</p>
             </div>)}
           </div>
           <div className="flex h-36 shrink-0 flex-col border-t border-border pt-2">
-            <span className="mb-1 text-[0.6875rem] text-primary">Open map</span>
+            <span className="mb-1 text-xs text-primary">Open map</span>
             <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
               <Image
                 src="/landing-map-light.png"
@@ -364,7 +364,7 @@ export const BrowserMockup: React.FC = () => {
               />
             </div>
           </div>
-          <div className="mt-auto flex items-center justify-center gap-3 border-t border-border pt-2 text-[0.625rem] text-muted-foreground">
+          <div className="mt-auto flex items-center justify-center gap-3 border-t border-border pt-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><Keyboard className="w-3 h-3" />Shortcuts</span>
             <span className="flex items-center gap-1"><CircleHelp className="w-3 h-3" />Help</span>
           </div>

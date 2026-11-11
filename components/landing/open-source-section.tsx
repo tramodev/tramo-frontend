@@ -9,7 +9,7 @@ const LINKS = [
 ];
 
 export function OpenSourceSection() {
-  return <section id="open" className="py-14">
+  return <section id="open">
     <FadeUp className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
       <h2 className="landing-display max-w-[18ch] font-display text-[2rem] font-medium leading-[1.1] sm:text-[2.5rem]">Built by one person, in the open.</h2>
       <div>
