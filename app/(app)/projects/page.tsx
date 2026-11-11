@@ -306,9 +306,13 @@ export default function ProjectsPage() {
               }}>Retry</Button>
             </div>
           ) : sortedProjects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No projects yet. Start writing or try an example.
-            </p>
+            <div className="flex flex-col items-center gap-8 py-6 text-center md:flex-row md:justify-center md:gap-14 md:text-left">
+              <div aria-hidden="true" className="aspect-[3/2] w-52 shrink-0 bg-foreground [mask:url(/my-projects-empty.svg)_center/contain_no-repeat]" />
+              <div className="flex max-w-md flex-col items-center gap-3 md:items-start">
+                <h2 className="font-display text-[1.75rem] leading-tight">No projects yet</h2>
+                <p className="text-muted-foreground">Start with one note. Link it to the next one and your first trail takes shape.</p>
+              </div>
+            </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {sortedProjects.map((project, index) => (

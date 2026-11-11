@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" fill="none" role="img" aria-labelledby="exA-t">
+  <title id="exA-t">One published trail waiting for company</title>
+  <defs>
+    <pattern id="exA-dots" width="12" height="12" patternUnits="userSpaceOnUse" x="0" y="2"><circle cx="6" cy="6" r="0.9" fill="currentColor"/></pattern>
+    <radialGradient id="exA-fade" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff"/><stop offset="0.35" stop-color="#fff" stop-opacity="0.75"/><stop offset="0.9" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="exA-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="160"><rect width="240" height="160" fill="url(#exA-fade)"/></mask>
+  </defs>
+  <rect width="240" height="160" fill="url(#exA-dots)" opacity="0.2" mask="url(#exA-mask)"/>
+  <g stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="20" y="46" width="56" height="30" rx="7" stroke-opacity="0.38" stroke-dasharray="4 5"/>
+    <path d="M46.0 80c5.5 2.6 5.5 13.4 0 16" stroke-opacity="0.38"/>
+    <rect x="20" y="100" width="56" height="30" rx="7" stroke-opacity="0.38" stroke-dasharray="4 5"/>
+    <rect x="92" y="36" width="56" height="30" rx="7" fill="currentColor" fill-opacity="0.04"/>
+    <path d="M102 47h18"/><path d="M102 55h30" stroke-opacity="0.38"/>
+    <path d="M118.0 70c5.5 2.6 5.5 13.4 0 16" />
+    <rect x="92" y="90" width="56" height="30" rx="7" fill="currentColor" fill-opacity="0.04"/>
+    <path d="M102 101h18"/><path d="M102 109h30" stroke-opacity="0.38"/>
+    <rect x="164" y="26" width="56" height="30" rx="7" stroke-opacity="0.38" stroke-dasharray="4 5"/>
+    <path d="M190.0 60c5.5 2.6 5.5 13.4 0 16" stroke-opacity="0.38"/>
+    <rect x="164" y="80" width="56" height="30" rx="7" stroke-opacity="0.38" stroke-dasharray="4 5"/>
+  </g>
+</svg>

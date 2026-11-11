@@ -90,7 +90,7 @@ test('a failed projects request exits loading and can be retried', async () => {
   s.requests[1].resolve([]); await settle();
   const nodes = s.render();
   expect(nodes.some(node => node.props.role === 'alert')).toBe(false);
-  expect(nodes.some(node => node.props.children === 'No projects yet. Start writing or try an example.')).toBe(true);
+  expect(nodes.some(node => node.props.children === 'No projects yet')).toBe(true);
 });
 
 test('an unmounted projects page ignores late request results', async () => {
