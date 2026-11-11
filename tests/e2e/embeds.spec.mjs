@@ -37,12 +37,12 @@ for (const width of [659, 375, 320]) {
     }
     await rows.fill('9');
     await insert.click();
-    await expect(page.locator('.editor-input table')).toHaveCount(0);
+    await expect(page.locator('.editor-input[contenteditable="true"] table')).toHaveCount(0);
     await rows.fill('2');
     await columns.fill('3');
     await insert.click();
-    await expect(page.locator('.editor-input table tr')).toHaveCount(2);
-    await expect(page.locator('.editor-input table tr').first().locator('th, td')).toHaveCount(3);
+    await expect(page.locator('.editor-input[contenteditable="true"] table tr')).toHaveCount(2);
+    await expect(page.locator('.editor-input[contenteditable="true"] table tr').first().locator('th, td')).toHaveCount(3);
     await expect(picker).toHaveCount(0);
   });
 }
@@ -213,7 +213,7 @@ for (const [label, fieldName] of [['Equation', 'LaTeX equation'], ['Music', 'ABC
   test(`empty ${label} still disappears on Escape`, async ({ page, request }) => {
     await seed(request, [paragraph()]);
     await page.goto('/editor/embeds');
-    await page.locator('.editor-input').pressSequentially(`/${label.toLowerCase()}`);
+    await page.locator('.editor-input[contenteditable="true"]').pressSequentially(`/${label.toLowerCase()}`);
     await page.getByRole('option', { name: label, exact: true }).click();
     await page.getByRole('textbox', { name: fieldName }).press('Escape');
     await expect(page.getByRole('textbox', { name: fieldName })).toHaveCount(0);
@@ -225,7 +225,7 @@ for (const [label, fieldName] of [['Equation', 'LaTeX equation'], ['Music', 'ABC
 test('an invalid equation as the first action creates the deferred project', async ({ page, request }) => {
   await seed(request, [paragraph()]);
   await page.goto('/editor/new');
-  await page.locator('.editor-input').pressSequentially('/equation');
+  await page.locator('.editor-input[contenteditable="true"]').pressSequentially('/equation');
   await page.getByRole('option', { name: 'Equation', exact: true }).click();
   expect((await saved(request)).creations).toBe(0);
   await page.getByRole('textbox', { name: 'LaTeX equation' }).fill(invalidMath);
@@ -238,7 +238,7 @@ test('an invalid equation as the first action creates the deferred project', asy
 test('pasted invalid HTML source is retained and external source is bounded to 10k', async ({ page, request }) => {
   await seed(request, [paragraph()]);
   await page.goto('/editor/embeds');
-  const editor = page.locator('.editor-input');
+  const editor = page.locator('.editor-input[contenteditable="true"]');
   await editor.click();
   const paste = html => editor.evaluate((element, value) => {
     const clipboardData = new DataTransfer();
@@ -309,7 +309,7 @@ test('editing surrounding text preserves marked numeric and oversized legacy sou
 test('toolbar palette color is saved and survives a reload', async ({ page, request }) => {
   await seed(request, [paragraph('Colored words')]);
   await page.goto('/editor/embeds');
-  const editor = page.locator('.editor-input');
+  const editor = page.locator('.editor-input[contenteditable="true"]');
   await editor.click();
   await editor.press('ControlOrMeta+A');
   if (await page.getByRole('button', { name: 'More formatting', exact: true }).isVisible()) {
@@ -319,7 +319,7 @@ test('toolbar palette color is saved and survives a reload', async ({ page, requ
   await page.getByRole('menuitem', { name: 'Red', exact: true }).click();
   await expect.poll(async () => (await saved(request)).content).toContain('color: var(--ed-red)');
   await page.reload();
-  await expect(page.locator('.editor-input [style*="--ed-red"]')).toContainText('Colored words');
+  await expect(page.locator('.editor-input[contenteditable="true"] [style*="--ed-red"]')).toContainText('Colored words');
 });
 
 for (const width of [1280, 390]) {
@@ -338,13 +338,13 @@ for (const width of [1280, 390]) {
     await expect(page.getByRole('link', { name: 'Open published version 1 in a new tab' })).toHaveAttribute('href', '/p/embeds/versions/7');
     await page.getByRole('button', { name: 'Versions', exact: true }).click();
     await page.getByRole('button', { name: /Earlier version/ }).click();
-    await expect(page.locator('.editor-input')).toContainText('Restored version text');
+    await expect(page.locator('.editor-input[contenteditable="true"]')).toContainText('Restored version text');
     await page.getByRole('button', { name: 'Restore this version', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Restore version', exact: true }).click();
     await expect.poll(async () => (await saved(request)).restores).toBe(1);
     await expect(page.getByRole('status')).toContainText('Version restored.');
     await page.getByRole('button', { name: 'Open editor', exact: true }).click();
-    await expect(page.locator('.editor-input')).toContainText('Restored version text');
+    await expect(page.locator('.editor-input[contenteditable="true"]')).toContainText('Restored version text');
     expect((await saved(request)).content).toBe(previous);
   });
 }
