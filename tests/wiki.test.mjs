@@ -56,7 +56,7 @@ test.each([0, 1, content.SECTIONS.length - 1])('topic navigation follows wiki or
   ]);
 });
 
-test.each([['getting-started', 2], ['projects', 3], ['notes-and-trails', 13], ['writing', 5], ['images-and-blocks', 7], ['connections-and-map', 10], ['navigation', 5], ['publishing', 10], ['community', 13], ['profile-and-account', 13], ['storage-and-supporter', 5]])('%s illustrates every feature with accessible local screenshots without changing other topics', async (slug, count) => {
+test.each([['getting-started', 4], ['projects', 4], ['notes-and-trails', 15], ['writing', 7], ['images-and-blocks', 7], ['connections-and-map', 11], ['navigation', 6], ['publishing', 10], ['collaboration', 12], ['community', 13], ['profile-and-account', 15], ['storage-and-supporter', 6]])('%s illustrates every feature with accessible local screenshots without changing other topics', async (slug, count) => {
   const nodes = node => Array.isArray(node) ? node.flatMap(nodes) : !node?.props ? [] : [node, ...nodes(node.props.children)];
   const article = await page.default({ params: Promise.resolve({ slug }) });
   const images = nodes(article).filter(node => node.type === 'img');

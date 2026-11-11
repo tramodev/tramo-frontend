@@ -633,6 +633,7 @@ export const WIKI_SCREENSHOTS: Record<string, Record<string, Screenshot[]>> = {
       caption: 'Choose Usage breakdown from a project’s menu on My Projects to see the storage that project uses.',
       width: 512, height: 230,
     }],
+    'Unused image cleanup': [],
     'Support through Patreon': [{
       src: '/wiki/storage-and-supporter/03-patreon.webp',
       alt: 'The Tramo Supporter card has a Become a supporter button, an Already a supporter? Link your account link, and the message to complete the steps in Patreon.',
