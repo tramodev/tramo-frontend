@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 
-test('footer links to available pages, legal documents, contact email and X', () => {
+test('footer links to available pages, legal documents, contact page and X', () => {
   const exports = {};
   const jsx = (type, props) => ({ type, props });
   const code = ts.transpileModule(readFileSync('components/layout/footer.tsx', 'utf8'), {
@@ -25,7 +25,7 @@ test('footer links to available pages, legal documents, contact email and X', ()
   expect(nodes.find(node => node.props.children === 'Changelog').props.href).toBe('/changelog');
   expect(nodes.find(node => node.props.children === 'Wiki').props.href).toBe('/wiki');
   expect(nodes.find(node => node.props.children === 'Roadmap').props.href).toBe('/roadmap');
-  expect(nodes.find(node => node.props.children === 'Contact').props.href).toBe('mailto:contact@tramo.dev');
+  expect(nodes.find(node => node.props.children === 'Contact').props.href).toBe('/contact');
   const social = nodes.find(node => node.props.href === 'https://x.com/tramodev');
   expect(social.props.target).toBe('_blank');
   expect(social.props.rel).toBe('noopener noreferrer');

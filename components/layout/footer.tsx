@@ -37,7 +37,7 @@ export function Footer() {
               <ul className="space-y-3">
                 {section.pages.map(page => (
                   <li key={page}>
-                     {page === "Contact" ? <a href="mailto:contact@tramo.dev" className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</a> : <Link href={page === "Privacy Policy" ? "/privacy" : page === "Terms of Service" ? "/tos" : page === "Features" ? "/#product" : page === "Plans" ? "/#pricing" : `/${page.toLowerCase()}`} className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</Link>}
+                     <Link href={page === "Privacy Policy" ? "/privacy" : page === "Terms of Service" ? "/tos" : page === "Features" ? "/#product" : page === "Plans" ? "/#pricing" : `/${page.toLowerCase()}`} className="inline-block rounded-sm py-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{page}</Link>
                   </li>
                 ))}
               </ul>
