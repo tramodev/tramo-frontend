@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" fill="none" role="img" aria-labelledby="nfA-t">
+  <title id="nfA-t">A trail whose next note is missing</title>
+  <defs>
+    <pattern id="nfA-dots" width="12" height="12" patternUnits="userSpaceOnUse" x="0" y="2"><circle cx="6" cy="6" r="0.9" fill="currentColor"/></pattern>
+    <radialGradient id="nfA-fade" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff"/><stop offset="0.35" stop-color="#fff" stop-opacity="0.75"/><stop offset="0.9" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="nfA-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="160"><rect width="240" height="160" fill="url(#nfA-fade)"/></mask>
+  </defs>
+  <rect width="240" height="160" fill="url(#nfA-dots)" opacity="0.2" mask="url(#nfA-mask)"/>
+  <g stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="72" y="17" width="96" height="30" rx="7" fill="currentColor" fill-opacity="0.04"/>
+    <path d="M84 28h30"/><path d="M84 36h56" stroke-opacity="0.38"/>
+    <path d="M118 51c5.5 2.6 5.5 9.4 0 12"/>
+    <rect x="72" y="65" width="96" height="30" rx="7" fill="currentColor" fill-opacity="0.04"/>
+    <path d="M84 76h30"/><path d="M84 84h56" stroke-opacity="0.38"/>
+    <path d="M118 99c3.4 1.6 4.8 4.4 5.3 6.8"/>
+    <g transform="rotate(7 142.0 128.0)"><rect x="94" y="116" width="96" height="30" rx="7" stroke-opacity="0.38" stroke-dasharray="4 5"/></g>
+  </g>
+</svg>

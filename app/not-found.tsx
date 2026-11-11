@@ -9,9 +9,10 @@ export default function NotFound() {
       <Link href="/" aria-label="Tramo home"><Wordmark /></Link>
     </header>
     <main id="main-content" tabIndex={-1} className="container-app flex flex-1 flex-col items-center justify-center gap-5 px-6 py-20 text-center">
+      <div aria-hidden="true" className="aspect-[3/2] w-52 bg-foreground [mask:url(/404.svg)_center/contain_no-repeat]" />
       <p className="text-sm font-medium text-muted-foreground">404</p>
       <h1 className="font-display text-4xl">Page not found</h1>
-      <p className="max-w-prose text-muted-foreground">This page is unavailable. Explore published projects or return to your workspace.</p>
+      <p className="max-w-prose text-muted-foreground">This link leads nowhere. The note may have been moved, deleted or made private.</p>
       <div className="flex flex-wrap justify-center gap-3">
         <Button asChild><Link href="/projects">Your projects</Link></Button>
         <Button asChild variant="outline"><Link href="/explore">Explore</Link></Button>
