@@ -491,7 +491,7 @@ export function SidebarCustom({
 
                         return (
                           <Collapsible key={trail.editorKey ?? trail.id} defaultOpen asChild>
-                            <SidebarMenuItem className={`group/collapsible relative ${trailDrag?.trailId === trail.id ? "opacity-40" : ""}`}>
+                            <SidebarMenuItem inert={trail.id.startsWith("temp-")} aria-busy={trail.id.startsWith("temp-")} className={`group/collapsible relative ${trailDrag?.trailId === trail.id ? "opacity-40" : ""}`}>
                             {trailDrag?.overIndex === trailIndex && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 top-0 z-10 h-0.5 bg-primary" />}
                             {trailDrag?.overIndex === trails.length && trailIndex === trails.length - 1 && <div aria-hidden="true" className="pointer-events-none absolute -left-4 -right-2 bottom-0 z-10 h-0.5 bg-primary" />}
                               <div

@@ -6,6 +6,7 @@ import { useRef, useState } from "react"
 import { Loader2, Route, Upload } from "lucide-react"
 import { toBlob } from "html-to-image"
 
+import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { ProjectThumbnail } from "@/components/project/project-thumbnail"
 import { KnowledgeGraph } from "@/components/editor/knowledge-graph"
@@ -16,33 +17,6 @@ import {
   type MapPreviews,
 } from "@/lib/projects-store"
 import { uploadImage } from "@/lib/upload-image"
-import { cn } from "@/lib/utils"
-
-function UploadThumbnailTab({ disabled, onFile }: { disabled: boolean; onFile: (file: File) => void }) {
-  return (
-    <label
-      className={cn(
-        "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[0.75rem] font-medium transition-colors",
-        "border-border hover:bg-muted",
-        disabled ? "pointer-events-none opacity-50" : "cursor-pointer"
-      )}
-    >
-      <input
-        type="file"
-        accept="image/*"
-        disabled={disabled}
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (file) onFile(file);
-        }}
-      />
-      <Upload className="h-3.5 w-3.5" />
-      Upload
-    </label>
-  );
-}
 
 export function ThumbnailPicker({
   projectId,
@@ -60,6 +34,7 @@ export function ThumbnailPicker({
   const [saving, setSaving] = useState(false);
   const [snapshotPreviews, setSnapshotPreviews] = useState<MapPreviews | null>(null);
   const snapshotRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const apply = async (nextImageUrl: string) => {
     setSaving(true);
@@ -110,9 +85,26 @@ export function ThumbnailPicker({
       </div>
 
       <p className="text-xs text-muted-foreground">Thumbnails are public. Do not upload confidential information.</p>
-      <div className="grid grid-cols-2 gap-1.5">
-        <button
+      <div className="flex flex-wrap gap-2">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) void handleUpload(file);
+          }}
+        />
+        <Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => fileRef.current?.click()}>
+          <Upload />
+          Upload image
+        </Button>
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           disabled={saving || !project.trails.length}
           onClick={async () => {
             setSaving(true);
@@ -140,12 +132,10 @@ export function ThumbnailPicker({
               setSaving(false);
             }
           }}
-          className="flex flex-col items-center gap-1 rounded-lg border border-border px-2 py-2 text-[0.75rem] font-medium transition-colors hover:bg-muted disabled:opacity-50"
         >
-          <Route className="h-3.5 w-3.5" />
-          Map snapshot
-        </button>
-        <UploadThumbnailTab disabled={saving} onFile={handleUpload} />
+          <Route />
+          Use project map
+        </Button>
       </div>
     </div>
   );

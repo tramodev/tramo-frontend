@@ -128,7 +128,7 @@ test('the editor keeps a rejected project title editable and blocks duplicate su
   await saving;
   expect(render().find(node => node.props.role === 'alert').props.children).toBe('Could not save title');
   expect(render().find(node => node.type === 'Input').props.value).toBe('Renamed');
-  expect(render().find(node => node.type === 'Input').props.disabled).toBe(false);
+  expect(render().find(node => node.type === 'Input').props.disabled).toBeFalsy();
 });
 
 test('the editor header marks pending embed text and rejected drafts as not saved', () => {

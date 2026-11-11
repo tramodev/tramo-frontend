@@ -348,8 +348,8 @@ export const WIKI_SCREENSHOTS: Record<string, Record<string, Screenshot[]>> = {
     }],
     'Public thumbnails': [{
       src: '/wiki/publishing/04-thumbnail.webp',
-      alt: 'The Thumbnail section shows a snapshot of the project map with two trails, the notice that thumbnails are public, and the Map snapshot and Upload buttons.',
-      caption: 'Use Map snapshot to create a cover from the project map, or Upload to choose an image. Thumbnails are public, so keep confidential information out of them.',
+      alt: 'The Thumbnail section shows a snapshot of the project map with two trails, the notice that thumbnails are public, and the Upload image and Use project map buttons.',
+      caption: 'Use project map creates a cover from the project map, and Upload image lets you choose your own. Thumbnails are public, so keep confidential information out of them.',
       width: 436, height: 426,
     }],
     'Publication preview': [{

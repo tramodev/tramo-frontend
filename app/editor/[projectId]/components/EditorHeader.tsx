@@ -30,7 +30,6 @@ export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveS
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const [titleError, setTitleError] = useState('');
-  const [savingTitle, setSavingTitle] = useState(false);
   const renaming = useRef(false);
 
   const startEditTitle = () => {
@@ -46,16 +45,16 @@ export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveS
       setIsEditingTitle(false);
       return;
     }
-    setSavingTitle(true);
     renaming.current = true;
+    setIsEditingTitle(false);
+    setTitleError('');
     try {
       await onRenameProject(title);
-      setIsEditingTitle(false);
-      setTitleError('');
     } catch (failure) {
+      setEditingTitleValue(title);
       setTitleError(failure instanceof Error ? failure.message : 'Could not rename project. Try again.');
+      setIsEditingTitle(true);
     } finally {
-      setSavingTitle(false);
       renaming.current = false;
     }
   };
@@ -66,7 +65,6 @@ export function EditorTitleSlot({ readOnly, projectTitle, onRenameProject, saveS
         <Input
           autoFocus
           maxLength={PROJECT_TEXT_MAX_LENGTH}
-          disabled={savingTitle}
           onFocus={(event) => event.currentTarget.select()}
           value={editingTitleValue}
           placeholder="Untitled project"

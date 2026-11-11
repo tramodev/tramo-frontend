@@ -440,14 +440,23 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   };
 
   const handleCreateTrail = (title: string) => pendingSaves.current.track(`create-trail:${title}`, async () => {
-    const newTrail = await createTrail(projectId, title, restoreEpoch);
-    settle(`create-trail:${newTrail.id}`, addTrail(newTrail));
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const key = `create-trail:${tempId}`;
+    pend(key, addTrail({ id: tempId, editorKey: tempId, title, description: '', itemIds: [], steps: [], version: 0, forkedFrom: null }));
+    let newTrail: Trail;
+    try {
+      newTrail = await createTrail(projectId, title, restoreEpoch);
+    } catch (err) {
+      drop(key);
+      throw err;
+    }
+    settle(key, addTrail({ ...newTrail, editorKey: tempId }));
   }, false);
 
   const handleReorderTrails = (trailIds: string[]) => {
     if (reorderingProjectTrails.current) return Promise.resolve();
     const byId = new Map(trails.map(trail => [trail.id, trail]));
-    if (trailIds.length !== trails.length || new Set(trailIds).size !== trails.length || trailIds.some(id => !byId.has(id))) return Promise.resolve();
+    if (trailIds.length !== trails.length || new Set(trailIds).size !== trails.length || trailIds.some(id => !byId.has(id) || id.startsWith('temp-'))) return Promise.resolve();
     reorderingProjectTrails.current = true;
     setTrailOrderError(null);
     pend('trail-order', orderTrails(trailIds));
@@ -484,17 +493,21 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     return pendingSaves.current.track(key, async () => {
       let attached = target.itemIds.includes(itemId);
       pend(key, compose(linkItem(targetId, itemId), orderTrailItems(targetId, targetOrder), unlinkItem(sourceId, itemId)));
+      setNavigation(previous => previous.trailId === sourceId && previous.itemId === itemId
+        ? { ...previous, trailId: targetId } : previous);
       try {
         await attachItemToTrail(targetId, itemId, restoreEpoch);
         attached = true;
         if (needsOrder) await reorderTrailItems(targetId, targetOrder, restoreEpoch);
         await detachItemFromTrail(sourceId, itemId, restoreEpoch);
         settle(key);
-        setNavigation(previous => previous.trailId === sourceId && previous.itemId === itemId
-          ? { ...previous, trailId: targetId } : previous);
       } catch (error) {
         if (attached) settle(key, linkItem(targetId, itemId));
-        else drop(key);
+        else {
+          drop(key);
+          setNavigation(previous => previous.trailId === targetId && previous.itemId === itemId
+            ? { ...previous, trailId: sourceId } : previous);
+        }
         throw new Error(attached
           ? 'Could not finish the move. The note is in both trails; retry the move.'
           : 'Could not move the note. It remains in its original trail.', { cause: error });
@@ -547,10 +560,10 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
 
   const handleDeleteItem = (itemId: string) => pendingSaves.current.track(`delete-item:${itemId}`, async () => {
     const next = trails.find(trail => trail.id === activeTrailId)?.itemIds.find(id => id !== itemId);
+    setNavigation(prev => prev.itemId !== itemId ? prev : { ...prev, itemId: next, request: undefined });
     await optimistic(`delete-item:${itemId}`, removeItem(itemId), () => deleteItem(itemId, restoreEpoch, projectId));
     titleSaves.discard(projectId, itemId);
     drop(`title:${itemId}`);
-    setNavigation(prev => prev.itemId !== itemId ? prev : { ...prev, itemId: next, request: undefined });
   }, false);
 
   const handleRenameTrail = (trailId: string, title: string) => {
@@ -596,9 +609,16 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     if (draft && draft.getSnapshot().status !== 'saved') {
       setProjectTitle(title); draft.update({ project: { title } }); return Promise.resolve();
     }
+    const previous = projectTitle;
+    setProjectTitle(title);
     return pendingSaves.current.track("project-title", async () => {
-      await renameProject(projectId, title, restoreEpoch);
-      setProjectTitle(title);
+      try {
+        await renameProject(projectId, title, restoreEpoch);
+        setProjectTitle(title);
+      } catch (error) {
+        setProjectTitle(current => current === title ? previous : current);
+        throw error;
+      }
     }, true);
   };
 
