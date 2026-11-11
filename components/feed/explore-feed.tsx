@@ -3,6 +3,7 @@
 "use client"
 
 import { useRef, useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ExploreCard } from "@/components/feed/explore-card"
 import { getExploreBundle, type FeedSort, type ProjectFeedItem } from "@/lib/public-project"
@@ -70,17 +71,23 @@ export function ExploreFeed({
 
   return (
     <>
-      {items.length === 0 && (
+      {items.length === 0 && (query || sort === "following" ? (
         <div className="min-h-[325px]">
           <p className="text-sm text-muted-foreground">
-            {query
-              ? `Nothing found for "${query}".`
-              : sort === "following"
-                ? "Nothing here yet — follow people to see what they publish."
-                : "Nothing published yet."}
+            {query ? `Nothing found for "${query}".` : "Nothing here yet — follow people to see what they publish."}
           </p>
         </div>
-      )}
+      ) : (
+        <div className="flex min-h-[325px] flex-col items-center justify-center gap-3 py-10 text-center">
+          <div aria-hidden="true" className="mb-6 aspect-[3/2] w-52 bg-foreground [mask:url(/empty-explore.svg)_center/contain_no-repeat]" />
+          <h2 className="font-display text-[1.75rem] leading-tight">Nothing published yet</h2>
+          <p className="max-w-md text-muted-foreground">Trails people publish show up here. Publish one of your projects and be the first.</p>
+          <div className="mt-2 flex flex-wrap justify-center gap-3">
+            <Button asChild><Link href={loggedIn ? "/projects" : "/signup"}>Publish a project</Link></Button>
+            <Button asChild variant="outline"><Link href="/wiki/publishing">How publishing works</Link></Button>
+          </div>
+        </div>
+      ))}
       <div className="flex flex-col gap-3" aria-busy={isLoading}>
         {items.map((project, index) => (
           <div key={project.id} ref={element => {
