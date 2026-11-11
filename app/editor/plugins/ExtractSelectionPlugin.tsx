@@ -96,7 +96,7 @@ export default function ExtractSelectionPlugin({ projectId, itemId, trail, share
   };
   return <>
     {available && !capture && createPortal(<div className={`absolute z-10 ${available.above ? '-translate-y-full' : ''}`} style={{ top: available.top, left: available.left }}>
-      <Button size="sm" variant="ghost" className="rounded-md border border-border bg-popover shadow-elevation-2" disabled={!available.local || !!available.reason} title={available.reason} onMouseDown={event => event.preventDefault()} onClick={() => {
+      <Button size="sm" variant="ghost" className="rounded-full border border-border bg-popover px-3.5 shadow-elevation-2" disabled={!available.local || !!available.reason} title={available.reason} onMouseDown={event => event.preventDefault()} onClick={() => {
         if (!available.local) return;
         const result = captureSelection(editor);
         if (!result.capture) { setAvailable(result.reason ? { ...available, reason: result.reason } : null); return; }
