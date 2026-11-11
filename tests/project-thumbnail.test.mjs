@@ -8,6 +8,7 @@ const jsx = (type, props) => ({ type, props });
 runInNewContext(ts.transpileModule(readFileSync('components/project/project-thumbnail.tsx', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText, { exports, require: name => ({
+  react: { useState: initial => [initial, () => {}] },
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/image': { default: 'Image' },
   '@/components/shared/author-avatar': { initial: title => title[0] },
@@ -18,4 +19,6 @@ test('thumbnails show the saved snapshot image or a title placeholder', () => {
   expect(image.props.children.type).toBe('Image');
   const placeholder = exports.ProjectThumbnail({ thumbnailImageUrl: null, title: 'Project' });
   expect(placeholder.props.children.type).toBe('span');
+  const contained = exports.ProjectThumbnail({ thumbnailImageUrl: '/image.png', title: 'Project', contain: true });
+  expect(contained.props.children.props.children.type).toBe('Image');
 });
