@@ -40,7 +40,7 @@ export default async function Home() {
           Skip to content
         </a>
         <Navbar />
-        <main id="main-content" tabIndex={-1} className="container-app px-6 outline-none md:px-12">
+        <main id="main-content" tabIndex={-1} className="container-app text-pretty px-6 outline-none md:px-12">
           <TrailHero />
           <TrailJourney />
           <FreeAndOpenTrail steps={[<OpenSourceSection key="open" />, <PricingSection key="pricing" />]} />

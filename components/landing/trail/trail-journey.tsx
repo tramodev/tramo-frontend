@@ -86,7 +86,7 @@ function TrailComplete({ done, total }: { done: boolean; total: number }) {
 }
 
 function stepLabel(n: number, total: number) {
-  return `Step ${String(n).padStart(2, '0')} — of ${String(total).padStart(2, '0')}`;
+  return `Step ${String(n).padStart(2, '0')} of ${String(total).padStart(2, '0')}`;
 }
 
 export function TrailJourney() {
@@ -122,7 +122,7 @@ export function TrailJourney() {
                     className={cn('rounded-xl border bg-card p-6 outline-none transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-ring md:p-8', step === n ? 'border-foreground' : 'border-transparent')}
                   >
                     <p className="font-mono text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">{stepLabel(n, NOTES.length)}</p>
-                    <h3 id={`${note.id}-title`} className="mt-3 font-display text-2xl font-medium leading-tight md:text-[1.75rem]">{note.title}</h3>
+                    <h3 id={`${note.id}-title`} className="mt-3 text-balance font-display text-2xl font-medium leading-tight md:text-[1.75rem]">{note.title}</h3>
                     <p className="mt-3 text-base leading-relaxed text-muted-foreground">{note.body}</p>
                     {last ? (
                       <a
