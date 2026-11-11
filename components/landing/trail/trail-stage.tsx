@@ -302,7 +302,7 @@ function ConnectionsPanel({ step, still }: { step: number; still: boolean }) {
 function MiniMap({ lanes, still }: { lanes: number; still: boolean }) {
   return (
     <div
-      className="relative flex h-28 gap-2 overflow-hidden rounded-md border border-border bg-popover p-1.5"
+      className="relative flex h-28 gap-2 overflow-hidden rounded-lg border border-border bg-popover p-1.5"
       style={{ backgroundImage: 'radial-gradient(var(--border) 1px, transparent 0)', backgroundSize: '10px 10px' }}
     >
       {LANES.slice(0, lanes).map((lane, l) => (
@@ -311,10 +311,10 @@ function MiniMap({ lanes, still }: { lanes: number; still: boolean }) {
           initial={still || l === 0 ? false : { opacity: 0, x: 8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={SPRING}
-          className="grid min-w-0 flex-1 grid-rows-3 gap-1.5 rounded-sm border border-border bg-muted/20 p-1"
+          className="grid min-w-0 flex-1 grid-rows-3 gap-1.5 rounded-[2px] border border-border bg-muted/20 p-1"
         >
           {lane.cards.map(card => (
-            <div key={card.title} className={cn('flex flex-col justify-center gap-1 rounded-sm border bg-card px-1.5', lanes === 2 && card.shared ? 'border-[var(--ed-purple)]' : 'border-border')}>
+            <div key={card.title} className={cn('flex flex-col justify-center gap-1 rounded-[2px] border bg-card px-1.5', lanes === 2 && card.shared ? 'border-[var(--ed-purple)]' : 'border-border')}>
               <span className="h-1 w-3/5 rounded-full bg-foreground/60" />
               <span className="h-0.5 w-4/5 rounded-full bg-muted-foreground/40" />
             </div>
