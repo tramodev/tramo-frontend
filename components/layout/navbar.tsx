@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import Link from 'next/link';
 import { LandingSectionLink } from '@/components/layout/landing-section-link';
+import { LANDING_SECTIONS } from '@/components/layout/landing-sections';
 import { AvatarMenu } from '@/components/layout/avatar-menu';
 import { NavMobileMenu } from '@/components/layout/nav-mobile-menu';
 import { ResourcesMenu } from '@/components/layout/resources-menu';
@@ -27,18 +28,13 @@ export async function Navbar() {
           <Wordmark />
         </LandingSectionLink>}
         <div className="hidden items-center gap-1 lg:flex">
-          <LandingSectionLink
-            href="/#product"
-            className="text-sm font-medium text-muted-foreground px-4 py-2.5 rounded-full transition-colors hover:bg-muted hover:text-foreground"
+          {LANDING_SECTIONS.map(({ href, label }) => <LandingSectionLink
+            key={href}
+            href={href}
+            className="whitespace-nowrap text-sm font-medium text-muted-foreground px-2.5 py-2.5 rounded-full transition-colors hover:bg-muted hover:text-foreground xl:px-4"
           >
-            Product
-          </LandingSectionLink>
-          <LandingSectionLink
-            href="/#pricing"
-            className="text-sm font-medium text-muted-foreground px-4 py-2.5 rounded-full transition-colors hover:bg-muted hover:text-foreground"
-          >
-            Plans
-          </LandingSectionLink>
+            {label}
+          </LandingSectionLink>)}
           <ResourcesMenu />
         </div>
         <div className="flex items-center justify-self-end gap-2">
@@ -48,7 +44,7 @@ export async function Navbar() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="hidden lg:inline-flex text-sm font-medium text-primary px-4 py-2.5 rounded-full transition-colors hover:bg-muted"
+                className="hidden lg:inline-flex whitespace-nowrap text-sm font-medium text-primary px-2.5 py-2.5 rounded-full transition-colors hover:bg-muted xl:px-4"
               >
                 Log in
               </Link>

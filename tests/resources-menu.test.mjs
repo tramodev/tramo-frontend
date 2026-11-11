@@ -39,6 +39,7 @@ test('desktop and mobile provide the same resource destinations', () => {
   const mobile = load('components/layout/nav-mobile-menu.tsx', {
     '@/components/layout/resources-menu': resources,
     '@/components/layout/landing-section-link': { LandingSectionLink: 'Link' },
+    '@/components/layout/landing-sections': load('components/layout/landing-sections.ts'),
   });
   const expected = ['/wiki', '/changelog', '/roadmap', '/blog'];
   const desktop = flatten(resources.ResourcesMenu());
@@ -46,7 +47,7 @@ test('desktop and mobile provide the same resource destinations', () => {
   expect(resources.ResourcesMenu().props.modal).toBe(false);
   const mobileNodes = flatten(mobile.NavMobileMenu({ isLoggedIn: false }));
   const destinations = mobileNodes.filter(node => node.type === 'Link').map(node => node.props.href);
-  expect(destinations).toEqual(['/#product', '/#pricing', ...expected, '/login', '/signup']);
+  expect(destinations).toEqual(['/#product', '/#open', '/#pricing', ...expected, '/login', '/signup']);
   expect(flatten(mobile.NavMobileMenu({ isLoggedIn: true })).some(node => node.props.href === '/login' || node.props.href === '/signup')).toBe(false);
 });
 
