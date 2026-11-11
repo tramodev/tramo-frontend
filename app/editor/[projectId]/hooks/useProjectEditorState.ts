@@ -484,17 +484,21 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     return pendingSaves.current.track(key, async () => {
       let attached = target.itemIds.includes(itemId);
       pend(key, compose(linkItem(targetId, itemId), orderTrailItems(targetId, targetOrder), unlinkItem(sourceId, itemId)));
+      setNavigation(previous => previous.trailId === sourceId && previous.itemId === itemId
+        ? { ...previous, trailId: targetId } : previous);
       try {
         await attachItemToTrail(targetId, itemId, restoreEpoch);
         attached = true;
         if (needsOrder) await reorderTrailItems(targetId, targetOrder, restoreEpoch);
         await detachItemFromTrail(sourceId, itemId, restoreEpoch);
         settle(key);
-        setNavigation(previous => previous.trailId === sourceId && previous.itemId === itemId
-          ? { ...previous, trailId: targetId } : previous);
       } catch (error) {
         if (attached) settle(key, linkItem(targetId, itemId));
-        else drop(key);
+        else {
+          drop(key);
+          setNavigation(previous => previous.trailId === targetId && previous.itemId === itemId
+            ? { ...previous, trailId: sourceId } : previous);
+        }
         throw new Error(attached
           ? 'Could not finish the move. The note is in both trails; retry the move.'
           : 'Could not move the note. It remains in its original trail.', { cause: error });
