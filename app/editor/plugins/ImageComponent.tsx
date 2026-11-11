@@ -49,6 +49,7 @@ export default function ImageComponent({
   const imageRef = useRef<HTMLImageElement | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
   const [editingAlt, setEditingAlt] = useState(false);
+  const [editingCaption, setEditingCaption] = useState(false);
   const sized = width !== 'inherit' && height !== 'inherit';
   const sizeStyle: React.CSSProperties = sized ? { width: `${width}px`, aspectRatio: `${width} / ${height}`, minHeight: 0 } : {};
 
@@ -258,14 +259,15 @@ export default function ImageComponent({
         </>
       )}
     </span>
-    {isEditable ? (
+    {isEditable && (caption || isSelected || editingCaption) ? (
       <input
         key={`${nodeKey}-${caption}`}
         defaultValue={caption}
         aria-label="Image caption"
         placeholder="Add a caption..."
         className="editor-image-caption editor-image-caption-input"
-        onBlur={(event) => commitCaption(event.target.value)}
+        onFocus={() => setEditingCaption(true)}
+        onBlur={(event) => { setEditingCaption(false); commitCaption(event.target.value); }}
         onKeyDown={(event) => {
           if (event.key === 'Enter') (event.target as HTMLInputElement).blur();
         }}
