@@ -311,7 +311,6 @@ export default function ProjectsPage() {
               <div className="flex max-w-md flex-col items-center gap-3 md:items-start">
                 <h2 className="font-display text-[1.75rem] leading-tight">No projects yet</h2>
                 <p className="text-muted-foreground">Start with one note. Link it to the next one and your first trail takes shape.</p>
-                <Button className="mt-2" disabled={creating} onClick={() => handleCreateProject()}><Plus />Start writing</Button>
               </div>
             </div>
           ) : viewMode === "grid" ? (
