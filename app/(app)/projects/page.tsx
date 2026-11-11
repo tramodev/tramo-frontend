@@ -322,7 +322,8 @@ export default function ProjectsPage() {
                       thumbnailImageUrl={project.thumbnailImageUrl}
                       loading={index < 3 ? "eager" : "lazy"}
                       title={project.title}
-                      className="h-full w-full [&_img]:object-contain [&_img]:object-center"
+                      contain
+                      className="h-full w-full"
                       placeholder={<FolderKanban strokeWidth={1.5} className="h-9 w-9 text-muted-foreground" />}
                     />
                   </CardContent>
