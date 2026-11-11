@@ -547,10 +547,10 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
 
   const handleDeleteItem = (itemId: string) => pendingSaves.current.track(`delete-item:${itemId}`, async () => {
     const next = trails.find(trail => trail.id === activeTrailId)?.itemIds.find(id => id !== itemId);
+    setNavigation(prev => prev.itemId !== itemId ? prev : { ...prev, itemId: next, request: undefined });
     await optimistic(`delete-item:${itemId}`, removeItem(itemId), () => deleteItem(itemId, restoreEpoch, projectId));
     titleSaves.discard(projectId, itemId);
     drop(`title:${itemId}`);
-    setNavigation(prev => prev.itemId !== itemId ? prev : { ...prev, itemId: next, request: undefined });
   }, false);
 
   const handleRenameTrail = (trailId: string, title: string) => {
