@@ -440,14 +440,23 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   };
 
   const handleCreateTrail = (title: string) => pendingSaves.current.track(`create-trail:${title}`, async () => {
-    const newTrail = await createTrail(projectId, title, restoreEpoch);
-    settle(`create-trail:${newTrail.id}`, addTrail(newTrail));
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const key = `create-trail:${tempId}`;
+    pend(key, addTrail({ id: tempId, editorKey: tempId, title, description: '', itemIds: [], steps: [], version: 0, forkedFrom: null }));
+    let newTrail: Trail;
+    try {
+      newTrail = await createTrail(projectId, title, restoreEpoch);
+    } catch (err) {
+      drop(key);
+      throw err;
+    }
+    settle(key, addTrail({ ...newTrail, editorKey: tempId }));
   }, false);
 
   const handleReorderTrails = (trailIds: string[]) => {
     if (reorderingProjectTrails.current) return Promise.resolve();
     const byId = new Map(trails.map(trail => [trail.id, trail]));
-    if (trailIds.length !== trails.length || new Set(trailIds).size !== trails.length || trailIds.some(id => !byId.has(id))) return Promise.resolve();
+    if (trailIds.length !== trails.length || new Set(trailIds).size !== trails.length || trailIds.some(id => !byId.has(id) || id.startsWith('temp-'))) return Promise.resolve();
     reorderingProjectTrails.current = true;
     setTrailOrderError(null);
     pend('trail-order', orderTrails(trailIds));
