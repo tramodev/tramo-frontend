@@ -1,27 +1,40 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
+import Image, { type StaticImageData } from "next/image"
 import { cn } from "@/lib/utils"
 
 export function AuthPoster({
   variant = "trail",
   title,
   subtitle,
+  image,
   className,
 }: {
   variant?: "trail" | "cards"
   title: string
   subtitle: string
+  image?: StaticImageData
   className?: string
 }) {
   return (
     <div
       className={cn(
         "relative m-4 hidden flex-col justify-end overflow-hidden rounded-[28px] p-16 lg:flex lg:sticky lg:top-4 lg:h-[calc(100svh-2rem)] bg-accent text-accent-foreground",
+        image && "text-white",
         className,
       )}
     >
-      {variant === "trail" ? <TrailArt /> : <CardsArt />}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-accent from-40% to-transparent" />
+      {image ? (
+        <>
+          <Image src={image} alt="" fill priority placeholder="blur" sizes="50vw" className="object-cover" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/70 from-10% to-transparent" />
+        </>
+      ) : (
+        <>
+          {variant === "trail" ? <TrailArt /> : <CardsArt />}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-accent from-40% to-transparent" />
+        </>
+      )}
       <div className="relative leading-[1.12]">
         <div className="font-display text-5xl font-normal">{title}</div>
         <div className="mt-1.5 text-xl font-medium">{subtitle}</div>

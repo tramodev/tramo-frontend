@@ -3,6 +3,7 @@
 import type { Metadata } from "next"
 import { LoginForm } from "@/components/auth/login-form"
 import { AuthPoster } from "@/components/auth/auth-poster"
+import heroBg from "@/public/hero-bg.webp"
 
 export const metadata: Metadata = {
   title: "Log in",
@@ -20,7 +21,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <AuthPoster variant="trail" title="Pick up the trail" subtitle="Your notes are where you left them" />
+      <AuthPoster image={heroBg} title="Pick up the trail" subtitle="Your notes are where you left them" />
     </>
   )
 }
