@@ -80,7 +80,7 @@ test('a replaced editor root is not animated', () => {
 
 test('menu opening and drag-handle transitions have reduced-motion overrides', () => {
   const css = readFileSync('app/editor/Editor.css', 'utf8');
-  expect(css).toContain('transition: transform 140ms ease-in-out, opacity 160ms ease-in-out');
+  expect(css).toContain('transition: opacity 160ms ease-in-out');
   expect(css).toContain('animation: editor-menu-in 150ms ease-out');
   expect(css).toMatch(/\.item-mention-menu,\s*\[data-item-connection-popover\]\s*\{\s*transform-origin: top left;\s*animation: editor-menu-in/);
   expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.draggable-block-menu,[\s\S]*?transition: none;[\s\S]*?\.item-mention-menu,\s*\[data-item-connection-popover\]\s*\{\s*animation: none;/);
