@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { Wordmark } from "@/components/layout/logo"
 import { AuthPoster } from "@/components/auth/auth-poster"
+import summitBg from "@/public/summit-bg.webp"
 import { VerifyEmailClient } from "./verify-email-client"
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export default function VerifyEmailPage() {
           </Suspense>
         </div>
       </div>
-      <AuthPoster variant="trail" title="Verifying" subtitle="Just one moment" />
+      <AuthPoster image={summitBg} title="Verifying" subtitle="Just one moment" />
     </>
   )
 }

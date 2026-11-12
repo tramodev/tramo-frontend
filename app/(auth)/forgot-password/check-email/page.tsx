@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { MailCheck } from "lucide-react"
 import { Wordmark } from "@/components/layout/logo"
 import { AuthPoster } from "@/components/auth/auth-poster"
+import ridgeTrailBg from "@/public/ridge-trail-bg.webp"
 
 export const metadata: Metadata = {
   title: "Check your email",
@@ -42,7 +43,7 @@ export default async function ForgotPasswordCheckEmailPage({
           </div>
         </div>
       </div>
-      <AuthPoster variant="cards" title="Almost there" subtitle="Check your inbox for a reset link" />
+      <AuthPoster image={ridgeTrailBg} title="Almost there" subtitle="Check your inbox for a reset link" />
     </>
   )
 }
