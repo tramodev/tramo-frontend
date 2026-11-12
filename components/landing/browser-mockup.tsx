@@ -316,9 +316,9 @@ export const BrowserMockup: React.FC = () => {
               .
             </p>
             <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm text-muted-foreground sm:text-[0.8125rem]">
-              <li>Connect records by association</li>
-              <li>Reuse the same record in different trails</li>
-              <li>Share a path for others to explore</li>
+              <li>Link ideas the way you think of them</li>
+              <li>Use one note in as many trails as you like</li>
+              <li>Share a path others can follow</li>
             </ul>
             </div>
             <div className="mt-8 flex justify-end">

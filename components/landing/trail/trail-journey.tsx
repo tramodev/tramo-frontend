@@ -3,9 +3,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useScroll } from 'motion/react';
+import { motion, useReducedMotion, useScroll } from 'motion/react';
 import { ArrowDown, ArrowRight, Flag } from 'lucide-react';
 import { TrailStage } from '@/components/landing/trail/trail-stage';
+import { useMounted } from '@/hooks/use-mounted';
 import { NOTES, TRAILS } from '@/components/landing/trail/trail-data';
 import { cn } from '@/lib/utils';
 
@@ -91,6 +92,8 @@ function stepLabel(n: number, total: number) {
 
 export function TrailJourney() {
   const { cards, reached: step } = useReached();
+  const reduceMotion = useReducedMotion();
+  const mounted = useMounted();
 
   return (
     <section id={MAIN.id} aria-labelledby="trail-title" className="relative scroll-mt-20 pl-12 md:pl-20">
@@ -100,19 +103,19 @@ export function TrailJourney() {
         <TrailHeader id="trail-title" label={`${MAIN.title} · ${NOTES.length} steps`} title="Now build it, one note at a time.">
           Every project starts the same way: an empty editor. Each step below adds one piece, and the app builds along with you.
         </TrailHeader>
-        <div aria-hidden="true" inert className="mt-8 lg:hidden lg:motion-reduce:block">
+        <div aria-hidden="true" inert className="mt-8 lg:hidden">
           <TrailStage step={0} still />
         </div>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,9fr)] lg:gap-12 lg:motion-reduce:block">
+      <div className="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,9fr)] lg:gap-12">
         <ol>
           {NOTES.map((note, i) => {
             const n = i + 1;
             const last = n === NOTES.length;
             const next = last ? SECOND.id : NOTES[n].id;
             return (
-              <li key={note.id} id={note.id} className="flex scroll-mt-24 flex-col py-6 lg:min-h-[80svh] lg:justify-center lg:motion-reduce:grid lg:motion-reduce:min-h-0 lg:motion-reduce:grid-cols-[minmax(0,5fr)_minmax(0,9fr)] lg:motion-reduce:items-center lg:motion-reduce:gap-12">
+              <li key={note.id} id={note.id} className="flex scroll-mt-24 flex-col py-6 lg:min-h-[80svh] lg:justify-center">
                 <div className="relative">
                   <span aria-hidden="true" className={cn(DOT, 'top-1/2 -translate-y-1/2', step >= n ? FILLED : EMPTY)}>{n}</span>
                   <article
@@ -145,7 +148,7 @@ export function TrailJourney() {
                     )}
                   </article>
                 </div>
-                <div aria-hidden="true" inert className="mt-4 lg:hidden lg:motion-reduce:mt-0 lg:motion-reduce:block">
+                <div aria-hidden="true" inert className="mt-4 lg:hidden">
                   <TrailStage step={n} still />
                 </div>
               </li>
@@ -153,7 +156,7 @@ export function TrailJourney() {
           })}
         </ol>
 
-        <div aria-hidden="true" inert className="hidden lg:block lg:motion-reduce:hidden">
+        <div aria-hidden="true" inert className="hidden lg:block">
           <div className="sticky top-[max(5.5rem,calc(50svh-21.25rem))]">
             <div className="mb-3 flex items-center justify-between gap-4">
               <span className="font-mono text-sm text-muted-foreground">{step === 0 ? 'Empty note · start' : `Step ${step} of ${NOTES.length}`}</span>
@@ -162,7 +165,7 @@ export function TrailJourney() {
               </span>
             </div>
             <div className="h-[min(40rem,calc(100svh-9rem))]">
-              <TrailStage step={step} />
+              <TrailStage step={step} still={mounted && reduceMotion === true} className="h-full" />
             </div>
           </div>
         </div>

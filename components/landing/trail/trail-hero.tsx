@@ -13,7 +13,7 @@ export function TrailHero() {
     <section aria-labelledby="hero-title" className="pt-14 md:pt-20">
       <StaggerGroup>
         <StaggerItem>
-          <h1 id="hero-title" className="landing-display font-display font-normal leading-[1.02] text-[clamp(2.5rem,6vw,5.75rem)]">
+          <h1 id="hero-title" className="landing-display font-display font-normal leading-[1.02] text-[clamp(2.5rem,5vw,3.75rem)]">
             <span className="block">Turn connected, reusable notes</span>{' '}
             <span className="block">into <strong className="font-bold">trails</strong> for learning and explaining.</span>
           </h1>
@@ -21,7 +21,7 @@ export function TrailHero() {
         <StaggerItem>
           <div className="mt-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
             <p className="max-w-[38ch] text-lg leading-relaxed text-muted-foreground md:text-xl">
-              Write a note once, reuse it across trails, and share a clear path through any topic.
+              For studying, teaching and explaining. Write a note once, reuse it across trails, and share a clear path through any topic.
             </p>
             <div className="flex flex-col items-stretch gap-3 sm:items-start md:items-end">
               <div className="flex flex-col gap-3 sm:flex-row">

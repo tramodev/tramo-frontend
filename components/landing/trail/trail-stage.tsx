@@ -46,9 +46,9 @@ import { cn } from '@/lib/utils';
 const SPRING = { type: 'spring', duration: 0.75, bounce: 0.14 } as const;
 const FADE = { duration: 0.45, ease: EASE } as const;
 
-export function TrailStage({ step, still = false }: { step: number; still?: boolean }) {
+export function TrailStage({ step, still = false, className }: { step: number; still?: boolean; className?: string }) {
   return (
-    <div className={cn('@container flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-elevation-2', !still && 'h-full')}>
+    <div className={cn('@container flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-elevation-2', className)}>
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-card px-4">
         <span className="flex shrink-0 gap-1.5">
           <span className="size-2.5 rounded-full bg-input" />
@@ -137,9 +137,9 @@ function AppView({ step, still = false }: { step: number; still?: boolean }) {
               <motion.div
                 key={step === 4 ? 'map' : 'note'}
                 className="h-full"
-                initial={{ opacity: 0, scale: 0.98 }}
+                initial={still ? false : { opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
+                exit={still ? undefined : { opacity: 0, scale: 0.98 }}
                 transition={FADE}
               >
                 {step === 4 ? <MapView /> : <NoteView step={step} still={still} />}
@@ -204,7 +204,7 @@ function NoteView({ step, still }: { step: number; still: boolean }) {
       </div>
       <AnimatePresence initial={false} mode="wait">
         {step === 0 ? (
-          <motion.div key="empty" exit={{ opacity: 0 }} transition={FADE}>
+          <motion.div key="empty" exit={still ? undefined : { opacity: 0 }} transition={FADE}>
             <p className="flex items-center font-display text-[1.75rem] font-medium leading-tight text-muted-foreground">
               <span className="mr-0.5 h-8 w-0.5 bg-foreground motion-safe:animate-pulse" />
               Untitled
@@ -235,9 +235,9 @@ function NoteView({ step, still }: { step: number; still: boolean }) {
               Bush’s Memex is a proposed {selection} for books, records and communications. Introduced in {mention('As We May Think')}, it lets readers connect records and revisit them through {mention('Associative trails')}.
             </p>
             <ul className="mt-3 flex list-disc flex-col gap-1.5 pl-5 text-sm text-muted-foreground">
-              <li>Connect records by association</li>
-              <li>Reuse the same record in different trails</li>
-              <li>Share a path for others to explore</li>
+              <li>Link ideas the way you think of them</li>
+              <li>Use one note in as many trails as you like</li>
+              <li>Share a path others can follow</li>
               {step === 5 && (
                 <li className="text-foreground">
                   Fork it and build on it
