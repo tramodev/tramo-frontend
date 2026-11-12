@@ -184,7 +184,7 @@ export function FreeAndOpenTrail({ steps }: { steps: React.ReactNode[] }) {
       <Rail className="top-28" />
       <div className="relative pb-6">
         <TrailHeader id="free-and-open-title" label={`${SECOND.title} · ${steps.length} steps`} title="Free, and built in the open.">
-          Tramo is built in the open by one person, and the core is free for everyone.
+          Open source, and the core is free for everyone.
         </TrailHeader>
       </div>
       <ol>

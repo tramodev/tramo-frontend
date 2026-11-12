@@ -11,7 +11,7 @@ const LINKS = [
 export function OpenSourceSection() {
   return <section id="open">
     <FadeUp className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
-      <h2 className="landing-display max-w-[18ch] font-display text-[2rem] font-medium leading-[1.1] sm:text-[2.5rem]">Built by one person, in the open.</h2>
+      <h2 className="landing-display max-w-[18ch] font-display text-[2rem] font-medium leading-[1.1] sm:text-[2.5rem]">Built by one person.</h2>
       <div>
         <p className="text-[1.0625rem] leading-relaxed text-muted-foreground">
           Tramo is a personal project by Ezequiel Martino, inspired by Vannevar Bush’s 1945 essay <i>As We May Think</i>. The code is open source under AGPL-3.0, and the roadmap and changelog are public.
