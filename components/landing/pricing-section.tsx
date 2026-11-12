@@ -9,6 +9,7 @@ const PATREON_URL = 'https://www.patreon.com/tramodev';
 
 const FREE_FEATURES = [
   'Trails & map',
+  'Real-time collaboration',
   'Fork',
   'Unlimited projects',
   'Unlimited publishing',

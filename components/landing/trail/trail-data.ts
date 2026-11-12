@@ -32,7 +32,7 @@ export const NOTES = [
   {
     id: 'note-6',
     title: 'Keep it private, or publish it.',
-    body: 'Projects are private by default. If you want to share one, publishing has its own page: preview your card on Explore, add a description and tags, then publish a snapshot. Later edits stay private until you publish an update.',
+    body: 'Projects are private by default. When you publish, readers see a snapshot on Explore, and later edits stay private until you publish an update.',
   },
   {
     id: 'community',
