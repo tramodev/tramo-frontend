@@ -21,7 +21,7 @@ export function TrailHero() {
         <StaggerItem>
           <div className="mt-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
             <p className="max-w-[38ch] text-lg leading-relaxed text-muted-foreground md:text-xl">
-              Write a note once, reuse it across trails, and share a clear path through any topic.
+              For studying, teaching and explaining. Write a note once, reuse it across trails, and share a clear path through any topic.
             </p>
             <div className="flex flex-col items-stretch gap-3 sm:items-start md:items-end">
               <div className="flex flex-col gap-3 sm:flex-row">

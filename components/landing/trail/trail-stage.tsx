@@ -235,9 +235,9 @@ function NoteView({ step, still }: { step: number; still: boolean }) {
               Bush’s Memex is a proposed {selection} for books, records and communications. Introduced in {mention('As We May Think')}, it lets readers connect records and revisit them through {mention('Associative trails')}.
             </p>
             <ul className="mt-3 flex list-disc flex-col gap-1.5 pl-5 text-sm text-muted-foreground">
-              <li>Connect records by association</li>
-              <li>Reuse the same record in different trails</li>
-              <li>Share a path for others to explore</li>
+              <li>Link ideas the way you think of them</li>
+              <li>Use one note in as many trails as you like</li>
+              <li>Share a path others can follow</li>
               {step === 5 && (
                 <li className="text-foreground">
                   Fork it and build on it
