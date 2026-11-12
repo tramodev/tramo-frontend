@@ -3,6 +3,7 @@
 import type { Metadata } from "next"
 import { BirthDateForm } from "@/components/auth/birth-date-form"
 import { AuthPoster } from "@/components/auth/auth-poster"
+import trailheadBg from "@/public/trailhead-bg.webp"
 
 export const metadata: Metadata = {
   title: "One more step",
@@ -19,7 +20,7 @@ export default function BirthDateOnboardingPage() {
           </div>
         </div>
       </div>
-      <AuthPoster variant="cards" title="Almost there" subtitle="Just one more detail before you're in" />
+      <AuthPoster image={trailheadBg} title="Almost there" subtitle="Just one more detail before you're in" />
     </>
   )
 }

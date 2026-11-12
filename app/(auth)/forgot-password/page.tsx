@@ -3,6 +3,7 @@
 import type { Metadata } from "next"
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
 import { AuthPoster } from "@/components/auth/auth-poster"
+import ridgeTrailBg from "@/public/ridge-trail-bg.webp"
 import { Wordmark } from "@/components/layout/logo"
 
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
       </div>
-      <AuthPoster variant="trail" title="Happens to everyone" subtitle="We'll get you back in" />
+      <AuthPoster image={ridgeTrailBg} title="Happens to everyone" subtitle="We'll get you back in" />
     </>
   )
 }

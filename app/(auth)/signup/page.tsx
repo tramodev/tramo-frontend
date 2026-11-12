@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import Script from "next/script"
 import { SignupForm } from "@/components/auth/signup-form"
 import { AuthPoster } from "@/components/auth/auth-poster"
+import trailheadBg from "@/public/trailhead-bg.webp"
 
 export const metadata: Metadata = {
   title: "Sign up",
@@ -25,7 +26,7 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <AuthPoster variant="cards" title="Every idea finds its place" subtitle="Collect, connect, and retrace your thinking" />
+      <AuthPoster image={trailheadBg} title="Every idea finds its place" subtitle="Collect, connect, and retrace your thinking" />
     </>
   )
 }

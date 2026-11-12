@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { MailCheck } from "lucide-react"
 import { Wordmark } from "@/components/layout/logo"
 import { AuthPoster } from "@/components/auth/auth-poster"
+import trailheadBg from "@/public/trailhead-bg.webp"
 import { ResendVerificationButton } from "@/components/auth/resend-verification-button"
 
 export const metadata: Metadata = {
@@ -41,7 +42,7 @@ export default async function CheckEmailPage({
           </div>
         </div>
       </div>
-      <AuthPoster variant="cards" title="Almost there" subtitle="Check your inbox to confirm your account" />
+      <AuthPoster image={trailheadBg} title="Almost there" subtitle="Check your inbox to confirm your account" />
     </>
   )
 }

@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { Wordmark } from "@/components/layout/logo"
 import { AuthPoster } from "@/components/auth/auth-poster"
+import ridgeTrailBg from "@/public/ridge-trail-bg.webp"
 import { ResetPasswordClient } from "./reset-password-client"
 
 export const metadata: Metadata = {
@@ -22,7 +23,7 @@ export default function ResetPasswordPage() {
           </Suspense>
         </div>
       </div>
-      <AuthPoster variant="trail" title="New start" subtitle="Set a new password" />
+      <AuthPoster image={ridgeTrailBg} title="New start" subtitle="Set a new password" />
     </>
   )
 }

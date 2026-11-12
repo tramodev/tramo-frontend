@@ -60,6 +60,8 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
+  --color-scrim: var(--scrim);
+  --color-scrim-foreground: var(--scrim-foreground);
   --color-tertiary: var(--tertiary);
   --color-tertiary-foreground: var(--tertiary-foreground);
   --color-muted-foreground: var(--muted-foreground);
@@ -88,6 +90,8 @@
 
 :root {
   --radius: 1rem;
+  --scrim: #000000;
+  --scrim-foreground: #FFFFFF;
   --background: #FFFFFF;
   --foreground: #111111;
   --card: #FAFAFA;
