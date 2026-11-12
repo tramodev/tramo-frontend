@@ -76,7 +76,7 @@ export function LoginForm({
       )}
       <div>
         <h1 className="font-display text-[2.25rem] font-normal">Log in</h1>
-        <p className="mt-3 text-[0.9375rem] leading-6 text-muted-foreground">
+        <p className="mt-3 text-pretty text-[0.9375rem] leading-6 text-muted-foreground">
           Enter your username or email below to access your account.
         </p>
       </div>
