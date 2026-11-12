@@ -80,8 +80,7 @@
   color: var(--muted-foreground);
   cursor: grab;
   opacity: 0;
-  will-change: transform, opacity;
-  transition: transform 140ms ease-in-out, opacity 160ms ease-in-out;
+  transition: opacity 160ms ease-in-out;
 }
 
 .draggable-block-menu:hover {
