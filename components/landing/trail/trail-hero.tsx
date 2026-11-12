@@ -13,7 +13,7 @@ export function TrailHero() {
     <section aria-labelledby="hero-title" className="pt-14 md:pt-20">
       <StaggerGroup>
         <StaggerItem>
-          <h1 id="hero-title" className="landing-display font-display font-normal leading-[1.02] text-[clamp(2.5rem,6vw,5.75rem)]">
+          <h1 id="hero-title" className="landing-display font-display font-normal leading-[1.02] text-[clamp(2.5rem,5vw,3.75rem)]">
             <span className="block">Turn connected, reusable notes</span>{' '}
             <span className="block">into <strong className="font-bold">trails</strong> for learning and explaining.</span>
           </h1>
