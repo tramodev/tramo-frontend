@@ -20,7 +20,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <AuthPoster variant="trail" title="Find your path" subtitle="One idea at a time, until it all connects" />
+      <AuthPoster variant="trail" title="Pick up the trail" subtitle="Your notes are where you left them" />
     </>
   )
 }
