@@ -107,7 +107,7 @@ test('landing mockup uses an accessible static image without importing the graph
     'next/image': { default: 'Image' },
   })[name] ?? {});
   const images = flatten(mockup.BrowserMockup()).filter(node => node.type === 'Image');
-  expect(images.map(image => image.props.src)).toEqual(['/landing-map-light.png', '/landing-map-dark.png']);
+  expect(images.map(image => image.props.src)).toEqual(['/landing-map-light.webp', '/landing-map-dark.webp']);
   expect(images[0].props.className).toContain('dark:hidden');
   expect(images[1].props.className).toContain('dark:block');
   expect(images.every(image => image.props.alt)).toBe(true);

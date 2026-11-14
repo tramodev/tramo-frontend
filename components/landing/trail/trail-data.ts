@@ -72,7 +72,7 @@ export const YOUR_PROJECT: MiniProject = {
   owner: 'ana',
   date: 'Nov 11',
   tags: ['history', 'knowledge'],
-  thumbnail: '/memex-example.png',
+  thumbnail: '/memex-example.webp',
   stats: { votes: 24, views: 312, comments: 5 },
 };
 
