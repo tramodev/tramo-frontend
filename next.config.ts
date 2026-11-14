@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       protocol: "https" as const,
       hostname: new URL(origin).hostname,
     })),
-    formats: ["image/avif", "image/webp"],
+    formats: ["image/webp"],
   },
   async redirects() {
     return [{ source: "/projects/:projectId/share", destination: "/projects/:projectId/publish", permanent: true }];
