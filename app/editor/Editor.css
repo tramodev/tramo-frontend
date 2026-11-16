@@ -1358,6 +1358,14 @@ pre::-webkit-scrollbar-thumb {
   min-height: 0;
 }
 
+.trail-item-editor .pending-note.fresh {
+  min-height: 0;
+}
+
+.trail-item-editor:has(.editor-input .note-title) > .pending-note.fresh {
+  display: none;
+}
+
 .item-mention-menu {
   position: fixed;
   z-index: 60;
