@@ -34,7 +34,9 @@ export function rememberCaret(editor: LexicalEditor, itemId: string) {
     if (!$isRangeSelection(selection)) return;
     const path: number[] = [];
     for (let node: LexicalNode | null = selection.focus.getNode(); node && !$isRootNode(node); node = node.getParent()) path.unshift(node.getIndexWithinParent());
-    carets.set(itemId, { path, offset: selection.focus.offset });
+    const caret = { path, offset: selection.focus.offset };
+    carets.set(itemId, caret);
+    document.addEventListener('focusin', () => { if (carets.get(itemId) === caret) carets.delete(itemId); }, { capture: true, once: true });
   });
 }
 
@@ -60,7 +62,7 @@ function focusMovedAway(editor: LexicalEditor) {
 function restoreCaret(editor: LexicalEditor, itemId: string) {
   const caret = carets.get(itemId);
   carets.delete(itemId);
-  if (!caret || focusMovedAway(editor)) return;
+  if (!caret) return;
   editor.update(() => {
     let node: LexicalNode | null = $getRoot();
     for (const index of caret.path) node = $isElementNode(node) ? node.getChildAtIndex(index) : null;
