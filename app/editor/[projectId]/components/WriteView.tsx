@@ -635,7 +635,21 @@ export function WriteView(props: WriteViewProps) {
               }
               return <section key={editorKey} tabIndex={-1} data-item-id={step.itemId} data-mounted={mounted} aria-label={`Step ${index + 1}: ${stepItem.title}`}
                 style={mounted ? undefined : { height: heights.get(stepItem.id) ?? 240, overflow: 'hidden' }}
-                ref={(element) => { if (element) slotRefs.current.set(step.itemId, element); else slotRefs.current.delete(step.itemId); }}>
+                ref={(element) => {
+                  if (!element) {
+                    slotRefs.current.delete(step.itemId);
+                    return;
+                  }
+                  slotRefs.current.set(step.itemId, element);
+                  if (step.itemId.startsWith('temp-') && !element.dataset.entered) {
+                    element.dataset.entered = 'true';
+                    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                    element.animate(still
+                      ? [{ opacity: 0 }, { opacity: 1 }]
+                      : [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'translateY(0)' }],
+                    { duration: still ? 150 : 260, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+                  }
+                }}>
                 {index > 0 && trail && <div className="trail-divider mt-4">
                   <TrailConnector />
                 </div>}
