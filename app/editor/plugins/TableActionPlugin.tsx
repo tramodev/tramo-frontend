@@ -5,7 +5,7 @@
 import { useEffect, useReducer, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getNodeByKey, $getSelection, $isRangeSelection } from 'lexical';
+import { $getNodeByKey, $getSelection, $isRangeSelection, type ElementFormatType } from 'lexical';
 import {
   $deleteTableColumnAtSelection,
   $deleteTableRowAtSelection,
@@ -60,10 +60,12 @@ export default function TableActionPlugin() {
   const elementRect = element.getBoundingClientRect();
 
   const run = (action: () => void) => editor.update(action);
-  const deleteTable = () => {
+  const tableNode = () => {
     const cell = $getNodeByKey(cellKey);
-    if (cell) $getTableNodeFromLexicalNodeOrThrow(cell).remove();
+    return cell ? $getTableNodeFromLexicalNodeOrThrow(cell) : null;
   };
+  const deleteTable = () => tableNode()?.remove();
+  const alignTable = (format: ElementFormatType) => tableNode()?.setFormat(format);
 
   return createPortal(
     <DropdownMenu>
@@ -79,6 +81,10 @@ export default function TableActionPlugin() {
         <DropdownMenuItem onSelect={() => run(() => $insertTableRowAtSelection(true))}>Insert row below</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => run(() => $insertTableColumnAtSelection(false))}>Insert column left</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => run(() => $insertTableColumnAtSelection(true))}>Insert column right</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => run(() => alignTable(''))}>Align table left</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => run(() => alignTable('center'))}>Align table center</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => run(() => alignTable('right'))}>Align table right</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => run(() => $deleteTableRowAtSelection())}>Delete row</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => run(() => $deleteTableColumnAtSelection())}>Delete column</DropdownMenuItem>

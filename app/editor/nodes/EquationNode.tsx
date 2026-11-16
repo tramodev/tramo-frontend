@@ -7,6 +7,7 @@ import type {
   DOMConversionOutput,
   DOMExportOutput,
   EditorConfig,
+  ElementFormatType,
   LexicalNode,
   NodeKey,
   SerializedLexicalNode,
@@ -27,37 +28,43 @@ export type SerializedEquationNode = Spread<
   {
     equation: unknown;
     inline: boolean;
+    format?: unknown;
   },
   SerializedLexicalNode
 >;
 
+const ALIGNS = new Set(['left', 'center', 'right']);
+
 export class EquationNode extends DecoratorNode<React.ReactElement> {
   __equation: unknown;
   __inline: boolean;
+  __format: ElementFormatType;
 
   static getType(): string {
     return 'equation';
   }
 
   static clone(node: EquationNode): EquationNode {
-    return new EquationNode(node.__equation, node.__inline, node.__key);
+    return new EquationNode(node.__equation, node.__inline, node.__key, node.__format);
   }
 
   static importJSON(serializedNode: SerializedEquationNode): EquationNode {
-    const { equation, inline } = serializedNode;
-    return $applyNodeReplacement(new EquationNode(equation, inline === true));
+    const { equation, inline, format } = serializedNode;
+    return $applyNodeReplacement(new EquationNode(equation, inline === true, undefined, ALIGNS.has(format as string) ? format as ElementFormatType : ''));
   }
 
-  constructor(equation: unknown, inline?: boolean, key?: NodeKey) {
+  constructor(equation: unknown, inline?: boolean, key?: NodeKey, format: ElementFormatType = '') {
     super(key);
     this.__equation = equation;
     this.__inline = inline === true;
+    this.__format = format;
   }
 
   exportJSON(): SerializedEquationNode {
     return {
       equation: this.__equation,
       inline: this.__inline,
+      format: this.__format,
       type: 'equation',
       version: 1,
     };
@@ -97,11 +104,22 @@ export class EquationNode extends DecoratorNode<React.ReactElement> {
     if (className !== undefined) {
       element.className = className;
     }
+    if (!this.__inline) element.style.textAlign = this.__format;
     return element;
   }
 
-  updateDOM(prevNode: EquationNode): boolean {
-    return prevNode.__inline !== this.__inline;
+  updateDOM(prevNode: EquationNode, dom: HTMLElement): boolean {
+    if (prevNode.__inline !== this.__inline) return true;
+    if (!this.__inline) dom.style.textAlign = this.__format;
+    return false;
+  }
+
+  getFormatType(): ElementFormatType {
+    return this.__format;
+  }
+
+  setFormat(format: ElementFormatType): void {
+    this.getWritable().__format = format;
   }
 
   isInline(): boolean {

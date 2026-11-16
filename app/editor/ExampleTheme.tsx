@@ -64,6 +64,7 @@ const ExampleTheme = {
   placeholder: 'editor-placeholder',
   quote: 'editor-quote',
   table: 'editor-table',
+  tableAlignment: { center: 'editor-table-center', right: 'editor-table-right' },
   tableCell: 'editor-table-cell',
   tableCellHeader: 'editor-table-cell-header',
   tableCellSelected: 'editor-table-cell-selected',

@@ -35,3 +35,15 @@ test.each(nodes.map(node => [node.getType(), node]))('%s can be constructed with
   }, { discrete: true });
   expect(result).toEqual({ type: Node.getType(), json: Node.getType() });
 });
+
+test('block equations keep a valid alignment and drop anything else', () => {
+  const Equation = nodes[1];
+  const editor = lexical.createEditor({ namespace: 'test', nodes, onError: error => { throw error; } });
+  const formats = [];
+  editor.update(() => {
+    for (const format of ['right', 'justify', 'javascript:alert(1)', undefined]) {
+      formats.push(Equation.importJSON({ type: 'equation', version: 1, equation: 'x', inline: false, format }).exportJSON().format);
+    }
+  }, { discrete: true });
+  expect(formats).toEqual(['right', '', '', '']);
+});
