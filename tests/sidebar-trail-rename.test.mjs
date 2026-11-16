@@ -14,6 +14,7 @@ function setup({ trails = [{ id: 'trail', title: 'Original', itemIds: [] }], ite
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, {
     exports,
+    requestAnimationFrame: () => 0,
     require: name => ({
       react: {
         useState: value => {
@@ -65,9 +66,8 @@ test('a note can be moved by menu or dropped onto an empty trail header', () => 
     items: { note: { id: 'note', title: 'Note' } },
     trails: [{ id: 'source', title: 'Source', itemIds: ['note'] }, { id: 'target', title: 'Target', itemIds: [] }],
   });
-  render().find(node => node.type === 'DropdownMenuItem' && node.props.children.includes('Move to another trail')).props.onSelect();
-  const picker = render().find(node => node.type?.name === 'AddToTrailSelect');
-  expect(Array.from(picker.props.trails, trail => trail.id)).toEqual(['target']);
+  const picker = render().find(node => node.type?.name === 'PickerSubmenu' && node.props.label === 'Move to another trail');
+  expect(Array.from(picker.props.options, option => option.id)).toEqual(['target']);
   picker.props.onPick('target');
   expect(moves).toEqual([['source', 'target', 'note', undefined]]);
   const row = render().find(node => node.props.draggable && node.props.className?.includes('group/item'));

@@ -1,6 +1,6 @@
 // Copyright (C) 2026 Ezequiel Martino
 // SPDX-License-Identifier: AGPL-3.0-only
-import { ArrowDown, ArrowUp, ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from "lucide-react"
+import { ArrowDown, ArrowRightLeft, ArrowUp, ChevronRight, GitBranch, Link2, ListPlus, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Mark } from "@/components/layout/logo"
@@ -18,7 +18,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SharedNoteIndicator } from "@/components/editor/shared-note-indicator"
@@ -93,37 +93,46 @@ function InlineInput({
   );
 }
 
-function AddToTrailSelect({
-  trails,
+function PickerSubmenu({
+  label,
+  icon: Icon,
+  options,
+  disabled,
   onPick,
-  onCancel,
 }: {
-  trails: Trail[];
-  onPick: (trailId: string) => void;
-  onCancel: () => void;
+  label: string;
+  icon: typeof ListPlus;
+  options: { id: string; key: string; title: string }[];
+  disabled?: boolean;
+  onPick: (id: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 px-2 py-1">
-      <select
-        autoFocus
-        className="h-7 flex-1 rounded-md border border-input bg-background px-1 text-xs"
-        defaultValue=""
-        onChange={(e) => {
-          const trailId = e.target.value;
-          if (trailId) onPick(trailId);
-          onCancel();
-        }}
-      >
-        <option value="" disabled>Add to trail...</option>
-        {trails.map((t) => (
-          <option key={t.id} value={t.id}>{t.title}</option>
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger disabled={disabled}>
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="max-h-72 max-w-64 overflow-y-auto">
+        {options.map((option) => (
+          <DropdownMenuItem key={option.key} onSelect={() => onPick(option.id)}>
+            <span className="truncate">{option.title}</span>
+          </DropdownMenuItem>
         ))}
-      </select>
-      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={onCancel}>
-        Cancel
-      </Button>
-    </div>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   );
+}
+
+const trailOptions = (trails: Trail[]) => trails.map((trail) => ({ id: trail.id, key: trail.editorKey ?? trail.id, title: trail.title || "Untitled trail" }));
+
+function flashNote(itemId: string) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll<HTMLElement>(`[data-sidebar-note="${CSS.escape(itemId)}"]`).forEach((row) => {
+      row.classList.remove("note-link-flash");
+      void row.offsetWidth;
+      row.classList.add("note-link-flash");
+    });
+  }));
 }
 
 export function SidebarCustom({
@@ -164,10 +173,6 @@ export function SidebarCustom({
   const [newLooseTitle, setNewLooseTitle] = useState("");
   const [creatingItemTrailId, setCreatingItemTrailId] = useState<string | null>(null);
   const [newItemTitle, setNewItemTitle] = useState("");
-  const [linkingTrailId, setLinkingTrailId] = useState<string | null>(null);
-  const [linkSelection, setLinkSelection] = useState("");
-  const [addToTrailItemId, setAddToTrailItemId] = useState<string | null>(null);
-  const [movingItem, setMovingItem] = useState<{ itemId: string; trailId: string } | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
 
   const [editingTrailId, setEditingTrailId] = useState<string | null>(null);
@@ -198,9 +203,9 @@ export function SidebarCustom({
   const moveItem = (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => {
     setDrag(null);
     setDropTrailId(null);
-    setMovingItem(null);
     setMoveError(null);
     void onMoveItemToTrail(sourceId, targetId, itemId, targetIndex).catch(error => setMoveError(error.message));
+    flashNote(itemId);
   };
 
   const reorderItem = (trail: Trail, itemId: string, to: number) => {
@@ -290,16 +295,9 @@ export function SidebarCustom({
     setCreatingItemTrailId(null);
   };
 
-  const startLinkingItem = (trailId: string) => {
-    setLinkingTrailId(trailId);
-    setLinkSelection("");
-  };
-
-  const submitLinkItem = (trailId: string) => {
-    if (linkingTrailId !== trailId || !linkSelection) return;
-    onLinkItemToTrail(trailId, linkSelection);
-    setLinkingTrailId(null);
-    setLinkSelection("");
+  const linkItem = (trailId: string, itemId: string) => {
+    onLinkItemToTrail(trailId, itemId);
+    flashNote(itemId);
   };
 
   const startEditTrail = (trail: Trail) => {
@@ -596,10 +594,9 @@ export function SidebarCustom({
                                           Move trail down
                                         </DropdownMenuItem>
                                         {linkableItems.length > 0 && (
-                                          <DropdownMenuItem disabled={draft} onSelect={() => startLinkingItem(trail.id)}>
-                                            <Link2 className="h-3.5 w-3.5" />
-                                            Add existing note
-                                          </DropdownMenuItem>
+                                          <PickerSubmenu label="Add existing note" icon={Link2} disabled={draft}
+                                            options={linkableItems.map((note) => ({ id: note.id, key: note.editorKey ?? note.id, title: note.title || "Untitled note" }))}
+                                            onPick={(noteId) => linkItem(trail.id, noteId)} />
                                         )}
                                         <DropdownMenuItem disabled={draft} onSelect={() => confirmDeleteTrail(trail)}>
                                           <Trash2 className="h-3.5 w-3.5" />
@@ -614,41 +611,6 @@ export function SidebarCustom({
                                 <div className="flex items-center gap-1 px-2 pb-0.5 text-[0.65625rem] italic text-muted-foreground">
                                   <GitBranch className="h-3 w-3 shrink-0" />
                                   forked from {trails.find((t) => t.id === trail.forkedFrom)?.title ?? "another trail"}
-                                </div>
-                              )}
-                              {linkingTrailId === trail.id && (
-                                <div className="flex items-center gap-1 px-2 py-1">
-                                  <select
-                                    autoFocus
-                                    className="h-7 flex-1 rounded-md border border-input bg-background px-1 text-xs"
-                                    value={linkSelection}
-                                    onChange={(e) => setLinkSelection(e.target.value)}
-                                  >
-                                    <option value="" disabled>
-                                      Choose a note...
-                                    </option>
-                                    {linkableItems.map((item) => (
-                                      <option key={item.editorKey ?? item.id} value={item.id}>
-                                        {item.title}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <Button
-                                    size="sm"
-                                    className="h-7 px-2"
-                                    disabled={!linkSelection}
-                                    onClick={() => submitLinkItem(trail.id)}
-                                  >
-                                    Add note
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2"
-                                    onClick={() => setLinkingTrailId(null)}
-                                  >
-                                    Cancel
-                                  </Button>
                                 </div>
                               )}
                               <CollapsibleContent>
@@ -704,6 +666,7 @@ export function SidebarCustom({
                                         ) : (
                                           <div
                                             data-active={selectedItemId === item.id && activeTrailId === trail.id}
+                                            data-sidebar-note={item.id}
                                             className="flex items-center hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent"
                                           >
                                             <SidebarMenuSubButton
@@ -746,16 +709,13 @@ export function SidebarCustom({
                                                   Move note down
                                                 </DropdownMenuItem>
                                                 {trails.length > 1 && (
-                                                  <DropdownMenuItem disabled={draft} onSelect={() => setMovingItem({ itemId: item.id, trailId: trail.id })}>
-                                                    <ListPlus className="h-3.5 w-3.5" />
-                                                    Move to another trail
-                                                  </DropdownMenuItem>
+                                                  <PickerSubmenu label="Move to another trail" icon={ArrowRightLeft} disabled={draft}
+                                                    options={trailOptions(trails.filter((candidate) => candidate.id !== trail.id))}
+                                                    onPick={(targetId) => moveItem(trail.id, targetId, item.id)} />
                                                 )}
                                                 {addableTrails.length > 0 && (
-                                                  <DropdownMenuItem disabled={draft} onSelect={() => setAddToTrailItemId(item.id)}>
-                                                    <ListPlus className="h-3.5 w-3.5" />
-                                                    Add to another trail
-                                                  </DropdownMenuItem>
+                                                  <PickerSubmenu label="Add to another trail" icon={ListPlus} disabled={draft}
+                                                    options={trailOptions(addableTrails)} onPick={(targetId) => linkItem(targetId, item.id)} />
                                                 )}
                                                 <DropdownMenuItem disabled={draft} onSelect={() => setPendingConfirm({
                                                   title: `Remove "${item.title}" from this trail?`,
@@ -773,20 +733,6 @@ export function SidebarCustom({
                                               </DropdownMenuContent>
                                             </DropdownMenu>}
                                           </div>
-                                        )}
-                                        {addToTrailItemId === item.id && (
-                                          <AddToTrailSelect
-                                            trails={addableTrails}
-                                            onPick={(trailId) => onLinkItemToTrail(trailId, item.id)}
-                                            onCancel={() => setAddToTrailItemId(null)}
-                                          />
-                                        )}
-                                        {movingItem?.itemId === item.id && movingItem.trailId === trail.id && (
-                                          <AddToTrailSelect
-                                            trails={trails.filter(candidate => candidate.id !== trail.id)}
-                                            onPick={targetId => moveItem(trail.id, targetId, item.id)}
-                                            onCancel={() => setMovingItem(null)}
-                                          />
                                         )}
                                       </SidebarMenuSubItem>
                                     );
@@ -874,6 +820,7 @@ export function SidebarCustom({
                           ) : (
                             <div
                               data-active={isActive}
+                              data-sidebar-note={item.id}
                               className="-ml-4 -mr-2 flex items-center hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent"
                             >
                               <SidebarMenuButton
@@ -909,10 +856,8 @@ export function SidebarCustom({
                                     Rename note
                                   </DropdownMenuItem>
                                   {addableTrails.length > 0 && (
-                                    <DropdownMenuItem disabled={draft} onSelect={() => setAddToTrailItemId(item.id)}>
-                                      <ListPlus className="h-3.5 w-3.5" />
-                                      Add to a trail
-                                    </DropdownMenuItem>
+                                    <PickerSubmenu label="Add to a trail" icon={ListPlus} disabled={draft}
+                                      options={trailOptions(addableTrails)} onPick={(targetId) => linkItem(targetId, item.id)} />
                                   )}
                                   <DropdownMenuItem disabled={draft} onSelect={() => confirmDeleteItem(item)}>
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -921,13 +866,6 @@ export function SidebarCustom({
                                 </DropdownMenuContent>
                               </DropdownMenu>}
                             </div>
-                          )}
-                          {addToTrailItemId === item.id && (
-                            <AddToTrailSelect
-                              trails={addableTrails}
-                              onPick={(trailId) => onLinkItemToTrail(trailId, item.id)}
-                              onCancel={() => setAddToTrailItemId(null)}
-                            />
                           )}
                         </SidebarMenuItem>
                         );
