@@ -215,6 +215,16 @@ test('deleting the open loose note opens another note instead of the empty state
   expect(s.render().items['4']).toBeUndefined();
 });
 
+test('a snapshot that arrives before the create response does not show the note twice', async () => {
+  const s = await setup();
+  const pending = s.render().handleCreateItem('10', 'Fresh');
+  s.receive(snapshot(1, { items: [['1', 'One'], ['2', 'Two'], ['3', 'Three'], ['7', 'Fresh']], trails: [['10', 'Trail', ['1', '2', '3', '7']]] }));
+  expect(s.order()).toHaveLength(4);
+  await s.resolve('createItem', { id: '7', title: 'Fresh', titleAlign: 'center', unfiled: false, content: '' });
+  await pending;
+  expect(s.order()).toEqual(['1', '2', '3', '7']);
+});
+
 test('a restore elsewhere reloads the project instead of mixing epochs', async () => {
   const s = await setup();
   s.receive(snapshot(5, { restoreEpoch: 1, items: [['9', 'Restored']], trails: [['10', 'Trail', ['9']]] }));

@@ -174,6 +174,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const latestStructure = useRef<unknown>(null);
   const receiveStructure = useCallback((raw: unknown) => {
     if (raw !== undefined) latestStructure.current = raw;
+    if (opsRef.current.some(op => op.key.startsWith('create:') && !op.done)) return;
     const next = parseStructure(latestStructure.current);
     const current = remoteRef.current;
     if (!next || current.version < 0 || next.version <= current.version) return;
@@ -537,12 +538,14 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     } catch (err) {
       drop(key);
       setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: undefined, request: undefined } : prev);
+      receiveStructure(undefined);
       throw err;
     }
     setEditorKeys(previous => ({ ...previous, [newItem.id]: tempId }));
     setContents(previous => ({ ...previous, [newItem.id]: previous[tempId] ?? loadedContent(newItem.content ?? '') }));
     settle(key, addItem(metaOf(newItem), trailId));
     setNavigation(prev => prev.itemId === tempId ? { ...prev, itemId: newItem.id, request: prev.request ? { ...prev.request, itemId: newItem.id } : undefined } : prev);
+    receiveStructure(undefined);
   };
 
   const handleCreateItem = (trailId: string, title: string) => pendingSaves.current.track(`create-item:${trailId}:${title}`,
