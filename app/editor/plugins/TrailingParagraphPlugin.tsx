@@ -7,11 +7,14 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { mergeRegister } from '@lexical/utils';
 import {
   $createParagraphNode,
+  $createRangeSelectionFromDom,
   $getRoot,
   $getSelection,
   $isElementNode,
+  $isNodeSelection,
   $isParagraphNode,
   $isRangeSelection,
+  $setSelection,
   CLICK_COMMAND,
   COMMAND_PRIORITY_LOW,
   COMMAND_PRIORITY_NORMAL,
@@ -89,6 +92,19 @@ export default function TrailingParagraphPlugin(): null {
             return false;
           }
           return $appendTrailingParagraph();
+        },
+        COMMAND_PRIORITY_LOW,
+      ),
+      editor.registerCommand(
+        CLICK_COMMAND,
+        (event: MouseEvent) => {
+          const domSelection = window.getSelection();
+          if (!$isNodeSelection($getSelection()) || !(event.target instanceof Element) || event.target.closest('[data-lexical-decorator]')
+            || !domSelection?.anchorNode || !editor.getRootElement()?.contains(domSelection.anchorNode)) return false;
+          const selection = $createRangeSelectionFromDom(domSelection, editor);
+          if (selection === null) return false;
+          $setSelection(selection);
+          return true;
         },
         COMMAND_PRIORITY_LOW,
       ),
