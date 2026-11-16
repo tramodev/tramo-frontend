@@ -121,6 +121,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
   const drop = useCallback((key: string) => setOps(previous => previous.filter(op => op.key !== key)), [setOps]);
   const settle = useCallback((key: string, apply?: StructureOp) => {
     const token = {};
+    const version = remoteRef.current.version;
     setOps(previous => {
       const existing = previous.find(op => op.key === key);
       const next = { key, apply: apply ?? existing?.apply, done: token };
@@ -129,8 +130,12 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       if (absorbed(op, remoteRef.current)) return previous.filter(other => other.key !== key);
       return existing ? previous.map(other => other.key === key ? op : other) : [...previous, op];
     });
-    setTimeout(() => setOps(previous => previous.filter(op => op.done !== token)), SETTLED_OP_MS);
-  }, [setOps]);
+    setTimeout(() => {
+      const expired = opsRef.current.filter(op => op.done === token);
+      if (remoteRef.current.version === version) setRemote(remote => expired.reduce((next, op) => op.apply(next), remote));
+      setOps(previous => previous.filter(op => op.done !== token));
+    }, SETTLED_OP_MS);
+  }, [setOps, setRemote]);
   const optimistic = useCallback(async (key: string, apply: StructureOp, run: () => Promise<unknown>, keepOnFailure = false) => {
     pend(key, apply);
     try {

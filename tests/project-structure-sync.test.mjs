@@ -148,6 +148,18 @@ test('a confirmed change overridden elsewhere gives way after the grace period',
   expect(s.render().trails[0].title).toBe('Theirs');
 });
 
+test('a confirmed note stays after the grace period when no snapshot arrives', async () => {
+  const s = await setup();
+  const pending = s.render().handleCreateItem('10', 'Fresh');
+  await s.resolve('createItem', { id: '7', title: 'Fresh', titleAlign: 'center', unfiled: false, content: '' });
+  await pending;
+  s.expire();
+  expect(s.order()).toEqual(['1', '2', '3', '7']);
+  expect(s.render().items['7'].title).toBe('Fresh');
+  s.receive(snapshot(1, { items: [['1', 'One'], ['2', 'Two'], ['3', 'Three'], ['7', 'Fresh']], trails: [['10', 'Trail', ['1', '2', '3', '7']]] }));
+  expect(s.order()).toEqual(['1', '2', '3', '7']);
+});
+
 test('a created note keeps its editor key and content when the server confirms it', async () => {
   const s = await setup();
   const pending = s.render().handleCreateItem('10', 'Fresh');
