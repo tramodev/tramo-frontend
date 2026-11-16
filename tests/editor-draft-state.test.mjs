@@ -119,4 +119,7 @@ test('the draft remaps every ID without bootstrapping or changing the editor key
   expect(pendingImages.at(-1)).toBe(false);
   expect(ordinarySaves).toBe(0);
   expect(render('real').selectedItem.title).toBe('Title still being typed');
+  render('real').receiveStructure(JSON.stringify({ version: 3, restoreEpoch: 0, trails: [{ id: 21, title: 'Trail', version: 1, itemIds: [22] }],
+    items: [{ id: 22, title: 'Note', unfiled: false, words: 0, characters: 0 }, { id: 23, title: 'Live', unfiled: true, words: 0, characters: 0 }] }));
+  expect(render('real').items['23'].title).toBe('Live');
 });

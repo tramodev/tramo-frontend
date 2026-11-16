@@ -208,7 +208,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
       setRestoreEpoch(result.restoreEpoch);
       const itemId = String(result.itemId);
       const latest = draft.backup.latest;
-      setRemote(previous => ({ ...previous, restoreEpoch: result.restoreEpoch,
+      setRemote(previous => ({ ...previous, version: 0, restoreEpoch: result.restoreEpoch,
         items: { [itemId]: { ...Object.values(previous.items).find(item => item.editorKey === draft.editorKey), id: itemId, editorKey: draft.editorKey,
           title: latest.item.title, titleAlign: latest.item.titleAlign, unfiled: false } },
         trails: [{ id: String(result.trailId), editorKey: draft.editorKey, title: latest.trail.title,
