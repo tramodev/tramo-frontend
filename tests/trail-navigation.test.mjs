@@ -23,3 +23,14 @@ test('visible item follows the reading line including long and empty steps', () 
   expect(exports.visibleItemAtLine(positions, -1500)).toBe('a');
   expect(exports.visibleItemAtLine([], 100)).toBe(undefined);
 });
+
+test('the focused note stays active while visible and the last note wins at the end of the scroll', () => {
+  const positions = [{ id: 'a', top: -400, bottom: 300 }, { id: 'b', top: 300, bottom: 500 }, { id: 'c', top: 500, bottom: 560 }];
+  const view = { top: 0, bottom: 600, line: 180, atEnd: false };
+  expect(exports.activeVisibleItem(positions, view)).toBe('a');
+  expect(exports.activeVisibleItem(positions, view, 'b')).toBe('b');
+  expect(exports.activeVisibleItem(positions, { ...view, top: 600, bottom: 1200 }, 'b')).toBe('a');
+  expect(exports.activeVisibleItem(positions, { ...view, atEnd: true })).toBe('c');
+  expect(exports.activeVisibleItem(positions, { ...view, atEnd: true }, 'a')).toBe('a');
+  expect(exports.activeVisibleItem([], { ...view, atEnd: true })).toBe(undefined);
+});

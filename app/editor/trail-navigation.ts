@@ -15,3 +15,10 @@ export function visibleItemAtLine(positions: { id: string; top: number }[], line
   }
   return current;
 }
+
+export function activeVisibleItem(positions: { id: string; top: number; bottom: number }[], view: { top: number; bottom: number; line: number; atEnd: boolean }, focusedId?: string) {
+  const visible = positions.filter(position => position.bottom > view.top && position.top < view.bottom);
+  if (focusedId && visible.some(position => position.id === focusedId)) return focusedId;
+  if (view.atEnd && visible.length) return visible[visible.length - 1].id;
+  return visibleItemAtLine(positions, view.line);
+}
