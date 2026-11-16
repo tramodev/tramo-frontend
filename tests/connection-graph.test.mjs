@@ -20,6 +20,7 @@ runInNewContext(transpile('components/editor/knowledge-graph.tsx'), {
   require: name => ({
     react: {
       memo: fn => fn,
+      useEffect: () => {},
       useMemo: fn => fn(),
       useRef: () => ({ current: null }),
       useState: value => {

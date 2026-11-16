@@ -10,7 +10,7 @@ function graph() {
   runInNewContext(ts.transpileModule(readFileSync('components/editor/knowledge-graph.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports, require: name => ({
-    react: { memo: fn => fn, useMemo: fn => fn(), useRef: () => ({ current: null }), useState: value => [typeof value === 'function' ? value() : value, noop] },
+    react: { memo: fn => fn, useEffect: noop, useMemo: fn => fn(), useRef: () => ({ current: null }), useState: value => [typeof value === 'function' ? value() : value, noop] },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'next-themes': { useTheme: () => ({ resolvedTheme: 'light' }) },
     '@/hooks/use-mounted': { useMounted: () => true },

@@ -1,9 +1,9 @@
 "use client"
 
-import { memo, useMemo, useRef, useState } from "react"
+import { memo, useEffect, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { useMounted } from "@/hooks/use-mounted"
-import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, getBezierPath, useInternalNode, type InternalNode, type Node, type Edge, type EdgeProps, type NodeProps, type NodeChange } from "@xyflow/react"
+import { ReactFlow, Background, Controls, Handle, Position, BaseEdge, getBezierPath, useInternalNode, type InternalNode, type Node, type Edge, type EdgeProps, type NodeProps, type NodeChange, type ReactFlowInstance } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import type { Item, Trail } from "@/app/editor/types"
 import type { MapPreviews } from "@/lib/projects-store"
@@ -216,6 +216,14 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
     return { nodes, references: graphReferences, sharedEdges }
   }, [trails, items, mapPreviews, references, selectedItemId, activeTrailId, selectedCardId, preview, heights, colors])
 
+  const flow = useRef<ReactFlowInstance<GraphNode> | null>(null)
+  const layoutKey = nodes.map(node => node.id).join("|")
+  useEffect(() => {
+    if (!preview || !flow.current) return
+    const frame = requestAnimationFrame(() => void flow.current?.fitView({ padding: 0.1 }))
+    return () => cancelAnimationFrame(frame)
+  }, [preview, layoutKey])
+
   const onNodesChange = (changes: NodeChange<GraphNode>[]) => {
     const measured = changes.filter(change => change.type === "dimensions" && change.id.startsWith("card:") && change.dimensions?.height)
     if (!measured.length) return
@@ -286,7 +294,7 @@ export function KnowledgeGraph({ trails, items, mapPreviews, activeTrailId, sele
     }
     if (event.key === "Escape") { setMenu(null); setSelectedCardId(null); setSelectedConnection(undefined) } }} className="knowledge-graph relative flex h-full w-full flex-col overflow-hidden rounded-md bg-popover">
     <div className="min-h-0 flex-1">
-      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} defaultViewport={{ x: 32, y: 32, zoom: 1 }} minZoom={preview ? 0.01 : 0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={false} onEdgeClick={(_, edge) => { if (!graphReferences.some(reference => reference.id === edge.id)) return; setMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"} fitView={preview} fitViewOptions={{ padding: 0.1 }} onInit={instance => { flow.current = instance }} defaultViewport={{ x: 32, y: 32, zoom: 1 }} minZoom={preview ? 0.01 : 0.25} maxZoom={2} nodesDraggable={false} nodesConnectable={false} onEdgeClick={(_, edge) => { if (!graphReferences.some(reference => reference.id === edge.id)) return; setMenu(null); setSelectedCardId(null); setSelectedConnection(edge.id) }} onNodeClick={(event, node) => {
         setMenu(null)
         if (node.type !== "card") return
         event.stopPropagation()
