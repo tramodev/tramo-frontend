@@ -52,10 +52,15 @@ function $nodeAtPath(path: number[]): LexicalNode | null {
   return node;
 }
 
+function focusMovedAway(editor: LexicalEditor) {
+  const active = document.activeElement;
+  return !!active && active !== document.body && !editor.getRootElement()?.contains(active);
+}
+
 function restoreCaret(editor: LexicalEditor, itemId: string) {
   const caret = carets.get(itemId);
   carets.delete(itemId);
-  if (!caret) return;
+  if (!caret || focusMovedAway(editor)) return;
   editor.update(() => {
     let node: LexicalNode | null = $getRoot();
     for (const index of caret.path) node = $isElementNode(node) ? node.getChildAtIndex(index) : null;
@@ -63,6 +68,7 @@ function restoreCaret(editor: LexicalEditor, itemId: string) {
     else if ($isElementNode(node)) node.select(Math.min(caret.offset, node.getChildrenSize()), Math.min(caret.offset, node.getChildrenSize()));
   });
   requestAnimationFrame(() => {
+    if (focusMovedAway(editor)) return;
     editor.getRootElement()?.focus({ preventScroll: true });
     editor.focus();
   });
