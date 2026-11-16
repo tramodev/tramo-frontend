@@ -8,6 +8,7 @@ import { MOVE_BLOCK_COMMAND } from '@/app/editor/plugins/DraggableBlockPlugin';
 import {
   $getSelection,
   $isElementNode,
+  $isNodeSelection,
   $isRangeSelection,
   $setSelection,
   CAN_REDO_COMMAND,
@@ -24,6 +25,7 @@ import {
   $createParagraphNode,
   ElementNode,
   LexicalCommand,
+  BaseSelection,
   RangeSelection,
 } from 'lexical';
 import {
@@ -368,6 +370,7 @@ export default function ToolbarPlugin({
   const [fontSize, setFontSize] = useState('15');
   const [textColor, setTextColor] = useState('');
   const colorSelection = useRef<RangeSelection | null>(null);
+  const alignSelection = useRef<BaseSelection | null>(null);
   const insertSelection = useRef<RangeSelection | null>(null);
   const [elementFormat, setElementFormat] = useState<ElementFormat>('left');
   const [insertMenuOpen, setInsertMenuOpen] = useState(false);
@@ -422,6 +425,11 @@ export default function ToolbarPlugin({
       setFontSize(
         $getSelectionStyleValueForProperty(selection, 'font-size', root ? getComputedStyle(root).fontSize : '15px').replace('px', ''),
       );
+    } else if ($isNodeSelection(selection)) {
+      const block = selection.getNodes()[0]?.getTopLevelElement();
+      setBlockType($isElementNode(block) ? block.getType() : 'paragraph');
+      const format = (block as { getFormatType?: () => string } | null)?.getFormatType?.();
+      setElementFormat(format === 'center' || format === 'right' || format === 'justify' ? format : 'left');
     }
   }, [editor]);
 
@@ -745,7 +753,9 @@ export default function ToolbarPlugin({
       </div>
 
       <Divider />
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={(open) => {
+        if (open) alignSelection.current = editor.getEditorState().read(() => $getSelection()?.clone() ?? null);
+      }}>
         <ToolbarMenuButton label="Align text" tooltip="Align text" className="toolbar-item align-dropdown-trigger spaced">
           <ActiveAlignIcon size="1.125rem" />
           <ChevronDown size="0.75rem" />
@@ -757,7 +767,11 @@ export default function ToolbarPlugin({
               onSelect={() =>
                 inTitle
                   ? onSetTitleAlign?.(value as 'left' | 'center' | 'right')
-                  : editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value)
+                  : editor.update(() => {
+                    const selection = alignSelection.current?.clone();
+                    if (!$getSelection() && selection) $setSelection(selection);
+                    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value);
+                  })
               }
             >
               <Icon className="h-4 w-4" />
