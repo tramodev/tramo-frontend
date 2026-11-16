@@ -764,19 +764,25 @@ export default function ToolbarPlugin({
           <ActiveAlignIcon size="1.125rem" />
           <ChevronDown size="0.75rem" />
         </ToolbarMenuButton>
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" onCloseAutoFocus={handleMenuClose}>
           {(inTitle ? ALIGN_OPTIONS.filter((option) => option.value !== 'justify') : ALIGN_OPTIONS).map(({ value, label, Icon }) => (
             <DropdownMenuItem
               key={value}
-              onSelect={() =>
-                inTitle
-                  ? onSetTitleAlign?.(value as 'left' | 'center' | 'right')
-                  : editor.update(() => {
-                    const selection = alignSelection.current?.clone();
-                    if (!$getSelection() && selection) $setSelection(selection);
-                    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value);
-                  })
-              }
+              onSelect={() => {
+                if (inTitle) {
+                  onSetTitleAlign?.(value as 'left' | 'center' | 'right');
+                  return;
+                }
+                editor.update(() => {
+                  const selection = alignSelection.current?.clone();
+                  if (!$getSelection() && selection) $setSelection(selection);
+                  editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value);
+                });
+                afterMenuCloseRef.current = () => {
+                  editor.getRootElement()?.focus({ preventScroll: true });
+                  editor.focus();
+                };
+              }}
             >
               <Icon className="h-4 w-4" />
               {label}
