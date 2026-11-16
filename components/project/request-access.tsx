@@ -25,11 +25,11 @@ export function RequestAccess({ projectId }: { projectId: string }) {
   return (
     <main id="main-content" tabIndex={-1} className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
       <Lock aria-hidden="true" className="h-10 w-10 text-muted-foreground" />
-      <h1 className="font-display text-2xl">You don&apos;t have access to this project</h1>
+      <h1 className="font-display text-2xl">This project isn&apos;t available</h1>
       {state === "sent"
         ? <p role="status" className="max-w-prose text-muted-foreground">Request sent. You&apos;ll be notified when the owner responds.</p>
         : <>
-          <p className="max-w-prose text-muted-foreground">Ask the owner for access, or switch to an account that has it.</p>
+          <p className="max-w-prose text-muted-foreground">It may have been deleted, or you don&apos;t have access. Ask the owner for access, or switch to an account that has it.</p>
           <Button onClick={send} disabled={state === "sending"}>{state === "sending" ? "Sending…" : "Request access"}</Button>
         </>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
