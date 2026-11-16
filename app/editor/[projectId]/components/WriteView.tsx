@@ -40,6 +40,7 @@ import ListStylePlugin from '../../plugins/ListStylePlugin';
 import PastePlugin from '../../plugins/PastePlugin';
 import CodeHighlightPlugin from '../../plugins/CodeHighlightPlugin';
 import CodeLanguagePlugin from '../../plugins/CodeLanguagePlugin';
+import TableActionPlugin from '../../plugins/TableActionPlugin';
 import TrailingParagraphPlugin from '../../plugins/TrailingParagraphPlugin';
 import SlashMenuPlugin from '../../plugins/SlashMenuPlugin';
 import FloatingLinkEditorPlugin from '../../plugins/FloatingLinkEditorPlugin';
@@ -311,6 +312,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         <PastePlugin />
         <CodeHighlightPlugin />
         <CodeLanguagePlugin />
+        <TableActionPlugin />
         <TrailingParagraphPlugin />
         <ListTabPlugin />
         <ListStylePlugin />
