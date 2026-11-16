@@ -24,7 +24,7 @@ function projectsSetup() {
   const page = load('app/(app)/projects/page.tsx', name => ({
     react: {
       useState: initial => { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; },
-      useRef: value => ({ current: value }), useMemo: fn => fn(),
+      useRef: value => ({ current: value }), useMemo: fn => fn(), useTransition: () => [false, run => run()],
       useEffect: (fn, deps) => { const i = effectIndex++; if (!dependencies[i] || deps.some((dep, j) => dep !== dependencies[i][j])) pendingEffects.push([i, fn]); dependencies[i] = deps; },
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },

@@ -2,9 +2,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import Link from "next/link"
+import Link, { useLinkStatus } from "next/link"
 import { usePathname } from "next/navigation"
 import { getNavItems } from "@/lib/nav-items"
+import { TopProgressBar } from "@/components/layout/top-progress-bar"
+
+function LinkProgress({ label }: { label: string }) {
+  const { pending } = useLinkStatus()
+  return pending ? <TopProgressBar label={label} delayed /> : null
+}
 
 export function PrimaryNav({
   loggedIn = true,
@@ -31,6 +37,7 @@ export function PrimaryNav({
             }`}
           >
             {item.label}
+            <LinkProgress label={`Opening ${item.label}`} />
           </Link>
         )
       })}

@@ -1,7 +1,7 @@
 "use client"
 import { useLayoutEffect, useRef } from "react";
 
-export function TopProgressBar({ label }: { label: string }) {
+export function TopProgressBar({ label, delayed = false }: { label: string; delayed?: boolean }) {
   const fillRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -9,10 +9,12 @@ export function TopProgressBar({ label }: { label: string }) {
     return () => {
       const from = getComputedStyle(fill).transform;
       const bar = fill.parentElement!;
+      if (getComputedStyle(bar).visibility === "hidden") return;
       requestAnimationFrame(() => {
         if (fill.isConnected) return;
         const ghost = bar.cloneNode(true) as HTMLElement;
         const ghostFill = ghost.firstElementChild as HTMLElement;
+        ghost.classList.remove("top-progress-delayed");
         ghost.removeAttribute("role");
         ghost.setAttribute("aria-hidden", "true");
         ghostFill.style.animation = "none";
@@ -23,7 +25,7 @@ export function TopProgressBar({ label }: { label: string }) {
     };
   }, []);
 
-  return <div role="progressbar" aria-label={label} className="fixed inset-x-0 top-0 z-[100] h-[3px] overflow-hidden">
+  return <div role="progressbar" aria-label={label} className={`fixed inset-x-0 top-0 z-[100] h-[3px] overflow-hidden${delayed ? " top-progress-delayed" : ""}`}>
     <div ref={fillRef} className="top-progress-fill h-full bg-primary" />
   </div>;
 }

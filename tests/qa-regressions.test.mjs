@@ -25,7 +25,7 @@ function load(path, modules = {}, extra = '', globals = {}) {
           return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }];
         },
         useRef: initial => refs[ref++] ?? (refs[ref - 1] = { current: initial }),
-        useMemo: calculate => calculate(), useCallback: callback => callback,
+        useMemo: calculate => calculate(), useCallback: callback => callback, useTransition: () => [false, run => run()],
         useEffect: (callback, deps) => {
           const i = effect++;
           if (!dependencies[i] || deps.some((dep, j) => dep !== dependencies[i][j])) effects.push(callback);

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import {
@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { TopProgressBar } from "@/components/layout/top-progress-bar"
 import { ProjectThumbnail } from "@/components/project/project-thumbnail"
 import { ForkBadge } from "@/components/project/fork-badge"
 import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
@@ -69,6 +70,7 @@ function sharedLabel(project: Project) {
 
 export default function ProjectsPage() {
   const router = useRouter()
+  const [opening, startOpening] = useTransition()
   const userId = useCurrentUserId()
   const creatingRef = useRef(false)
   const [creating, setCreating] = useState(false)
@@ -205,6 +207,7 @@ export default function ProjectsPage() {
 
   return (
     <main id="main-content" tabIndex={-1} className="w-full flex-1 pb-[84px]">
+      {opening && <TopProgressBar label="Opening project" delayed />}
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
       {leaveError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{leaveError}</p>}
       <section className="bg-surface-container-high pb-16">
@@ -319,7 +322,7 @@ export default function ProjectsPage() {
                 <Card
                   key={project.id}
                   className="group/card flex w-[90%] justify-self-center h-[300px] sm:w-full flex-col cursor-pointer gap-0 overflow-hidden p-0 transition-colors hover:bg-muted hover:shadow-elevation-1"
-                  onClick={() => router.push(`/editor/${project.id}`)}
+                  onClick={() => startOpening(() => router.push(`/editor/${project.id}`))}
                 >
                   <CardContent className="mx-2 mt-2 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-sm p-0">
                     <ProjectThumbnail
@@ -432,7 +435,7 @@ export default function ProjectsPage() {
                 <div
                   key={project.id}
                   className="relative flex cursor-pointer items-center gap-4 px-4 py-3 transition-colors hover:bg-muted"
-                  onClick={() => router.push(`/editor/${project.id}`)}
+                  onClick={() => startOpening(() => router.push(`/editor/${project.id}`))}
                 >
                   <ProjectThumbnail
                     thumbnailImageUrl={project.thumbnailImageUrl}

@@ -297,6 +297,13 @@ button[class~="focus:ring-2"]:focus:not(:focus-visible) {
   transform-origin: left;
   animation: top-progress 10s cubic-bezier(0.08, 0.8, 0.2, 1) forwards;
 }
+@keyframes top-progress-appear {
+  to { visibility: visible; }
+}
+.top-progress-delayed {
+  visibility: hidden;
+  animation: top-progress-appear 0s 150ms forwards;
+}
 @media (prefers-reduced-motion: reduce) {
   .top-progress-fill {
     animation: none;
