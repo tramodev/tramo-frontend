@@ -50,7 +50,7 @@ import ItemMentionPlugin from '../../plugins/ItemMentionPlugin';
 import ExtractSelectionPlugin, { type ExtractionActions } from '../../plugins/ExtractSelectionPlugin';
 import WikiLinkPlugin from '../../plugins/WikiLinkPlugin';
 import ItemLinkClickPlugin from '../../plugins/ItemLinkClickPlugin';
-import CollaborationNotePlugin, { rememberCaret, type CollabClosedReason, type CollabHandoff, type CollabStatus, type CollabWaiting } from '../../plugins/CollaborationNotePlugin';
+import CollaborationNotePlugin, { hasRememberedCaret, rememberCaret, type CollabClosedReason, type CollabHandoff, type CollabStatus, type CollabWaiting } from '../../plugins/CollaborationNotePlugin';
 import type { HocuspocusProviderWebsocket } from '@hocuspocus/provider';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { editorConfig, placeholder } from '../../lexical-config';
@@ -566,7 +566,7 @@ export function WriteView(props: WriteViewProps) {
       setFocusedItemId(targetId);
       onVisibleItem(targetId);
       setPositionedContext(context);
-      if (request?.focus && request.embedIndex === undefined && editor) requestAnimationFrame(() => focusEditor(editor));
+      if (request?.focus && request.embedIndex === undefined && editor && !hasRememberedCaret(targetId)) requestAnimationFrame(() => focusEditor(editor));
     });
     return () => cancelAnimationFrame(frame);
   }, [active, navigationRequest, contentReady, onVisibleItem, pinScrollSpy, anchor, positionedContext, context, item.id, visibleIds, invalidItems]);

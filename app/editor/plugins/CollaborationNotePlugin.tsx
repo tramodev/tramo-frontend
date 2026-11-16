@@ -20,23 +20,34 @@ export type CollabClosedReason = 'reload' | 'revoked';
 export type CollabWaiting = 'connecting' | 'limit' | null;
 export type CollabHandoff = { base: string; content: string; prepend?: boolean };
 type LexicalProvider = ComponentProps<typeof CollaborationPluginV2__EXPERIMENTAL>['provider'];
-type Caret = { path: number[]; offset: number };
+type Caret = { path: number[]; offset: number; titled: boolean; release: () => void };
 
 const LOCAL_PROPERTIES: ComponentProps<typeof CollaborationPluginV2__EXPERIMENTAL>['excludedProperties'] = new Map([[ImageNode, new Set(['__src'])]]);
 
 const carets = new Map<string, Caret>();
 
+export function hasRememberedCaret(itemId: string) {
+  return carets.has(itemId);
+}
+
 export function rememberCaret(editor: LexicalEditor, itemId: string) {
   const root = editor.getRootElement();
   if (!root || !root.contains(document.activeElement)) return;
+  const key = root.closest<HTMLElement>('[data-item-id]')?.dataset.itemId ?? itemId;
   editor.getEditorState().read(() => {
     const selection = $getSelection();
     if (!$isRangeSelection(selection)) return;
     const path: number[] = [];
     for (let node: LexicalNode | null = selection.focus.getNode(); node && !$isRootNode(node); node = node.getParent()) path.unshift(node.getIndexWithinParent());
-    const caret = { path, offset: selection.focus.offset };
-    carets.set(itemId, caret);
-    document.addEventListener('focusin', () => { if (carets.get(itemId) === caret) carets.delete(itemId); }, { capture: true, once: true });
+    const drop = (event: FocusEvent) => {
+      if (event.target instanceof Element && event.target.closest<HTMLElement>('[data-item-id]')?.dataset.itemId === key) return;
+      caret.release();
+      if (carets.get(key) === caret) carets.delete(key);
+    };
+    const caret: Caret = { path, offset: selection.focus.offset, titled: $isTitleNode($getRoot().getFirstChild()), release: () => document.removeEventListener('focusin', drop, true) };
+    carets.get(key)?.release();
+    carets.set(key, caret);
+    document.addEventListener('focusin', drop, true);
   });
 }
 
@@ -63,17 +74,22 @@ function restoreCaret(editor: LexicalEditor, itemId: string) {
   const caret = carets.get(itemId);
   carets.delete(itemId);
   if (!caret) return;
+  caret.release();
   editor.update(() => {
     let node: LexicalNode | null = $getRoot();
-    for (const index of caret.path) node = $isElementNode(node) ? node.getChildAtIndex(index) : null;
+    const path = !caret.titled && $isTitleNode($getRoot().getFirstChild()) ? [caret.path[0] + 1, ...caret.path.slice(1)] : caret.path;
+    for (const index of path) node = $isElementNode(node) ? node.getChildAtIndex(index) : null;
     if ($isTextNode(node)) node.select(Math.min(caret.offset, node.getTextContentSize()), Math.min(caret.offset, node.getTextContentSize()));
     else if ($isElementNode(node)) node.select(Math.min(caret.offset, node.getChildrenSize()), Math.min(caret.offset, node.getChildrenSize()));
   });
-  requestAnimationFrame(() => {
+  const focus = (frames: number) => requestAnimationFrame(() => {
     if (focusMovedAway(editor)) return;
-    editor.getRootElement()?.focus({ preventScroll: true });
+    const root = editor.getRootElement();
+    root?.focus({ preventScroll: true });
     editor.focus();
+    if (!root?.contains(document.activeElement) && frames > 0) focus(frames - 1);
   });
+  focus(10);
 }
 
 function applyHandoff(editor: LexicalEditor, handoff: CollabHandoff): boolean {
