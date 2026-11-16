@@ -58,6 +58,8 @@ export default function TableActionPlugin() {
 
   const anchorRect = anchor.getBoundingClientRect();
   const elementRect = element.getBoundingClientRect();
+  const visibleRect = element.closest('.editor-table-wrapper')?.getBoundingClientRect() ?? elementRect;
+  if (elementRect.right - 22 < visibleRect.left || elementRect.right > visibleRect.right + 1) return null;
 
   const run = (action: () => void) => editor.update(action);
   const tableNode = () => {
@@ -76,7 +78,11 @@ export default function TableActionPlugin() {
       >
         <ChevronDown size={12} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent align="start" onCloseAutoFocus={event => {
+        event.preventDefault();
+        editor.getRootElement()?.focus({ preventScroll: true });
+        editor.focus();
+      }}>
         <DropdownMenuItem onSelect={() => run(() => $insertTableRowAtSelection(false))}>Insert row above</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => run(() => $insertTableRowAtSelection(true))}>Insert row below</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => run(() => $insertTableColumnAtSelection(false))}>Insert column left</DropdownMenuItem>
