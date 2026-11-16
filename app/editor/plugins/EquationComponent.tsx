@@ -331,7 +331,14 @@ export default function EquationComponent({
               startEditing();
               return true;
             }
-            if (inline) return false;
+            if (inline) {
+              const node = $getNodeByKey(nodeKey);
+              if (node === null) return false;
+              const { left, width } = katexRef.current.getBoundingClientRect();
+              if (event.clientX < left + width / 2) node.selectPrevious();
+              else node.selectNext();
+              return true;
+            }
             clearSelected();
             setSelected(true);
             return true;
@@ -357,7 +364,7 @@ export default function EquationComponent({
         COMMAND_PRIORITY_LOW,
       ),
     );
-  }, [clearSelected, editor, enterFrom, enterFromLine, inline, isEditable, isEditing, isSelected, onDelete, setSelected, startEditing]);
+  }, [clearSelected, editor, enterFrom, enterFromLine, inline, isEditable, isEditing, isSelected, nodeKey, onDelete, setSelected, startEditing]);
 
   if (isEditing && isEditable) {
     return (
