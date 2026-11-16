@@ -116,8 +116,9 @@ export const absorbed = (op: PendingOp, remote: Structure) => op.apply(remote) =
 
 export function followNavigation<T extends { itemId?: string; trailId?: string; request?: unknown }>(previous: T, structure: Structure): T {
   const trail = previous.trailId ? structure.trails.find(candidate => candidate.id === previous.trailId) : undefined;
-  const trailGone = !!previous.trailId && !trail;
-  const itemGone = !!previous.itemId && !structure.items[previous.itemId];
+  const pending = (id: string) => id.startsWith('temp-');
+  const trailGone = !!previous.trailId && !trail && !pending(previous.trailId);
+  const itemGone = !!previous.itemId && !structure.items[previous.itemId] && !pending(previous.itemId);
   if (!trailGone && !itemGone) return previous;
   if (!itemGone) return { ...previous, trailId: undefined };
   const fallback = trail?.itemIds.find(itemId => structure.items[itemId]) ?? structure.trails.flatMap(other => other.itemIds).find(itemId => structure.items[itemId])

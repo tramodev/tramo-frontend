@@ -84,3 +84,10 @@ test('navigation falls back to a loose note when no trail has one', () => {
   expect(s.followNavigation({ itemId: '4' }, s.removeItem('4')(loose))).toEqual({ itemId: '5', trailId: undefined, request: undefined });
   expect(s.followNavigation({ itemId: '4' }, s.removeItem('5')(s.removeItem('4')(loose)))).toEqual({ itemId: undefined, trailId: undefined, request: undefined });
 });
+
+test('navigation keeps a note or trail that is still being created', () => {
+  const at = { itemId: 'temp-1-abc', trailId: '10', request: { itemId: 'temp-1-abc' } };
+  expect(s.followNavigation(at, base)).toBe(at);
+  const draftTrail = { itemId: '1', trailId: 'temp-2-def' };
+  expect(s.followNavigation(draftTrail, base)).toBe(draftTrail);
+});
