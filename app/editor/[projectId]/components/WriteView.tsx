@@ -34,7 +34,7 @@ import EmbedErrorsPlugin from '@/app/editor/plugins/EmbedErrorsPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { CodeBlockGuardPlugin } from '../../plugins/CodeBlockGuardPlugin';
 import TitlePlugin from '../../plugins/TitlePlugin';
-import { $isTitleNode } from '@/app/editor/nodes/TitleNode';
+import { $isTitleNode, TITLE_TYPE } from '@/app/editor/nodes/TitleNode';
 import ListTabPlugin from '../../plugins/ListTabPlugin';
 import ListStylePlugin from '../../plugins/ListStylePlugin';
 import PastePlugin from '../../plugins/PastePlugin';
@@ -232,6 +232,12 @@ interface ItemEditorProps {
   onCollabClosed: (reason: CollabClosedReason) => void;
 }
 
+function pendingBody(editor: LexicalEditor): CollabHandoff | null {
+  const children = editor.getEditorState().toJSON().root.children.filter(child => child.type !== TITLE_TYPE);
+  const typed = children.some(child => child.type !== 'paragraph' || ('children' in child && Array.isArray(child.children) && child.children.length > 0));
+  return typed ? { base: '', content: JSON.stringify({ root: { children } }), prepend: true } : null;
+}
+
 function ItemEditor(props: ItemEditorProps) {
   const [collaborative] = useState(() => !props.props.draft && !!props.props.collab);
   const [initialContent] = useState(() => collaborative ? null : props.session.state?.clone(null) ?? props.item.content);
@@ -254,6 +260,14 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
   const [history] = useState(() => restoreItemHistory(session, editor));
   const lastContentRef = useRef(JSON.stringify(editor.getEditorState().toJSON()));
   const [live, setLive] = useState(!collaborative);
+  const [fresh] = useState(() => item.id.startsWith('temp-'));
+  const [previousId, setPreviousId] = useState(item.id);
+  const [newNoteHandoff, setNewNoteHandoff] = useState<CollabHandoff | null>(null);
+  if (previousId !== item.id) {
+    setPreviousId(item.id);
+    if (previousId.startsWith('temp-') && !item.id.startsWith('temp-')) setNewNoteHandoff(pendingBody(editor));
+  }
+  const draftHandoff = props.collabHandoff?.itemId === item.id;
   const [waiting, setWaiting] = useState<CollabWaiting>(null);
   useEffect(() => {
     const unregister = editor.registerUpdateListener(({ editorState }) => {
@@ -282,9 +296,9 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
             {waiting === 'limit' ? 'Too many open tabs. Close one to keep editing.' : 'Connecting…'}
           </p>}
           {collaborative && <h1 className="note-title pending-note-title" data-placeholder="Untitled note">{item.title}</h1>}
-          <LexicalReadOnly content={item.content ?? ''} />
+          {!fresh && <LexicalReadOnly content={item.content ?? ''} />}
         </div>}
-        <div className={live ? 'relative' : 'hidden'}>
+        <div className={live || fresh ? 'relative' : 'hidden'}>
           <RichTextPlugin contentEditable={
             <ContentEditable className="editor-input" aria-label={`Content of ${item.title || 'Untitled note'}`} aria-placeholder={placeholder}
               onFocus={() => { setTitleFocused(false); onFocus(item.id); }}
@@ -293,7 +307,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         </div>
         {collaborative
           ? socket && props.collab && !item.id.startsWith('temp-') && <CollaborationNotePlugin itemId={item.id} socket={socket} username={props.collab.username} userId={props.collab.userId} cursorsContainer={anchor}
-            handoff={props.collabHandoff?.itemId === item.id ? props.collabHandoff : null} onHandoff={props.onCollabHandoff} onWaiting={setWaiting}
+            handoff={draftHandoff ? props.collabHandoff : newNoteHandoff} onHandoff={draftHandoff ? props.onCollabHandoff : () => setNewNoteHandoff(null)} onWaiting={setWaiting}
             onStatus={(id, status) => { if (status === 'synced') setLive(true); props.onCollabStatus?.(id, status); }} onClosed={onCollabClosed} />
           : <HistoryPlugin externalHistoryState={history} />}
         <ListPlugin />

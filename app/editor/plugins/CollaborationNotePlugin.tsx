@@ -18,7 +18,7 @@ import { $isTitleNode } from '@/app/editor/nodes/TitleNode';
 export type CollabStatus = 'syncing' | 'synced' | 'offline';
 export type CollabClosedReason = 'reload' | 'revoked';
 export type CollabWaiting = 'connecting' | 'limit' | null;
-export type CollabHandoff = { base: string; content: string };
+export type CollabHandoff = { base: string; content: string; prepend?: boolean };
 type LexicalProvider = ComponentProps<typeof CollaborationPluginV2__EXPERIMENTAL>['provider'];
 type Caret = { path: number[]; offset: number };
 
@@ -77,6 +77,24 @@ function restoreCaret(editor: LexicalEditor, itemId: string) {
 }
 
 function applyHandoff(editor: LexicalEditor, handoff: CollabHandoff): boolean {
+  if (handoff.prepend) {
+    editor.update(() => {
+      const root = $getRoot();
+      root.getChildren().forEach(child => { if ($isParagraphNode(child) && child.isEmpty()) child.remove(); });
+      const nodes: LexicalNode[] = JSON.parse(handoff.content).root.children.map($parseSerializedNode);
+      const title = root.getFirstChild();
+      if ($isTitleNode(title)) [...nodes].reverse().forEach(node => title.insertAfter(node));
+      else root.splice(0, 0, nodes);
+      const selection = $getSelection();
+      const anchor = $isRangeSelection(selection) ? selection.anchor.getNode() : null;
+      const last = nodes[nodes.length - 1];
+      if (last && (!anchor || !anchor.isAttached() || $isRootNode(anchor))) {
+        if ($isElementNode(last)) last.selectEnd();
+        else last.selectNext();
+      }
+    }, { discrete: true });
+    return true;
+  }
   const current = editor.getEditorState();
   const blank = current.read(() => $getRoot().getChildren().filter(child => !$isTitleNode(child))
     .every(child => $isParagraphNode(child) && child.getTextContent().trim() === ''));
