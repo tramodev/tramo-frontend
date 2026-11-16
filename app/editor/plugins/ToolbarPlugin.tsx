@@ -627,15 +627,19 @@ export default function ToolbarPlugin({
     <TableSizePicker
       compact={compact}
       onPick={(rows, columns) => {
-        setInsertMenuOpen(false);
-        editor.update(() => {
-          if (insertSelection.current) $setSelection(insertSelection.current.clone());
-          editor.dispatchCommand(INSERT_TABLE_COMMAND, {
-            rows: String(rows),
-            columns: String(columns),
-            includeHeaders: { rows: true, columns: false },
+        afterMenuCloseRef.current = () => {
+          editor.update(() => {
+            if (insertSelection.current) $setSelection(insertSelection.current.clone());
+            editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+              rows: String(rows),
+              columns: String(columns),
+              includeHeaders: { rows: true, columns: false },
+            });
           });
-        });
+          editor.getRootElement()?.focus({ preventScroll: true });
+          editor.focus();
+        };
+        setInsertMenuOpen(false);
       }}
     />
   );
