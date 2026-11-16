@@ -203,6 +203,18 @@ test('once operations settle every client shows the API structure, whatever orde
   expect(s.render().trails.map(trail => trail.title)).toEqual(['Renamed']);
 });
 
+test('deleting the open loose note opens another note instead of the empty state', async () => {
+  const s = await setup();
+  s.receive(snapshot(1, { items: [['1', 'One'], ['2', 'Two'], ['3', 'Three'], ['4', 'Loose', true]] }));
+  s.render().handleSelectItem(s.render().items['4']);
+  expect(s.render().selectedItemId).toBe('4');
+  const pending = s.render().handleDeleteItem('4');
+  expect(s.render().selectedItemId).toBe('1');
+  await s.resolve('deleteItem');
+  await pending;
+  expect(s.render().items['4']).toBeUndefined();
+});
+
 test('a restore elsewhere reloads the project instead of mixing epochs', async () => {
   const s = await setup();
   s.receive(snapshot(5, { restoreEpoch: 1, items: [['9', 'Restored']], trails: [['10', 'Trail', ['9']]] }));

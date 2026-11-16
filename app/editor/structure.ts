@@ -120,7 +120,8 @@ export function followNavigation<T extends { itemId?: string; trailId?: string; 
   const itemGone = !!previous.itemId && !structure.items[previous.itemId];
   if (!trailGone && !itemGone) return previous;
   if (!itemGone) return { ...previous, trailId: undefined };
-  const fallback = trail?.itemIds.find(itemId => structure.items[itemId]) ?? structure.trails.flatMap(other => other.itemIds).find(itemId => structure.items[itemId]);
+  const fallback = trail?.itemIds.find(itemId => structure.items[itemId]) ?? structure.trails.flatMap(other => other.itemIds).find(itemId => structure.items[itemId])
+    ?? Object.keys(structure.items)[0];
   const fallbackTrail = fallback && trail?.itemIds.includes(fallback) ? trail : structure.trails.find(other => fallback && other.itemIds.includes(fallback));
   return { ...previous, trailId: fallbackTrail?.id, itemId: fallback, request: undefined };
 }

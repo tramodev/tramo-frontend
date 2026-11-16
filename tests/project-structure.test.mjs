@@ -78,3 +78,9 @@ test('navigation falls back when the open note or trail disappears', () => {
   expect(s.followNavigation({ itemId: '3', trailId: '11' }, s.removeItem('3')(base))).toEqual({ itemId: '1', trailId: '10', request: undefined });
   expect(s.followNavigation({ itemId: '1', trailId: '10' }, s.compose(s.linkItem('11', '1'), s.removeTrail('10'))(base))).toEqual({ itemId: '1', trailId: undefined });
 });
+
+test('navigation falls back to a loose note when no trail has one', () => {
+  const loose = s.toStructure(dto(1, { items: [[4, 'Loose', true], [5, 'Other', true]], trails: [] }));
+  expect(s.followNavigation({ itemId: '4' }, s.removeItem('4')(loose))).toEqual({ itemId: '5', trailId: undefined, request: undefined });
+  expect(s.followNavigation({ itemId: '4' }, s.removeItem('5')(s.removeItem('4')(loose)))).toEqual({ itemId: undefined, trailId: undefined, request: undefined });
+});

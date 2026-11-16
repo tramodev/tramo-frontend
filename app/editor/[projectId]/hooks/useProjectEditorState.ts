@@ -564,8 +564,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     () => createItemWith(undefined, title, () => createLooseItem(projectId, title, restoreEpoch)), false);
 
   const handleDeleteItem = (itemId: string) => pendingSaves.current.track(`delete-item:${itemId}`, async () => {
-    const next = trails.find(trail => trail.id === activeTrailId)?.itemIds.find(id => id !== itemId);
-    setNavigation(prev => prev.itemId !== itemId ? prev : { ...prev, itemId: next, request: undefined });
+    setNavigation(prev => prev.itemId !== itemId ? prev : followNavigation(prev, removeItem(itemId)(shown)));
     await optimistic(`delete-item:${itemId}`, removeItem(itemId), () => deleteItem(itemId, restoreEpoch, projectId));
     titleSaves.discard(projectId, itemId);
     drop(`title:${itemId}`);
