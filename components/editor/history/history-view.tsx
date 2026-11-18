@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,8 @@ export function HistoryView({ projectId, restoreEpoch, isOwner, initialHistory, 
   const [history, setHistory] = useState(initialHistory);
   const [states, setStates] = useState<Map<Selection, VersionState>>(() => new Map<Selection, VersionState>(latest && initialHistory.versions[0] ? [['current', current], [initialHistory.versions[0].id, latest]] : [['current', current]]));
   const [selected, setSelected] = useState<Selection>('current');
+  const [pending, setPending] = useState<Selection | null>(null);
+  const scrollTarget = useRef<string | null | undefined>(undefined);
   const [activeSlot, setActiveSlot] = useState<string | null>(() => noteSlots(current.snapshot)[0]?.slot ?? null);
   const [showChanges, setShowChanges] = useState(true);
   const [naming, setNaming] = useState(false);
@@ -80,10 +82,30 @@ export function HistoryView({ projectId, restoreEpoch, isOwner, initialHistory, 
     });
   };
 
+  useLayoutEffect(() => {
+    const slot = scrollTarget.current;
+    if (slot === undefined) return;
+    scrollTarget.current = undefined;
+    const element = slot ? slotRefs.current.get(slot) : null;
+    if (element) element.scrollIntoView({ block: 'start' });
+    else columnRef.current?.scrollTo({ top: 0 });
+  }, [selected]);
+
+  const show = (selection: Selection, target: VersionState | undefined) => {
+    if (target) {
+      const targetSlots = noteSlots(target.snapshot);
+      const slot = targetSlots.some(entry => entry.slot === activeSlot) ? activeSlot : targetSlots[0]?.slot ?? null;
+      pin(); setActiveSlot(slot); scrollTarget.current = slot;
+    }
+    setPending(null); setSelected(selection);
+  };
+
   const select = async (selection: Selection) => {
     const id = ++request.current;
-    setSelected(selection); setError('');
+    setError('');
     const missing = [selection, baseOf(selection)].filter((entry): entry is number => entry !== undefined && entry !== 'current' && !states.has(entry));
+    if (!missing.length) return show(selection, states.get(selection));
+    setPending(selection);
     try {
       const details = await Promise.all(missing.map(entry => getProjectVersion(projectId, entry)));
       if (id !== request.current) return;
@@ -92,9 +114,8 @@ export function HistoryView({ projectId, restoreEpoch, isOwner, initialHistory, 
         details.forEach((detail, index) => { if (detail) next.set(missing[index], detail); });
         return next;
       });
-      const target = states.get(selection) ?? details[missing.indexOf(selection as number)];
-      if (target) jump(noteSlots(target.snapshot).some(entry => entry.slot === activeSlot) ? activeSlot : noteSlots(target.snapshot)[0]?.slot ?? null);
-    } catch (failure) { if (id === request.current) setError(failure instanceof Error ? failure.message : 'Could not load version.'); }
+      show(selection, states.get(selection) ?? details[missing.indexOf(selection as number)] ?? undefined);
+    } catch (failure) { if (id === request.current) { setPending(null); setError(failure instanceof Error ? failure.message : 'Could not load version.'); } }
   };
 
   const loadOlder = async () => {
@@ -219,7 +240,7 @@ export function HistoryView({ projectId, restoreEpoch, isOwner, initialHistory, 
             const item = history.versions.find(version => version.id === entry);
             const label = item ? versionLabel(item) : 'Current version';
             return <li key={entry}>
-              <button type="button" aria-current={entry === selected} onClick={() => void select(entry)} className="w-full border-l-4 border-transparent px-4 py-2.5 text-left hover:bg-muted aria-[current=true]:border-primary aria-[current=true]:bg-muted">
+              <button type="button" aria-current={entry === (pending ?? selected)} aria-busy={entry === pending || undefined} onClick={() => void select(entry)} className="w-full border-l-4 border-transparent px-4 py-2.5 text-left hover:bg-muted aria-[current=true]:border-primary aria-[current=true]:bg-muted">
                 {label && <span className="block text-sm font-medium">{label}</span>}
                 {item && <span className={label ? 'block text-xs text-muted-foreground' : 'block text-sm font-medium'}>{when(item.createdAt)}</span>}
                 {item?.authors.map(author => <span key={author.id} className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
