@@ -210,6 +210,7 @@ export default function ProjectsPage() {
     try {
       await trashProject(project.id)
       setProjects((prev) => prev.filter((p) => p.id !== project.id))
+      setLoadAttempt((attempt) => attempt + 1)
     } catch {
       setTrashError(`Could not move "${project.title}" to the trash. Try again.`)
     }
@@ -222,7 +223,10 @@ export default function ProjectsPage() {
     setLeaveError("")
     const { error } = await leaveProject(project.id)
     if (error) setLeaveError(error)
-    else setProjects((prev) => prev.filter((p) => p.id !== project.id))
+    else {
+      setProjects((prev) => prev.filter((p) => p.id !== project.id))
+      setLoadAttempt((attempt) => attempt + 1)
+    }
   }
 
   return (
