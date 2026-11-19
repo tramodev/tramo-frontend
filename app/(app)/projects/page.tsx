@@ -42,6 +42,7 @@ import { useCurrentUserId } from "@/components/auth/current-user"
 import { beginDraft } from "@/lib/editor-draft"
 import { formatBytes } from "@/lib/format-bytes"
 import { PENDING_JOIN_KEY } from "@/lib/pending-join"
+import { subscribeNotificationCount } from "@/lib/notification-stream"
 import { leaveProject } from "@/lib/project-members"
 import { PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 import {
@@ -123,6 +124,18 @@ export default function ProjectsPage() {
     })
     return () => { cancelled = true }
   }, [loadAttempt])
+
+  useEffect(() => {
+    if (!userId) return
+    let unread: number | null = null
+    const reload = () => setLoadAttempt((attempt) => attempt + 1)
+    return subscribeNotificationCount(userId, (count) => {
+      if (unread !== null && count > unread) reload()
+      unread = count
+    }, (type) => {
+      if (type === "access-revoked") reload()
+    })
+  }, [userId])
 
   const sortedProjects = useMemo(() => {
     const copy = [...projects]
