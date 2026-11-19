@@ -88,6 +88,7 @@ export default function ProjectsPage() {
   const [leaveTarget, setLeaveTarget] = useState<Project | null>(null)
   const [leaveError, setLeaveError] = useState("")
   const [trashError, setTrashError] = useState("")
+  const [trashTarget, setTrashTarget] = useState<Project | null>(null)
   const [usageTarget, setUsageTarget] = useState<Project | null>(null)
   const mounted = useMounted()
   const [savedSortBy, setSortBy] = useState<SortBy>(() => {
@@ -188,7 +189,10 @@ export default function ProjectsPage() {
     window.open(`/editor/${projectId}`, "_blank")
   }
 
-  const moveToTrash = async (project: Project) => {
+  const confirmTrash = async () => {
+    if (!trashTarget) return
+    const project = trashTarget
+    setTrashTarget(null)
     setTrashError("")
     try {
       await trashProject(project.id)
@@ -409,7 +413,7 @@ export default function ProjectsPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => moveToTrash(project)}
+                              onSelect={() => setTrashTarget(project)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                               Move to trash
@@ -529,7 +533,7 @@ export default function ProjectsPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
-                            onSelect={() => moveToTrash(project)}
+                            onSelect={() => setTrashTarget(project)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                             Move to trash
@@ -552,6 +556,16 @@ export default function ProjectsPage() {
         </div>
       </section>
       {usageTarget && <ProjectUsageDialog key={usageTarget.id} project={usageTarget} onClose={() => setUsageTarget(null)} />}
+      <ConfirmDialog
+        open={trashTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setTrashTarget(null)
+        }}
+        title={`Move "${trashTarget?.title ?? ""}" to the trash?`}
+        description="It won't be deleted right away. You can restore it from the trash, and it will be deleted automatically after 30 days."
+        confirmLabel="Move to trash"
+        onConfirm={confirmTrash}
+      />
       <ConfirmDialog
         open={leaveTarget !== null}
         onOpenChange={(open) => {
