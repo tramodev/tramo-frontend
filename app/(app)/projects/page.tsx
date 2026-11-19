@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import Link from "next/link"
 import {
   Plus,
   FolderKanban,
@@ -45,7 +46,7 @@ import { leaveProject } from "@/lib/project-members"
 import { PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 import {
   startExampleProject,
-  deleteProject,
+  trashProject,
   listProjects,
   renameProject,
   type Project,
@@ -84,9 +85,9 @@ export default function ProjectsPage() {
   const [renameError, setRenameError] = useState("")
   const renamingRef = useRef(false)
   const renameAfterClose = useRef<Project | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
   const [leaveTarget, setLeaveTarget] = useState<Project | null>(null)
   const [leaveError, setLeaveError] = useState("")
+  const [trashError, setTrashError] = useState("")
   const [usageTarget, setUsageTarget] = useState<Project | null>(null)
   const mounted = useMounted()
   const [savedSortBy, setSortBy] = useState<SortBy>(() => {
@@ -187,12 +188,14 @@ export default function ProjectsPage() {
     window.open(`/editor/${projectId}`, "_blank")
   }
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return
-    const project = deleteTarget
-    setDeleteTarget(null)
-    await deleteProject(project.id)
-    setProjects((prev) => prev.filter((p) => p.id !== project.id))
+  const moveToTrash = async (project: Project) => {
+    setTrashError("")
+    try {
+      await trashProject(project.id)
+      setProjects((prev) => prev.filter((p) => p.id !== project.id))
+    } catch {
+      setTrashError(`Could not move "${project.title}" to the trash. Try again.`)
+    }
   }
 
   const confirmLeave = async () => {
@@ -210,6 +213,7 @@ export default function ProjectsPage() {
       {opening && <TopProgressBar label="Opening project" delayed />}
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
       {leaveError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{leaveError}</p>}
+      {trashError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{trashError}</p>}
       <section className="bg-surface-container-high pb-16">
         <div className="container-app px-5 py-11 sm:px-10 lg:px-12">
         <div className="mb-2 flex items-center justify-between">
@@ -256,6 +260,12 @@ export default function ProjectsPage() {
           <div className="mb-5 flex items-center justify-between">
             <span className="block text-sm font-medium text-muted-foreground">My projects</span>
             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/projects/trash">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Trash
+                </Link>
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -399,10 +409,10 @@ export default function ProjectsPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => setDeleteTarget(project)}
+                              onSelect={() => moveToTrash(project)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
-                              Delete
+                              Move to trash
                             </DropdownMenuItem>
                           </>}
                           {project.role !== "OWNER" && <>
@@ -519,10 +529,10 @@ export default function ProjectsPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
-                            onSelect={() => setDeleteTarget(project)}
+                            onSelect={() => moveToTrash(project)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            Delete
+                            Move to trash
                           </DropdownMenuItem>
                         </>}
                         {project.role !== "OWNER" && <>
@@ -542,16 +552,6 @@ export default function ProjectsPage() {
         </div>
       </section>
       {usageTarget && <ProjectUsageDialog key={usageTarget.id} project={usageTarget} onClose={() => setUsageTarget(null)} />}
-      <ConfirmDialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null)
-        }}
-        title={`Delete project "${deleteTarget?.title ?? ""}"?`}
-        description="This can't be undone."
-        confirmLabel="Delete"
-        onConfirm={confirmDelete}
-      />
       <ConfirmDialog
         open={leaveTarget !== null}
         onOpenChange={(open) => {
