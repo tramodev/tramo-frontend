@@ -17,6 +17,7 @@ function load(path, modules = {}, extra = '', globals = {}) {
     require: name => ({
       '@/components/auth/current-user': { useCurrentUserId: () => '1' },
       '@/hooks/use-mounted': { useMounted: () => true },
+      '@/lib/notification-stream': { subscribeNotificationCount: () => () => {} },
       react: {
         useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
         useState: initial => {
@@ -398,4 +399,84 @@ test('a validation loading failure is shown instead of treating the project as e
   await confirmButton(s.render()).props.onClick();
   expect(s.published).toHaveLength(0);
   expect(s.render().find(node => node.props.role === 'alert').props.children).toBe('Renderer unavailable');
+});
+
+test('the trash keeps a project disabled while its own request is in flight', async () => {
+  const resolvers = {};
+  const page = load('app/(app)/projects/trash/page.tsx', {
+    '@/lib/format-bytes': { formatBytes: () => '0 B' },
+    '@/lib/projects-store': {
+      listTrashedProjects: async () => [{ id: 'a', title: 'A', trashedAt: null, storageBytes: 0 }, { id: 'b', title: 'B', trashedAt: null, storageBytes: 0 }],
+      restoreProject: id => new Promise(resolve => { resolvers[id] = resolve; }),
+    },
+  });
+  const render = () => flatten(page.render('default'));
+  const restore = id => render().filter(node => node.props.onClick && node.props.variant === 'outline')[id === 'a' ? 0 : 1];
+  render(); await settle();
+  restore('a').props.onClick();
+  restore('b').props.onClick();
+  resolvers.a(); await settle();
+  const remaining = render().filter(node => node.props.onClick && node.props.disabled !== undefined);
+  expect(remaining).toHaveLength(2);
+  expect(remaining.every(node => node.props.disabled)).toBe(true);
+});
+
+test('My Projects keeps its list when a background reload fails and clears the error when one succeeds', async () => {
+  const responses = [];
+  let projectEvent;
+  const page = load('app/(app)/projects/page.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/lib/notification-stream': { subscribeNotificationCount: (_user, _count, onEvent) => { projectEvent = onEvent; return () => {}; } },
+    '@/lib/projects-store': { listProjects: () => responses.shift()() },
+    '@/lib/format-bytes': { formatBytes: () => '0 B' },
+  });
+  const project = { id: 'project', title: 'Kept', updatedAt: '2026-10-21', storageBytes: 0, role: 'OWNER' };
+  const render = () => flatten(page.render('default'));
+  const alert = () => render().some(node => node.props.role === 'alert');
+  const shown = () => JSON.stringify(render().map(node => node.props.children ?? null)).includes('Kept');
+  responses.push(async () => { throw new Error('offline'); }, async () => [project], async () => { throw new Error('offline'); });
+  render(); await settle();
+  expect(alert()).toBe(true);
+  projectEvent('access-revoked', 'other'); render(); await settle();
+  expect(alert()).toBe(false);
+  expect(shown()).toBe(true);
+  projectEvent('access-revoked', 'other'); render(); await settle();
+  expect(alert()).toBe(false);
+  expect(shown()).toBe(true);
+});
+
+test('the trash has its own tab title', () => {
+  expect(load('app/(app)/projects/trash/layout.tsx').exports.metadata.title).toBe('Trash');
+});
+
+test('the lost access dialog mentions the trash', () => {
+  const workspace = load('app/editor/editor-workspace.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/components/ui/alert-dialog': { AlertDialog: 'AlertDialog', AlertDialogDescription: 'AlertDialogDescription' },
+    '@/app/editor/editor-utils': { countProjectTextStats: () => null },
+    '@/app/editor/embed-draft-status': { subscribeEmbedDrafts: () => () => {}, hasPendingEmbedDrafts: () => false },
+    '@/app/editor/[projectId]/hooks/useCollabSocket': { useCollabSocket: () => null }, '@/app/editor/[projectId]/hooks/useProjectPresence': { useProjectPresence: () => [] }, '@/app/editor/presence': { peersByItem: () => new Map(), premountedItems: () => new Set() },
+    '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => ({
+      loaded: true, view: 'write', items: {}, selectedItem: { id: 'note' }, projectTitle: 'Test', accessLost: true,
+    }) },
+  }, '', { window: { addEventListener() {}, removeEventListener() {} }, document: {}, requestAnimationFrame() {} });
+  const nodes = flatten(workspace.render('ProjectEditor', { routeProjectId: 'project', user: { userId: '1' } }));
+  expect(nodes.find(node => node.type === 'AlertDialog').props.open).toBe(true);
+  expect(nodes.find(node => node.type === 'AlertDialogDescription').props.children).toContain('moved to the trash');
+});
+
+test.each([['published', true], ['private', false]])('the trash dialog warns a %s project gets unpublished: %s', async (visibility, warns) => {
+  const page = load('app/(app)/projects/page.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/components/ui/dropdown-menu': { DropdownMenuItem: 'MenuItem' },
+    '@/components/shared/confirm-dialog': { ConfirmDialog: 'ConfirmDialog' },
+    '@/lib/projects-store': { listProjects: async () => [{ id: 'project', title: 'Doc', updatedAt: '2026-10-21', storageBytes: 0, role: 'OWNER', visibility }] },
+    '@/lib/format-bytes': { formatBytes: () => '0 B' },
+  });
+  const render = () => flatten(page.render('default'));
+  render(); await settle();
+  render().find(node => node.type === 'MenuItem' && [node.props.children].flat().includes('Move to trash')).props.onSelect();
+  const dialog = render().find(node => node.type === 'ConfirmDialog' && node.props.confirmLabel === 'Move to trash');
+  expect(dialog.props.open).toBe(true);
+  expect(dialog.props.description.includes('unpublished')).toBe(warns);
 });

@@ -32,6 +32,7 @@ export interface Project {
   forkedFromOwnerUsername: string | null;
   ownerUsername: string | null;
   role: ProjectRole;
+  trashedAt: string | null;
 }
 
 
@@ -52,6 +53,7 @@ interface ProjectDTO {
   forkedFromOwnerUsername: string | null;
   ownerUsername: string | null;
   role: ProjectRole | null;
+  trashedAt: string | null;
 }
 
 interface TrailDTO {
@@ -127,6 +129,7 @@ function toProjectSummary(dto: ProjectDTO): Project {
     forkedFromOwnerUsername: dto.forkedFromOwnerUsername,
     ownerUsername: dto.ownerUsername ?? null,
     role: dto.role ?? "OWNER",
+    trashedAt: dto.trashedAt ?? null,
   };
 }
 
@@ -249,6 +252,18 @@ export async function renameProject(id: string, title: string, epoch = 0): Promi
 
 export async function deleteProject(id: string): Promise<void> {
   await apiVoid(`/api/project/${id}`, { method: "DELETE" });
+}
+
+export async function trashProject(id: string): Promise<void> {
+  await apiVoid(`/api/project/${id}/trash`, { method: "POST" });
+}
+
+export async function restoreProject(id: string): Promise<void> {
+  await apiVoid(`/api/project/${id}/restore`, { method: "POST" });
+}
+
+export async function listTrashedProjects(): Promise<Project[]> {
+  return (await apiJson<ProjectDTO[]>(`/api/project/trash`)).map(toProjectSummary);
 }
 
 export async function setProjectVisibility(

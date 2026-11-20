@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import Link from "next/link"
 import {
   Plus,
   FolderKanban,
@@ -41,11 +42,12 @@ import { useCurrentUserId } from "@/components/auth/current-user"
 import { beginDraft } from "@/lib/editor-draft"
 import { formatBytes } from "@/lib/format-bytes"
 import { PENDING_JOIN_KEY } from "@/lib/pending-join"
+import { subscribeNotificationCount } from "@/lib/notification-stream"
 import { leaveProject } from "@/lib/project-members"
 import { PROJECT_TEXT_MAX_LENGTH } from "@/lib/project-validation"
 import {
   startExampleProject,
-  deleteProject,
+  trashProject,
   listProjects,
   renameProject,
   type Project,
@@ -84,9 +86,10 @@ export default function ProjectsPage() {
   const [renameError, setRenameError] = useState("")
   const renamingRef = useRef(false)
   const renameAfterClose = useRef<Project | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
   const [leaveTarget, setLeaveTarget] = useState<Project | null>(null)
   const [leaveError, setLeaveError] = useState("")
+  const [trashError, setTrashError] = useState("")
+  const [trashTarget, setTrashTarget] = useState<Project | null>(null)
   const [usageTarget, setUsageTarget] = useState<Project | null>(null)
   const mounted = useMounted()
   const [savedSortBy, setSortBy] = useState<SortBy>(() => {
@@ -113,7 +116,9 @@ export default function ProjectsPage() {
   useEffect(() => {
     let cancelled = false
     listProjects().then((loaded) => {
-      if (!cancelled) setProjects(loaded)
+      if (cancelled) return
+      setProjects(loaded)
+      setLoadError("")
     }).catch(() => {
       if (!cancelled) setLoadError("Could not load your projects. Please try again.")
     }).finally(() => {
@@ -121,6 +126,18 @@ export default function ProjectsPage() {
     })
     return () => { cancelled = true }
   }, [loadAttempt])
+
+  useEffect(() => {
+    if (!userId) return
+    let unread: number | null = null
+    const reload = () => setLoadAttempt((attempt) => attempt + 1)
+    return subscribeNotificationCount(userId, (count) => {
+      if (unread !== null && count > unread) reload()
+      unread = count
+    }, (type) => {
+      if (type === "access-revoked") reload()
+    })
+  }, [userId])
 
   const sortedProjects = useMemo(() => {
     const copy = [...projects]
@@ -187,12 +204,18 @@ export default function ProjectsPage() {
     window.open(`/editor/${projectId}`, "_blank")
   }
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return
-    const project = deleteTarget
-    setDeleteTarget(null)
-    await deleteProject(project.id)
-    setProjects((prev) => prev.filter((p) => p.id !== project.id))
+  const confirmTrash = async () => {
+    if (!trashTarget) return
+    const project = trashTarget
+    setTrashTarget(null)
+    setTrashError("")
+    try {
+      await trashProject(project.id)
+      setProjects((prev) => prev.filter((p) => p.id !== project.id))
+      setLoadAttempt((attempt) => attempt + 1)
+    } catch {
+      setTrashError(`Could not move "${project.title}" to the trash. Try again.`)
+    }
   }
 
   const confirmLeave = async () => {
@@ -202,7 +225,10 @@ export default function ProjectsPage() {
     setLeaveError("")
     const { error } = await leaveProject(project.id)
     if (error) setLeaveError(error)
-    else setProjects((prev) => prev.filter((p) => p.id !== project.id))
+    else {
+      setProjects((prev) => prev.filter((p) => p.id !== project.id))
+      setLoadAttempt((attempt) => attempt + 1)
+    }
   }
 
   return (
@@ -210,6 +236,7 @@ export default function ProjectsPage() {
       {opening && <TopProgressBar label="Opening project" delayed />}
       {renameError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{renameError}</p>}
       {leaveError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{leaveError}</p>}
+      {trashError && <p role="alert" className="px-6 py-3 text-sm text-destructive">{trashError}</p>}
       <section className="bg-surface-container-high pb-16">
         <div className="container-app px-5 py-11 sm:px-10 lg:px-12">
         <div className="mb-2 flex items-center justify-between">
@@ -256,6 +283,12 @@ export default function ProjectsPage() {
           <div className="mb-5 flex items-center justify-between">
             <span className="block text-sm font-medium text-muted-foreground">My projects</span>
             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/projects/trash">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Trash
+                </Link>
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -299,7 +332,7 @@ export default function ProjectsPage() {
             <div role="status" aria-label="Loading projects" className="flex items-center justify-center py-8 text-muted-foreground">
               <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />
             </div>
-          ) : loadError ? (
+          ) : loadError && projects.length === 0 ? (
             <div role="alert" className="flex items-center gap-3 text-sm text-destructive">
               {loadError}
               <Button variant="outline" size="sm" onClick={() => {
@@ -399,10 +432,10 @@ export default function ProjectsPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => setDeleteTarget(project)}
+                              onSelect={() => setTrashTarget(project)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
-                              Delete
+                              Move to trash
                             </DropdownMenuItem>
                           </>}
                           {project.role !== "OWNER" && <>
@@ -519,10 +552,10 @@ export default function ProjectsPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
-                            onSelect={() => setDeleteTarget(project)}
+                            onSelect={() => setTrashTarget(project)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            Delete
+                            Move to trash
                           </DropdownMenuItem>
                         </>}
                         {project.role !== "OWNER" && <>
@@ -543,14 +576,14 @@ export default function ProjectsPage() {
       </section>
       {usageTarget && <ProjectUsageDialog key={usageTarget.id} project={usageTarget} onClose={() => setUsageTarget(null)} />}
       <ConfirmDialog
-        open={deleteTarget !== null}
+        open={trashTarget !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null)
+          if (!open) setTrashTarget(null)
         }}
-        title={`Delete project "${deleteTarget?.title ?? ""}"?`}
-        description="This can't be undone."
-        confirmLabel="Delete"
-        onConfirm={confirmDelete}
+        title={`Move "${trashTarget?.title ?? ""}" to the trash?`}
+        description={`${trashTarget?.visibility === "published" ? "It will be unpublished. " : ""}It won't be deleted right away. You can restore it from the trash, and it will be deleted automatically after 30 days.`}
+        confirmLabel="Move to trash"
+        onConfirm={confirmTrash}
       />
       <ConfirmDialog
         open={leaveTarget !== null}

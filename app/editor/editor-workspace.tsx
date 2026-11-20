@@ -309,7 +309,7 @@ export function ProjectEditor({ routeProjectId, user }: { routeProjectId: string
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>You no longer have access to this project</AlertDialogTitle>
-            <AlertDialogDescription>The owner removed you or revoked the link you joined with. Changes you had not saved yet were not kept. Returning to your projects in a few seconds.</AlertDialogDescription>
+            <AlertDialogDescription>The project was moved to the trash, or the owner removed you or revoked the link you joined with. Changes you had not saved yet were not kept. Returning to your projects in a few seconds.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => router.replace('/projects')}>Back to projects</AlertDialogAction>
