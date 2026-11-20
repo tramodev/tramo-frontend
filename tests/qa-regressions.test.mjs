@@ -399,3 +399,23 @@ test('a validation loading failure is shown instead of treating the project as e
   expect(s.published).toHaveLength(0);
   expect(s.render().find(node => node.props.role === 'alert').props.children).toBe('Renderer unavailable');
 });
+
+test('the trash keeps a project disabled while its own request is in flight', async () => {
+  const resolvers = {};
+  const page = load('app/(app)/projects/trash/page.tsx', {
+    '@/lib/format-bytes': { formatBytes: () => '0 B' },
+    '@/lib/projects-store': {
+      listTrashedProjects: async () => [{ id: 'a', title: 'A', trashedAt: null, storageBytes: 0 }, { id: 'b', title: 'B', trashedAt: null, storageBytes: 0 }],
+      restoreProject: id => new Promise(resolve => { resolvers[id] = resolve; }),
+    },
+  });
+  const render = () => flatten(page.render('default'));
+  const restore = id => render().filter(node => node.props.onClick && node.props.variant === 'outline')[id === 'a' ? 0 : 1];
+  render(); await settle();
+  restore('a').props.onClick();
+  restore('b').props.onClick();
+  resolvers.a(); await settle();
+  const remaining = render().filter(node => node.props.onClick && node.props.disabled !== undefined);
+  expect(remaining).toHaveLength(2);
+  expect(remaining.every(node => node.props.disabled)).toBe(true);
+});

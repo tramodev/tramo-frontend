@@ -29,7 +29,7 @@ export default function TrashPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [busyId, setBusyId] = useState<string | null>(null)
+  const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(new Set())
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function TrashPage() {
   }, [])
 
   const run = async (project: Project, action: (id: string) => Promise<void>, failure: string) => {
-    setBusyId(project.id)
+    setBusyIds((prev) => new Set(prev).add(project.id))
     setError("")
     try {
       await action(project.id)
@@ -53,7 +53,11 @@ export default function TrashPage() {
     } catch {
       setError(failure)
     } finally {
-      setBusyId(null)
+      setBusyIds((prev) => {
+        const next = new Set(prev)
+        next.delete(project.id)
+        return next
+      })
     }
   }
 
@@ -105,7 +109,7 @@ export default function TrashPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={busyId === project.id}
+                    disabled={busyIds.has(project.id)}
                     onClick={() => run(project, restoreProject, `Could not restore "${project.title}". Try again.`)}
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
@@ -114,7 +118,7 @@ export default function TrashPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    disabled={busyId === project.id}
+                    disabled={busyIds.has(project.id)}
                     aria-label={`Delete ${project.title} forever`}
                     className="text-destructive hover:text-destructive"
                     onClick={() => setDeleteTarget(project)}
