@@ -86,7 +86,7 @@ export function ResetPasswordClient() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6 mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem]")}>
+    <form method="post" onSubmit={handleSubmit} className={cn("flex flex-col gap-6 mx-auto w-full max-w-[25rem] 2xl:max-w-[28.75rem]")}>
       <div>
         <h1 className="font-display text-[2.25rem] font-normal">
           Reset password

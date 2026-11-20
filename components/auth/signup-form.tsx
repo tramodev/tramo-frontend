@@ -114,7 +114,7 @@ export function SignupForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6", className)} {...props}>
+    <form method="post" onSubmit={handleSubmit} className={cn("flex flex-col gap-6", className)} {...props}>
       {(isPending || checkingCaptcha) && <TopProgressBar label="Creating account" />}
       <div>
         <h1 className="font-display text-[2.25rem] font-normal">Create your account</h1>
