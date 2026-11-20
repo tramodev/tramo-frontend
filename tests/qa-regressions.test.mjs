@@ -448,3 +448,19 @@ test('My Projects keeps its list when a background reload fails and clears the e
 test('the trash has its own tab title', () => {
   expect(load('app/(app)/projects/trash/layout.tsx').exports.metadata.title).toBe('Trash');
 });
+
+test('the lost access dialog mentions the trash', () => {
+  const workspace = load('app/editor/editor-workspace.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/components/ui/alert-dialog': { AlertDialog: 'AlertDialog', AlertDialogDescription: 'AlertDialogDescription' },
+    '@/app/editor/editor-utils': { countProjectTextStats: () => null },
+    '@/app/editor/embed-draft-status': { subscribeEmbedDrafts: () => () => {}, hasPendingEmbedDrafts: () => false },
+    '@/app/editor/[projectId]/hooks/useCollabSocket': { useCollabSocket: () => null }, '@/app/editor/[projectId]/hooks/useProjectPresence': { useProjectPresence: () => [] }, '@/app/editor/presence': { peersByItem: () => new Map(), premountedItems: () => new Set() },
+    '@/app/editor/[projectId]/hooks/useProjectEditorState': { useProjectEditorState: () => ({
+      loaded: true, view: 'write', items: {}, selectedItem: { id: 'note' }, projectTitle: 'Test', accessLost: true,
+    }) },
+  }, '', { window: { addEventListener() {}, removeEventListener() {} }, document: {}, requestAnimationFrame() {} });
+  const nodes = flatten(workspace.render('ProjectEditor', { routeProjectId: 'project', user: { userId: '1' } }));
+  expect(nodes.find(node => node.type === 'AlertDialog').props.open).toBe(true);
+  expect(nodes.find(node => node.type === 'AlertDialogDescription').props.children).toContain('moved to the trash');
+});
