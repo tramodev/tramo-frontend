@@ -464,3 +464,19 @@ test('the lost access dialog mentions the trash', () => {
   expect(nodes.find(node => node.type === 'AlertDialog').props.open).toBe(true);
   expect(nodes.find(node => node.type === 'AlertDialogDescription').props.children).toContain('moved to the trash');
 });
+
+test.each([['published', true], ['private', false]])('the trash dialog warns a %s project gets unpublished: %s', async (visibility, warns) => {
+  const page = load('app/(app)/projects/page.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/components/ui/dropdown-menu': { DropdownMenuItem: 'MenuItem' },
+    '@/components/shared/confirm-dialog': { ConfirmDialog: 'ConfirmDialog' },
+    '@/lib/projects-store': { listProjects: async () => [{ id: 'project', title: 'Doc', updatedAt: '2026-10-21', storageBytes: 0, role: 'OWNER', visibility }] },
+    '@/lib/format-bytes': { formatBytes: () => '0 B' },
+  });
+  const render = () => flatten(page.render('default'));
+  render(); await settle();
+  render().find(node => node.type === 'MenuItem' && [node.props.children].flat().includes('Move to trash')).props.onSelect();
+  const dialog = render().find(node => node.type === 'ConfirmDialog' && node.props.confirmLabel === 'Move to trash');
+  expect(dialog.props.open).toBe(true);
+  expect(dialog.props.description.includes('unpublished')).toBe(warns);
+});

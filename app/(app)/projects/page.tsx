@@ -581,7 +581,7 @@ export default function ProjectsPage() {
           if (!open) setTrashTarget(null)
         }}
         title={`Move "${trashTarget?.title ?? ""}" to the trash?`}
-        description="It won't be deleted right away. You can restore it from the trash, and it will be deleted automatically after 30 days."
+        description={`${trashTarget?.visibility === "published" ? "It will be unpublished. " : ""}It won't be deleted right away. You can restore it from the trash, and it will be deleted automatically after 30 days.`}
         confirmLabel="Move to trash"
         onConfirm={confirmTrash}
       />
