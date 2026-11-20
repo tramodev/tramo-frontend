@@ -32,6 +32,7 @@ function projectsSetup() {
     '@/components/auth/current-user': { useCurrentUserId: () => '1' },
     '@/hooks/use-mounted': { useMounted: () => true },
     '@/lib/editor-draft': { beginDraft() {} },
+    '@/lib/notification-stream': { subscribeNotificationCount: () => () => {} },
     '@/components/ui/button': { Button: 'Button' },
     'lucide-react': { Loader2: 'Spinner' },
     '@/lib/projects-store': {

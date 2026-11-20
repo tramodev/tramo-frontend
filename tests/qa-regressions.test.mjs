@@ -17,6 +17,7 @@ function load(path, modules = {}, extra = '', globals = {}) {
     require: name => ({
       '@/components/auth/current-user': { useCurrentUserId: () => '1' },
       '@/hooks/use-mounted': { useMounted: () => true },
+      '@/lib/notification-stream': { subscribeNotificationCount: () => () => {} },
       react: {
         useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
         useState: initial => {
