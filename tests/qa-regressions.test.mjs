@@ -444,3 +444,7 @@ test('My Projects keeps its list when a background reload fails and clears the e
   expect(alert()).toBe(false);
   expect(shown()).toBe(true);
 });
+
+test('the trash has its own tab title', () => {
+  expect(load('app/(app)/projects/trash/layout.tsx').exports.metadata.title).toBe('Trash');
+});
