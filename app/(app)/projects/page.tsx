@@ -116,7 +116,9 @@ export default function ProjectsPage() {
   useEffect(() => {
     let cancelled = false
     listProjects().then((loaded) => {
-      if (!cancelled) setProjects(loaded)
+      if (cancelled) return
+      setProjects(loaded)
+      setLoadError("")
     }).catch(() => {
       if (!cancelled) setLoadError("Could not load your projects. Please try again.")
     }).finally(() => {
@@ -330,7 +332,7 @@ export default function ProjectsPage() {
             <div role="status" aria-label="Loading projects" className="flex items-center justify-center py-8 text-muted-foreground">
               <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />
             </div>
-          ) : loadError ? (
+          ) : loadError && projects.length === 0 ? (
             <div role="alert" className="flex items-center gap-3 text-sm text-destructive">
               {loadError}
               <Button variant="outline" size="sm" onClick={() => {

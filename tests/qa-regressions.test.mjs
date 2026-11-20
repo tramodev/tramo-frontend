@@ -420,3 +420,27 @@ test('the trash keeps a project disabled while its own request is in flight', as
   expect(remaining).toHaveLength(2);
   expect(remaining.every(node => node.props.disabled)).toBe(true);
 });
+
+test('My Projects keeps its list when a background reload fails and clears the error when one succeeds', async () => {
+  const responses = [];
+  let projectEvent;
+  const page = load('app/(app)/projects/page.tsx', {
+    'next/navigation': { useRouter: () => ({}) },
+    '@/lib/notification-stream': { subscribeNotificationCount: (_user, _count, onEvent) => { projectEvent = onEvent; return () => {}; } },
+    '@/lib/projects-store': { listProjects: () => responses.shift()() },
+    '@/lib/format-bytes': { formatBytes: () => '0 B' },
+  });
+  const project = { id: 'project', title: 'Kept', updatedAt: '2026-10-21', storageBytes: 0, role: 'OWNER' };
+  const render = () => flatten(page.render('default'));
+  const alert = () => render().some(node => node.props.role === 'alert');
+  const shown = () => JSON.stringify(render().map(node => node.props.children ?? null)).includes('Kept');
+  responses.push(async () => { throw new Error('offline'); }, async () => [project], async () => { throw new Error('offline'); });
+  render(); await settle();
+  expect(alert()).toBe(true);
+  projectEvent('access-revoked', 'other'); render(); await settle();
+  expect(alert()).toBe(false);
+  expect(shown()).toBe(true);
+  projectEvent('access-revoked', 'other'); render(); await settle();
+  expect(alert()).toBe(false);
+  expect(shown()).toBe(true);
+});
