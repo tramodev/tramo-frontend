@@ -16,9 +16,11 @@ import "@/app/editor/Editor.css"
 
 export function LexicalReadOnly({
   content,
+  title,
   onItemClick,
 }: {
   content: string
+  title: string
   onItemClick?: (itemId: string) => void
 }) {
   if (!content) return null
@@ -33,7 +35,7 @@ export function LexicalReadOnly({
       }}
     >
       <RichTextPlugin
-        contentEditable={<ContentEditable className="editor-input" aria-label="Note content" />}
+        contentEditable={<ContentEditable className="editor-input" aria-label={`Content of ${title || "Untitled note"}`} />}
         placeholder={null}
         ErrorBoundary={LexicalErrorBoundary}
       />

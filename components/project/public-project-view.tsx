@@ -360,7 +360,7 @@ export function PublicProjectView({
                           <h3 className="pl-7 pt-2 font-display text-[1.75rem] font-medium leading-normal" style={{ textAlign: stepItem.titleAlign }}>
                             {stepItem.title}
                           </h3>
-                          {mounted && <LexicalReadOnly content={stepItem.content ?? ''} onItemClick={itemId => handleSelectItem({ id: itemId }, section.trailId)} />}
+                          {mounted && <LexicalReadOnly content={stepItem.content ?? ''} title={stepItem.title} onItemClick={itemId => handleSelectItem({ id: itemId }, section.trailId)} />}
                         </div>
                       </section>
                     )

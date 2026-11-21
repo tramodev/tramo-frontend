@@ -296,7 +296,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
             {waiting === 'limit' ? 'Too many open tabs. Close one to keep editing.' : 'Connecting…'}
           </p>}
           {collaborative && <h1 className="note-title pending-note-title" data-placeholder="Untitled note">{item.title}</h1>}
-          {!fresh && <LexicalReadOnly content={item.content ?? ''} />}
+          {!fresh && <LexicalReadOnly content={item.content ?? ''} title={item.title} />}
         </div>}
         <div className={live || fresh ? 'relative' : 'hidden'}>
           <RichTextPlugin contentEditable={

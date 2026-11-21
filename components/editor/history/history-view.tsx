@@ -200,7 +200,7 @@ export function HistoryView({ projectId, restoreEpoch, isOwner, initialHistory, 
                       @{author.username}
                     </span>)}
                   </p>}
-                  <div className="mt-4">{live && <LexicalReadOnly key={`${selected}:${showChanges}:${!!base}`} content={content ?? ''} />}</div>
+                  <div className="mt-4">{live && <LexicalReadOnly key={`${selected}:${showChanges}:${!!base}`} content={content ?? ''} title={note.title} />}</div>
                 </section>;
               })}
             </div>
