@@ -361,8 +361,9 @@ export async function reorderProjectTrails(projectId: string, trailIds: string[]
   await apiVoid(`/api/project/${projectId}/trail/order`, { epoch, method: "PUT", json: { trailIds: trailIds.map(Number) } });
 }
 
-export async function renameTrail(trailId: string, title: string, epoch = 0): Promise<void> {
-  await apiVoid(`/api/trail/${trailId}`, { epoch, method: "PUT", json: { title } });
+export async function renameTrail(trailId: string, title: string, epoch = 0): Promise<string> {
+  const dto = await apiJson<TrailDTO>(`/api/trail/${trailId}`, { epoch, method: "PUT", json: { title } });
+  return dto.title;
 }
 
 export async function deleteTrail(trailId: string, epoch = 0): Promise<void> {

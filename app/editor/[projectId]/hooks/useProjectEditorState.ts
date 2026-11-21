@@ -581,7 +581,7 @@ export function useProjectEditorState(routeProjectId: string, connectionsPanelOp
     }
     pend(`trail-title:${trailId}`, renameTrailOp(trailId, title));
     return pendingSaves.current.track(`trail-title:${trailId}`, () => optimistic(`trail-title:${trailId}`, renameTrailOp(trailId, title),
-      () => renameTrail(trailId, title, restoreEpoch), true), true).catch(() => {});
+      async () => pend(`trail-title:${trailId}`, renameTrailOp(trailId, await renameTrail(trailId, title, restoreEpoch))), true), true).catch(() => {});
   };
 
   const handleRenameItem = (itemId: string, title: string) => {
