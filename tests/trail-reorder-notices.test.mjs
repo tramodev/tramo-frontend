@@ -98,7 +98,7 @@ async function setup(extraTrails = []) {
         reorderProjectTrails: (projectId, trailIds) => new Promise((resolve, reject) => projectOrders.push({ projectId, trailIds, resolve, reject })),
         attachItemToTrail: (trailId, itemId) => new Promise((resolve, reject) => attaches.push({ trailId, itemId, resolve, reject })),
         detachItemFromTrail: (trailId, itemId) => new Promise((resolve, reject) => detaches.push({ trailId, itemId, resolve, reject })),
-        renameTrail: (trailId, title) => new Promise((resolve, reject) => { renameRequests.push({ trailId, title, resolve, reject }); }),
+        renameTrail: (trailId, title) => new Promise((resolve, reject) => { renameRequests.push({ trailId, title, resolve: saved => resolve(saved ?? title), reject }); }),
         getMapPreviews: async () => { previews++; return {}; },
         reorderTrailItems: (trailId, itemIds) => { orders.push({ trailId, itemIds }); requests++; return new Promise((resolve, reject) => { resolveSave = resolve; rejectSave = reject; }); },
         createItem: () => new Promise((resolve, reject) => { createResolve = resolve; createReject = reject; }),
@@ -150,6 +150,15 @@ test('trail renames update immediately even while an earlier rename is saving', 
   s.renameRequests[1].resolve();
   await second;
   expect(s.render().trails[0].title).toBe('Second');
+});
+
+test('a trail rename shows the title the API saved, such as a duplicate suffix', async () => {
+  const s = await setup();
+  const pending = s.render().handleRenameTrail('trail', 'QA Trail 2');
+  expect(s.render().trails[0].title).toBe('QA Trail 2');
+  s.renameRequests[0].resolve('QA Trail 2 (2)');
+  await pending;
+  expect(s.render().trails[0].title).toBe('QA Trail 2 (2)');
 });
 
 test('failed trail renames remain optimistic and are retried on flush', async () => {

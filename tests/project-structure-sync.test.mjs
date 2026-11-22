@@ -140,7 +140,7 @@ test('a failed change goes back to the remote structure, including changes that 
 test('a confirmed change overridden elsewhere gives way after the grace period', async () => {
   const s = await setup();
   const pending = s.render().handleRenameTrail('10', 'Mine');
-  await s.resolve('renameTrail');
+  await s.resolve('renameTrail', 'Mine');
   await pending;
   s.receive(snapshot(1, { trails: [['10', 'Theirs', ['1', '2', '3']]] }));
   expect(s.render().trails[0].title).toBe('Mine');
@@ -191,7 +191,7 @@ test('once operations settle every client shows the API structure, whatever orde
   s.receive(history[1]);
   await s.resolve('reorder');
   s.receive(history[0]);
-  await s.resolve('renameTrail');
+  await s.resolve('renameTrail', 'Renamed');
   await s.resolve('createItem', { id: '7', title: 'Fresh', titleAlign: 'center', unfiled: false, content: '' });
   await Promise.all([reorder, rename, create]);
   for (const raw of [history[3], history[2], history[0]]) s.receive(raw);

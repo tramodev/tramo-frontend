@@ -107,6 +107,18 @@ test('read-only text uses the editor node configuration and never enables editin
   expect(composer.props.initialConfig.editable).toBe(false);
 });
 
+test('read-only text is announced with its note title', () => {
+  const render = load('components/project/lexical-read-only.tsx', {
+    '@/components/editor/safe-note-composer': { SafeNoteComposer: 'SafeNoteComposer' },
+    '@/app/editor/lexical-config': { editorConfig: {} },
+    '@lexical/react/LexicalRichTextPlugin': { RichTextPlugin: 'RichTextPlugin' },
+  });
+  const label = title => render('LexicalReadOnly', { content: '{"root":{"children":[]}}', title })
+    .find(node => node.type === 'RichTextPlugin').props.contentEditable.props['aria-label'];
+  expect(label('QA A')).toBe('Content of QA A');
+  expect(label('')).toBe('Content of Untitled note');
+});
+
 test('public long projects mount only nearby, selected and text-selected notes', () => {
   const slot = id => `trail:first:item:${id}`;
   let visibleIds = new Set([slot('0'), slot('1')]);
