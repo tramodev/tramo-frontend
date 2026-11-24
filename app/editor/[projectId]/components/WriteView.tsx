@@ -472,10 +472,18 @@ export function WriteView(props: WriteViewProps) {
   } });
   const onRevealChange = props.onRevealChange;
   const revealedRef = useRef(revealed);
+  const pendingFocus = useRef<LexicalEditor | null>(null);
   useEffect(() => {
     revealedRef.current = revealed;
     onRevealChange?.(revealed);
   }, [revealed, onRevealChange]);
+  useEffect(() => {
+    const editor = pendingFocus.current;
+    if (!revealed || !editor) return;
+    pendingFocus.current = null;
+    const frame = requestAnimationFrame(() => focusEditor(editor));
+    return () => cancelAnimationFrame(frame);
+  }, [revealed]);
   const releaseAnchor = useRef(() => {});
   useEffect(() => () => releaseAnchor.current(), []);
   const anchor = useCallback((target: HTMLElement) => {
@@ -567,7 +575,10 @@ export function WriteView(props: WriteViewProps) {
       setFocusedItemId(targetId);
       onVisibleItem(targetId);
       setPositionedContext(context);
-      if (request?.focus && request.embedIndex === undefined && editor && !hasRememberedCaret(targetId)) requestAnimationFrame(() => focusEditor(editor));
+      if (request?.focus && request.embedIndex === undefined && editor && !hasRememberedCaret(targetId)) {
+        if (revealedRef.current) requestAnimationFrame(() => focusEditor(editor));
+        else pendingFocus.current = editor;
+      }
     });
     return () => cancelAnimationFrame(frame);
   }, [active, navigationRequest, contentReady, onVisibleItem, pinScrollSpy, anchor, positionedContext, context, item.id, visibleIds, invalidItems]);
