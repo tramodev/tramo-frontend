@@ -32,7 +32,7 @@ export function TrailHero() {
                   <a href="/explore">Explore trails</a>
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">Explore is open to everyone. No account needed.</p>
+              <p className="text-sm text-muted-foreground">No account needed to explore, or to <a href="/playground" className="text-foreground underline underline-offset-4 hover:text-primary">try the editor</a>.</p>
             </div>
           </div>
         </StaggerItem>
