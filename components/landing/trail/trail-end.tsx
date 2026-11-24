@@ -16,13 +16,21 @@ export function TrailEnd() {
             <span className="block">Learn it.</span> <span className="block">Explain it.</span> <span className="block">One trail at a time.</span>
           </h2>
           <p className="mt-5 text-lg text-primary-foreground/75">Free, open source, no card required.</p>
-          <a
-            href="/signup"
-            className="group mt-10 inline-flex h-13 items-center gap-2 rounded-full bg-primary-foreground px-7 text-base font-medium text-primary transition-transform active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-foreground"
-          >
-            Start your first trail
-            <ArrowRight aria-hidden="true" className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5" />
-          </a>
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <a
+              href="/signup"
+              className="group inline-flex h-13 items-center justify-center gap-2 rounded-full bg-primary-foreground px-7 text-base font-medium text-primary transition-transform active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-foreground"
+            >
+              Start your first trail
+              <ArrowRight aria-hidden="true" className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5" />
+            </a>
+            <a
+              href="/playground"
+              className="inline-flex h-13 items-center justify-center rounded-full border border-primary-foreground/40 px-7 text-base font-medium text-primary-foreground transition-[transform,background-color] hover:bg-primary-foreground/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-foreground"
+            >
+              Try the editor
+            </a>
+          </div>
         </div>
         <div>
           <p className="text-sm font-medium text-primary-foreground/75">You followed 2 trails</p>
