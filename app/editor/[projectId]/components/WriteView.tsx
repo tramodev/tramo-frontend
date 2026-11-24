@@ -108,6 +108,7 @@ interface WriteViewProps {
   extractionActions: ExtractionActions;
   connectionsPanelOpen: boolean;
   onToggleConnectionsPanelOpen: () => void;
+  imagesUnavailable?: string;
 }
 
 function focusEditor(editor: LexicalEditor, edge: 'start' | 'end' = 'start') {
@@ -332,7 +333,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         <ListStylePlugin />
         <TabIndentationPlugin />
         <HorizontalRulePlugin />
-        <SlashMenuPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId}
+        <SlashMenuPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId} imagesUnavailable={props.imagesUnavailable}
           onClose={() => {
             if (props.draft) requestAnimationFrame(() => props.onChange(item.id, editor.getEditorState(), false));
           }} />
@@ -359,7 +360,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           {collaborative && <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail}
             sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}
             onOpen={result => props.onSelectItem(result.item, result.trailId)} />}
-          {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId}
+          {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId} imagesUnavailable={props.imagesUnavailable}
             history={collaborative ? undefined : history}
             titleFocused={titleFocused} titleAlign={item.titleAlign}
             onSetTitleAlign={(align) => props.onSetTitleAlign(item.id, align)} />, toolbar)}

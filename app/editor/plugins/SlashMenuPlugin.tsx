@@ -50,13 +50,15 @@ class SlashOption extends MenuOption {
   Icon: typeof Type;
   keywords: string;
   run: ((editor: LexicalEditor) => void) | null;
+  hint?: string;
 
-  constructor(label: string, Icon: typeof Type, keywords: string, run: ((editor: LexicalEditor) => void) | null) {
+  constructor(label: string, Icon: typeof Type, keywords: string, run: ((editor: LexicalEditor) => void) | null, hint?: string) {
     super(label);
     this.label = label;
     this.Icon = Icon;
     this.keywords = keywords;
     this.run = run;
+    this.hint = hint;
   }
 }
 
@@ -75,7 +77,7 @@ function headingOption(label: string, Icon: typeof Type, tag: HeadingTagType): S
   );
 }
 
-export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }: { projectId?: string; resolveProjectId?: () => Promise<string | undefined>; onClose?: () => void } = {}) {
+export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose, imagesUnavailable }: { projectId?: string; resolveProjectId?: () => Promise<string | undefined>; onClose?: () => void; imagesUnavailable?: string } = {}) {
   const [editor] = useLexicalComposerContext();
   const [queryString, setQueryString] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -123,7 +125,10 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
       new SlashOption('Divider', Minus, 'divider horizontal rule hr separator', (e) =>
         e.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined),
       ),
-      new SlashOption('Image', ImageIcon, 'image photo picture upload', null),
+      imagesUnavailable
+        ? new SlashOption('Image', ImageIcon, 'image photo picture upload',
+          () => window.dispatchEvent(new CustomEvent('editor-image-error', { detail: imagesUnavailable })), 'Sign up')
+        : new SlashOption('Image', ImageIcon, 'image photo picture upload', null),
       new SlashOption('Equation', Sigma, 'math equation ecuacion ecuación fórmula latex formula katex block display', (e) =>
         e.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: false }),
       ),
@@ -144,7 +149,7 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
         }),
       ),
     ],
-    [],
+    [imagesUnavailable],
   );
 
   const options = useMemo(() => {
@@ -210,6 +215,7 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
                     >
                       <option.Icon size={15} />
                       {option.label}
+                      {option.hint && <span className="ml-auto text-xs text-muted-foreground">{option.hint}</span>}
                     </li>
                   ))}
                 </TypeaheadMenu>,

@@ -319,7 +319,9 @@ export default function ToolbarPlugin({
   titleAlign,
   onSetTitleAlign,
   history,
+  imagesUnavailable,
 }: {
+  imagesUnavailable?: string;
   projectId?: string;
   resolveProjectId?: () => Promise<string | undefined>;
   titleFocused?: boolean;
@@ -886,11 +888,12 @@ export default function ToolbarPlugin({
             </DropdownMenuSubContent>
           </DropdownMenuSub>}
           <DropdownMenuItem
-            disabled={blockType === 'code' || inTitle}
+            disabled={blockType === 'code' || inTitle || !!imagesUnavailable}
             onSelect={() => fileInputRef.current?.click()}
           >
             <ImageIcon className="h-4 w-4" />
             Image
+            {imagesUnavailable && <span className="ml-auto text-xs">Sign up</span>}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={blockType === 'code' || inTitle}

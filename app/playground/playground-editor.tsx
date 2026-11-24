@@ -19,7 +19,8 @@ import { useMounted } from '@/hooks/use-mounted';
 
 const NO_MAP_PREVIEWS = {};
 const noop = () => {};
-const imagesNeedAccount = () => Promise.reject(new Error('Create an account to add images.'));
+const IMAGES_NEED_ACCOUNT = 'Create an account to add images.';
+const imagesNeedAccount = () => Promise.reject(new Error(IMAGES_NEED_ACCOUNT));
 const extractionActions = { beforeExtract: async () => {}, onExtracted: noop };
 
 export function PlaygroundEditor() {
@@ -166,6 +167,7 @@ function PlaygroundWorkspace() {
                 </TaskHint>}
                 onDraftTitleChange={project.handleRenameItem}
                 resolveProjectId={imagesNeedAccount}
+                imagesUnavailable={IMAGES_NEED_ACCOUNT}
                 active={project.view === 'write'}
                 projectId={project.projectId}
                 item={project.selectedItem}
