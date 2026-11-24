@@ -37,6 +37,7 @@ import { ForkBadge } from "@/components/project/fork-badge"
 import { PlanUsageChip } from "@/components/profile/plan-usage-chip"
 import { ProjectUsageDialog } from "@/components/project/project-usage-dialog"
 import { LocalDraftRecovery } from "@/components/editor/local-draft-recovery"
+import { PlaygroundImport } from "@/components/editor/playground-import"
 import { useMounted } from "@/hooks/use-mounted"
 import { useCurrentUserId } from "@/components/auth/current-user"
 import { beginDraft } from "@/lib/editor-draft"
@@ -279,6 +280,7 @@ export default function ProjectsPage() {
 
       <section className="relative -mt-16 sm:rounded-t-[64px] border-t border-border bg-background pt-[34px]">
         <LocalDraftRecovery userId={userId} />
+        <PlaygroundImport userId={userId} />
         <div className="container-app min-h-[310px] px-5 sm:px-10 lg:px-12">
           <div className="mb-5 flex items-center justify-between">
             <span className="block text-sm font-medium text-muted-foreground">My projects</span>

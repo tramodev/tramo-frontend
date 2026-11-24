@@ -15,6 +15,7 @@ import { countProjectTextStats, SIDEBAR_OPEN_STORAGE_KEY, CONNECTIONS_OPEN_STORA
 import { EditorTitleSlot } from '@/app/editor/[projectId]/components/EditorHeader';
 import { WriteView } from '@/app/editor/[projectId]/components/WriteView';
 import { usePlaygroundProject } from '@/app/playground/use-playground-project';
+import { playgroundEditorHref } from '@/app/playground/playground-import';
 import { useMounted } from '@/hooks/use-mounted';
 
 const NO_MAP_PREVIEWS = {};
@@ -23,13 +24,15 @@ const IMAGES_NEED_ACCOUNT = 'Create an account to add images.';
 const imagesNeedAccount = () => Promise.reject(new Error(IMAGES_NEED_ACCOUNT));
 const extractionActions = { beforeExtract: async () => {}, onExtracted: noop };
 
-export function PlaygroundEditor() {
+export function PlaygroundEditor({ loggedIn }: { loggedIn: boolean }) {
   const mounted = useMounted();
   if (!mounted) return <div className="flex h-dvh items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />Loading editor…</div>;
-  return <PlaygroundWorkspace />;
+  return <PlaygroundWorkspace loggedIn={loggedIn} />;
 }
 
-function PlaygroundWorkspace() {
+function PlaygroundWorkspace({ loggedIn }: { loggedIn: boolean }) {
+  const [saving, setSaving] = useState(false);
+  const [saveToAccountError, setSaveToAccountError] = useState('');
   const workspaceRef = useRef<HTMLDivElement>(null);
   const [toolbarOpen, setToolbarOpen] = useState(false);
   const formattingTriggerRef = useRef<HTMLButtonElement>(null);
@@ -111,9 +114,17 @@ function PlaygroundWorkspace() {
           {textStats && <span className="editor-word-count hidden text-xs text-muted-foreground md:inline" title="Total for the project">
             {textStats.words} words · {textStats.characters} characters
           </span>}
-          <Button asChild size="lg">
+          {saveToAccountError && <span role="alert" className="max-w-48 text-xs text-destructive">{saveToAccountError}</span>}
+          {loggedIn ? <Button size="lg" disabled={saving} onClick={() => {
+            setSaving(true);
+            setSaveToAccountError('');
+            project.saveToAccount().then(result => window.location.assign(playgroundEditorHref(result)), (error: unknown) => {
+              setSaveToAccountError(error instanceof Error ? error.message : 'Could not save the playground.');
+              setSaving(false);
+            });
+          }}>{saving ? 'Saving…' : 'Save to my projects'}</Button> : <Button asChild size="lg">
             <Link href="/signup">Sign up to save</Link>
-          </Button>
+          </Button>}
         </>}
         sidebar={
           <SidebarCustom
@@ -163,7 +174,7 @@ function PlaygroundWorkspace() {
               <WriteView
                 toolbarOpen={toolbarOpen}
                 hint={<TaskHint id="playground:write">
-                  This is a playground: your notes stay in this browser. Sign up to save them to an account and publish them.
+                  This is a playground: your notes stay in this browser. {loggedIn ? 'Save them to your projects to keep and publish them.' : 'Sign up to save them to an account and publish them.'}
                 </TaskHint>}
                 onDraftTitleChange={project.handleRenameItem}
                 resolveProjectId={imagesNeedAccount}

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Metadata } from "next"
 import { PlaygroundEditor } from "@/app/playground/playground-editor"
+import { isLoggedIn } from "@/lib/auth"
 
 export const metadata: Metadata = {
   title: "Playground",
@@ -9,6 +10,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/playground" },
 }
 
-export default function PlaygroundPage() {
-  return <PlaygroundEditor />
+export default async function PlaygroundPage() {
+  return <PlaygroundEditor loggedIn={await isLoggedIn()} />
 }

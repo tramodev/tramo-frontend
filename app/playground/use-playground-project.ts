@@ -7,10 +7,10 @@ import { serializeNoteContent } from '@/app/editor/note-content';
 import { countTextStats, searchableText } from '@/app/editor/editor-utils';
 import { resolveItemTrail } from '@/app/editor/trail-navigation';
 import { assertProjectText } from '@/lib/project-validation';
+import { importPlayground, PLAYGROUND_STORAGE_KEY } from '@/app/playground/playground-import';
 import { addItem, addTrail, alignItem, compose, followNavigation, linkItem, orderTrailItems, orderTrails, parseStructure, removeItem, removeTrail,
   renameItem, renameTrail, unlinkItem, type Structure, type StructureOp } from '@/app/editor/structure';
 
-const STORAGE_KEY = 'tramo:playground';
 const SAVE_DEBOUNCE_MS = 600;
 const QUOTA_ERROR = 'This browser ran out of space for the playground. Create an account to keep writing.';
 
@@ -36,7 +36,7 @@ function seed(): Saved {
 
 function load(): Saved {
   try {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
+    const data = JSON.parse(localStorage.getItem(PLAYGROUND_STORAGE_KEY) ?? 'null');
     const structure = parseStructure(JSON.stringify(data?.structure));
     if (!structure || typeof data.title !== 'string' || !data.contents || typeof data.contents !== 'object') return seed();
     const contents = Object.fromEntries(Object.keys(structure.items).map(id =>
@@ -80,12 +80,13 @@ export function usePlaygroundProject() {
   const newId = () => String(nextId.current++);
 
   const pending = useRef<Saved | null>(null);
+  const importing = useRef(false);
   const persist = useCallback(() => {
-    if (!pending.current) return;
+    if (!pending.current || importing.current) return;
     const saved = pending.current;
     pending.current = null;
     try {
-      localStorage.setItem(STORAGE_KEY, serialize(saved));
+      localStorage.setItem(PLAYGROUND_STORAGE_KEY, serialize(saved));
       setSaveError('');
     } catch {
       setSaveError(QUOTA_ERROR);
@@ -233,6 +234,15 @@ export function usePlaygroundProject() {
       setProjectTitle(title);
     },
     searchItems,
+    saveToAccount: async () => {
+      importing.current = true;
+      try {
+        return await importPlayground(serialize(saved));
+      } catch (error) {
+        importing.current = false;
+        throw error;
+      }
+    },
     onChange: (itemId: string, editorState: EditorState) => {
       const content = serializeNoteContent(editorState.toJSON(), false);
       setContents(previous => previous[itemId]?.content === content ? previous : { ...previous, [itemId]: loadedContent(content) });
