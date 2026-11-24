@@ -18,6 +18,7 @@ type LoadedContent = { content: string; textStats: { words: number; characters: 
 type Saved = { title: string; graphColors: string | null; structure: Structure; contents: Record<string, LoadedContent> };
 type Navigation = { itemId?: string; trailId?: string; request?: { itemId: string; sequence: number; focus: boolean; embedIndex?: number } };
 
+const UNTITLED = 'Untitled note';
 const loadedContent = (content: string): LoadedContent => ({ content, textStats: countTextStats(content) });
 
 function seed(): Saved {
@@ -26,7 +27,7 @@ function seed(): Saved {
     graphColors: null,
     structure: {
       version: 0, restoreEpoch: 0,
-      items: { '1': { id: '1', title: '', titleAlign: 'center', unfiled: false } },
+      items: { '1': { id: '1', title: UNTITLED, titleAlign: 'center', unfiled: false } },
       trails: [{ id: '2', title: 'My first trail', description: '', itemIds: ['1'], steps: [{ itemId: '1' }], version: 0, forkedFrom: null }],
     },
     contents: { '1': loadedContent('') },
@@ -147,7 +148,7 @@ export function usePlaygroundProject() {
   const createItem = (trailId: string | undefined, title: string) => {
     const id = newId();
     setContents(previous => ({ ...previous, [id]: loadedContent('') }));
-    apply(addItem({ id, title, titleAlign: 'center', unfiled: !trailId }, trailId));
+    apply(addItem({ id, title: title.trim() || UNTITLED, titleAlign: 'center', unfiled: !trailId }, trailId));
     setView('write');
     setNavigation({ trailId, itemId: id, request: { itemId: id, sequence: ++navigationSequence.current, focus: true } });
   };
@@ -217,7 +218,7 @@ export function usePlaygroundProject() {
     handleDeleteItem,
     handleDeleteTrail,
     handleRenameTrail: (trailId: string, title: string) => apply(renameTrail(trailId, title)),
-    handleRenameItem: (itemId: string, title: string) => apply(renameItem(itemId, title)),
+    handleRenameItem: (itemId: string, title: string) => { if (title.trim()) apply(renameItem(itemId, title)); },
     commitItemTitle: (itemId: string, currentTitle: string, nextValue: string) => {
       const trimmed = nextValue.trim();
       if (trimmed && trimmed !== currentTitle) apply(renameItem(itemId, trimmed));
