@@ -56,6 +56,7 @@ interface SidebarCustomProps {
   onReorderTrails: (trailIds: string[]) => void;
   trailOrderError?: string | null;
   onMoveItemToTrail: (sourceId: string, targetId: string, itemId: string, targetIndex?: number) => Promise<void>;
+  searchItems?: (query: string) => Promise<string[]>;
   readOnly?: boolean;
   peersByItem?: Map<string, Peer[]>;
 }
@@ -159,6 +160,7 @@ export function SidebarCustom({
   onReorderTrails,
   trailOrderError,
   onMoveItemToTrail,
+  searchItems,
   readOnly = false,
   peersByItem,
 }: SidebarCustomProps) {
@@ -260,12 +262,12 @@ export function SidebarCustom({
   useEffect(() => {
     if (draft || q.length < MIN_SEARCH_LENGTH) return;
     const timeout = setTimeout(() => {
-      searchProjectItems(projectId, q)
+      (searchItems ? searchItems(q) : searchProjectItems(projectId, q))
         .then((ids) => setBodyMatches({ query: q, ids: new Set(ids) }))
         .catch(() => setBodyMatches({ query: q, ids: EMPTY_MATCHES }));
     }, 250);
     return () => clearTimeout(timeout);
-  }, [projectId, q, draft]);
+  }, [projectId, q, draft, searchItems]);
 
   const bodyMatchIds = bodyMatches.query === q ? bodyMatches.ids : EMPTY_MATCHES;
 
