@@ -90,6 +90,7 @@ function PlaygroundWorkspace() {
     >
       <ProjectShell
         homeHref="/"
+        showLogo={false}
         titleSlot={
           <EditorTitleSlot
             projectTitle={project.projectTitle}
