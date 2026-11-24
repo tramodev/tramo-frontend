@@ -24,7 +24,10 @@ export async function generateMetadata({
   const { tab: tabParam } = await searchParams
   const profile = await fetchProfile(username)
   if (!profile) return { title: "User not found" }
-  return { title: `${profile.username}'s ${tabParam === "following" ? "following" : "followers"}` }
+  return {
+    title: `${profile.username}'s ${tabParam === "following" ? "following" : "followers"}`,
+    robots: { index: false },
+  }
 }
 
 export default async function FollowersPage({

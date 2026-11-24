@@ -34,6 +34,7 @@ export async function generateMetadata({
     title: profile.username,
     description,
     alternates: { canonical: `/u/${encodeURIComponent(profile.username)}` },
+    robots: profile.stats.trailsPublished === 0 ? { index: false } : undefined,
     openGraph: images ? { images } : undefined,
     twitter: { card: "summary_large_image", title: profile.username, description, images },
   }
