@@ -108,6 +108,7 @@ interface WriteViewProps {
   extractionActions: ExtractionActions;
   connectionsPanelOpen: boolean;
   onToggleConnectionsPanelOpen: () => void;
+  imagesUnavailable?: string;
 }
 
 function focusEditor(editor: LexicalEditor, edge: 'start' | 'end' = 'start') {
@@ -332,7 +333,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         <ListStylePlugin />
         <TabIndentationPlugin />
         <HorizontalRulePlugin />
-        <SlashMenuPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId}
+        <SlashMenuPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId} imagesUnavailable={props.imagesUnavailable}
           onClose={() => {
             if (props.draft) requestAnimationFrame(() => props.onChange(item.id, editor.getEditorState(), false));
           }} />
@@ -359,7 +360,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
           {collaborative && <ExtractSelectionPlugin projectId={props.projectId} itemId={item.id} trail={props.trail}
             sharedCount={props.trails.filter(trail => trail.itemIds.includes(item.id)).length} actions={props.extractionActions}
             onOpen={result => props.onSelectItem(result.item, result.trailId)} />}
-          {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId}
+          {toolbar && createPortal(<ToolbarPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId} imagesUnavailable={props.imagesUnavailable}
             history={collaborative ? undefined : history}
             titleFocused={titleFocused} titleAlign={item.titleAlign}
             onSetTitleAlign={(align) => props.onSetTitleAlign(item.id, align)} />, toolbar)}
@@ -471,10 +472,18 @@ export function WriteView(props: WriteViewProps) {
   } });
   const onRevealChange = props.onRevealChange;
   const revealedRef = useRef(revealed);
+  const pendingFocus = useRef<LexicalEditor | null>(null);
   useEffect(() => {
     revealedRef.current = revealed;
     onRevealChange?.(revealed);
   }, [revealed, onRevealChange]);
+  useEffect(() => {
+    const editor = pendingFocus.current;
+    if (!revealed || !editor) return;
+    pendingFocus.current = null;
+    const frame = requestAnimationFrame(() => focusEditor(editor));
+    return () => cancelAnimationFrame(frame);
+  }, [revealed]);
   const releaseAnchor = useRef(() => {});
   useEffect(() => () => releaseAnchor.current(), []);
   const anchor = useCallback((target: HTMLElement) => {
@@ -566,7 +575,10 @@ export function WriteView(props: WriteViewProps) {
       setFocusedItemId(targetId);
       onVisibleItem(targetId);
       setPositionedContext(context);
-      if (request?.focus && request.embedIndex === undefined && editor && !hasRememberedCaret(targetId)) requestAnimationFrame(() => focusEditor(editor));
+      if (request?.focus && request.embedIndex === undefined && editor && !hasRememberedCaret(targetId)) {
+        if (revealedRef.current) requestAnimationFrame(() => focusEditor(editor));
+        else pendingFocus.current = editor;
+      }
     });
     return () => cancelAnimationFrame(frame);
   }, [active, navigationRequest, contentReady, onVisibleItem, pinScrollSpy, anchor, positionedContext, context, item.id, visibleIds, invalidItems]);
@@ -608,8 +620,8 @@ export function WriteView(props: WriteViewProps) {
   });
 
   return <EditorImagesProvider projectId={props.projectId} publicRead={false}>
-    {imageError && <div role="alert" className="text-sm text-destructive">{imageError}<button type="button" onClick={() => setImageError(null)}>Dismiss</button></div>}
     <div data-tour="write-panel" className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      {imageError && <div role="alert" className="flex shrink-0 items-center gap-2 text-sm text-destructive">{imageError}<button type="button" className="underline" onClick={() => setImageError(null)}>Dismiss</button></div>}
       <div className="editor-container relative flex flex-1 min-h-0 flex-col" aria-busy={!revealed}>
         {!revealed && props.contentLoadError && <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-background text-sm text-muted-foreground" role="status">
           <p>Could not load the editor.</p><button type="button" className="text-foreground underline" onClick={props.onRetryContent}>Retry</button>
