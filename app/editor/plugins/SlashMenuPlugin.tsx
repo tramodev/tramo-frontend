@@ -150,9 +150,10 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
   const options = useMemo(() => {
     const query = (queryString ?? '').toLowerCase();
     if (!query) return allOptions;
-    return allOptions.filter(
-      (option) => option.label.toLowerCase().includes(query) || option.keywords.includes(query),
-    );
+    const rank = (option: SlashOption) => option.label.toLowerCase().startsWith(query) ? 0 : 1;
+    return allOptions
+      .filter((option) => option.label.toLowerCase().includes(query) || option.keywords.includes(query))
+      .sort((a, b) => rank(a) - rank(b));
   }, [allOptions, queryString]);
 
   const onSelectOption = useCallback(
