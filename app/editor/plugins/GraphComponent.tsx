@@ -235,6 +235,7 @@ export default function GraphComponent({ equation, nodeKey, invalidSource = fals
         const node = $getNodeByKey(nodeKey);
         if (!$isGraphNode(node)) return;
         if (draft.trim() === '') {
+          if (exitTo) $placeCaret(node, exitTo);
           node.remove();
           return;
         }
@@ -371,6 +372,9 @@ export default function GraphComponent({ equation, nodeKey, invalidSource = fals
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
               event.preventDefault();
               void leave();
+            } else if (event.key === 'Backspace' && value === '') {
+              event.preventDefault();
+              void leave('before');
             } else if (event.key === 'Escape') {
               event.preventDefault();
               void leave('after');

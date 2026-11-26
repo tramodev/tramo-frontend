@@ -249,6 +249,7 @@ export default function EquationComponent({
         if (!$isEquationNode(node)) return;
         const next = draft;
         if (next.trim() === '') {
+          if (exitTo) $placeCaret(node, exitTo);
           node.remove();
           return;
         }
@@ -389,6 +390,9 @@ export default function EquationComponent({
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
               void leave();
+            } else if (event.key === 'Backspace' && textarea.value === '') {
+              event.preventDefault();
+              void leave('before');
             } else if (event.key === 'Escape') {
               event.preventDefault();
               void leave('after');

@@ -23,9 +23,10 @@ function find(element, type) {
 function setup(kind, initial = '', fresh = initial === '', selected = false, scoreLoad, editable = true) {
   const field = kind === 'Equation' ? 'equation' : 'abc';
   const states = [], effects = [], listeners = [], refs = [], updates = [], callbacks = [], effectStates = [];
-  let index = 0, refIndex = 0, callbackIndex = 0, effectIndex = 0, content = initial, removed = false;
+  let index = 0, refIndex = 0, callbackIndex = 0, effectIndex = 0, content = initial, removed = false, caret = null;
   const changed = (previous, next) => !previous || !next || previous.length !== next.length || previous.some((value, i) => value !== next[i]);
-  const node = { setEquation: value => { content = value; }, setAbc: value => { content = value; }, getEquation: () => content, getAbc: () => content, remove: () => { removed = true; } };
+  const neighbour = { selectStart: () => { caret = 'next-start'; }, selectEnd: () => { caret = 'previous-end'; } };
+  const node = { setEquation: value => { content = value; }, setAbc: value => { content = value; }, getEquation: () => content, getAbc: () => content, remove: () => { removed = true; }, isInline: () => false, getTopLevelElement: () => null, getPreviousSibling: () => neighbour, getNextSibling: () => neighbour };
   const editor = { isEditable: () => editable, update: (fn, options) => { if (options?.tag !== 'skip-dom-selection') updates.push(options); fn(); }, registerCommand: () => () => {}, registerUpdateListener: listener => { listeners.push(listener); return () => {}; } };
   const editingDecorators = new WeakMap([[editor, new Set(fresh ? ['embed'] : [])]]);
   const react = {
@@ -57,7 +58,7 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
     '@lexical/react/LexicalComposerContext': { useLexicalComposerContext: () => [editor] },
     '@lexical/react/useLexicalNodeSelection': { useLexicalNodeSelection: () => [selected, () => {}, () => {}] },
     katex: { default: require('katex') },
-    lexical: { $getNodeByKey: () => node, $getSelection: () => null, $isNodeSelection: () => false, SKIP_DOM_SELECTION_TAG: 'skip-dom-selection', HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
+    lexical: { $getNodeByKey: () => node, $getSelection: () => null, $isNodeSelection: () => false, $isElementNode: value => value === neighbour, SKIP_DOM_SELECTION_TAG: 'skip-dom-selection', HISTORIC_TAG: 'historic', HISTORY_PUSH_TAG: 'history-push', HISTORY_MERGE_TAG: 'history-merge' },
     [`@/app/editor/nodes/${kind}Node`]: { [`$is${kind}Node`]: value => value === node },
     '@/app/editor/plugins/decoratorCaret': { editingDecorators, textareaCaretRows: ({ value, selectionStart, selectionEnd }) => ({ first: !value.slice(0, selectionStart).includes('\n'), last: !value.slice(selectionEnd).includes('\n') }) },
     '@/app/editor/plugins/music-audio': { loadAbcjs: () => scoreLoad ?? Promise.resolve(require('abcjs')) },
@@ -83,7 +84,8 @@ function setup(kind, initial = '', fresh = initial === '', selected = false, sco
     enter: () => find(render(), kind === 'Equation' ? 'span' : 'div').props.onDoubleClick(),
     type: value => input().props.onChange({ target: { value } }),
     escape: () => input().props.onKeyDown({ key: 'Escape', currentTarget: { value: content, selectionStart: 0, selectionEnd: 0 }, stopPropagation() {}, preventDefault() {} }),
-    get content() { return content; }, get removed() { return removed; },
+    backspace: () => { const value = input().props.value; let prevented = false; input().props.onKeyDown({ key: 'Backspace', currentTarget: { value, selectionStart: value.length, selectionEnd: value.length }, stopPropagation() {}, preventDefault() { prevented = true; } }); return prevented; },
+    get content() { return content; }, get removed() { return removed; }, get caret() { return caret; },
   };
 }
 
@@ -662,6 +664,22 @@ test.each(['Equation', 'Music'])('%s permits navigation while retaining oversize
   expect(s.input().props.value).toBe(source);
   expect(s.updates).toEqual([]);
   expect(s.actions).toEqual([]);
+});
+
+test.each(['Equation', 'Music'])('%s is removed by Backspace once its draft is empty, leaving the caret before it', async kind => {
+  const s = setup(kind);
+  s.type('');
+  expect(s.backspace()).toBe(true);
+  await new Promise(resolve => setImmediate(resolve));
+  expect(s.removed).toBe(true);
+  expect(s.caret).toBe('previous-end');
+});
+
+test.each(['Equation', 'Music'])('%s keeps Backspace as a normal delete while the draft has text', kind => {
+  const s = setup(kind, 'x');
+  s.enter();
+  expect(s.backspace()).toBe(false);
+  expect(s.removed).toBe(false);
 });
 
 test.each(['Equation', 'Music'])('%s still removes an empty draft containing only whitespace', kind => {

@@ -227,6 +227,7 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
         if (!$isMusicNode(node)) return;
         const next = draft;
         if (next.trim() === '' || next.trim() === DEFAULT_ABC.trim()) {
+          if (exitTo) $placeCaret(node, exitTo);
           node.remove();
           return;
         }
@@ -357,6 +358,9 @@ export default function MusicComponent({ abc, nodeKey, invalidSource = false }: 
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
               event.preventDefault();
               void leave();
+            } else if (event.key === 'Backspace' && value === '') {
+              event.preventDefault();
+              void leave('before');
             } else if (event.key === 'Escape') {
               event.preventDefault();
               void leave('after');
