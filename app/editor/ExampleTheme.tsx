@@ -45,6 +45,7 @@ const ExampleTheme = {
   },
   equation: 'editor-equation',
   music: 'editor-music',
+  graph: 'editor-graph',
   image: 'editor-image',
   link: 'editor-link',
   list: {

@@ -352,8 +352,8 @@ export default function PublishPage() {
       </div>
       <AlertDialog open={embedWarningOpen} onOpenChange={setEmbedWarningOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>{embedErrors.length} {embedErrors.length === 1 ? 'equation or music score has errors' : 'equations or music scores have errors'}</AlertDialogTitle>
-            <AlertDialogDescription>Your content is preserved. Readers will see the original source when an equation or music score cannot be rendered.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>{embedErrors.length} {embedErrors.length === 1 ? 'equation, graph or music score has errors' : 'equations, graphs or music scores have errors'}</AlertDialogTitle>
+            <AlertDialogDescription>Your content is preserved. Readers will see the original source when an equation, graph or music score cannot be rendered.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => { if (embedErrors[0]) router.push(embedReviewUrl(projectId, embedErrors[0])); }}>Review</AlertDialogCancel>
             <AlertDialogAction onClick={() => handleConfirm(true)}>Publish anyway</AlertDialogAction>

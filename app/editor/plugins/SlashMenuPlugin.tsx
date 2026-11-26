@@ -22,6 +22,7 @@ import {
 import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
 import {
   CheckSquare,
+  ChartSpline,
   Heading1,
   Heading2,
   Heading3,
@@ -41,7 +42,7 @@ import {
 } from 'lucide-react';
 import { $setNumberedList } from '@/app/editor/list-style';
 import { insertImageWithUpload } from './ImagesPlugin';
-import { INSERT_EQUATION_COMMAND, INSERT_MUSIC_COMMAND, OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/commands';
+import { INSERT_EQUATION_COMMAND, INSERT_GRAPH_COMMAND, INSERT_MUSIC_COMMAND, OPEN_EMBED_DIALOG_COMMAND } from '@/app/editor/commands';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
 import { $inTitle } from '@/app/editor/nodes/TitleNode';
 
@@ -129,6 +130,9 @@ export default function SlashMenuPlugin({ projectId, resolveProjectId, onClose }
       ),
       new SlashOption('Inline equation', Radical, 'math equation ecuacion ecuación fórmula latex formula katex inline', (e) =>
         e.dispatchCommand(INSERT_EQUATION_COMMAND, { equation: '', inline: true }),
+      ),
+      new SlashOption('Graph', ChartSpline, 'graph plot function grafico gráfico funcion función chart latex', (e) =>
+        e.dispatchCommand(INSERT_GRAPH_COMMAND, undefined),
       ),
       new SlashOption('Music', Music, 'music musica música score sheet abc notation partitura', (e) =>
         e.dispatchCommand(INSERT_MUSIC_COMMAND, undefined),

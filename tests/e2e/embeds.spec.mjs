@@ -148,7 +148,7 @@ test('publishing warns without blocking and Review focuses the first invalid emb
   await page.goto('/projects/embeds/publish');
   await page.getByRole('button', { name: 'Published', exact: false }).click();
   await page.getByRole('button', { name: 'Publish', exact: true }).click();
-  await expect(page.getByRole('alertdialog')).toContainText('2 equations or music scores have errors');
+  await expect(page.getByRole('alertdialog')).toContainText('2 equations, graphs or music scores have errors');
   expect((await saved(request)).published).toBe(0);
   await page.getByRole('button', { name: 'Review', exact: true }).click();
   await expect(page.locator('.editor-equation-rendered.embed-invalid')).toBeFocused();

@@ -48,7 +48,7 @@ function meaningfulNode(value: unknown): boolean {
   if (node.type === 'paragraph' && Array.isArray(node.children) && node.children.every(child => child?.type === 'text')
     && node.children.map(child => child.text).join('').trim() === '/') return false;
   if (typeof node.text === 'string' && hasVisibleText(node.text)) return true;
-  if (node.type === 'equation' && typeof node.equation === 'string' && node.equation.trim()) return true;
+  if ((node.type === 'equation' || node.type === 'graph') && typeof node.equation === 'string' && node.equation.trim()) return true;
   if (node.type === 'music' && typeof node.abc === 'string' && node.abc.trim()) return true;
   if (node.type === 'embed' && validateEmbed(node.provider, node.id)) return true;
   if (node.type === 'image' && typeof node.imageId === 'string' && node.imageId) return true;

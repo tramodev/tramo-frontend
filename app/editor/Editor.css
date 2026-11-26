@@ -694,6 +694,41 @@ div.editor-equation {
   outline: 2px solid var(--primary);
 }
 
+.editor-graph {
+  display: block;
+  margin: 28px 0;
+}
+
+.editor-graph-plot {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.editor-graph-axis {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.editor-graph-curve {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.editor-graph-stale {
+  opacity: 0.4;
+}
+
+.editor-graph-label {
+  fill: var(--muted-foreground);
+  font-size: 11px;
+}
+
 .collab-embed-mark {
   position: absolute;
   z-index: 5;

@@ -16,7 +16,7 @@ export default function EmbedErrorsPlugin({ enabled, index, sequence }: { enable
         let position = 0;
         while (nodes.length) {
           const node = nodes.pop()!;
-          if ((node.getType() === 'equation' || node.getType() === 'music') && position++ === index) return node.getKey();
+          if (['equation', 'music', 'graph'].includes(node.getType()) && position++ === index) return node.getKey();
           if ($isElementNode(node)) nodes.push(...node.getChildren().reverse());
         }
         return null;

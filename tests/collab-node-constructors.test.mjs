@@ -18,6 +18,7 @@ const nodes = [
   load('app/editor/nodes/ImageNode.tsx', { '../plugins/ImageComponent': { default: 'ImageComponent' } }).ImageNode,
   load('app/editor/nodes/EquationNode.tsx', { '../plugins/EquationComponent': { default: 'EquationComponent' } }).EquationNode,
   load('app/editor/nodes/MusicNode.tsx', { '../plugins/MusicComponent': { default: 'MusicComponent' } }).MusicNode,
+  load('app/editor/nodes/GraphNode.tsx', { '../plugins/GraphComponent': { default: 'GraphComponent' } }).GraphNode,
   load('app/editor/nodes/EmbedNode.tsx', { '@/app/editor/plugins/embed': embed }).EmbedNode,
   load('app/editor/nodes/TitleNode.ts').TitleNode,
 ];

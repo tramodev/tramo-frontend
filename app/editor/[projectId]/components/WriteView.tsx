@@ -29,6 +29,7 @@ import { EditorImagesProvider } from '@/components/editor/editor-images-provider
 import ImagesPlugin from '../../plugins/ImagesPlugin';
 import EquationsPlugin from '../../plugins/EquationsPlugin';
 import MusicPlugin from '../../plugins/MusicPlugin';
+import GraphPlugin from '../../plugins/GraphPlugin';
 import EmbedsPlugin from '@/app/editor/plugins/EmbedsPlugin';
 import EmbedErrorsPlugin from '@/app/editor/plugins/EmbedErrorsPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
@@ -196,7 +197,7 @@ function ItemNavigationPlugin({ itemId, register, move }: {
       const boundary = direction === -1 ? root.getFirstDescendant() : root.getLastDescendant();
       const node = selection.anchor.getNode();
       const block = node.getTopLevelElement();
-      if (!block || ['table', 'code', 'image', 'equation', 'music', 'embed'].includes(block.getType())) return false;
+      if (!block || ['table', 'code', 'image', 'equation', 'music', 'graph', 'embed'].includes(block.getType())) return false;
       if (!block.is(direction === -1 ? root.getFirstChild() : root.getLastChild())) return false;
       const offset = direction === -1 ? 0 : node.getTextContentSize();
       const atBoundary = root.getTextContentSize() === 0 || (boundary?.is(node) && selection.anchor.offset === offset);
@@ -318,6 +319,7 @@ function ItemEditorContent({ item, props, revealed, focused, toolbar, onFocus, r
         <ImagesPlugin projectId={props.projectId} resolveProjectId={props.resolveProjectId} previewUrls={session.previewUrls} />
         <EquationsPlugin />
         <MusicPlugin />
+        <GraphPlugin />
         <EmbedsPlugin />
         <EmbedErrorsPlugin enabled={revealed && props.active !== false} index={props.navigationRequest?.itemId === item.id ? props.navigationRequest.embedIndex : undefined}
           sequence={props.navigationRequest?.sequence} />

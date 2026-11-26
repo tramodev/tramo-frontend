@@ -23,6 +23,7 @@ import ExampleTheme from './ExampleTheme';
 import { ImageNode } from './nodes/ImageNode';
 import { EquationNode } from './nodes/EquationNode';
 import { MusicNode } from './nodes/MusicNode';
+import { GraphNode } from './nodes/GraphNode';
 import { EmbedNode } from '@/app/editor/nodes/EmbedNode';
 import { TitleNode } from '@/app/editor/nodes/TitleNode';
 import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
@@ -136,6 +137,7 @@ export const editorConfig = {
     ImageNode,
     EquationNode,
     MusicNode,
+    GraphNode,
     EmbedNode,
     TableNode,
     TableRowNode,

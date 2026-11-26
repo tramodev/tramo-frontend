@@ -19,10 +19,11 @@ export function EmbedErrorsStatus({ items, onReview }: { items: Record<string, I
     return () => { cancelled = true; clearTimeout(timer); };
   }, [items]);
   if (!result) return null;
-  if (result.failed) return <span role="status" className="text-xs text-muted-foreground">Could not check equations and music scores</span>;
+  if (result.failed) return <span role="status" className="text-xs text-muted-foreground">Could not check equations, graphs and music scores</span>;
   if (!result.errors.length) return null;
-  const equations = result.errors.filter(error => error.type === 'equation').length;
-  const scores = result.errors.length - equations;
-  const label = [equations ? `${equations} ${equations === 1 ? 'equation' : 'equations'} with errors` : '', scores ? `${scores} music ${scores === 1 ? 'score' : 'scores'} with errors` : ''].filter(Boolean).join(' · ');
+  const label = ([['equation', 'equation', 'equations'], ['graph', 'graph', 'graphs'], ['music', 'music score', 'music scores']] as const)
+    .map(([type, one, many]) => [result.errors.filter(error => error.type === type).length, one, many] as const)
+    .filter(([count]) => count)
+    .map(([count, one, many]) => `${count} ${count === 1 ? one : many} with errors`).join(' · ');
   return <span role="status"><button type="button" className="max-w-56 whitespace-normal text-left text-xs text-destructive underline" onClick={() => onReview(result.errors[0])}>{label}</button></span>;
 }

@@ -13,6 +13,7 @@ export type InsertImagePayload = Readonly<ImagePayload>;
 
 export const INSERT_EQUATION_COMMAND: LexicalCommand<InsertEquationPayload> = createCommand('INSERT_EQUATION_COMMAND');
 export const INSERT_MUSIC_COMMAND: LexicalCommand<void> = createCommand('INSERT_MUSIC_COMMAND');
+export const INSERT_GRAPH_COMMAND: LexicalCommand<void> = createCommand('INSERT_GRAPH_COMMAND');
 export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> = createCommand('INSERT_IMAGE_COMMAND');
 export const OPEN_EMBED_DIALOG_COMMAND: LexicalCommand<void> = createCommand('OPEN_EMBED_DIALOG_COMMAND');
 export const INSERT_EMBED_COMMAND: LexicalCommand<Embed> = createCommand('INSERT_EMBED_COMMAND');

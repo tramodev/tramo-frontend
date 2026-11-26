@@ -1,7 +1,7 @@
 import { parseAllowedColor, parseAllowedFontSize } from '@/app/editor/styleConfig';
 
 const supportedNodeTypes = new Set(['root', 'paragraph', 'text', 'linebreak', 'tab', 'heading', 'quote',
-  'list', 'listitem', 'code', 'code-highlight', 'link', 'autolink', 'image', 'equation', 'music',
+  'list', 'listitem', 'code', 'code-highlight', 'link', 'autolink', 'image', 'equation', 'music', 'graph',
   'embed', 'table', 'tablerow', 'tablecell', 'horizontalrule']);
 
 function isSafeLink(node: Record<string, unknown>): boolean {
@@ -38,8 +38,8 @@ export function isLegacyNoteContent(content: string): boolean {
         if (!(node.provider === 'youtube' && typeof node.id === 'string' && /^[A-Za-z0-9_-]{11}$/.test(node.id)
           || node.provider === 'tweet' && typeof node.id === 'string' && /^[1-9]\d{0,19}$/.test(node.id))) return true;
       }
-      if (node.type === 'equation' || node.type === 'music') {
-        const source = node.type === 'equation' ? node.equation : node.abc;
+      if (node.type === 'equation' || node.type === 'music' || node.type === 'graph') {
+        const source = node.type === 'music' ? node.abc : node.equation;
         if (typeof source !== 'string' || source.length > 10000) return true;
       }
       if ('children' in node) {
@@ -103,7 +103,7 @@ export function sanitizeNoteContent(content: string): string {
 export function serializeNoteContent(state: unknown, includePendingImages = true): string {
   return JSON.stringify(state, (key, value) => key === 'children' && Array.isArray(value)
     ? value.filter(node => node.type !== 'note-title'
-      && (node.type !== 'equation' || typeof node.equation !== 'string' || node.equation.trim())
+      && (node.type !== 'equation' && node.type !== 'graph' || typeof node.equation !== 'string' || node.equation.trim())
       && (node.type !== 'music' || typeof node.abc !== 'string' || node.abc.trim())
       && (includePendingImages || node.type !== 'image' || node.imageId)) : value);
 }

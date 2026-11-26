@@ -1,5 +1,6 @@
 import katex from 'katex';
 import { loadAbcjs } from '@/app/editor/plugins/music-audio';
+import { compileGraph } from '@/app/editor/graph-function';
 
 export const KATEX_OPTS = { throwOnError: true, trust: false, strict: (code: string) => code === 'newLineInDisplayMode' ? 'ignore' : 'warn', maxExpand: 1000, maxSize: 50, output: 'html' } as const;
 const equations = new Map<string, string | null>();
@@ -23,6 +24,10 @@ export function equationError(source: string, inline = false): string | null {
     error = (failure instanceof Error ? failure.message : String(failure)).replace(/^KaTeX parse error:\s*/, '');
   }
   return remember(equations, key, error);
+}
+
+export function graphError(source: string): string | null {
+  return source.length > 10000 ? 'Graphs must not exceed 10,000 characters.' : compileGraph(source).error;
 }
 
 export function plainMusicWarning(warning: string): string {
@@ -53,7 +58,7 @@ export function musicError(source: string): Promise<string | null> {
 
 export interface EmbedError {
   index: number;
-  type: 'equation' | 'music';
+  type: 'equation' | 'music' | 'graph';
   message: string;
 }
 
@@ -66,14 +71,14 @@ export async function noteEmbedErrors(content: string): Promise<EmbedError[]> {
   while (nodes.length) {
     const node = nodes.pop();
     if (!node || typeof node !== 'object') continue;
-    if (node.type === 'equation' || node.type === 'music') {
+    if (node.type === 'equation' || node.type === 'music' || node.type === 'graph') {
       const type = node.type;
       const position = index++;
-      const source = type === 'equation' ? node.equation : node.abc;
+      const source = type === 'music' ? node.abc : node.equation;
       if (typeof source !== 'string') {
         pending.push(Promise.resolve({ index: position, type, message: 'Saved source is not text.' }));
       } else if (source.trim()) {
-        const error = type === 'equation' ? equationError(source, node.inline === true) : musicError(source);
+        const error = type === 'equation' ? equationError(source, node.inline === true) : type === 'graph' ? graphError(source) : musicError(source);
         pending.push(Promise.resolve(error).then(message => message ? { index: position, type, message } : null));
       }
     }

@@ -2,7 +2,7 @@ import { build } from 'esbuild';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const component = /\/plugins\/(Image|Equation|Music)Component$/;
+const component = /\/plugins\/(Image|Equation|Music|Graph)Component$/;
 
 await build({
   entryPoints: process.argv.slice(2).length ? process.argv.slice(2) : [`${root}collab/server.ts`],

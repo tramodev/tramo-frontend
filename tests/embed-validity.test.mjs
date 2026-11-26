@@ -17,6 +17,7 @@ function load(path, modules = {}, suffix = '') {
 function validity(renderer = katex, loader = () => Promise.resolve(abcjs)) {
   return load('app/editor/embed-validity.ts', {
     katex: { default: renderer }, '@/app/editor/plugins/music-audio': { loadAbcjs: loader },
+    '@/app/editor/graph-function': { compileGraph: source => ({ error: source.includes('y') ? 'Only x can be a variable, found y.' : null }) },
   });
 }
 const errors = validity();
@@ -80,17 +81,20 @@ test('error traversal preserves document order and embed positions across nested
     { type: 'paragraph', children: [{ type: 'equation', equation: '\\frac{1}{', inline: true }] },
     { type: 'music', abc: 'X:1\nK:C\nCDEF|' },
     { type: 'music', abc: 'X:1\nK:C\nCDE [' },
+    { type: 'graph', equation: 'x^2' },
+    { type: 'graph', equation: 'y^2' },
   ] } });
   expect((await errors.noteEmbedErrors(content)).map(({ index, type }) => ({ index, type })))
-    .toEqual([{ index: 1, type: 'equation' }, { index: 3, type: 'music' }]);
+    .toEqual([{ index: 1, type: 'equation' }, { index: 3, type: 'music' }, { index: 5, type: 'graph' }]);
 });
 
 test('serialization retains invalid source verbatim and removes only empty embeds', () => {
   const { serializeNoteContent } = load('app/editor/note-content.ts', { '@/app/editor/styleConfig': {} });
   const equation = { type: 'equation', equation: ' \\frac{1}{\n' };
   const score = { type: 'music', abc: 'X:1\nK:C\nCDE [' };
-  const state = { root: { children: [equation, { type: 'equation', equation: ' ' }, score, { type: 'music', abc: '' }] } };
-  expect(JSON.parse(serializeNoteContent(state)).root.children).toEqual([equation, score]);
+  const graph = { type: 'graph', equation: 'y' };
+  const state = { root: { children: [equation, { type: 'equation', equation: ' ' }, score, { type: 'music', abc: '' }, graph, { type: 'graph', equation: '' }] } };
+  expect(JSON.parse(serializeNoteContent(state)).root.children).toEqual([equation, score, graph]);
 });
 
 test.each(['Equation', 'Music'])('%s HTML imports bound external source while JSON reload preserves invalid source', kind => {
